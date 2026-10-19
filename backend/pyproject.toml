@@ -25,6 +25,7 @@ dev = [
     "pytest-django>=4.14",
     "pip-audit>=2.10",
     "types-django-filter>=26.1.0.20260713",
+    "hypothesis>=6.140",
 ]
 
 [tool.uv]
@@ -57,7 +58,7 @@ ignore = [
 ]
 
 [tool.ruff.lint.per-file-ignores]
-"tests/**" = ["S101", "S105", "S106", "S603", "E501"]  # asserts, fake passwords, subprocess, long data lines
+"tests/**" = ["S101", "S105", "S106", "S603", "E501", "RUF001", "RUF003", "N817"]  # asserts, fake data, × and D = Decimal in money tests
 "config/settings/*.py" = ["F405", "F403"]  # star import of base settings
 "apps/*/models.py" = ["RUF012"]  # Django's Meta.constraints / indexes lists
 

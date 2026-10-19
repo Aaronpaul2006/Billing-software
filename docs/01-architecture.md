@@ -275,6 +275,15 @@ A pure Python package (`documents/tax/`) with no Django imports.
 * GST rates are data (on catalog/BOQ items), never constants in code, because
   rates change (they did in 2025).
 * Hundreds of table-driven test cases, including real invoices checked by a CA.
+* Built in `apps/documents/tax/` (Phase 1.4). Choices made there: CGST and SGST
+  are each rounded separately at half the rate; retention, GST TDS and advance
+  recovery are percentages of the taxable value; income-tax TDS is on the value
+  excluding GST (CBDT Circular 23/2017) and rounded to the rupee (s.288B);
+  advance recovery is capped at the advance outstanding; whether a contract
+  crosses the GST-TDS threshold (₹2.5 lakh) is the caller's decision. Tests:
+  worked examples (incl. the API doc's RA bill), half-up vs banker's rounding
+  cases, Hypothesis properties, and engine output issued through the real
+  database trigger. Still to do: invoices checked by a CA, reverse charge.
 
 ### 5.5 RA (running account) bills
 
