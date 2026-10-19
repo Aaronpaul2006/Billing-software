@@ -4,7 +4,7 @@ Last updated: 2026-10-19
 
 ## Current phase
 
-**Phase 1 — Core billing** (in progress): steps 1.1–1.4 of 7 done. Phase 0 (Foundations) complete.
+**Phase 1 — Core billing** (in progress): steps 1.1–1.5 of 7 done. Phase 0 (Foundations) complete.
 
 ## Done
 
@@ -29,10 +29,11 @@ Last updated: 2026-10-19
 - [x] Phase 1.2: `GET/PATCH /tenant`, `/gst-registrations` (GSTIN with check digit, PAN consistency, state/address rules, one default, immutable identity), `/document-series` (one active per registration/type/FY, locked once used, doc type vs registration type, `next_doc_number`), all with ETag/If-Match; `apps/core/india.py` (state codes, GSTIN, PAN, PIN). Schema: `version` on tenants / gst_registrations / document_series / catalog_items, unique active series index (schema.sql + migrations). The tenant manager's filter is now a lazy expression (django-filter and drf-spectacular build querysets without a tenant). 224 tests
 - [x] Phase 1.3: `/parties` (GST treatment ↔ GSTIN rules, state/PAN from GSTIN, merged-PATCH validation, `q` search, archive not delete), `/projects` (unique code, client must be a customer, active registration, site address in site state, client/registration/site state locked once documents exist), `/projects/{id}/boq-items` + `/boq-items/{id}` (unique item code, GST ≤ 50 %, delete only if never billed), `/catalog-items` (delete only if unused). Shared `versioned_patch` / `detail_response` / `get_or_404` helpers; all routes in the cross-tenant registry. BOQ CSV/XLSX import deferred. 253 tests
 - [x] Phase 1.4: tax engine `apps/documents/tax/` — pure Python (test forbids Django imports), Decimal + ROUND_HALF_UP, per-line CGST/SGST (each half rounded) or IGST by place of supply, cess, bill of supply / non-REGULAR suppliers untaxed, round-off to the rupee, deductions (retention, TDS s.194C rounded to the rupee, GST TDS s.51, advance recovery capped). Tests: worked examples incl. the API doc RA bill (net ₹3,23,680), half-up vs banker's cases, ~800 Hypothesis cases, engine output issued through the DB trigger. Mutation-checked (banker's rounding fails 4 tests). 280 tests
+- [x] Phase 1.5: draft documents — `GET/POST /documents` (filters doc_type, status, book, party, project, date ranges, payment_state, q; idempotent create), `GET/PATCH/DELETE /documents/{id}` (drafts only, `lines` replaces all, recompute on every save, If-Match), `POST /documents:preview-totals`. Server derives registration, place of supply (site state), supply type, all amounts and project deductions (advance recovery capped at the outstanding advance); catalog/BOQ lines fill defaults. Schema: `documents.round_to_rupee` (+ column grant). Hypothesis found an edge case: a sub-rupee bill rounded to ₹0 with retention is refused (`deductions_exceed_total`), now pinned by a test. 305 tests
 
 ## In progress
 
-- Phase 1.5: draft documents with lines, server-computed totals, `preview-totals`.
+- Phase 1.6: issue / cancel / accept / decline / convert; gapless numbering, snapshots; credit & debit notes.
 
 ## Next
 
@@ -53,7 +54,7 @@ Phase 1 — core billing:
 2. ~~Business profile, GST registrations, number series~~ (done)
 3. ~~Parties, projects, BOQ items, catalog~~ (done)
 4. ~~Tax engine~~ (done)
-5. Draft documents with lines, server-computed totals, `preview-totals`
+5. ~~Draft documents~~ (done)
 6. Issue / cancel / accept / decline / convert; gapless numbering, snapshots
 7. PDF generation (Celery worker) and file storage with presigned URLs
 Full roadmap: `docs/01-architecture.md` §9.
@@ -75,6 +76,7 @@ Full roadmap: `docs/01-architecture.md` §9.
 - **Auth items deferred** (need email sending, Redis or a schema decision): email verification (`verify-email`; architecture says it gates issuing documents), password forgot/reset, `PATCH /me`, Redis rate limits (login per IP, API per user, `RateLimit-*` headers), `Idempotency-Key` on signup (`idempotency_keys` requires a tenant and user, which do not exist yet at signup), HaveIBeenPwned check (Django's common-password list is used for now), sliding vs absolute session lifetime (sliding 30 days now).
 - Invitations work only for people who already have an account (`422 no_account` otherwise, which tells an OWNER/ADMIN whether an email is registered). Email invitation links for new people come with email sending.
 - Signup reveals whether an email is registered (`422 email_taken`); login and reset do not. Revisit with email verification (send a "you already have an account" email instead).
+- Documents: cess is not exposed on lines yet (no stored cess rate); a document with a project must bill the project's client.
 - Tax engine: reverse-charge documents and real invoices checked by a CA are still to do; the GST-TDS ₹2.5 lakh contract threshold is left to the caller (project flag).
 - Expired idempotency keys are reused on demand; a periodic purge (Celery beat) comes with step 1.7.
 - `auth_sessions` has a `tenant_id` column but no RLS, by design (global table, read only by id / token hash).

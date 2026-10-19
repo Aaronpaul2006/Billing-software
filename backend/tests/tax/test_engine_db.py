@@ -4,11 +4,11 @@ import uuid
 from decimal import Decimal as D
 
 import pytest
-from hypothesis import HealthCheck, given, settings
+from hypothesis import HealthCheck, assume, given, settings
 from hypothesis import strategies as st
 
 from apps.core.tenancy import tenant_context
-from apps.documents.tax import Deductions, DocumentIn, LineIn, compute
+from apps.documents.tax import Deductions, DocumentIn, LineIn, TaxError, compute
 from tests.db.seed import issue, new_draft, seed_tenant, sql
 
 pytestmark = pytest.mark.django_db
@@ -33,17 +33,21 @@ def test_computed_documents_pass_the_database_checks(
     lines: list[LineIn], place: str, round_to_rupee: bool
 ) -> None:
     s = seed_tenant("T", f"32AAACT{uuid.uuid4().int % 10000:04d}T1Z5", "32")  # format only
-    out = compute(
-        DocumentIn(
-            doc_type="TAX_INVOICE",
-            registration_type="REGULAR",
-            supplier_state="32",
-            place_of_supply=place,
-            lines=lines,
-            round_to_rupee=round_to_rupee,
-            deductions=Deductions(retention_pct=D("5"), income_tax_tds_pct=D("1")),
+    try:
+        out = compute(
+            DocumentIn(
+                doc_type="TAX_INVOICE",
+                registration_type="REGULAR",
+                supplier_state="32",
+                place_of_supply=place,
+                lines=lines,
+                round_to_rupee=round_to_rupee,
+                deductions=Deductions(retention_pct=D("5"), income_tax_tds_pct=D("1")),
+            )
         )
-    )
+    except TaxError as exc:  # refused inputs are not this test's concern (see test_engine)
+        assume(exc.code != "deductions_exceed_total")
+        raise
     with tenant_context(s.tenant, s.user):
         doc = new_draft(s, uuid.uuid7(), place=place)
         sql("UPDATE documents SET supply_type = %s WHERE id = %s", [out.supply_type, doc])

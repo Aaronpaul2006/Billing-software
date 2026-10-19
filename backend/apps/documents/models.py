@@ -96,6 +96,7 @@ class Document(TenantScoped):
     igst_amount = _money_zero()
     cess_amount = _money_zero()
     round_off = models.DecimalField(max_digits=4, decimal_places=2, default=0, db_default=0)
+    round_to_rupee = models.BooleanField(default=False, db_default=False)  # kept for recompute
     grand_total = _money_zero()
     # Construction deductions: they reduce what the client pays now, not the taxable value.
     retention_amount = _money_zero()

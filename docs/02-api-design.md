@@ -228,7 +228,17 @@ Idempotency-Key: 6f1c2a1e-6c1f-4b8e-9d2a-0c7f3e5b9a10
 ```
 The client never sends tax amounts, totals, `place_of_supply` or
 `supply_type`. The server derives them (place of supply from the project's
-site state) and returns them:
+site state) and returns them.
+
+Built in Phase 1.5: the registration is the project's (or the tenant default;
+a different one → `422 registration_mismatch`); without a project the place of
+supply is the party's state, else our own; with a project the party must be its
+client (`party_mismatch`) and a customer (`not_a_customer`); lines may name a
+`catalog_item_id` / `boq_item_id` and leave out description, unit, SAC/HSN,
+rate and GST rate; `round_to_rupee` is stored with the draft; deductions come
+from the project (invoices, bills of supply, proformas). `POST /documents`
+accepts QUOTATION, PROFORMA, TAX_INVOICE and BILL_OF_SUPPLY; notes come from
+their own endpoints (Phase 1.6), RA bills in Phase 3. Example response:
 
 ```json
 {

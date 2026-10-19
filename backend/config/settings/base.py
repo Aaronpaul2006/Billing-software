@@ -182,7 +182,15 @@ SPECTACULAR_SETTINGS = {
     "SERVE_INCLUDE_SCHEMA": False,
     "SCHEMA_PATH_PREFIX": "/api/v1",
     # one named enum for the GST state codes used by several resources
-    "ENUM_NAME_OVERRIDES": {"StateCodeEnum": "apps.core.serializers.STATE_CHOICES"},
+    "ENUM_NAME_OVERRIDES": {
+        "StateCodeEnum": "apps.core.serializers.STATE_CHOICES",
+        "DocTypeEnum": "apps.tenants.models.DocType",
+        "DraftableDocTypeEnum": "apps.documents.services.drafts.DRAFTABLE_TYPES",
+        "DocumentStatusEnum": "apps.documents.models.DocumentStatus",
+        "ProjectStatusEnum": "apps.projects.models.ProjectStatus",
+        "TenantStatusEnum": "apps.tenants.models.TenantStatus",
+        "MembershipStatusEnum": "apps.accounts.models.MembershipStatus",
+    },
     # The schema is public only in dev (see dev.py).
     "SERVE_PERMISSIONS": ["rest_framework.permissions.IsAuthenticated"],
 }

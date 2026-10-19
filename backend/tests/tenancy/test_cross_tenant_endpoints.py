@@ -355,3 +355,70 @@ for _name in MASTER_OBJECT_URLS:
 OBJECT_ROUTES["project-boq-items"] = lambda w: None  # covered by the test above
 for _name in ("parties", "projects", "catalog-items"):
     COLLECTION_ROUTES[_name] = lambda w: None  # covered by test_master_lists_and_references...
+
+
+# --- Phase 1.5 documents -----------------------------------------------------------------
+
+
+@pytest.fixture
+def a_document(world: World, masters: dict[str, str]) -> str:
+    from apps.documents.models import Document
+
+    a = world.a
+    with tenant_context(a.tenant_id, a.user_id):
+        doc = Document.objects.create(
+            doc_type="QUOTATION",
+            gst_registration_id=a.registration_id,
+            doc_date="2026-10-19",
+            party_id=masters["party"],
+            place_of_supply="32",
+            supply_type="INTRA_STATE",
+            notes="A's secret",
+            created_by_id=a.user_id,
+        )
+    return str(doc.pk)
+
+
+def test_document_detail_rejects_other_tenant(world: World, a_document: str) -> None:
+    url, api = f"/api/v1/documents/{a_document}", world.api
+    assert api.get(url, **world.as_b()).status_code == 404
+    assert (
+        api.patch(
+            url, {"notes": "hijacked"}, format="json", HTTP_IF_MATCH='"v1"', **world.as_b()
+        ).status_code
+        == 404
+    )
+    assert api.delete(url, **world.as_b()).status_code == 404
+    as_a: dict[str, Any] = {"HTTP_AUTHORIZATION": f"Bearer {world.a_owner.access_token}"}
+    body = api.get(url, **as_a).json()
+    assert (body["notes"], body["version"]) == ("A's secret", 1)
+
+
+def test_documents_list_create_and_preview_hide_other_tenant(
+    world: World, masters: dict[str, str], a_document: str
+) -> None:
+    api = world.api
+    ids = {d["id"] for d in api.get("/api/v1/documents", **world.as_b()).json()["results"]}
+    assert a_document not in ids
+    payload = {
+        "doc_type": "QUOTATION",
+        "party_id": masters["party"],
+        "doc_date": "2026-10-19",
+        "lines": [{"description": "x", "quantity": "1", "rate": "1"}],
+    }
+    created = api.post(
+        "/api/v1/documents",
+        payload,
+        format="json",
+        HTTP_IDEMPOTENCY_KEY=str(uuid.uuid4()),
+        **world.as_b(),
+    )
+    assert created.status_code == 422
+    assert created.json()["errors"][0]["code"] == "not_found"
+    preview = api.post("/api/v1/documents:preview-totals", payload, format="json", **world.as_b())
+    assert preview.status_code == 422
+
+
+OBJECT_ROUTES["document-detail"] = lambda w: None  # test_document_detail_rejects_other_tenant
+COLLECTION_ROUTES["documents"] = lambda w: None  # test_documents_list_create_and_preview...
+COLLECTION_ROUTES["document-preview-totals"] = lambda w: None  # same test

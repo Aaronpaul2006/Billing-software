@@ -346,6 +346,7 @@ CREATE TABLE documents (
   igst_amount              numeric(14,2) NOT NULL DEFAULT 0 CHECK (igst_amount >= 0),
   cess_amount              numeric(14,2) NOT NULL DEFAULT 0 CHECK (cess_amount >= 0),
   round_off                numeric(4,2) NOT NULL DEFAULT 0 CHECK (round_off BETWEEN -1 AND 1),
+  round_to_rupee           boolean NOT NULL DEFAULT false,   -- recompute keeps the user's choice
   grand_total              numeric(14,2) NOT NULL DEFAULT 0,
   -- Construction deductions: they do not change the taxable value, they
   -- reduce what the client actually pays now.
@@ -942,7 +943,7 @@ REVOKE UPDATE ON documents FROM billing_app;
 GRANT UPDATE (status, doc_type, gst_registration_id, series_id, doc_number, doc_date, due_date, valid_until,
               party_id, project_id, source_document_id, original_document_id, is_ra_bill, ra_sequence,
               supplier_snapshot, party_snapshot, place_of_supply, supply_type, reverse_charge,
-              subtotal, cgst_amount, sgst_amount, igst_amount, cess_amount, round_off, grand_total,
+              subtotal, cgst_amount, sgst_amount, igst_amount, cess_amount, round_off, round_to_rupee, grand_total,
               retention_amount, income_tax_tds_amount, gst_tds_amount, advance_recovery_amount, net_receivable,
               notes, terms, pdf_attachment_id, issued_at, issued_by, cancelled_at, cancelled_by, cancel_reason,
               version, updated_at)

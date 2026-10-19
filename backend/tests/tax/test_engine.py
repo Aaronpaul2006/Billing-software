@@ -321,3 +321,17 @@ def test_deductions_identity(
     )
     assert out.net_receivable >= 0
     assert out.advance_recovery_amount <= outstanding
+
+
+def test_rounding_a_tiny_bill_to_zero_cannot_leave_deductions() -> None:
+    """Found by Hypothesis: 0.095 x Rs 1 = 0.10 taxable, 0.12 with GST, rounds to
+    Rs 0; 5 % retention (0.01) would then exceed the total. Refused, not negative."""
+    with pytest.raises(TaxError) as exc_info:
+        compute(
+            doc(
+                LineIn(quantity=D("0.095"), rate=D("1.00"), gst_rate=D("18")),
+                round_to_rupee=True,
+                deductions=Deductions(retention_pct=D("5")),
+            )
+        )
+    assert exc_info.value.code == "deductions_exceed_total"
