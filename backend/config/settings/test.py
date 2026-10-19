@@ -7,5 +7,6 @@ ALLOWED_HOSTS = ["testserver", "localhost"]
 PASSWORD_HASHERS = ["django.contrib.auth.hashers.MD5PasswordHasher"]
 
 REFRESH_COOKIE_SECURE = False
+RENDER_PDF_ON_ISSUE = False  # tests render explicitly
 
 SPECTACULAR_SETTINGS["SERVE_PERMISSIONS"] = ["rest_framework.permissions.AllowAny"]

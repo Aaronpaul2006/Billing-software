@@ -107,6 +107,38 @@ services:
       retries: 20
     restart: unless-stopped
 
+  # --- the backend itself (profile "app"): docker compose --profile app up -d --build
+  # Inside the network, services are reached by name on their container ports.
+  api: &backend
+    profiles: ["app"]
+    build: ./backend
+    image: billing-backend:dev  # one image for api and worker
+    command: ["python", "manage.py", "runserver", "0.0.0.0:8000"]
+    env_file: .env
+    environment: &backend-env
+      DJANGO_ALLOWED_HOSTS: localhost,127.0.0.1,api
+      DATABASE_URL: postgres://billing_app_login:${APP_DB_PASSWORD:?set APP_DB_PASSWORD in .env}@postgres:5432/${POSTGRES_DB}
+      DATABASE_OWNER_URL: postgres://billing_owner:${OWNER_DB_PASSWORD:?set OWNER_DB_PASSWORD in .env}@postgres:5432/${POSTGRES_DB}
+      DATABASE_ADMIN_URL: postgres://${POSTGRES_SUPERUSER}:${POSTGRES_SUPERUSER_PASSWORD}@postgres:5432/postgres
+      REDIS_URL: redis://:${REDIS_PASSWORD}@redis:6379/0
+      S3_ENDPOINT_URL: http://seaweedfs:8333
+      S3_PUBLIC_ENDPOINT_URL: http://127.0.0.1:${S3_PORT:-8333}  # links opened in your browser
+    volumes:
+      - ./backend:/app  # code changes reload without a rebuild
+      - ./db:/db:ro  # db/schema.sql, for the schema sync test
+    ports:
+      - "127.0.0.1:${API_PORT:-8000}:8000"
+    depends_on:
+      postgres: {condition: service_healthy}
+      redis: {condition: service_healthy}
+      seaweedfs: {condition: service_healthy}
+
+  # Celery worker: PDFs now; email, exports, e-invoicing later.
+  worker:
+    <<: *backend
+    command: ["celery", "-A", "config", "worker", "--loglevel=info", "--concurrency=2"]
+    ports: []
+
 volumes:
   postgres-data:
   redis-data:

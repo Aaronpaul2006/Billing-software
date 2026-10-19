@@ -459,3 +459,11 @@ def test_lifecycle_actions_reject_other_tenant(world: World, a_document: str, na
 
 for _name in LIFECYCLE_ACTIONS:
     OBJECT_ROUTES[_name] = lambda w: None  # test_lifecycle_actions_reject_other_tenant
+
+
+def test_document_pdf_rejects_other_tenant(world: World, a_document: str) -> None:
+    response = world.api.get(f"/api/v1/documents/{a_document}/pdf", **world.as_b())
+    assert response.status_code == 404
+
+
+OBJECT_ROUTES["document-pdf"] = lambda w: None  # test_document_pdf_rejects_other_tenant

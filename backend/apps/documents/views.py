@@ -5,6 +5,8 @@ from typing import Any
 
 import django_filters
 from django.db.models import F, Q, QuerySet
+from django.http import HttpResponse, HttpResponseRedirect
+from django.http.response import HttpResponseBase
 from drf_spectacular.utils import extend_schema
 from rest_framework.request import Request
 from rest_framework.response import Response
@@ -17,8 +19,11 @@ from apps.core.api import (
     versioned_patch,
 )
 from apps.core.idempotency import idempotent
+from apps.files import storage
+from apps.files.models import Attachment
 
 from .models import Document
+from .pdf.render import render_pdf
 from .serializers import (
     CancelSerializer,
     ConvertSerializer,
@@ -29,7 +34,7 @@ from .serializers import (
     PreviewSerializer,
     TotalsSerializer,
 )
-from .services import drafts, lifecycle
+from .services import drafts, lifecycle, pdfs
 
 DRAFT = "documents.draft"
 
@@ -246,3 +251,40 @@ class CreditNoteView(ActionAPIView):
 
 class DebitNoteView(CreditNoteView):
     note_type = "DEBIT_NOTE"
+
+
+# --- PDF (Phase 1.7) ---------------------------------------------------------------------
+
+
+class DocumentPdfView(ActionAPIView):
+    """Issued: 302 to a short-lived link (202 while it is being made).
+    Draft: rendered on demand with a DRAFT watermark, never stored."""
+
+    write_action = DRAFT
+
+    @extend_schema(
+        responses={
+            (200, "application/pdf"): bytes,
+            302: None,
+            202: {"type": "object", "properties": {"status": {"type": "string"}}},
+        },
+        tags=["documents"],
+    )
+    def get(self, request: Request, document_id: uuid.UUID) -> HttpResponseBase:
+        doc = drafts.get_document(self.principal, document_id)
+        if doc.status == "DRAFT":
+            return HttpResponse(
+                render_pdf(doc),
+                content_type="application/pdf",
+                headers={"Content-Disposition": f'inline; filename="{pdfs.pdf_filename(doc)}"'},
+            )
+        attachment = (
+            Attachment.objects.filter(pk=doc.pdf_attachment_id, status="AVAILABLE").first()
+            if doc.pdf_attachment_id
+            else None
+        )
+        if attachment is None:
+            pdfs.enqueue_pdf(self.principal.tenant_id, self.principal.user_id, doc.pk)
+            return Response({"status": "rendering"}, status=202, headers={"Retry-After": "3"})
+        url = storage.download_url(attachment.storage_key, attachment.original_filename)
+        return HttpResponseRedirect(url)

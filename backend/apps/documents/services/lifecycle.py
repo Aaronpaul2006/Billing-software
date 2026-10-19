@@ -12,6 +12,7 @@ from datetime import date
 from decimal import Decimal
 from typing import Any
 
+from django.conf import settings
 from django.db import transaction
 from django.db.models import Sum
 from django.utils import timezone
@@ -27,6 +28,7 @@ from apps.tenants.models import DocumentSeries, GstRegistration, Tenant
 
 from ..models import Document, DocumentLine
 from . import drafts
+from .pdfs import enqueue_pdf
 
 CONVERSIONS: dict[str, frozenset[str]] = {
     "QUOTATION": frozenset({"PROFORMA", "TAX_INVOICE", "BILL_OF_SUPPLY"}),
@@ -144,6 +146,8 @@ def issue(principal: Principal, doc_id: uuid.UUID, expected: int) -> Document:
             issued_at=timezone.now(),
             issued_by_id=principal.user_id,
         )
+        if settings.RENDER_PDF_ON_ISSUE:
+            enqueue_pdf(principal.tenant_id, principal.user_id, doc.pk)
     return get_or_404(Document, doc_id)
 
 

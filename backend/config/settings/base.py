@@ -103,6 +103,22 @@ DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
 
 REDIS_URL: str = env("REDIS_URL")
 
+# --- Background work (Celery) ------------------------------------------------------
+CELERY_BROKER_URL = REDIS_URL
+CELERY_TASK_SERIALIZER = "json"
+CELERY_RESULT_BACKEND = None
+CELERY_TASK_ACKS_LATE = True
+CELERY_WORKER_PREFETCH_MULTIPLIER = 1
+RENDER_PDF_ON_ISSUE = True
+
+# --- Object storage (S3 API) -------------------------------------------------------
+S3_ENDPOINT_URL: str | None = env("S3_ENDPOINT_URL", default=None)  # None: AWS S3
+S3_PUBLIC_ENDPOINT_URL: str | None = env("S3_PUBLIC_ENDPOINT_URL", default=None)
+S3_REGION: str = env("S3_REGION", default="ap-south-1")
+S3_BUCKET: str = env("S3_BUCKET")
+S3_ACCESS_KEY: str = env("S3_ACCESS_KEY")
+S3_SECRET_KEY: str = env("S3_SECRET_KEY")
+
 # --- Passwords -----------------------------------------------------------------
 PASSWORD_HASHERS = [
     "django.contrib.auth.hashers.Argon2PasswordHasher",

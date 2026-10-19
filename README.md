@@ -34,6 +34,14 @@ uv run pytest
 uv run python manage.py runserver   # http://127.0.0.1:8000/healthz, /api/v1/docs/
 ```
 
+## Running the whole backend in Docker
+
+```bash
+docker compose --profile app up -d --build   # + api (http://127.0.0.1:8000) and the Celery worker
+docker compose --profile app run --rm api python manage.py migrate --database=owner
+docker compose --profile app run --rm api pytest   # incl. real PDF rendering (WeasyPrint)
+```
+
 ## Running the schema checks
 
 ```bash

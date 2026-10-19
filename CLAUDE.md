@@ -112,6 +112,14 @@ uv run python manage.py runserver        # dev settings; docs at /api/v1/docs/
 uv run python manage.py makemigrations --check --dry-run
 ```
 
+# Full stack in Docker (api + Celery worker; WeasyPrint needs Linux libraries)
+docker compose --profile app up -d --build
+docker compose --profile app run --rm api pytest       # runs the PDF rendering tests too
+```
+
+On Windows the real-PDF test skips (no Pango); run it in the container before pushing
+PDF changes. CI installs the libraries and runs it.
+
 Use `127.0.0.1`, not `localhost`, in connection URLs: on Windows `localhost`
 tries IPv6 `::1` first and stalls, while compose publishes on IPv4 only.
 

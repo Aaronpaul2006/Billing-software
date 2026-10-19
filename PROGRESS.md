@@ -4,7 +4,7 @@ Last updated: 2026-10-19
 
 ## Current phase
 
-**Phase 1 — Core billing** (in progress): steps 1.1–1.6 of 7 done. Phase 0 (Foundations) complete.
+**Phase 1 — Core billing**: all 7 steps done (2026-10-19). Next: Phase 2 — money (payments, allocations, expenses, receivables). Phase 0 (Foundations) complete.
 
 ## Done
 
@@ -31,10 +31,11 @@ Last updated: 2026-10-19
 - [x] Phase 1.4: tax engine `apps/documents/tax/` — pure Python (test forbids Django imports), Decimal + ROUND_HALF_UP, per-line CGST/SGST (each half rounded) or IGST by place of supply, cess, bill of supply / non-REGULAR suppliers untaxed, round-off to the rupee, deductions (retention, TDS s.194C rounded to the rupee, GST TDS s.51, advance recovery capped). Tests: worked examples incl. the API doc RA bill (net ₹3,23,680), half-up vs banker's cases, ~800 Hypothesis cases, engine output issued through the DB trigger. Mutation-checked (banker's rounding fails 4 tests). 280 tests
 - [x] Phase 1.5: draft documents — `GET/POST /documents` (filters doc_type, status, book, party, project, date ranges, payment_state, q; idempotent create), `GET/PATCH/DELETE /documents/{id}` (drafts only, `lines` replaces all, recompute on every save, If-Match), `POST /documents:preview-totals`. Server derives registration, place of supply (site state), supply type, all amounts and project deductions (advance recovery capped at the outstanding advance); catalog/BOQ lines fill defaults. Schema: `documents.round_to_rupee` (+ column grant). Hypothesis found an edge case: a sub-rupee bill rounded to ₹0 with retention is refused (`deductions_exceed_total`), now pinned by a test. 305 tests
 - [x] Phase 1.6: document lifecycle — `issue` (recompute, series row lock, gapless number, snapshots; idempotent + If-Match), `cancel`, `accept` / `decline`, `convert` (with `source_document_id`), `credit-notes` / `debit-notes` (copied lines, can't change type, credit total ≤ invoice). Tests incl. 4 parallel issues → INV/0001–0004 (mutation: without the series lock it fails 3/3), retries don't consume numbers, failed issues leave no gap, snapshots frozen; all 7 routes in the cross-tenant registry. 326 tests
+- [x] Phase 1.7: PDFs and storage (owner decisions: WeasyPrint, worker in Docker) — HTML template with the CGST Rule 46 particulars, Indian digit grouping and amount in words (lakh/crore), auto-escaped; Celery task `render_document_pdf` queued on commit after issue, idempotent, stores to S3 (`apps/files/storage.py`; SeaweedFS locally) with an `attachments` row (size, SHA-256); `GET /documents/{id}/pdf` (302 to a 5-minute link / 202 while rendering / drafts on demand with DRAFT watermark). Backend `Dockerfile` (Python 3.14.8 slim, Pango, DejaVu fonts with ₹), compose profile `app` with `api` + `worker`; CI installs Pango and builds the image. Storage tests use moto. 352 tests
 
 ## In progress
 
-- Phase 1.7: PDF generation (Celery worker) and file storage with presigned URLs.
+- Phase 2 planning: payments + allocations, credit-note allocation, expenses, receivables and dashboard endpoints.
 
 ## Next
 
@@ -57,7 +58,7 @@ Phase 1 — core billing:
 4. ~~Tax engine~~ (done)
 5. ~~Draft documents~~ (done)
 6. ~~Issue / cancel / accept / decline / convert, notes~~ (done)
-7. PDF generation (Celery worker) and file storage with presigned URLs
+7. ~~PDF generation and file storage~~ (done)
 Full roadmap: `docs/01-architecture.md` §9.
 
 ## Open questions (for the owner)
@@ -80,7 +81,9 @@ Full roadmap: `docs/01-architecture.md` §9.
 - Issuing does not yet require a verified email (architecture §2 / API §2): comes with email sending.
 - Documents: cess is not exposed on lines yet (no stored cess rate); a document with a project must bill the project's client.
 - Tax engine: reverse-charge documents and real invoices checked by a CA are still to do; the GST-TDS ₹2.5 lakh contract threshold is left to the caller (project flag).
-- Expired idempotency keys are reused on demand; a periodic purge (Celery beat) comes with step 1.7.
+- Expired idempotency keys are reused on demand; a periodic purge needs Celery beat (not set up yet).
+- A PDF rendered before a document is cancelled still shows it as issued; re-render on cancel is not done yet.
+- Uploads by users (attachments API, presigned PUT, malware scan) are not built yet; only system-generated PDFs.
 - `auth_sessions` has a `tenant_id` column but no RLS, by design (global table, read only by id / token hash).
 - The app role has no privileges on `django_migrations`. `TransactionTestCase`-style flushes (TRUNCATE) will not work as the app role; concurrency tests in step 7 need their own setup/cleanup.
 - Until JWT lands (step 5), unauthenticated API calls get 403 `permission_denied`; step 5 makes them 401.

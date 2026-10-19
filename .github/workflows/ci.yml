@@ -52,6 +52,10 @@ jobs:
       REDIS_URL: redis://127.0.0.1:6379/0
       JWT_SIGNING_KEY: ci-only-jwt-signing-key-not-a-secret-0123456789
       MFA_ENCRYPTION_KEY: Y2ktbWZhLWtleS0zMi1ieXRlcy1ub3Qtc2VjcmV0ISE=
+      # storage tests use moto (in-process fake S3); no S3 service needed
+      S3_BUCKET: ci-bucket
+      S3_ACCESS_KEY: ci-access-key
+      S3_SECRET_KEY: ci-secret-key
 
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
@@ -60,6 +64,11 @@ jobs:
         with:
           enable-cache: true
           cache-dependency-glob: backend/uv.lock
+
+      - name: WeasyPrint system libraries (PDF rendering tests)
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y --no-install-recommends             libpango-1.0-0 libpangoft2-1.0-0 libharfbuzz-subset0 fonts-dejavu-core
 
       - name: Install dependencies (exactly as locked)
         run: uv sync --locked
@@ -86,6 +95,15 @@ jobs:
 
       - name: Dependency audit (pip-audit)
         run: uv run pip-audit --progress-spinner off
+
+  image:
+    name: Backend Docker image builds
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - name: Build (not pushed)
+        run: docker build --build-arg UV_SYNC_ARGS=--no-dev -t billing-backend:ci backend
 
   schema-pglite:
     name: schema.sql checks (PGlite)

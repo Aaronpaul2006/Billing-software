@@ -1,0 +1,123 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>{{ title }} {{ doc.doc_number|default:"DRAFT" }}</title>
+<style>
+  @page { size: A4; margin: 14mm 12mm 16mm; @bottom-right { content: "Page " counter(page) " of " counter(pages); font-size: 8pt; color: #666; } }
+  * { box-sizing: border-box; }
+  body { font-family: "DejaVu Sans", "Noto Sans", sans-serif; font-size: 9pt; color: #111; }
+  h1 { font-size: 15pt; margin: 0 0 2mm; letter-spacing: .5px; }
+  .muted { color: #555; }
+  .row { display: flex; gap: 6mm; }
+  .box { border: 1px solid #999; padding: 3mm; flex: 1; }
+  .box h3 { margin: 0 0 1.5mm; font-size: 8pt; text-transform: uppercase; color: #555; }
+  table { width: 100%; border-collapse: collapse; margin-top: 4mm; }
+  th, td { border: 1px solid #999; padding: 1.5mm 2mm; vertical-align: top; }
+  th { background: #eee; font-size: 8pt; text-align: left; }
+  .num { text-align: right; white-space: nowrap; }
+  .totals { width: 55%; margin-left: auto; }
+  .totals td:first-child { color: #333; }
+  .grand td { font-weight: bold; font-size: 10pt; }
+  .words { margin-top: 3mm; font-style: italic; }
+  .sign { margin-top: 14mm; text-align: right; }
+  .watermark { position: fixed; top: 38%; left: 8%; font-size: 90pt; color: rgba(200, 0, 0, .12); transform: rotate(-30deg); font-weight: bold; }
+</style>
+</head>
+<body>
+{% if is_draft %}<div class="watermark">DRAFT</div>{% elif is_cancelled %}<div class="watermark">CANCELLED</div>{% endif %}
+
+<div class="row">
+  <div style="flex: 2">
+    <h1>{{ title }}</h1>
+    <div><strong>{{ supplier.legal_name }}</strong>{% if supplier.trade_name %} ({{ supplier.trade_name }}){% endif %}</div>
+    {% with a=supplier.address %}<div class="muted">{{ a.line1 }}{% if a.line2 %}, {{ a.line2 }}{% endif %}{% if a.city %}, {{ a.city }}{% endif %}{% if a.pincode %} - {{ a.pincode }}{% endif %}</div>{% endwith %}
+    {% if supplier.gstin %}<div>GSTIN: <strong>{{ supplier.gstin }}</strong></div>{% endif %}
+    <div>State: {{ supplier_state }}</div>
+    {% if supplier.pan %}<div>PAN: {{ supplier.pan }}</div>{% endif %}
+  </div>
+  <div class="box">
+    <div>No.: <strong>{{ doc.doc_number|default:"(draft)" }}</strong></div>
+    <div>Date: {{ doc.doc_date|date:"d-m-Y" }}</div>
+    {% if doc.due_date %}<div>Due: {{ doc.due_date|date:"d-m-Y" }}</div>{% endif %}
+    {% if doc.valid_until %}<div>Valid until: {{ doc.valid_until|date:"d-m-Y" }}</div>{% endif %}
+    <div>Place of supply: {{ place_of_supply }}</div>
+    <div>Reverse charge: {{ doc.reverse_charge|yesno:"Yes,No" }}</div>
+    {% if original %}<div>Against: {{ original.doc_number }} dated {{ original.doc_date|date:"d-m-Y" }}</div>{% endif %}
+  </div>
+</div>
+
+<div class="row" style="margin-top: 4mm">
+  <div class="box">
+    <h3>Bill to</h3>
+    <div><strong>{{ party.legal_name|default:party.display_name }}</strong></div>
+    {% with a=party.billing_address %}{% if a %}<div class="muted">{{ a.line1 }}{% if a.line2 %}, {{ a.line2 }}{% endif %}{% if a.city %}, {{ a.city }}{% endif %}{% if a.pincode %} - {{ a.pincode }}{% endif %}</div>{% endif %}{% endwith %}
+    {% if party.gstin %}<div>GSTIN: <strong>{{ party.gstin }}</strong></div>{% endif %}
+    {% if party_state %}<div>State: {{ party_state }}</div>{% endif %}
+  </div>
+  {% if project %}
+  <div class="box">
+    <h3>Project / site</h3>
+    <div><strong>{{ project.code }}</strong> {{ project.name }}</div>
+    {% with a=project.site_address %}{% if a %}<div class="muted">{{ a.line1 }}{% if a.city %}, {{ a.city }}{% endif %}{% if a.pincode %} - {{ a.pincode }}{% endif %}</div>{% endif %}{% endwith %}
+  </div>
+  {% endif %}
+</div>
+
+<table>
+  <thead>
+    <tr>
+      <th>#</th><th>Description</th><th>HSN/SAC</th><th class="num">Qty</th><th>Unit</th>
+      <th class="num">Rate</th><th class="num">Discount</th><th class="num">Taxable</th><th class="num">GST %</th><th class="num">Amount</th>
+    </tr>
+  </thead>
+  <tbody>
+  {% for ln in lines %}
+    <tr>
+      <td>{{ ln.no }}</td><td>{{ ln.description }}</td><td>{{ ln.sac_hsn }}</td>
+      <td class="num">{{ ln.quantity }}</td><td>{{ ln.unit }}</td><td class="num">{{ ln.rate }}</td>
+      <td class="num">{{ ln.discount }}</td><td class="num">{{ ln.taxable }}</td>
+      <td class="num">{{ ln.gst_rate }}</td><td class="num">{{ ln.total }}</td>
+    </tr>
+  {% endfor %}
+  </tbody>
+</table>
+
+{% if tax_summary %}
+<table style="width: 70%">
+  <thead>
+    <tr><th class="num">GST %</th><th class="num">Taxable value</th>
+    {% if intra_state %}<th class="num">CGST</th><th class="num">SGST</th>{% else %}<th class="num">IGST</th>{% endif %}</tr>
+  </thead>
+  <tbody>
+  {% for t in tax_summary %}
+    <tr><td class="num">{{ t.rate }}</td><td class="num">{{ t.taxable }}</td>
+    {% if intra_state %}<td class="num">{{ t.cgst }}</td><td class="num">{{ t.sgst }}</td>{% else %}<td class="num">{{ t.igst }}</td>{% endif %}</tr>
+  {% endfor %}
+  </tbody>
+</table>
+{% endif %}
+
+<table class="totals">
+  <tr><td>Taxable value</td><td class="num">{{ totals.subtotal }}</td></tr>
+  {% if intra_state %}
+  <tr><td>CGST</td><td class="num">{{ totals.cgst }}</td></tr>
+  <tr><td>SGST</td><td class="num">{{ totals.sgst }}</td></tr>
+  {% else %}
+  <tr><td>IGST</td><td class="num">{{ totals.igst }}</td></tr>
+  {% endif %}
+  {% if totals.cess %}<tr><td>Cess</td><td class="num">{{ totals.cess }}</td></tr>{% endif %}
+  {% if totals.round_off %}<tr><td>Round off</td><td class="num">{{ totals.round_off }}</td></tr>{% endif %}
+  <tr class="grand"><td>Total (₹)</td><td class="num">{{ totals.grand_total }}</td></tr>
+  {% for label, value in deductions %}<tr><td>Less: {{ label }}</td><td class="num">{{ value }}</td></tr>{% endfor %}
+  {% if deductions %}<tr class="grand"><td>Net receivable (₹)</td><td class="num">{{ totals.net_receivable }}</td></tr>{% endif %}
+</table>
+
+<div class="words">{{ grand_total_words }}</div>
+{% if net_words %}<div class="words">Net receivable: {{ net_words }}</div>{% endif %}
+{% if doc.notes %}<p><strong>Notes:</strong> {{ doc.notes|linebreaksbr }}</p>{% endif %}
+{% if doc.terms %}<p><strong>Terms:</strong> {{ doc.terms|linebreaksbr }}</p>{% endif %}
+
+<div class="sign">For <strong>{{ supplier.legal_name }}</strong><br><br><br>Authorised signatory</div>
+</body>
+</html>

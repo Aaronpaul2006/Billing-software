@@ -189,7 +189,7 @@ Implemented (Phase 0.5) as of 2026-10-19:
 | `POST /documents/{id}/accept` · `/decline` | Quotations only | issue |
 | `POST /documents/{id}/convert` | `{to: "TAX_INVOICE"}` → new draft copied from a quotation/proforma | drafts |
 | `POST /documents/{id}/credit-notes` · `/debit-notes` | New draft note referencing this invoice | drafts |
-| `GET /documents/{id}/pdf` | 302 to a short-lived presigned URL (generated async after issue; drafts render a "DRAFT" watermark on demand) | read |
+| `GET /documents/{id}/pdf` | 302 to a 5-minute presigned URL (rendered by the Celery worker after issue; `202` + `Retry-After` while it is being made; drafts are rendered on demand with a "DRAFT" watermark and never stored) | read |
 | `POST /documents/{id}/send` | Email the PDF to the party (queued) | issue |
 | `POST /documents:preview-totals` | Run the tax engine on an unsaved payload (live totals while typing) | drafts |
 

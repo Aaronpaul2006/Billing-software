@@ -47,4 +47,5 @@ urlpatterns = [
         views.DebitNoteView.as_view(),
         name="document-debit-notes",
     ),
+    path("documents/<uuid:document_id>/pdf", views.DocumentPdfView.as_view(), name="document-pdf"),
 ]
