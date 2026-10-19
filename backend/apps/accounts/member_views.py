@@ -9,6 +9,7 @@ from rest_framework.request import Request
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
+from apps.core.api import principal_of
 from apps.core.permissions import HasAction, MfaSatisfied
 
 from . import members
@@ -20,7 +21,6 @@ from .serializers import (
     MemberSerializer,
     TenantSummarySerializer,
 )
-from .views import principal_of
 
 MANAGE_MEMBERS = (IsAuthenticated, MfaSatisfied, HasAction("members.manage"))
 

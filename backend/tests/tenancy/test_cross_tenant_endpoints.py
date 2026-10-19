@@ -17,6 +17,7 @@ from rest_framework.test import APIClient
 
 from apps.accounts.models import Membership
 from apps.core.tenancy import tenant_context
+from apps.tenants.models import DocumentSeries, GstRegistration
 from tests.factories import Member, TenantFixture, add_member, make_tenant, make_user, owner_member
 
 pytestmark = pytest.mark.django_db
@@ -44,6 +45,7 @@ class World:
     a_owner: Member
     a_member: Member
     a_invitation: uuid.UUID
+    a_series: uuid.UUID
     b: TenantFixture
     b_owner: Member
 
@@ -65,12 +67,19 @@ def world() -> World:
         invitation = Membership.objects.create(
             tenant_id=a.tenant_id, user=invitee, role="VIEWER", status="INVITED"
         )
+        series = DocumentSeries.objects.create(
+            gst_registration_id=a.registration_id,
+            doc_type="TAX_INVOICE",
+            fy_start_year=2026,
+            prefix="A/",
+        )
     return World(
         api=APIClient(),
         a=a,
         a_owner=owner_member(a),
         a_member=add_member(a, "ACCOUNTANT"),
         a_invitation=invitation.pk,
+        a_series=series.pk,
         b=b,
         b_owner=owner_member(b),
     )
@@ -110,7 +119,34 @@ def attack_invitation(action: str) -> Callable[[World], None]:
     return attack
 
 
+def _registration_name(w: World) -> str:
+    with tenant_context(w.a.tenant_id, w.a.user_id):
+        return str(GstRegistration.objects.get(pk=w.a.registration_id).legal_name)
+
+
+def attack_gst_registration_detail(w: World) -> None:
+    url = f"/api/v1/gst-registrations/{w.a.registration_id}"
+    before = _registration_name(w)
+    assert w.api.get(url, **w.as_b()).status_code == 404
+    patched = w.api.patch(
+        url, {"legal_name": "hijacked"}, format="json", HTTP_IF_MATCH='"v1"', **w.as_b()
+    )
+    assert patched.status_code == 404
+    assert _registration_name(w) == before
+
+
+def attack_document_series_detail(w: World) -> None:
+    url = f"/api/v1/document-series/{w.a_series}"
+    assert w.api.get(url, **w.as_b()).status_code == 404
+    patched = w.api.patch(url, {"next_number": 99}, format="json", HTTP_IF_MATCH='"v1"', **w.as_b())
+    assert patched.status_code == 404
+    with tenant_context(w.a.tenant_id, w.a.user_id):
+        assert DocumentSeries.objects.get(pk=w.a_series).next_number == 1
+
+
 OBJECT_ROUTES: dict[str, Callable[[World], None]] = {
+    "gst-registration-detail": attack_gst_registration_detail,
+    "document-series-detail": attack_document_series_detail,
     "auth-session-detail": attack_session_detail,
     "member-detail": attack_member_detail,
     "invitation-accept": attack_invitation("accept"),
@@ -136,7 +172,38 @@ def list_invitations(w: World) -> None:
     assert w.api.get("/api/v1/invitations", **w.as_b()).json()["results"] == []
 
 
+def read_tenant(w: World) -> None:
+    assert w.api.get("/api/v1/tenant", **w.as_b()).json()["id"] == str(w.b.tenant_id)
+
+
+def list_gst_registrations(w: World) -> None:
+    rows = w.api.get("/api/v1/gst-registrations", **w.as_b()).json()["results"]
+    assert {r["id"] for r in rows} == {str(w.b.registration_id)}
+
+
+def list_and_create_document_series(w: World) -> None:
+    rows = w.api.get("/api/v1/document-series", **w.as_b()).json()["results"]
+    assert str(w.a_series) not in {r["id"] for r in rows}
+    # a series on tenant A's registration: refused as if it did not exist
+    smuggled = w.api.post(
+        "/api/v1/document-series",
+        {
+            "gst_registration_id": str(w.a.registration_id),
+            "doc_type": "QUOTATION",
+            "fy_start_year": 2026,
+            "prefix": "X/",
+        },
+        format="json",
+        **w.as_b(),
+    )
+    assert smuggled.status_code == 422
+    assert smuggled.json()["errors"][0]["code"] == "not_found"
+
+
 COLLECTION_ROUTES: dict[str, Callable[[World], None]] = {
+    "tenant": read_tenant,
+    "gst-registrations": list_gst_registrations,
+    "document-series": list_and_create_document_series,
     "members": list_members,
     "auth-sessions": list_sessions,
     "invitations": list_invitations,

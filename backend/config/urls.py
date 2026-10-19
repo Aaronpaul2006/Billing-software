@@ -9,6 +9,7 @@ urlpatterns: list[URLPattern | URLResolver] = [
     path("readyz", core_views.readyz, name="readyz"),
     path("api/v1/schema/", SpectacularAPIView.as_view(), name="schema"),
     path("api/v1/", include("apps.accounts.urls")),
+    path("api/v1/", include("apps.tenants.urls")),
 ]
 
 if settings.DEBUG:

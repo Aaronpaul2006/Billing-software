@@ -42,10 +42,15 @@ def make_tenant(name: str = "Acme Builders", state_code: str = "32") -> TenantFi
         registration = GstRegistration.objects.create(
             tenant_id=tenant_id,
             registration_type=GstRegistration.RegistrationType.REGULAR,
-            gstin=f"{state_code}ABCDE1234F1Z5",
+            gstin=gstin(state_code, entity="9"),
             state_code=state_code,
             legal_name=name,
-            address={"line1": "1 Main Road"},
+            address={
+                "line1": "1 Main Road",
+                "city": "Kochi",
+                "state_code": state_code,
+                "pincode": "682016",
+            },
             is_default=True,
         )
     return TenantFixture(tenant_id=tenant_id, user_id=user.id, registration_id=registration.id)
@@ -103,3 +108,24 @@ def owner_member(t: TenantFixture) -> Member:
         client=ClientInfo(),
     )
     return Member(t.user_id, membership.id, tokens.access_token, tokens.refresh_token)
+
+
+def gstin(state: str = "32", pan: str = "AAACA1234A", entity: str = "1") -> str:
+    """A GSTIN with a correct check digit (apps.core.india)."""
+    from apps.core.india import gstin_check_char
+
+    first14 = f"{state}{pan}{entity}Z"
+    return first14 + gstin_check_char(first14)
+
+
+def session_for(tenant_id: uuid.UUID, user_id: uuid.UUID, role: str = "OWNER") -> str:
+    """An access token for an existing member (amr includes otp)."""
+    from apps.accounts.services import ClientInfo, _start_session
+
+    return _start_session(
+        user_id=user_id,
+        tenant_id=tenant_id,
+        role=role,
+        amr=frozenset({"pwd", "otp"}),
+        client=ClientInfo(),
+    ).access_token

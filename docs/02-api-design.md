@@ -153,11 +153,11 @@ Implemented (Phase 0.5) as of 2026-10-19:
 
 | Method & path | Purpose |
 |---|---|
-| `GET /tenant` · `PATCH /tenant` | Current business profile |
+| `GET /tenant` · `PATCH /tenant` | Current business profile (`legal_name`, `trade_name`, `pan`, `timezone`); PATCH needs `If-Match`. A PAN that differs from the business's GSTINs → `422 pan_mismatch` |
 | `GET/POST /members` · `PATCH/DELETE /members/{id}` | Invite by email, change role, revoke. `POST {email, role}` invites an existing account (status INVITED; `422 no_account`, `409 already_member` / `already_invited`; a removed member can be invited again). `PATCH {role}`, `DELETE` (→ REVOKED, idempotent). Errors: `403 permission_denied`, `owner_protected`, `cannot_modify_self`; `409 last_owner`, `member_revoked`; `404` for other tenants' members |
 | `GET /invitations` · `POST /invitations/{id}/accept` · `POST /invitations/{id}/decline` | Any signed-in user: their own pending invitations (business name, role, inviter). Accept → ACTIVE (then `switch-tenant`); decline → REVOKED. Someone else's or an already answered invitation → `404` |
-| `GET/POST /gst-registrations` · `GET/PATCH /gst-registrations/{id}` | Our GSTINs (one per state) |
-| `GET/POST /document-series` · `PATCH /document-series/{id}` | Number series per registration, doc type and FY. `next_number` can be changed only when nothing has been issued from the series yet. |
+| `GET/POST /gst-registrations` · `GET/PATCH /gst-registrations/{id}` | Our GSTINs. GSTIN validated incl. check digit (`invalid_gstin`), state taken from it, address must be in that state, GSTIN must carry the business PAN (`pan_mismatch`), unique (`gstin_taken`). GSTIN / type / state cannot change. Exactly one default (`409 default_required`) |
+| `GET/POST /document-series` · `GET/PATCH /document-series/{id}` | Number series per registration, doc type and FY (`?doc_type=A,B&gst_registration_id=&fy_start_year=&is_active=`). One active series per registration/type/year (`409 active_series_exists`). Once anything was issued, `prefix`, `pad_width` and `next_number` are locked (`409 series_in_use`). Non-REGULAR registrations cannot hold TAX_INVOICE / CREDIT_NOTE / DEBIT_NOTE series (`422 doc_type_not_allowed`). Responses include `next_doc_number` |
 | `GET /audit-log?table=documents&row_id=...` | Change history (OWNER/ADMIN) |
 
 ---

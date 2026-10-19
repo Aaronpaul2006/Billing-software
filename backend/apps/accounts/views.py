@@ -5,12 +5,12 @@ from typing import Any
 
 from django.conf import settings
 from drf_spectacular.utils import PolymorphicProxySerializer, extend_schema
-from rest_framework.exceptions import NotAuthenticated
 from rest_framework.permissions import AllowAny, IsAuthenticated
 from rest_framework.request import Request
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
+from apps.core.api import principal_of
 from apps.core.permissions import MFA_REQUIRED_ROLES
 from apps.core.tenancy import Principal, user_context
 
@@ -49,12 +49,6 @@ def _client(request: Request, data: dict[str, Any] | None = None) -> ClientInfo:
         user_agent=meta.get("HTTP_USER_AGENT") or None,
         device_label=(data or {}).get("device_label") or None,
     )
-
-
-def principal_of(request: Request) -> Principal:
-    if not isinstance(request.auth, Principal):  # views using this require authentication
-        raise NotAuthenticated
-    return request.auth
 
 
 def _tokens_response(tokens: SessionTokens, client: str, status: int = 200) -> Response:

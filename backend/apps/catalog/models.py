@@ -27,6 +27,7 @@ class CatalogItem(TenantScoped):
     default_rate = models.DecimalField(max_digits=14, decimal_places=2, null=True)
     gst_rate = models.DecimalField(max_digits=5, decimal_places=2, default=18, db_default=18)
     is_active = models.BooleanField(default=True, db_default=True)
+    version = models.IntegerField(default=1, db_default=1)
     created_at = created_at()
     updated_at = updated_at()
 

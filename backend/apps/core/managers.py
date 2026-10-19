@@ -19,9 +19,23 @@ from django.db import models
 from .tenancy import TenantContextError, current_tenant_id
 
 
+class CurrentTenantId(models.Expression):
+    """The active tenant id, read when the query is compiled to SQL.
+
+    Building or inspecting a queryset needs no context (django-filter and
+    drf-spectacular do that at import / schema time); *running* one without
+    a tenant context raises TenantContextError.
+    """
+
+    output_field = models.UUIDField()
+
+    def as_sql(self, compiler: Any, connection: Any) -> tuple[str, list[Any]]:
+        return "%s", [current_tenant_id()]
+
+
 class TenantManager(models.Manager[Any]):
     def get_queryset(self) -> models.QuerySet[Any]:
-        return super().get_queryset().filter(tenant_id=current_tenant_id())
+        return super().get_queryset().filter(tenant_id=CurrentTenantId())
 
 
 class TenantScoped(models.Model):

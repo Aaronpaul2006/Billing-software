@@ -89,6 +89,7 @@ dev = [
     { name = "pytest" },
     { name = "pytest-django" },
     { name = "ruff" },
+    { name = "types-django-filter" },
 ]
 
 [package.metadata]
@@ -113,6 +114,7 @@ dev = [
     { name = "pytest", specifier = ">=9.1" },
     { name = "pytest-django", specifier = ">=4.14" },
     { name = "ruff", specifier = ">=0.17" },
+    { name = "types-django-filter", specifier = ">=26.1.0.20260713" },
 ]
 
 [[package]]
@@ -1072,6 +1074,18 @@ source = { registry = "https://pypi.org/simple" }
 sdist = { url = "https://files.pythonhosted.org/packages/19/75/241269d1da26b624c0d5e110e8149093c759b7a286138f4efd61a60e75fe/tomli_w-1.2.0.tar.gz", hash = "sha256:2dd14fac5a47c27be9cd4c976af5a12d87fb1f0b4512f81d69cce3b35ae25021", size = 7184, upload-time = "2025-01-15T12:07:24.262Z" }
 wheels = [
     { url = "https://files.pythonhosted.org/packages/c7/18/c86eb8e0202e32dd3df50d43d7ff9854f8e0603945ff398974c1d91ac1ef/tomli_w-1.2.0-py3-none-any.whl", hash = "sha256:188306098d013b691fcadc011abd66727d3c414c571bb01b1a174ba8c983cf90", size = 6675, upload-time = "2025-01-15T12:07:22.074Z" },
+]
+
+[[package]]
+name = "types-django-filter"
+version = "26.1.0.20260713"
+source = { registry = "https://pypi.org/simple" }
+dependencies = [
+    { name = "django-stubs" },
+]
+sdist = { url = "https://files.pythonhosted.org/packages/fb/e0/33494d52df6f2d92da2aa41f82863baa5e2b4d284a8322002c89d11f1224/types_django_filter-26.1.0.20260713.tar.gz", hash = "sha256:f295ab0aea679fa8d183a832a4c02748f06f074a43b26ca25d167f7e775a3e26", size = 15887, upload-time = "2026-07-13T05:22:28.574Z" }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/fd/2b/383104be3c85aafe8695f3637b832e12509424f9bee199ea2609a0d82000/types_django_filter-26.1.0.20260713-py3-none-any.whl", hash = "sha256:a32e6f84685ca67ea7f7ce64e9d74d13d712857d4702e8d218e6570ab34d418a", size = 19332, upload-time = "2026-07-13T05:22:27.679Z" },
 ]
 
 [[package]]

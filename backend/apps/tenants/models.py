@@ -50,6 +50,7 @@ class Tenant(models.Model):
     )
     plan = models.TextField(default="FREE", db_default="FREE")
     timezone = models.TextField(default="Asia/Kolkata", db_default="Asia/Kolkata")
+    version = models.IntegerField(default=1, db_default=1)
     created_at = created_at()
     updated_at = updated_at()
 
@@ -85,6 +86,7 @@ class GstRegistration(TenantScoped):
     address = models.JSONField()
     is_default = models.BooleanField(default=False, db_default=False)
     is_active = models.BooleanField(default=True, db_default=True)
+    version = models.IntegerField(default=1, db_default=1)
     created_at = created_at()
     updated_at = updated_at()
 
@@ -137,6 +139,7 @@ class DocumentSeries(TenantScoped):
     next_number = models.IntegerField(default=1, db_default=1)
     pad_width = models.SmallIntegerField(default=4, db_default=4)
     is_active = models.BooleanField(default=True, db_default=True)
+    version = models.IntegerField(default=1, db_default=1)
     created_at = created_at()
     updated_at = updated_at()
 
@@ -154,6 +157,12 @@ class DocumentSeries(TenantScoped):
             models.UniqueConstraint(
                 fields=["tenant", "gst_registration", "doc_type", "fy_start_year", "prefix"],
                 name="document_series_unique_per_fy",
+            ),
+            # Issuing picks "the" active series for a registration, type and year.
+            models.UniqueConstraint(
+                fields=["tenant", "gst_registration", "doc_type", "fy_start_year"],
+                condition=Q(is_active=True),
+                name="document_series_active_uq",
             ),
             # GST: an invoice number is at most 16 characters.
             models.CheckConstraint(

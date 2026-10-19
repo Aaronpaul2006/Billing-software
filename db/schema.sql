@@ -91,6 +91,7 @@ CREATE TABLE tenants (
   status      text NOT NULL DEFAULT 'ACTIVE' CHECK (status IN ('ACTIVE', 'SUSPENDED', 'CLOSED')),
   plan        text NOT NULL DEFAULT 'FREE',
   timezone    text NOT NULL DEFAULT 'Asia/Kolkata',
+  version     integer NOT NULL DEFAULT 1,
   created_at  timestamptz NOT NULL DEFAULT now(),
   updated_at  timestamptz NOT NULL DEFAULT now()
 );
@@ -150,6 +151,7 @@ CREATE TABLE gst_registrations (
   address            jsonb NOT NULL,
   is_default         boolean NOT NULL DEFAULT false,
   is_active          boolean NOT NULL DEFAULT true,
+  version            integer NOT NULL DEFAULT 1,
   created_at         timestamptz NOT NULL DEFAULT now(),
   updated_at         timestamptz NOT NULL DEFAULT now(),
   UNIQUE (tenant_id, id),
@@ -253,6 +255,7 @@ CREATE TABLE catalog_items (
   default_rate  numeric(14,2) CHECK (default_rate >= 0),
   gst_rate      numeric(5,2) NOT NULL DEFAULT 18 CHECK (gst_rate BETWEEN 0 AND 50),
   is_active     boolean NOT NULL DEFAULT true,
+  version       integer NOT NULL DEFAULT 1,
   created_at    timestamptz NOT NULL DEFAULT now(),
   updated_at    timestamptz NOT NULL DEFAULT now(),
   UNIQUE (tenant_id, id)
@@ -298,6 +301,7 @@ CREATE TABLE document_series (
   next_number          integer NOT NULL DEFAULT 1 CHECK (next_number > 0),
   pad_width            smallint NOT NULL DEFAULT 4 CHECK (pad_width BETWEEN 1 AND 8),
   is_active            boolean NOT NULL DEFAULT true,
+  version              integer NOT NULL DEFAULT 1,
   created_at           timestamptz NOT NULL DEFAULT now(),
   updated_at           timestamptz NOT NULL DEFAULT now(),
   UNIQUE (tenant_id, id),
@@ -305,6 +309,9 @@ CREATE TABLE document_series (
   FOREIGN KEY (tenant_id, gst_registration_id) REFERENCES gst_registrations (tenant_id, id),
   CHECK (char_length(prefix) + pad_width <= 16)          -- GST: invoice number max 16 chars
 );
+-- Issuing picks "the" active series for a registration, type and year.
+CREATE UNIQUE INDEX document_series_active_uq
+  ON document_series (tenant_id, gst_registration_id, doc_type, fy_start_year) WHERE is_active;
 
 CREATE TABLE documents (
   id                       uuid PRIMARY KEY DEFAULT gen_random_uuid(),

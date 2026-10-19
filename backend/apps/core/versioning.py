@@ -47,17 +47,23 @@ def update_versioned(
     queryset: models.QuerySet[Any] | models.Manager[Any],
     pk: Any,
     expected: int,
-    current: Callable[[], dict[str, Any]],
+    current: Callable[[], dict[str, Any]] | None = None,
     **changes: Any,
 ) -> int:
     """UPDATE ... WHERE pk = .. AND version = expected; returns the new version.
 
-    `current` builds the up-to-date representation for the 412 body.
-    Callers check existence first (404 before 412).
+    Callers check existence first (404 before 412). The 412 carries the
+    current representation: built by `current` here, or attached by the view
+    (see `attach_current`), which keeps serializers out of services.
     """
     if "updated_at" not in changes:
         changes["updated_at"] = timezone.now()
     updated = queryset.filter(pk=pk, version=expected).update(version=F("version") + 1, **changes)
     if not updated:
-        raise PreconditionFailed(extra={"current": current()})
+        raise PreconditionFailed(extra={"current": current()} if current else {})
     return expected + 1
+
+
+def attach_current(exc: PreconditionFailed, current: Callable[[], dict[str, Any]]) -> None:
+    """Views: add the up-to-date resource to a 412 raised by a service."""
+    exc.extra.setdefault("current", current())
