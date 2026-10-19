@@ -1,0 +1,105 @@
+# CI: lint, types, tests against real PostgreSQL, dependency audit, migration
+# check, and the PGlite schema checks. A red build must never reach main.
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  backend:
+    name: Backend (ruff, mypy, pytest, pip-audit, migrations)
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    defaults:
+      run:
+        working-directory: backend
+
+    services:
+      postgres:
+        image: postgres:17.11-alpine
+        env:
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: ci-postgres
+          POSTGRES_DB: postgres
+        ports: ["5432:5432"]
+        options: >-
+          --health-cmd "pg_isready -U postgres"
+          --health-interval 5s --health-timeout 5s --health-retries 20
+      redis:
+        image: redis:8.10.2-alpine
+        ports: ["6379:6379"]
+        options: >-
+          --health-cmd "redis-cli ping"
+          --health-interval 5s --health-timeout 5s --health-retries 20
+
+    # CI-only placeholder values; nothing here is a real secret.
+    env:
+      DJANGO_SETTINGS_MODULE: config.settings.test
+      DJANGO_SECRET_KEY: ci-only-insecure-secret-key-not-used-anywhere-else
+      DJANGO_ALLOWED_HOSTS: localhost
+      DATABASE_URL: postgres://billing_app_login:ci-app@127.0.0.1:5432/billing
+      DATABASE_OWNER_URL: postgres://billing_owner:ci-owner@127.0.0.1:5432/billing
+      DATABASE_ADMIN_URL: postgres://postgres:ci-postgres@127.0.0.1:5432/postgres
+      REDIS_URL: redis://127.0.0.1:6379/0
+      JWT_SIGNING_KEY: ci-only-jwt-signing-key-not-a-secret-0123456789
+      MFA_ENCRYPTION_KEY: Y2ktbWZhLWtleS0zMi1ieXRlcy1ub3Qtc2VjcmV0ISE=
+
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+
+      - uses: astral-sh/setup-uv@1c37ad07a6a961277cf70c0d37d6f313000f5884 # v10.3.0
+        with:
+          enable-cache: true
+          cache-dependency-glob: backend/uv.lock
+
+      - name: Install dependencies (exactly as locked)
+        run: uv sync --locked
+
+      - name: Lint (ruff)
+        run: |
+          uv run ruff check . --output-format github
+          uv run ruff format --check .
+
+      - name: Type-check (mypy)
+        run: uv run mypy .
+
+      - name: Database roles (billing_owner, billing_app)
+        run: uv run python scripts/bootstrap_db.py
+
+      - name: Migrations are up to date with the models
+        run: uv run python manage.py makemigrations --check --dry-run
+
+      - name: Migrations apply to a fresh database (as billing_owner)
+        run: uv run python manage.py migrate --database=owner
+
+      - name: Tests (pytest, real PostgreSQL)
+        run: uv run pytest -ra
+
+      - name: Dependency audit (pip-audit)
+        run: uv run pip-audit --progress-spinner off
+
+  schema-pglite:
+    name: schema.sql checks (PGlite)
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    defaults:
+      run:
+        working-directory: db/tests
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: db/tests/package-lock.json
+      - run: npm ci
+      - run: npm test

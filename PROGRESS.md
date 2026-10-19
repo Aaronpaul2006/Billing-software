@@ -4,7 +4,7 @@ Last updated: 2026-10-19
 
 ## Current phase
 
-**Phase 0 — Foundations** (in progress): steps 1–7 of 8 done.
+**Phase 0 — Foundations**: all 8 steps done (2026-10-19). Next: Phase 1 — core billing.
 
 ## Done
 
@@ -24,10 +24,11 @@ Last updated: 2026-10-19
 - [x] Phase 0.6 (part): role/action matrix as data (`apps/core/permissions.py`: `can`, `require`, `HasAction`), tested cell by cell against architecture §3; member management `GET /members`, `PATCH /members/{id}` (role), `DELETE /members/{id}` (revoke) with owner protection, no self-modification, last-owner guard, immediate sign-out on revoke/role change, 404 across tenants. Mutation-checked. 111 tests
 - [x] Phase 0.6 (rest): invitations, invite + accept (owner decision 2026-10-19): `POST /members` invites an existing account (INVITED), `GET /invitations`, `POST /invitations/{id}/accept|decline`. Schema: `tenant_member_read` also covers INVITED; new function `respond_to_invitation()` (schema.sql + migration, sync test passes). 119 tests
 - [x] Phase 0.7: all 32 `db/tests` checks ported to pytest on real Postgres (`tests/db/test_schema_rules.py`, independent tests, raw SQL as the app role), plus concurrency tests with two real connections and overlapping transactions (`tests/db/test_concurrency.py`): series-lock issue is unique and gapless, the unique index catches the unlocked anti-pattern, a failed issue leaves no gap, parallel allocations cannot overpay an invoice or spend a payment twice. Stable over repeated runs. 156 tests
+- [x] Phase 0.8: GitHub Actions CI (`.github/workflows/ci.yml`): backend job with Postgres 17.11 + Redis 8.10 services runs `uv sync --locked`, ruff (lint + format), mypy, role bootstrap, `makemigrations --check`, migrations on a fresh database as `billing_owner`, pytest (all 156 tests incl. concurrency), pip-audit; a second job runs the PGlite `schema.sql` checks. Actions pinned to commit SHAs. Rehearsed locally step by step on a fresh database
 
 ## In progress
 
-- Phase 0.8: GitHub Actions CI (ruff, mypy, pytest with a Postgres service, pip-audit, makemigrations --check).
+- Nothing. Confirm the first CI run on GitHub is green (Actions tab).
 
 ## Next
 
@@ -40,9 +41,12 @@ Phase 0 — Foundations, in order:
 5. ~~Auth~~ (done; see deferred items below)
 6. ~~Memberships and role permissions~~ (done)
 7. ~~Port `db/tests` to pytest + concurrency tests~~ (done)
-8. GitHub Actions CI: lint, type-check, tests, `pip-audit`, `makemigrations --check`
+8. ~~GitHub Actions CI~~ (done)
 
-Then Phase 1 — core billing (parties, projects, documents, tax engine, PDF).
+Then Phase 1 — core billing (parties, projects, documents, tax engine, PDF). Start with:
+tenant profile + GST registrations + number series endpoints, a tenant-aware ORM
+manager (isolation layer 1), idempotency keys, cursor pagination, and the
+cross-tenant test generated from the URL conf (architecture §8).
 Full roadmap: `docs/01-architecture.md` §9.
 
 ## Open questions (for the owner)

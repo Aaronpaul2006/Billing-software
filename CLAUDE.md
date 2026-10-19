@@ -106,6 +106,12 @@ tries IPv6 `::1` first and stalls, while compose publishes on IPv4 only.
 
 ```bash
 
+## CI
+
+`.github/workflows/ci.yml` runs on every push to `main` and every PR: ruff,
+mypy, migrations check + fresh migrate, pytest on real Postgres, pip-audit,
+and the PGlite schema checks. Run the same locally before pushing.
+
 ## Repository
 
 GitHub: https://github.com/Aaronpaul2006/Billing-software
