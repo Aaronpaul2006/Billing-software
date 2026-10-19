@@ -394,7 +394,13 @@ draft-only creation); immutability of issued documents and lines; bill of
 supply cannot carry tax; allocation limits and DB-owned `amount_settled`;
 cancel requires zero settlements; views respect RLS; audit rows written,
 tenant-scoped, unforgeable and append-only; payments cannot be hard-deleted.
-These move into the pytest suite when the Django project is scaffolded.
+Ported to pytest against real PostgreSQL 17 (`backend/tests/db/test_schema_rules.py`,
+one test per check). Concurrency is tested with two real connections and
+overlapping transactions (`backend/tests/db/test_concurrency.py`): parallel issue
+with the series lock gives unique, gapless numbers; without the lock the unique
+index still rejects the duplicate; a failed issue leaves no gap; parallel
+allocations can neither overpay an invoice nor spend a payment twice. The
+PGlite suite in `db/tests` stays as a quick check of `schema.sql` alone.
 
 ---
 

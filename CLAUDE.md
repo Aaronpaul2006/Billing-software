@@ -21,7 +21,7 @@ Original concept: `Project billling software.docx`.
 | `docs/01-architecture.md` | Stack, multi-tenancy, roles, document lifecycle, tax engine, security, roadmap |
 | `docs/02-api-design.md` | REST conventions and endpoint surface |
 | `db/schema.sql` | Source-of-truth data model: tables, RLS, triggers, views, grants |
-| `db/tests/` | Executable checks of the schema (PGlite = real Postgres 17 in WASM) |
+| `db/tests/` | Quick checks of `schema.sql` alone (PGlite = Postgres 17 in WASM, no Docker). The full rule suite runs in pytest: `backend/tests/db/` |
 | `docker-compose.yml` | Local dev services: Postgres 5433, Redis 6380, SeaweedFS (S3) 8333, Mailpit 1025/8025 |
 | `backend/` | Django project: `config/` (settings base/dev/test/prod, urls), `apps/` (one Django app per module), `tests/` |
 | `backend/apps/core/db.py` | Field types / lookups that make models produce exactly `db/schema.sql` |

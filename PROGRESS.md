@@ -4,7 +4,7 @@ Last updated: 2026-10-19
 
 ## Current phase
 
-**Phase 0 — Foundations** (in progress): steps 1–6 of 8 done.
+**Phase 0 — Foundations** (in progress): steps 1–7 of 8 done.
 
 ## Done
 
@@ -23,10 +23,11 @@ Last updated: 2026-10-19
 - [x] Phase 0.5: auth — signup (user + tenant + OWNER), login with generic errors, timing-equalised unknown emails and progressive lockout, Argon2id, JWT access tokens (HS256, 10 min, `kid`), opaque refresh tokens stored as SHA-256 and rotated with reuse detection (row-locked; concurrency-tested), per-request session liveness (instant logout/revoke), web cookie vs mobile body, switch-tenant, sessions list/revoke, TOTP MFA (encrypted secret, replay-proof, 10 hashed one-time recovery codes, OWNER/ADMIN gated until enrolled, cannot disable), `/me`. OpenAPI schema documents every endpoint (generation must be warning-free). Schema change: `users.mfa_recovery_codes`, `users.mfa_last_used_step` (schema.sql + migration). Also fixed: error responses now roll back the request transaction (custom DRF handler lacked `set_rollback`); app role may read `django_migrations` so `runserver` works. 84 tests
 - [x] Phase 0.6 (part): role/action matrix as data (`apps/core/permissions.py`: `can`, `require`, `HasAction`), tested cell by cell against architecture §3; member management `GET /members`, `PATCH /members/{id}` (role), `DELETE /members/{id}` (revoke) with owner protection, no self-modification, last-owner guard, immediate sign-out on revoke/role change, 404 across tenants. Mutation-checked. 111 tests
 - [x] Phase 0.6 (rest): invitations, invite + accept (owner decision 2026-10-19): `POST /members` invites an existing account (INVITED), `GET /invitations`, `POST /invitations/{id}/accept|decline`. Schema: `tenant_member_read` also covers INVITED; new function `respond_to_invitation()` (schema.sql + migration, sync test passes). 119 tests
+- [x] Phase 0.7: all 32 `db/tests` checks ported to pytest on real Postgres (`tests/db/test_schema_rules.py`, independent tests, raw SQL as the app role), plus concurrency tests with two real connections and overlapping transactions (`tests/db/test_concurrency.py`): series-lock issue is unique and gapless, the unique index catches the unlocked anti-pattern, a failed issue leaves no gap, parallel allocations cannot overpay an invoice or spend a payment twice. Stable over repeated runs. 156 tests
 
 ## In progress
 
-- Phase 0.7: port `db/tests` checks to pytest against real Postgres; concurrency tests.
+- Phase 0.8: GitHub Actions CI (ruff, mypy, pytest with a Postgres service, pip-audit, makemigrations --check).
 
 ## Next
 
@@ -38,7 +39,7 @@ Phase 0 — Foundations, in order:
 4. ~~Tenant context middleware + `tenant_context()`~~ (done)
 5. ~~Auth~~ (done; see deferred items below)
 6. ~~Memberships and role permissions~~ (done)
-7. Port `db/tests` checks to pytest against real Postgres; add concurrency tests (parallel issue, parallel allocation)
+7. ~~Port `db/tests` to pytest + concurrency tests~~ (done)
 8. GitHub Actions CI: lint, type-check, tests, `pip-audit`, `makemigrations --check`
 
 Then Phase 1 — core billing (parties, projects, documents, tax engine, PDF).
@@ -67,5 +68,4 @@ Full roadmap: `docs/01-architecture.md` §9.
 - Until JWT lands (step 5), unauthenticated API calls get 403 `permission_denied`; step 5 makes them 401.
 - Compose publishes Postgres on host port **5433** and Redis on **6380**, because native PostgreSQL 17 and Redis Windows services already use 5432 / 6379 on the dev machine.
 
-- Schema was tested on PGlite (single connection), so concurrency behaviour (row locks under parallel requests) still needs testing on real Postgres in Phase 0.
 - Payables (vendor bills, payments to subcontractors) are deferred; expenses track their own payment for now.
