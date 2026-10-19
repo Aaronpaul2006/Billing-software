@@ -8,9 +8,7 @@ from drf_spectacular.utils import extend_schema
 from rest_framework.request import Request
 from rest_framework.response import Response
 
-from apps.core.api import ActionAPIView
-from apps.core.errors import PreconditionFailed
-from apps.core.versioning import attach_current, expected_version, with_etag
+from apps.core.api import ActionAPIView, detail_response, list_response, versioned_patch
 
 from . import services
 from .models import DocumentSeries, GstRegistration
@@ -28,38 +26,24 @@ from .serializers import (
 SETTINGS = "tenant.settings"
 
 
-def _list(view: ActionAPIView, queryset: Any, serializer: Any) -> Response:
-    page = view.paginate_queryset(view.filter_queryset(queryset))
-    return view.get_paginated_response(serializer(page, many=True).data)
-
-
-# --- business profile ---------------------------------------------------------------
-
-
 class TenantView(ActionAPIView):
     write_action = SETTINGS
 
     @extend_schema(responses={200: TenantSerializer}, tags=["tenant"])
     def get(self, request: Request) -> Response:
-        tenant = services.get_tenant(self.principal)
-        return with_etag(Response(TenantSerializer(tenant).data), tenant.version)
+        return detail_response(services.get_tenant(self.principal), TenantSerializer)
 
     @extend_schema(
         request=TenantUpdateSerializer, responses={200: TenantSerializer}, tags=["tenant"]
     )
     def patch(self, request: Request) -> Response:
-        expected = expected_version(request)
-        data = TenantUpdateSerializer(data=request.data, partial=True)
-        data.is_valid(raise_exception=True)
-        try:
-            tenant = services.update_tenant(self.principal, expected, data.validated_data)
-        except PreconditionFailed as exc:
-            attach_current(exc, lambda: TenantSerializer(services.get_tenant(self.principal)).data)
-            raise
-        return with_etag(Response(TenantSerializer(tenant).data), tenant.version)
-
-
-# --- GST registrations ---------------------------------------------------------------
+        return versioned_patch(
+            request,
+            load=lambda: services.get_tenant(self.principal),
+            input_serializer=TenantUpdateSerializer,
+            update=lambda v, changes: services.update_tenant(self.principal, v, changes),
+            output_serializer=TenantSerializer,
+        )
 
 
 class GstRegistrationListView(ActionAPIView):
@@ -72,7 +56,7 @@ class GstRegistrationListView(ActionAPIView):
 
     @extend_schema(responses={200: GstRegistrationSerializer(many=True)}, tags=["tenant"])
     def get(self, request: Request) -> Response:
-        return _list(self, self.get_queryset(), GstRegistrationSerializer)
+        return list_response(self, self.get_queryset(), GstRegistrationSerializer)
 
     @extend_schema(
         request=GstRegistrationCreateSerializer,
@@ -83,8 +67,7 @@ class GstRegistrationListView(ActionAPIView):
         data = GstRegistrationCreateSerializer(data=request.data)
         data.is_valid(raise_exception=True)
         registration = services.create_registration(self.principal, data.validated_data)
-        body = GstRegistrationSerializer(registration).data
-        return with_etag(Response(body, status=201), registration.version)
+        return detail_response(registration, GstRegistrationSerializer, status=201)
 
 
 class GstRegistrationDetailView(ActionAPIView):
@@ -93,8 +76,7 @@ class GstRegistrationDetailView(ActionAPIView):
     @extend_schema(responses={200: GstRegistrationSerializer}, tags=["tenant"])
     def get(self, request: Request, registration_id: uuid.UUID) -> Response:
         registration = services.get_registration(self.principal, registration_id)
-        body = GstRegistrationSerializer(registration).data
-        return with_etag(Response(body), registration.version)
+        return detail_response(registration, GstRegistrationSerializer)
 
     @extend_schema(
         request=GstRegistrationUpdateSerializer,
@@ -102,31 +84,15 @@ class GstRegistrationDetailView(ActionAPIView):
         tags=["tenant"],
     )
     def patch(self, request: Request, registration_id: uuid.UUID) -> Response:
-        registration = services.get_registration(self.principal, registration_id)
-        expected = expected_version(request)
-        data = GstRegistrationUpdateSerializer(
-            data=request.data, partial=True, context={"registration": registration}
+        return versioned_patch(
+            request,
+            load=lambda: services.get_registration(self.principal, registration_id),
+            input_serializer=GstRegistrationUpdateSerializer,
+            update=lambda v, changes: services.update_registration(
+                self.principal, registration_id, v, changes
+            ),
+            output_serializer=GstRegistrationSerializer,
         )
-        data.is_valid(raise_exception=True)
-        try:
-            registration = services.update_registration(
-                self.principal, registration_id, expected, data.validated_data
-            )
-        except PreconditionFailed as exc:
-            attach_current(
-                exc,
-                lambda: (
-                    GstRegistrationSerializer(
-                        services.get_registration(self.principal, registration_id)
-                    ).data
-                ),
-            )
-            raise
-        body = GstRegistrationSerializer(registration).data
-        return with_etag(Response(body), registration.version)
-
-
-# --- number series -------------------------------------------------------------------
 
 
 class CharInFilter(django_filters.BaseInFilter, django_filters.CharFilter):
@@ -152,7 +118,7 @@ class DocumentSeriesListView(ActionAPIView):
 
     @extend_schema(responses={200: DocumentSeriesSerializer(many=True)}, tags=["tenant"])
     def get(self, request: Request) -> Response:
-        return _list(self, self.get_queryset(), DocumentSeriesSerializer)
+        return list_response(self, self.get_queryset(), DocumentSeriesSerializer)
 
     @extend_schema(
         request=DocumentSeriesCreateSerializer,
@@ -163,9 +129,7 @@ class DocumentSeriesListView(ActionAPIView):
         data = DocumentSeriesCreateSerializer(data=request.data)
         data.is_valid(raise_exception=True)
         series = services.create_series(self.principal, data.validated_data)
-        return with_etag(
-            Response(DocumentSeriesSerializer(series).data, status=201), series.version
-        )
+        return detail_response(series, DocumentSeriesSerializer, status=201)
 
 
 class DocumentSeriesDetailView(ActionAPIView):
@@ -174,7 +138,7 @@ class DocumentSeriesDetailView(ActionAPIView):
     @extend_schema(responses={200: DocumentSeriesSerializer}, tags=["tenant"])
     def get(self, request: Request, series_id: uuid.UUID) -> Response:
         series = services.get_series(self.principal, series_id)
-        return with_etag(Response(DocumentSeriesSerializer(series).data), series.version)
+        return detail_response(series, DocumentSeriesSerializer)
 
     @extend_schema(
         request=DocumentSeriesUpdateSerializer,
@@ -182,20 +146,10 @@ class DocumentSeriesDetailView(ActionAPIView):
         tags=["tenant"],
     )
     def patch(self, request: Request, series_id: uuid.UUID) -> Response:
-        services.get_series(self.principal, series_id)  # 404 before 428/412
-        expected = expected_version(request)
-        data = DocumentSeriesUpdateSerializer(data=request.data, partial=True)
-        data.is_valid(raise_exception=True)
-        try:
-            series = services.update_series(
-                self.principal, series_id, expected, data.validated_data
-            )
-        except PreconditionFailed as exc:
-            attach_current(
-                exc,
-                lambda: (
-                    DocumentSeriesSerializer(services.get_series(self.principal, series_id)).data
-                ),
-            )
-            raise
-        return with_etag(Response(DocumentSeriesSerializer(series).data), series.version)
+        return versioned_patch(
+            request,
+            load=lambda: services.get_series(self.principal, series_id),
+            input_serializer=DocumentSeriesUpdateSerializer,
+            update=lambda v, changes: services.update_series(self.principal, series_id, v, changes),
+            output_serializer=DocumentSeriesSerializer,
+        )

@@ -4,7 +4,7 @@ Last updated: 2026-10-19
 
 ## Current phase
 
-**Phase 1 — Core billing** (in progress): steps 1.1–1.2 of 7 done. Phase 0 (Foundations) complete.
+**Phase 1 — Core billing** (in progress): steps 1.1–1.3 of 7 done. Phase 0 (Foundations) complete.
 
 ## Done
 
@@ -27,10 +27,11 @@ Last updated: 2026-10-19
 - [x] Phase 0.8: GitHub Actions CI (`.github/workflows/ci.yml`): backend job with Postgres 17.11 + Redis 8.10 services runs `uv sync --locked`, ruff (lint + format), mypy, role bootstrap, `makemigrations --check`, migrations on a fresh database as `billing_owner`, pytest (all 156 tests incl. concurrency), pip-audit; a second job runs the PGlite `schema.sql` checks. Actions pinned to commit SHAs. Rehearsed locally step by step on a fresh database
 - [x] Phase 1.1: API building blocks — tenant-aware manager `TenantScoped` on the 13 business tables (isolation layer 1: `objects` raises without a tenant context, `save()` refuses another tenant), cursor pagination `{results, next_cursor}` (limit ≤ 100), django-filter + allow-listed ordering, `MoneyField`/`QuantityField`/`PercentField` (reject JSON numbers), optimistic locking (`ETag`, `If-Match` 428/412 with `current`, compare-and-set `update_versioned`), `@idempotent` POSTs (replay, 422 on reuse, 428 if missing, nothing stored on failure, concurrent duplicates run once), cross-tenant test generated from the URL conf (unregistered routes fail). Mutation-checked. 183 tests
 - [x] Phase 1.2: `GET/PATCH /tenant`, `/gst-registrations` (GSTIN with check digit, PAN consistency, state/address rules, one default, immutable identity), `/document-series` (one active per registration/type/FY, locked once used, doc type vs registration type, `next_doc_number`), all with ETag/If-Match; `apps/core/india.py` (state codes, GSTIN, PAN, PIN). Schema: `version` on tenants / gst_registrations / document_series / catalog_items, unique active series index (schema.sql + migrations). The tenant manager's filter is now a lazy expression (django-filter and drf-spectacular build querysets without a tenant). 224 tests
+- [x] Phase 1.3: `/parties` (GST treatment ↔ GSTIN rules, state/PAN from GSTIN, merged-PATCH validation, `q` search, archive not delete), `/projects` (unique code, client must be a customer, active registration, site address in site state, client/registration/site state locked once documents exist), `/projects/{id}/boq-items` + `/boq-items/{id}` (unique item code, GST ≤ 50 %, delete only if never billed), `/catalog-items` (delete only if unused). Shared `versioned_patch` / `detail_response` / `get_or_404` helpers; all routes in the cross-tenant registry. BOQ CSV/XLSX import deferred. 253 tests
 
 ## In progress
 
-- Phase 1.3: parties (GSTIN checksum), projects, BOQ items, catalog.
+- Phase 1.4: tax engine (pure Python, table-driven + property tests).
 
 ## Next
 
@@ -49,7 +50,7 @@ Phase 1 — core billing:
 
 1. ~~API building blocks~~ (done)
 2. ~~Business profile, GST registrations, number series~~ (done)
-3. Parties (GSTIN checksum), projects, BOQ items, catalog
+3. ~~Parties, projects, BOQ items, catalog~~ (done)
 4. Tax engine (pure Python, table-driven + property tests)
 5. Draft documents with lines, server-computed totals, `preview-totals`
 6. Issue / cancel / accept / decline / convert; gapless numbering, snapshots

@@ -181,6 +181,8 @@ SPECTACULAR_SETTINGS = {
     "OAS_VERSION": "3.1.0",
     "SERVE_INCLUDE_SCHEMA": False,
     "SCHEMA_PATH_PREFIX": "/api/v1",
+    # one named enum for the GST state codes used by several resources
+    "ENUM_NAME_OVERRIDES": {"StateCodeEnum": "apps.core.serializers.STATE_CHOICES"},
     # The schema is public only in dev (see dev.py).
     "SERVE_PERMISSIONS": ["rest_framework.permissions.IsAuthenticated"],
 }

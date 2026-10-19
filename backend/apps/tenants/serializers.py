@@ -3,39 +3,14 @@ from zoneinfo import available_timezones
 
 from rest_framework import serializers
 
-from apps.core.india import STATE_CODES, gstin_problem, is_valid_pan, is_valid_pincode
+from apps.core.india import STATE_CODES, gstin_problem, is_valid_pan
+from apps.core.serializers import STATE_CHOICES, AddressOutSerializer, AddressSerializer
 
 from .models import DocType, DocumentSeries, GstRegistration, Tenant
-
-STATE_CHOICES = sorted(STATE_CODES)
 
 
 def _upper(value: str | None) -> str | None:
     return value.strip().upper() if isinstance(value, str) else value
-
-
-class AddressSerializer(serializers.Serializer[Any]):
-    line1 = serializers.CharField(max_length=200)
-    line2 = serializers.CharField(max_length=200, required=False, allow_blank=True)
-    city = serializers.CharField(max_length=100)
-    district = serializers.CharField(max_length=100, required=False, allow_blank=True)
-    state_code = serializers.ChoiceField(choices=STATE_CHOICES)
-    pincode = serializers.CharField(max_length=6)
-
-    def validate_pincode(self, value: str) -> str:
-        if not is_valid_pincode(value):
-            raise serializers.ValidationError("A PIN code has 6 digits.", code="invalid_pincode")
-        return value
-
-
-class AddressOutSerializer(AddressSerializer):
-    """For responses: a stored address with missing keys (seeded or imported
-    data) is shown as it is instead of failing the whole response."""
-
-    def __init__(self, *args: Any, **kwargs: Any) -> None:
-        super().__init__(*args, **kwargs)
-        for field in self.fields.values():
-            field.required = False
 
 
 # --- business profile ---------------------------------------------------------------
@@ -155,7 +130,7 @@ class GstRegistrationUpdateSerializer(serializers.Serializer[Any]):
     is_active = serializers.BooleanField()
 
     def validate_address(self, value: dict[str, Any]) -> dict[str, Any]:
-        registration: GstRegistration = self.context["registration"]
+        registration: GstRegistration = self.context["instance"]
         if value["state_code"] != registration.state_code:
             raise serializers.ValidationError(
                 {"state_code": "The address must be in the registration's state."},

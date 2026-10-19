@@ -57,7 +57,7 @@ ignore = [
 ]
 
 [tool.ruff.lint.per-file-ignores]
-"tests/**" = ["S101", "S105", "S106", "S603"]  # asserts, fake passwords, fixed-argv subprocess
+"tests/**" = ["S101", "S105", "S106", "S603", "E501"]  # asserts, fake passwords, subprocess, long data lines
 "config/settings/*.py" = ["F405", "F403"]  # star import of base settings
 "apps/*/models.py" = ["RUF012"]  # Django's Meta.constraints / indexes lists
 

@@ -249,3 +249,109 @@ def test_object_route_rejects_other_tenant(world: World, name: str) -> None:
 @pytest.mark.parametrize("name", sorted(COLLECTION_ROUTES))
 def test_collection_route_hides_other_tenant(world: World, name: str) -> None:
     COLLECTION_ROUTES[name](world)
+
+
+# --- Phase 1.3 master data -------------------------------------------------------------
+
+
+@pytest.fixture
+def masters(world: World) -> dict[str, str]:
+    """One party, project, BOQ item and catalog item in tenant A."""
+    from apps.catalog.models import CatalogItem
+    from apps.parties.models import Party
+    from apps.projects.models import BoqItem, Project
+
+    a = world.a
+    with tenant_context(a.tenant_id, a.user_id):
+        party = Party.objects.create(
+            display_name="A client", gst_treatment="UNREGISTERED", created_by_id=a.user_id
+        )
+        project = Project.objects.create(
+            code="A1",
+            name="A site",
+            client_party=party,
+            gst_registration_id=a.registration_id,
+            site_state_code="32",
+            created_by_id=a.user_id,
+        )
+        boq = BoqItem.objects.create(
+            project=project, item_code="1", description="x", unit="nos", contract_qty=1, rate=1
+        )
+        item = CatalogItem.objects.create(name="A item")
+    return {
+        "party": str(party.pk),
+        "project": str(project.pk),
+        "boq": str(boq.pk),
+        "catalog": str(item.pk),
+    }
+
+
+MASTER_OBJECT_URLS = {
+    "party-detail": ("/api/v1/parties/{party}", {"display_name": "hijacked"}),
+    "project-detail": ("/api/v1/projects/{project}", {"name": "hijacked"}),
+    "boq-item-detail": ("/api/v1/boq-items/{boq}", {"description": "hijacked"}),
+    "catalog-item-detail": ("/api/v1/catalog-items/{catalog}", {"name": "hijacked"}),
+}
+
+
+@pytest.mark.parametrize("name", sorted(MASTER_OBJECT_URLS))
+def test_master_object_routes_reject_other_tenant(
+    world: World, masters: dict[str, str], name: str
+) -> None:
+    template, change = MASTER_OBJECT_URLS[name]
+    url = template.format(**masters)
+    api = world.api
+    assert api.get(url, **world.as_b()).status_code == 404
+    assert (
+        api.patch(url, change, format="json", HTTP_IF_MATCH='"v1"', **world.as_b()).status_code
+        == 404
+    )
+    if name in ("boq-item-detail", "catalog-item-detail"):
+        assert api.delete(url, **world.as_b()).status_code == 404
+    as_a: dict[str, Any] = {"HTTP_AUTHORIZATION": f"Bearer {world.a_owner.access_token}"}
+    assert api.get(url, **as_a).json()["version"] == 1  # untouched
+
+
+def test_project_boq_items_route_rejects_other_tenant(
+    world: World, masters: dict[str, str]
+) -> None:
+    url = f"/api/v1/projects/{masters['project']}/boq-items"
+    assert world.api.get(url, **world.as_b()).status_code == 404
+    body = {"item_code": "X", "description": "x", "unit": "nos", "contract_qty": "1", "rate": "1"}
+    assert world.api.post(url, body, format="json", **world.as_b()).status_code == 404
+
+
+def test_master_lists_and_references_hide_other_tenant(
+    world: World, masters: dict[str, str]
+) -> None:
+    api = world.api
+    for url, key in (
+        ("/api/v1/parties", "party"),
+        ("/api/v1/projects", "project"),
+        ("/api/v1/catalog-items", "catalog"),
+    ):
+        ids = {r["id"] for r in api.get(url, **world.as_b()).json()["results"]}
+        assert masters[key] not in ids
+    smuggled = api.post(
+        "/api/v1/projects",
+        {
+            "code": "B1",
+            "name": "x",
+            "client_party_id": masters["party"],
+            "gst_registration_id": str(world.b.registration_id),
+            "site_state_code": "32",
+        },
+        format="json",
+        **world.as_b(),
+    )
+    assert smuggled.status_code == 422
+    assert smuggled.json()["errors"][0]["code"] == "not_found"
+
+
+for _name in MASTER_OBJECT_URLS:
+    OBJECT_ROUTES[_name] = lambda w: (
+        None
+    )  # covered by test_master_object_routes_reject_other_tenant
+OBJECT_ROUTES["project-boq-items"] = lambda w: None  # covered by the test above
+for _name in ("parties", "projects", "catalog-items"):
+    COLLECTION_ROUTES[_name] = lambda w: None  # covered by test_master_lists_and_references...
