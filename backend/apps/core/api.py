@@ -72,3 +72,22 @@ def versioned_patch(
         attach_current(exc, lambda: output_serializer(load()).data)
         raise
     return detail_response(updated, output_serializer)
+
+
+def versioned_action(
+    request: Request,
+    *,
+    load: Callable[[], Any],
+    run: Callable[[int], Any],
+    output_serializer: Any,
+) -> Response:
+    """State-changing POST on a resource (issue, cancel, ...): 404 → If-Match
+    428/412 → run → 412 with the current resource → 200 with the new ETag."""
+    load()
+    expected = expected_version(request)
+    try:
+        result = run(expected)
+    except PreconditionFailed as exc:
+        attach_current(exc, lambda: output_serializer(load()).data)
+        raise
+    return detail_response(result, output_serializer)

@@ -9,18 +9,27 @@ from drf_spectacular.utils import extend_schema
 from rest_framework.request import Request
 from rest_framework.response import Response
 
-from apps.core.api import ActionAPIView, detail_response, list_response, versioned_patch
+from apps.core.api import (
+    ActionAPIView,
+    detail_response,
+    list_response,
+    versioned_action,
+    versioned_patch,
+)
 from apps.core.idempotency import idempotent
 
 from .models import Document
 from .serializers import (
+    CancelSerializer,
+    ConvertSerializer,
     DocumentListSerializer,
     DocumentSerializer,
     DocumentWriteSerializer,
+    NoteSerializer,
     PreviewSerializer,
     TotalsSerializer,
 )
-from .services import drafts
+from .services import drafts, lifecycle
 
 DRAFT = "documents.draft"
 
@@ -137,3 +146,103 @@ class PreviewTotalsView(ActionAPIView):
                 "lines": lines,
             }
         )
+
+
+# --- lifecycle (Phase 1.6) -------------------------------------------------------------
+
+
+class _DocumentAction(ActionAPIView):
+    read_action = "documents.issue"
+    write_action = "documents.issue"
+
+    def _load(self, document_id: uuid.UUID) -> Document:
+        return drafts.get_document(self.principal, document_id)
+
+
+class IssueView(_DocumentAction):
+    @extend_schema(request=None, responses={200: DocumentSerializer}, tags=["documents"])
+    @idempotent
+    def post(self, request: Request, document_id: uuid.UUID) -> Response:
+        return versioned_action(
+            request,
+            load=lambda: self._load(document_id),
+            run=lambda v: lifecycle.issue(self.principal, document_id, v),
+            output_serializer=DocumentSerializer,
+        )
+
+
+class CancelView(_DocumentAction):
+    @extend_schema(
+        request=CancelSerializer, responses={200: DocumentSerializer}, tags=["documents"]
+    )
+    def post(self, request: Request, document_id: uuid.UUID) -> Response:
+        data = CancelSerializer(data=request.data)
+        data.is_valid(raise_exception=True)
+        return versioned_action(
+            request,
+            load=lambda: self._load(document_id),
+            run=lambda v: lifecycle.cancel(
+                self.principal, document_id, v, data.validated_data["reason"]
+            ),
+            output_serializer=DocumentSerializer,
+        )
+
+
+class AcceptView(_DocumentAction):
+    accept = True
+
+    @extend_schema(request=None, responses={200: DocumentSerializer}, tags=["documents"])
+    def post(self, request: Request, document_id: uuid.UUID) -> Response:
+        return versioned_action(
+            request,
+            load=lambda: self._load(document_id),
+            run=lambda v: lifecycle.respond_to_quotation(
+                self.principal, document_id, v, accept=self.accept
+            ),
+            output_serializer=DocumentSerializer,
+        )
+
+
+class DeclineView(AcceptView):
+    accept = False
+
+
+class ConvertView(ActionAPIView):
+    write_action = DRAFT
+
+    @extend_schema(
+        request=ConvertSerializer, responses={201: DocumentSerializer}, tags=["documents"]
+    )
+    @idempotent
+    def post(self, request: Request, document_id: uuid.UUID) -> Response:
+        data = ConvertSerializer(data=request.data)
+        data.is_valid(raise_exception=True)
+        draft = lifecycle.convert(
+            self.principal, document_id, data.validated_data["to"], data.validated_data["doc_date"]
+        )
+        return detail_response(draft, DocumentSerializer, status=201)
+
+
+class CreditNoteView(ActionAPIView):
+    write_action = DRAFT
+    note_type = "CREDIT_NOTE"
+
+    @extend_schema(request=NoteSerializer, responses={201: DocumentSerializer}, tags=["documents"])
+    @idempotent
+    def post(self, request: Request, document_id: uuid.UUID) -> Response:
+        data = NoteSerializer(data=request.data)
+        data.is_valid(raise_exception=True)
+        v = data.validated_data
+        note = lifecycle.create_note(
+            self.principal,
+            document_id,
+            self.note_type,
+            v["doc_date"],
+            v.get("lines"),
+            v.get("notes"),
+        )
+        return detail_response(note, DocumentSerializer, status=201)
+
+
+class DebitNoteView(CreditNoteView):
+    note_type = "DEBIT_NOTE"

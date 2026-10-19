@@ -33,6 +33,7 @@ from ..tax import Deductions, DocumentIn, DocumentOut, LineIn, LineOut, TaxError
 from ..tax.engine import GST_DOC_TYPES
 
 DRAFTABLE_TYPES = ("QUOTATION", "PROFORMA", "TAX_INVOICE", "BILL_OF_SUPPLY")
+NOTE_TYPES = frozenset({"CREDIT_NOTE", "DEBIT_NOTE"})  # created via their own endpoints
 DEDUCTION_TYPES = frozenset({"PROFORMA", "TAX_INVOICE", "BILL_OF_SUPPLY"})
 ZERO = Decimal("0.00")
 
@@ -302,6 +303,23 @@ def _stored_lines(doc: Document) -> list[dict[str, Any]]:
     ]
 
 
+def current_state(doc: Document) -> dict[str, Any]:
+    """A stored document as a payload: input to recompute, convert, notes."""
+    return {
+        "doc_type": doc.doc_type,
+        "gst_registration_id": doc.gst_registration_id,
+        "party_id": doc.party_id,
+        "project_id": doc.project_id,
+        "doc_date": doc.doc_date,
+        "due_date": doc.due_date,
+        "valid_until": doc.valid_until,
+        "notes": doc.notes,
+        "terms": doc.terms,
+        "round_to_rupee": doc.round_to_rupee,
+        "lines": _stored_lines(doc),
+    }
+
+
 # --- use cases ----------------------------------------------------------------------------
 
 
@@ -317,9 +335,14 @@ def get_document(principal: Principal, doc_id: uuid.UUID) -> Document:
 
 def create_draft(principal: Principal, data: dict[str, Any]) -> Document:
     require(principal, "documents.draft")
+    return _create(principal, data)
+
+
+def _create(principal: Principal, data: dict[str, Any], **links: uuid.UUID) -> Document:
+    """Insert a draft; `links` sets source_document_id / original_document_id."""
     c = _compute(data)
     with transaction.atomic():
-        doc = Document(**_header(c, data), status="DRAFT", created_by_id=principal.user_id)
+        doc = Document(**_header(c, data), **links, status="DRAFT", created_by_id=principal.user_id)
         doc.save()
         _write_lines(doc, c)
     return get_or_404(Document, doc.pk)
@@ -336,19 +359,9 @@ def update_draft(
                 "Only drafts can be edited; issue a credit or debit note instead.",
                 code="document_not_draft",
             )
-        current = {
-            "doc_type": doc.doc_type,
-            "gst_registration_id": doc.gst_registration_id,
-            "party_id": doc.party_id,
-            "project_id": doc.project_id,
-            "doc_date": doc.doc_date,
-            "due_date": doc.due_date,
-            "valid_until": doc.valid_until,
-            "notes": doc.notes,
-            "terms": doc.terms,
-            "round_to_rupee": doc.round_to_rupee,
-            "lines": _stored_lines(doc),
-        }
+        if doc.doc_type in NOTE_TYPES and changes.get("doc_type", doc.doc_type) != doc.doc_type:
+            raise Invalid("doc_type", "A credit or debit note keeps its type.", code="not_allowed")
+        current = current_state(doc)
         if "party_id" in changes or "project_id" in changes:
             current.pop("gst_registration_id")  # re-derive unless sent again
         merged = {**current, **changes}

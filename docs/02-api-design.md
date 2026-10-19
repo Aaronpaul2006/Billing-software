@@ -277,6 +277,19 @@ Idempotency-Key: 9b0e...
 `409 document_not_draft` · `409 series_missing` (no active series for this
 FY) · `422 no_lines` · `412` stale version.
 
+Built in Phase 1.6. Issuing recomputes the totals first (current project
+settings and advance outstanding), then takes the number under a row lock on
+the series and freezes supplier and party snapshots. Other actions:
+`cancel {reason}` (`409 not_cancellable`, `document_settled`,
+`has_issued_notes`, `credit_note_allocated`); `accept` / `decline`
+(`409 not_a_quotation`, `not_issued`); `convert {to, doc_date}` (QUOTATION →
+PROFORMA / TAX_INVOICE / BILL_OF_SUPPLY, PROFORMA → TAX_INVOICE / BILL_OF_SUPPLY;
+`422 not_convertible`); `credit-notes` / `debit-notes {doc_date, notes, lines?}`
+against an issued TAX_INVOICE (lines copied when omitted; `409
+not_an_issued_invoice`; at issue `409 original_not_issued`, `422
+credit_exceeds_original`). Issue, convert and notes need `Idempotency-Key`;
+issue, cancel, accept and decline need `If-Match`.
+
 ---
 
 ## 6. Payments & expenses

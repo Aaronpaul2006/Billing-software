@@ -422,3 +422,40 @@ def test_documents_list_create_and_preview_hide_other_tenant(
 OBJECT_ROUTES["document-detail"] = lambda w: None  # test_document_detail_rejects_other_tenant
 COLLECTION_ROUTES["documents"] = lambda w: None  # test_documents_list_create_and_preview...
 COLLECTION_ROUTES["document-preview-totals"] = lambda w: None  # same test
+
+
+# --- Phase 1.6 document lifecycle --------------------------------------------------------
+
+LIFECYCLE_ACTIONS = {
+    "document-issue": ("issue", {}),
+    "document-cancel": ("cancel", {"reason": "hijack"}),
+    "document-accept": ("accept", {}),
+    "document-decline": ("decline", {}),
+    "document-convert": ("convert", {"to": "TAX_INVOICE", "doc_date": "2026-10-20"}),
+    "document-credit-notes": ("credit-notes", {"doc_date": "2026-10-20"}),
+    "document-debit-notes": ("debit-notes", {"doc_date": "2026-10-20"}),
+}
+
+
+@pytest.mark.parametrize("name", sorted(LIFECYCLE_ACTIONS))
+def test_lifecycle_actions_reject_other_tenant(world: World, a_document: str, name: str) -> None:
+    action, body = LIFECYCLE_ACTIONS[name]
+    response = world.api.post(
+        f"/api/v1/documents/{a_document}/{action}",
+        body,
+        format="json",
+        HTTP_IF_MATCH='"v1"',
+        HTTP_IDEMPOTENCY_KEY=str(uuid.uuid4()),
+        **world.as_b(),
+    )
+    assert response.status_code == 404
+    from apps.documents.models import Document
+
+    with tenant_context(world.a.tenant_id, world.a.user_id):
+        doc = Document.objects.get(pk=a_document)
+        assert (doc.status, doc.version) == ("DRAFT", 1)
+        assert Document.objects.count() == 1  # nothing converted or noted
+
+
+for _name in LIFECYCLE_ACTIONS:
+    OBJECT_ROUTES[_name] = lambda w: None  # test_lifecycle_actions_reject_other_tenant

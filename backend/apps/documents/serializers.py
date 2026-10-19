@@ -171,3 +171,24 @@ class PreviewSerializer(serializers.Serializer[Any]):
     supply_type = serializers.CharField()
     totals = TotalsSerializer()
     lines = serializers.ListField(child=serializers.DictField())
+
+
+class CancelSerializer(serializers.Serializer[Any]):
+    reason = serializers.CharField(min_length=3, max_length=500)
+
+
+class ConvertSerializer(serializers.Serializer[Any]):
+    to = serializers.ChoiceField(choices=["PROFORMA", "TAX_INVOICE", "BILL_OF_SUPPLY"])
+    doc_date = serializers.DateField(
+        help_text="Date of the new document (explicit: no time zone guessing)."
+    )
+
+
+class NoteSerializer(serializers.Serializer[Any]):
+    doc_date = serializers.DateField()
+    notes = serializers.CharField(
+        max_length=5000, required=False, allow_null=True, allow_blank=True
+    )
+    lines = LineInSerializer(
+        many=True, required=False, help_text="Without lines, the invoice's lines are copied."
+    )
