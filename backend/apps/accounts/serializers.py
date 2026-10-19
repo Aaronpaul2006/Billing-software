@@ -2,6 +2,8 @@ from typing import Any
 
 from rest_framework import serializers
 
+from .models import Role
+
 CLIENTS = ["web", "mobile"]
 
 
@@ -128,3 +130,22 @@ class MeSerializer(serializers.Serializer[Any]):
     tenant_id = serializers.UUIDField()
     role = serializers.CharField()
     memberships = MembershipSummarySerializer(many=True)
+
+
+class MemberRoleSerializer(serializers.Serializer[Any]):
+    role = serializers.ChoiceField(choices=Role.values)
+
+
+class MemberSerializer(serializers.Serializer[Any]):
+    id = serializers.UUIDField()
+    user_id = serializers.UUIDField()
+    email = serializers.EmailField()
+    full_name = serializers.CharField()
+    role = serializers.CharField()
+    status = serializers.CharField()
+    invited_by = serializers.UUIDField(allow_null=True)
+    created_at = serializers.DateTimeField()
+
+
+class MemberListSerializer(serializers.Serializer[Any]):
+    results = MemberSerializer(many=True)

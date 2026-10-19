@@ -151,7 +151,7 @@ Implemented (Phase 0.5) as of 2026-10-19:
 | Method & path | Purpose |
 |---|---|
 | `GET /tenant` · `PATCH /tenant` | Current business profile |
-| `GET/POST /members` · `PATCH/DELETE /members/{id}` | Invite by email, change role, revoke |
+| `GET/POST /members` · `PATCH/DELETE /members/{id}` | Invite by email, change role, revoke. Built: `GET`, `PATCH {role}`, `DELETE` (→ REVOKED, idempotent). Errors: `403 permission_denied`, `owner_protected`, `cannot_modify_self`; `409 last_owner`, `member_revoked`; `404` for other tenants' members. `POST` (invite) pending a decision, see PROGRESS.md |
 | `GET/POST /gst-registrations` · `GET/PATCH /gst-registrations/{id}` | Our GSTINs (one per state) |
 | `GET/POST /document-series` · `PATCH /document-series/{id}` | Number series per registration, doc type and FY. `next_number` can be changed only when nothing has been issued from the series yet. |
 | `GET /audit-log?table=documents&row_id=...` | Change history (OWNER/ADMIN) |

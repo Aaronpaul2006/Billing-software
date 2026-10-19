@@ -51,7 +51,7 @@ def _client(request: Request, data: dict[str, Any] | None = None) -> ClientInfo:
     )
 
 
-def _principal(request: Request) -> Principal:
+def principal_of(request: Request) -> Principal:
     if not isinstance(request.auth, Principal):  # views using this require authentication
         raise NotAuthenticated
     return request.auth
@@ -187,7 +187,7 @@ class SwitchTenantView(APIView):
         data = SwitchTenantSerializer(data=request.data)
         data.is_valid(raise_exception=True)
         v = data.validated_data
-        tokens = services.switch_tenant(_principal(request), v["tenant_id"], _client(request, v))
+        tokens = services.switch_tenant(principal_of(request), v["tenant_id"], _client(request, v))
         return _tokens_response(tokens, v["client"])
 
 
@@ -209,7 +209,7 @@ class SessionListView(APIView):
                         "last_refreshed_at": s.last_refreshed_at,
                         "current": s.current,
                     }
-                    for s in services.list_sessions(_principal(request))
+                    for s in services.list_sessions(principal_of(request))
                 ]
             }
         )
@@ -220,7 +220,7 @@ class SessionDetailView(APIView):
 
     @extend_schema(responses={204: None}, tags=["auth"])
     def delete(self, request: Request, session_id: uuid.UUID) -> Response:
-        services.revoke_session(_principal(request), session_id)
+        services.revoke_session(principal_of(request), session_id)
         return Response(status=204)
 
 
@@ -229,7 +229,7 @@ class MfaSetupView(APIView):
 
     @extend_schema(request=None, responses={200: MfaSetupResponseSerializer}, tags=["mfa"])
     def post(self, request: Request) -> Response:
-        setup = services.mfa_setup(_principal(request))
+        setup = services.mfa_setup(principal_of(request))
         response = Response({"secret": setup.secret, "otpauth_uri": setup.otpauth_uri})
         response["Cache-Control"] = "no-store"
         return response
@@ -243,7 +243,7 @@ class MfaEnableView(APIView):
         data = MfaEnableSerializer(data=request.data)
         data.is_valid(raise_exception=True)
         v = data.validated_data
-        codes, tokens = services.mfa_enable(_principal(request), v["code"], _client(request, v))
+        codes, tokens = services.mfa_enable(principal_of(request), v["code"], _client(request, v))
         response = _tokens_response(tokens, v["client"])
         response.data["recovery_codes"] = codes  # shown once; stored hashed
         return response
@@ -255,7 +255,7 @@ class MfaDisableView(APIView):
         data = MfaDisableSerializer(data=request.data)
         data.is_valid(raise_exception=True)
         services.mfa_disable(
-            _principal(request), data.validated_data["password"], data.validated_data["code"]
+            principal_of(request), data.validated_data["password"], data.validated_data["code"]
         )
         return Response(status=204)
 
@@ -265,7 +265,7 @@ class MeView(APIView):
 
     @extend_schema(responses={200: MeSerializer}, tags=["me"])
     def get(self, request: Request) -> Response:
-        principal = _principal(request)
+        principal = principal_of(request)
         user = User.objects.get(pk=principal.user_id)
         with user_context(principal.user_id):
             memberships = services.active_memberships(principal.user_id)

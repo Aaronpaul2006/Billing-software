@@ -1,7 +1,7 @@
 from django.db import transaction
 from django.urls import path
 
-from . import views
+from . import member_views, views
 
 # Sign-in endpoints manage their own transactions: a failed-login counter or
 # a revoked token family must be committed even though the response is 401.
@@ -24,4 +24,10 @@ urlpatterns = [
     path("auth/mfa/enable", views.MfaEnableView.as_view(), name="auth-mfa-enable"),
     path("auth/mfa/disable", views.MfaDisableView.as_view(), name="auth-mfa-disable"),
     path("me", views.MeView.as_view(), name="me"),
+    path("members", member_views.MemberListView.as_view(), name="members"),
+    path(
+        "members/<uuid:membership_id>",
+        member_views.MemberDetailView.as_view(),
+        name="member-detail",
+    ),
 ]

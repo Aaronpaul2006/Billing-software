@@ -129,6 +129,13 @@ Roles are per membership (per tenant). Permission checks live in one module
 | Audit log | ✓ | ✓ | | | |
 | Transfer ownership / close tenant | ✓ | | | | |
 
+Implemented in `apps/core/permissions.py` (`ACTIONS`, `can`, `require`,
+`HasAction`); `tests/core/test_permissions.py` checks this table cell by cell.
+Member rules on top of the matrix: nobody changes or revokes their own
+membership; an ADMIN cannot touch an OWNER or appoint one; a tenant always
+keeps an active OWNER. Revoking a member or changing their role signs out
+their sessions for that tenant immediately (stricter than "within 10 minutes").
+
 Later: project-level scoping (site engineers see only assigned projects) via a
 `project_members` table plus an extra RLS predicate.
 

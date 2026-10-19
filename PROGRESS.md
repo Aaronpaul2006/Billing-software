@@ -4,7 +4,7 @@ Last updated: 2026-10-19
 
 ## Current phase
 
-**Phase 0 — Foundations** (in progress): steps 1–5 of 8 done.
+**Phase 0 — Foundations** (in progress): steps 1–5 of 8 done, step 6 mostly done.
 
 ## Done
 
@@ -21,10 +21,11 @@ Last updated: 2026-10-19
 - [x] Phase 0.3: database roles (`scripts/bootstrap_db.py`: `billing_owner` runs migrations, `billing_app_login` ∈ `billing_app` serves the API, NOBYPASSRLS, owns nothing) and migrations for all 17 tables (11 apps). Models mirror `db/schema.sql` column for column; composite FKs, triggers, audit trail, RLS, views and grants in RunSQL. Router: migrations only through the `owner` alias. `tests/db/test_schema_sync.py` proves migrations ≡ `schema.sql` across 12 catalog categories; invariant tests: every tenant table RLS-forced, every view security_invoker, fail-closed without context, app role cannot migrate / write audit / update `amount_settled`. 37 tests
 - [x] Phase 0.4: `apps/core/tenancy.py` (`Principal`, `tenant_context()`: transaction-local `set_config`, refuses tenant switching, clears itself when nested) and `TenantContextMiddleware` (opens the request transaction, view's `ATOMIC_REQUESTS` nests as a savepoint; tenant only from `request.principal`). Tests with real commits: context gone after commit, no leak across requests on the same pooled connection, RLS read/write/update isolation, composite-FK cross-tenant reference blocked, failing view rolls back. Mutation-checked (session-level `set_config` makes 3 tests fail). 49 tests
 - [x] Phase 0.5: auth — signup (user + tenant + OWNER), login with generic errors, timing-equalised unknown emails and progressive lockout, Argon2id, JWT access tokens (HS256, 10 min, `kid`), opaque refresh tokens stored as SHA-256 and rotated with reuse detection (row-locked; concurrency-tested), per-request session liveness (instant logout/revoke), web cookie vs mobile body, switch-tenant, sessions list/revoke, TOTP MFA (encrypted secret, replay-proof, 10 hashed one-time recovery codes, OWNER/ADMIN gated until enrolled, cannot disable), `/me`. OpenAPI schema documents every endpoint (generation must be warning-free). Schema change: `users.mfa_recovery_codes`, `users.mfa_last_used_step` (schema.sql + migration). Also fixed: error responses now roll back the request transaction (custom DRF handler lacked `set_rollback`); app role may read `django_migrations` so `runserver` works. 84 tests
+- [x] Phase 0.6 (part): role/action matrix as data (`apps/core/permissions.py`: `can`, `require`, `HasAction`), tested cell by cell against architecture §3; member management `GET /members`, `PATCH /members/{id}` (role), `DELETE /members/{id}` (revoke) with owner protection, no self-modification, last-owner guard, immediate sign-out on revoke/role change, 404 across tenants. Mutation-checked. 111 tests
 
 ## In progress
 
-- Phase 0.6: memberships and role permissions (architecture §3 matrix).
+- Phase 0.6: inviting members (`POST /members`) — **waiting for an owner decision** on the invitation model (see Open questions).
 
 ## Next
 
@@ -43,6 +44,8 @@ Then Phase 1 — core billing (parties, projects, documents, tax engine, PDF).
 Full roadmap: `docs/01-architecture.md` §9.
 
 ## Open questions (for the owner)
+
+- **Invitations** (blocks the rest of step 6): add existing users directly, or invite with accept step (status INVITED; needs RLS changes so the invitee can see and accept), or email invitations with a token that also works for people without an account (needs email sending + schema).
 
 - Are the first customers GST-registered, and above the ₹5 Cr e-invoicing threshold?
 - Do site engineers need offline drafts on mobile in v1?

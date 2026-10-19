@@ -59,3 +59,46 @@ def make_party(t: TenantFixture, name: str = "Client Ltd") -> Party:
             gst_treatment=Party.GstTreatment.UNREGISTERED,
             created_by_id=t.user_id,
         )
+
+
+@dataclass(frozen=True)
+class Member:
+    user_id: uuid.UUID
+    membership_id: uuid.UUID
+    access_token: str
+    refresh_token: str
+
+
+def add_member(t: TenantFixture, role: str, *, with_mfa: bool = True) -> Member:
+    """A user with `role` in tenant `t` and a live session (amr has otp if with_mfa)."""
+    from apps.accounts.services import ClientInfo, _start_session
+
+    user = make_user(f"{role.title()} User")
+    with tenant_context(t.tenant_id, t.user_id):
+        membership = Membership.objects.create(
+            tenant_id=t.tenant_id, user=user, role=role, invited_by_id=t.user_id
+        )
+    tokens = _start_session(
+        user_id=user.id,
+        tenant_id=t.tenant_id,
+        role=role,
+        amr=frozenset({"pwd", "otp"} if with_mfa else {"pwd"}),
+        client=ClientInfo(),
+    )
+    return Member(user.id, membership.id, tokens.access_token, tokens.refresh_token)
+
+
+def owner_member(t: TenantFixture) -> Member:
+    """A session for the tenant's founding OWNER (from make_tenant)."""
+    from apps.accounts.services import ClientInfo, _start_session
+
+    with tenant_context(t.tenant_id, t.user_id):
+        membership = Membership.objects.get(user_id=t.user_id)
+    tokens = _start_session(
+        user_id=t.user_id,
+        tenant_id=t.tenant_id,
+        role=Role.OWNER,
+        amr=frozenset({"pwd", "otp"}),
+        client=ClientInfo(),
+    )
+    return Member(t.user_id, membership.id, tokens.access_token, tokens.refresh_token)
