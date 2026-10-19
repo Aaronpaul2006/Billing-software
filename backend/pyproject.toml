@@ -1,0 +1,71 @@
+[project]
+name = "billing-backend"
+version = "0.1.0"
+description = "Construction billing platform: REST API (Django + DRF)"
+requires-python = ">=3.14,<3.15"
+dependencies = [
+    "django[argon2]>=5.2.18,<5.3",  # LTS
+    "djangorestframework>=3.18",
+    "drf-spectacular>=0.30",
+    "psycopg[binary]>=3.3",
+    "django-environ>=0.14",
+    "redis>=8.1",
+]
+
+[dependency-groups]
+dev = [
+    "ruff>=0.17",
+    "django-stubs[compatible-mypy]>=5.2,<5.3",
+    "djangorestframework-stubs[compatible-mypy]>=3.16",
+    "pytest>=9.1",
+    "pytest-django>=4.14",
+    "pip-audit>=2.10",
+]
+
+[tool.uv]
+package = false
+
+# --- ruff --------------------------------------------------------------------
+[tool.ruff]
+line-length = 100
+target-version = "py314"
+
+[tool.ruff.lint]
+select = [
+    "E", "W", "F",   # pycodestyle, pyflakes
+    "I",             # isort
+    "B",             # bugbear
+    "UP",            # pyupgrade
+    "S",             # bandit (security)
+    "DJ",            # django
+    "DTZ",           # no naive datetimes
+    "N",             # naming
+    "SIM",           # simplify
+    "PT",            # pytest style
+    "RUF",
+]
+
+[tool.ruff.lint.per-file-ignores]
+"tests/**" = ["S101"]  # assert is the point of a test
+"config/settings/*.py" = ["F405", "F403"]  # star import of base settings
+
+# --- mypy --------------------------------------------------------------------
+[tool.mypy]
+python_version = "3.14"
+strict = true
+plugins = ["mypy_django_plugin.main", "mypy_drf_plugin.main"]
+exclude = ["^\\.venv/"]
+
+[[tool.mypy.overrides]]
+module = ["environ.*"]
+ignore_missing_imports = true
+
+[tool.django-stubs]
+django_settings_module = "config.settings.test"
+
+# --- pytest ------------------------------------------------------------------
+[tool.pytest.ini_options]
+DJANGO_SETTINGS_MODULE = "config.settings.test"
+pythonpath = ["."]
+testpaths = ["tests"]
+addopts = "-ra --strict-markers --strict-config"

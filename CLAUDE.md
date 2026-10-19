@@ -23,7 +23,7 @@ Original concept: `Project billling software.docx`.
 | `db/schema.sql` | Source-of-truth data model: tables, RLS, triggers, views, grants |
 | `db/tests/` | Executable checks of the schema (PGlite = real Postgres 17 in WASM) |
 | `docker-compose.yml` | Local dev services: Postgres 5433, Redis 6380, SeaweedFS (S3) 8333, Mailpit 1025/8025 |
-| `backend/` | Django project (not created yet — Phase 0) |
+| `backend/` | Django project: `config/` (settings base/dev/test/prod, urls), `apps/` (one Django app per module), `tests/` |
 
 ## Stack (decided, do not change without asking)
 
@@ -84,7 +84,19 @@ docker compose down            # add -v to wipe the data volumes
 cd db/tests && npm install && npm test
 ```
 
-Django commands will be added here when `backend/` is scaffolded.
+# Backend (run inside backend/; needs uv and the compose services up)
+uv sync                                  # install exact versions from uv.lock
+uv run ruff check . && uv run ruff format --check .
+uv run mypy .
+uv run pytest
+uv run python manage.py runserver        # dev settings; docs at /api/v1/docs/
+uv run python manage.py makemigrations --check --dry-run
+```
+
+Use `127.0.0.1`, not `localhost`, in connection URLs: on Windows `localhost`
+tries IPv6 `::1` first and stalls, while compose publishes on IPv4 only.
+
+```bash
 
 ## Repository
 

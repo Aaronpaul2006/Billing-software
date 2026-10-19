@@ -4,7 +4,7 @@ Last updated: 2026-10-19
 
 ## Current phase
 
-**Phase 0 — Foundations** (in progress): step 1 of 8 done.
+**Phase 0 — Foundations** (in progress): steps 1–2 of 8 done.
 
 ## Done
 
@@ -17,17 +17,18 @@ Last updated: 2026-10-19
 - [x] `CLAUDE.md` project rules for Claude Code / IDE
 - [x] Git repository connected to GitHub
 - [x] Phase 0.1: `docker-compose.yml` (Postgres 17.11, Redis 8.10, SeaweedFS 4.48 for S3, Mailpit 1.31) and `.env.example`; all services healthy, smoke-checked (auth required on Redis and S3, private bucket, SMTP → Mailpit)
+- [x] Phase 0.2: Django 5.2 LTS skeleton in `backend/`: uv lockfile (Python 3.14), settings base/dev/test/prod from env, DRF (secure-by-default permissions, JSON only, money as string), drf-spectacular OpenAPI 3.1 at `/api/v1/schema/`, RFC 9457 problem+json errors with server-generated UUIDv7 `request_id`, `/healthz` + `/readyz`, `ATOMIC_REQUESTS`, Argon2 hasher, prod settings refuse weak secrets; ruff, mypy (strict), pytest (19 tests), pip-audit clean, `check --deploy` clean
 
 ## In progress
 
-- Phase 0.2: Django project skeleton under `backend/`.
+- Phase 0.3: database roles and first migrations mirroring `db/schema.sql`.
 
 ## Next
 
 Phase 0 — Foundations, in order:
 
 1. ~~`docker-compose.yml` + `.env.example`~~ (done)
-2. Django project skeleton under `backend/` (settings split, `uv` lockfile, ruff, mypy, pytest)
+2. ~~Django project skeleton~~ (done)
 3. Database roles (`billing_owner`, `billing_app`) and the first migrations mirroring `db/schema.sql` (tables + RunSQL for RLS, triggers, composite FKs, grants)
 4. Tenant context middleware + `tenant_context()` helper for Celery/tests
 5. Auth: signup, login, Argon2id, JWT access + rotating refresh tokens, TOTP MFA for owners/admins
@@ -47,6 +48,9 @@ Full roadmap: `docs/01-architecture.md` §9.
 ## Known gaps / notes
 
 - Local dev uses **SeaweedFS** instead of MinIO: MinIO stopped publishing container images in 2025 (owner decision, 2026-10-19). Production remains AWS S3 / Cloudflare R2.
+- Use `127.0.0.1`, not `localhost`, in local connection URLs: on Windows `localhost` resolves to IPv6 first and psycopg stalls until timeout.
+- `DATABASE_URL` currently uses the bootstrap superuser; step 3 switches the app to `billing_app`.
+- Until JWT lands (step 5), unauthenticated API calls get 403 `permission_denied`; step 5 makes them 401.
 - Compose publishes Postgres on host port **5433** and Redis on **6380**, because native PostgreSQL 17 and Redis Windows services already use 5432 / 6379 on the dev machine.
 
 - Schema was tested on PGlite (single connection), so concurrency behaviour (row locks under parallel requests) still needs testing on real Postgres in Phase 0.
