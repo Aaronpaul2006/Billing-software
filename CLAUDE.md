@@ -22,6 +22,7 @@ Original concept: `Project billling software.docx`.
 | `docs/02-api-design.md` | REST conventions and endpoint surface |
 | `db/schema.sql` | Source-of-truth data model: tables, RLS, triggers, views, grants |
 | `db/tests/` | Executable checks of the schema (PGlite = real Postgres 17 in WASM) |
+| `docker-compose.yml` | Local dev services: Postgres 5433, Redis 6380, SeaweedFS (S3) 8333, Mailpit 1025/8025 |
 | `backend/` | Django project (not created yet — Phase 0) |
 
 ## Stack (decided, do not change without asking)
@@ -74,6 +75,11 @@ S3-compatible storage, drf-spectacular (OpenAPI), Docker Compose for local dev.
 ## Commands
 
 ```bash
+# Local services (Docker Desktop must be running)
+cp .env.example .env
+docker compose up -d --wait
+docker compose down            # add -v to wipe the data volumes
+
 # Schema checks (needs Node 20+)
 cd db/tests && npm install && npm test
 ```

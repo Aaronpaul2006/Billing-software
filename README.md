@@ -16,6 +16,13 @@ payments, expenses, and a consolidated owner dashboard on web and mobile.
 
 Python · Django + Django REST Framework · PostgreSQL · Celery + Redis · S3-compatible storage
 
+## Local services
+
+```bash
+cp .env.example .env        # local-dev placeholders; .env is gitignored
+docker compose up -d --wait  # Postgres :5433, Redis :6380, S3 (SeaweedFS) :8333, Mailpit :1025 / UI :8025
+```
+
 ## Running the schema checks
 
 ```bash

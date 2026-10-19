@@ -4,7 +4,7 @@ Last updated: 2026-10-19
 
 ## Current phase
 
-**Phase 0 — Foundations** (not started). Design is complete and verified.
+**Phase 0 — Foundations** (in progress): step 1 of 8 done.
 
 ## Done
 
@@ -16,16 +16,17 @@ Last updated: 2026-10-19
 - [x] API design document — `docs/02-api-design.md`
 - [x] `CLAUDE.md` project rules for Claude Code / IDE
 - [x] Git repository connected to GitHub
+- [x] Phase 0.1: `docker-compose.yml` (Postgres 17.11, Redis 8.10, SeaweedFS 4.48 for S3, Mailpit 1.31) and `.env.example`; all services healthy, smoke-checked (auth required on Redis and S3, private bucket, SMTP → Mailpit)
 
 ## In progress
 
-- Nothing yet.
+- Phase 0.2: Django project skeleton under `backend/`.
 
 ## Next
 
 Phase 0 — Foundations, in order:
 
-1. `docker-compose.yml`: Postgres 17, Redis, MinIO, Mailpit; `.env.example`
+1. ~~`docker-compose.yml` + `.env.example`~~ (done)
 2. Django project skeleton under `backend/` (settings split, `uv` lockfile, ruff, mypy, pytest)
 3. Database roles (`billing_owner`, `billing_app`) and the first migrations mirroring `db/schema.sql` (tables + RunSQL for RLS, triggers, composite FKs, grants)
 4. Tenant context middleware + `tenant_context()` helper for Celery/tests
@@ -44,6 +45,9 @@ Full roadmap: `docs/01-architecture.md` §9.
 - Pricing / plan limits per tenant?
 
 ## Known gaps / notes
+
+- Local dev uses **SeaweedFS** instead of MinIO: MinIO stopped publishing container images in 2025 (owner decision, 2026-10-19). Production remains AWS S3 / Cloudflare R2.
+- Compose publishes Postgres on host port **5433** and Redis on **6380**, because native PostgreSQL 17 and Redis Windows services already use 5432 / 6379 on the dev machine.
 
 - Schema was tested on PGlite (single connection), so concurrency behaviour (row locks under parallel requests) still needs testing on real Postgres in Phase 0.
 - Payables (vendor bills, payments to subcontractors) are deferred; expenses track their own payment for now.
