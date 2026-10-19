@@ -11,10 +11,11 @@ from apps.core.db import (
     updated_at,
     uuid7_pk,
 )
+from apps.core.managers import TenantScoped
 from apps.projects.models import SAC_HSN_RE
 
 
-class CatalogItem(models.Model):
+class CatalogItem(TenantScoped):
     """A reusable item with a default rate."""
 
     id = uuid7_pk()

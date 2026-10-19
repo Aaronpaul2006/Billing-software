@@ -13,12 +13,19 @@ class DomainError(Exception):
     code = "bad_request"
     detail = "The request could not be processed."
 
-    def __init__(self, detail: str | None = None, *, code: str | None = None) -> None:
+    def __init__(
+        self,
+        detail: str | None = None,
+        *,
+        code: str | None = None,
+        extra: dict[str, object] | None = None,
+    ) -> None:
         super().__init__(detail or self.detail)
         if detail:
             self.detail = detail
         if code:
             self.code = code
+        self.extra = extra or {}  # merged into the problem body, e.g. {"current": {...}}
 
 
 class Unauthenticated(DomainError):
@@ -57,3 +64,18 @@ class Invalid(DomainError):
     def __init__(self, field: str, detail: str, *, code: str = "invalid") -> None:
         super().__init__(detail, code=code)
         self.field = field
+
+
+class PreconditionFailed(DomainError):
+    """If-Match names an old version: someone else saved first. The body
+    carries the current resource so the client can show what changed."""
+
+    status = 412
+    code = "stale_version"
+    detail = "This was changed by someone else. Reload and try again."
+
+
+class PreconditionRequired(DomainError):
+    status = 428
+    code = "precondition_required"
+    detail = "This request needs a precondition header."

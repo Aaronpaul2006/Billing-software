@@ -16,6 +16,7 @@ from apps.core.db import (
     updated_at,
     uuid7_pk,
 )
+from apps.core.managers import TenantScoped
 from apps.tenants.models import STATE_CODE_RE
 
 SAC_HSN_RE = r"^[0-9]{4,8}$"
@@ -29,7 +30,7 @@ class ProjectStatus(models.TextChoices):
     CANCELLED = "CANCELLED"
 
 
-class Project(models.Model):
+class Project(TenantScoped):
     Status = ProjectStatus
     id = uuid7_pk()
     tenant = tenant_ref()
@@ -93,7 +94,7 @@ class Project(models.Model):
         return f"{self.code} {self.name}"
 
 
-class BoqItem(models.Model):
+class BoqItem(TenantScoped):
     """Bill of Quantities line: the priced items RA bills bill progress against."""
 
     id = uuid7_pk()

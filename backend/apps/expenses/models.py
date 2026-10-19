@@ -12,6 +12,7 @@ from apps.core.db import (
     updated_at,
     uuid7_pk,
 )
+from apps.core.managers import TenantScoped
 from apps.payments.models import PaymentMode
 
 
@@ -31,7 +32,7 @@ class ExpenseCategory(models.TextChoices):
     OTHER = "OTHER"
 
 
-class Expense(models.Model):
+class Expense(TenantScoped):
     """A site or office expense. Tracks its own payment until payables exist."""
 
     Category = ExpenseCategory

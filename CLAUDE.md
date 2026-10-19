@@ -55,7 +55,18 @@ S3-compatible storage, drf-spectacular (OpenAPI), Docker Compose for local dev.
 **Code style:**
 - Thin views, business rules in `services/` (plain functions), pure tax engine with no Django imports.
 - Serializers list fields explicitly (no `__all__`).
-- Every new endpoint gets a cross-tenant test (tenant B must get 404 on tenant A's objects).
+- Every new endpoint gets a cross-tenant test (tenant B must get 404 on tenant A's objects):
+  register it in `tests/tenancy/test_cross_tenant_endpoints.py` (the test fails for
+  any unregistered `/api/v1` route).
+- Business tables use `TenantScoped` (`apps/core/managers.py`): `Model.objects` is
+  tenant-filtered and raises without a tenant context.
+- Money / quantity / rate fields in serializers: `MoneyField`, `QuantityField`,
+  `PercentField` (`apps/core/fields.py`) — they reject JSON numbers.
+- Editable resources: `ETag` on responses, `If-Match` on changes, version bumped with
+  `update_versioned()` (`apps/core/versioning.py`).
+- Money-moving POSTs: decorate the handler with `@idempotent` (`apps/core/idempotency.py`).
+- Services raise `apps.core.errors` (`NotFound`, `Conflict`, `Invalid`, ...), never DRF
+  exceptions; each has a stable `code`.
 - Keep `db/schema.sql` and the Django migrations in sync — change both or neither.
   `tests/db/test_schema_sync.py` builds a database from each and compares the catalogs;
   it fails on any difference. Model FKs use `ref()` (`db_constraint=False`); the real

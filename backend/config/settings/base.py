@@ -28,6 +28,7 @@ INSTALLED_APPS = [
     "django.contrib.postgres",
     "django.contrib.staticfiles",
     "rest_framework",
+    "django_filters",
     "drf_spectacular",
     "apps.core",
     "apps.audit",
@@ -165,6 +166,13 @@ REST_FRAMEWORK = {
     "EXCEPTION_HANDLER": "apps.core.exceptions.problem_exception_handler",
     # Money is a string in JSON, never a float.
     "COERCE_DECIMAL_TO_STRING": True,
+    # docs/02-api-design.md §1: cursor pagination, exact filters, allow-listed ordering
+    "DEFAULT_PAGINATION_CLASS": "apps.core.pagination.CursorPage",
+    "DEFAULT_FILTER_BACKENDS": [
+        "django_filters.rest_framework.DjangoFilterBackend",
+        "rest_framework.filters.OrderingFilter",
+    ],
+    "ORDERING_PARAM": "ordering",
 }
 
 SPECTACULAR_SETTINGS = {

@@ -13,6 +13,7 @@ dependencies = [
     "pyjwt>=2.15",
     "pyotp>=2.10",
     "cryptography>=46",
+    "django-filter>=26.2",
 ]
 
 [dependency-groups]

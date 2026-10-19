@@ -37,7 +37,7 @@ GET /documents?limit=50&cursor=eyJk...
 200 { "results": [...], "next_cursor": "eyJk..." | null }
 ```
 `limit` defaults to 25, max 100. Cursors are opaque and stable under inserts
-(unlike page numbers).
+(unlike page numbers). Default order: newest first (by UUIDv7 id).
 
 ### Filtering & sorting
 * Exact filters as query params: `?status=ISSUED&doc_type=TAX_INVOICE`.
@@ -82,6 +82,7 @@ stable `code`. Raw database messages are never returned.
 * `PATCH` / `PUT` / state-changing `POST`s on a specific resource **require**
   `If-Match: "v7"`. A mismatch gives 412 with the current resource in the body
   so the client can show "this was changed by Priya, reload?".
+  Codes: `428 if_match_required`, `412 stale_version` (body has `current`).
 
 ### Idempotency
 * Required on: `POST /documents`, `/documents/{id}/issue`, `/payments`,
@@ -91,6 +92,8 @@ stable `code`. Raw database messages are never returned.
 * Same key + same body → the original response is replayed (with
   `Idempotent-Replayed: true`). Same key + different body → 422. Keys expire
   after 24 h.
+  Codes: `428 idempotency_key_required`, `422 idempotency_key_reused`. A request
+  that fails stores nothing, so its retry runs again.
 
 ### Rate limits
 Response headers `RateLimit-Limit`, `RateLimit-Remaining`, `RateLimit-Reset`.

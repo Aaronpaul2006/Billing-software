@@ -145,6 +145,8 @@ def domain_error_response(exc: DomainError, request: HttpRequest | None) -> Resp
         )
     else:
         body = problem_body(request, status=exc.status, code=exc.code, detail=exc.detail)
+    for key, value in exc.extra.items():
+        body.setdefault(key, value)
     if exc.status == 401:
         headers["WWW-Authenticate"] = BEARER_CHALLENGE
     return Response(body, status=body["status"], headers=headers, content_type=PROBLEM_CONTENT_TYPE)

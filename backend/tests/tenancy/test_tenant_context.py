@@ -34,6 +34,14 @@ def _db_context() -> tuple[Any, Any]:
     return row[0], row[1]
 
 
+def _raw_count(table: str) -> int:
+    with connection.cursor() as cursor:
+        cursor.execute(f"SELECT count(*) FROM {table}")  # noqa: S608 - fixed table names
+        row = cursor.fetchone()
+    assert row is not None
+    return int(row[0])
+
+
 def _sqlstate(exc: BaseException) -> str | None:
     return getattr(exc.__cause__, "sqlstate", None)
 
@@ -110,7 +118,11 @@ def test_each_tenant_sees_only_its_own_rows(
         assert list(Party.objects.values_list("display_name", flat=True)) == ["B's client"]
         assert not Party.objects.filter(id=party_a.id).exists()  # forgotten filter is harmless
     with transaction.atomic():
-        assert Party.objects.count() == 0  # no context: fail closed
+        # no context: the ORM refuses outright (layer 1) ...
+        with pytest.raises(TenantContextError):
+            Party.objects.count()
+        # ... and the database returns nothing anyway (layer 2, RLS)
+        assert _raw_count("parties") == 0
 
 
 def test_tenant_cannot_write_rows_for_another_tenant(
@@ -118,12 +130,25 @@ def test_tenant_cannot_write_rows_for_another_tenant(
 ) -> None:
     a, b, _ = two_tenants
     with tenant_context(b.tenant_id, b.user_id):
-        with pytest.raises(DatabaseError) as exc_info, transaction.atomic():
-            Party.objects.create(
-                tenant_id=a.tenant_id,
-                display_name="smuggled",
-                gst_treatment=Party.GstTreatment.UNREGISTERED,
-                created_by_id=b.user_id,
+        smuggled = Party(
+            tenant_id=a.tenant_id,
+            display_name="smuggled",
+            gst_treatment=Party.GstTreatment.UNREGISTERED,
+            created_by_id=b.user_id,
+        )
+        # layer 1: the model refuses a tenant other than the context's
+        with pytest.raises(TenantContextError):
+            smuggled.save()
+        # layer 2: even bypassing the ORM, RLS rejects the row
+        with (
+            pytest.raises(DatabaseError) as exc_info,
+            transaction.atomic(),
+            connection.cursor() as cursor,
+        ):
+            cursor.execute(
+                "INSERT INTO parties (tenant_id, display_name, gst_treatment, created_by)"
+                " VALUES (%s, 'smuggled', 'UNREGISTERED', %s)",
+                [a.tenant_id, b.user_id],
             )
         assert _sqlstate(exc_info.value) == RLS_VIOLATION
 

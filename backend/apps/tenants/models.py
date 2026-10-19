@@ -15,6 +15,7 @@ from apps.core.db import (
     updated_at,
     uuid7_pk,
 )
+from apps.core.managers import TenantScoped
 
 PAN_RE = r"^[A-Z]{5}[0-9]{4}[A-Z]$"
 GSTIN_RE = r"^[0-9]{2}[A-Z]{5}[0-9]{4}[A-Z][1-9A-Z]Z[0-9A-Z]$"
@@ -70,7 +71,7 @@ class GstRegistrationRegistrationType(models.TextChoices):
     UNREGISTERED = "UNREGISTERED"
 
 
-class GstRegistration(models.Model):
+class GstRegistration(TenantScoped):
     """Our GSTIN in one state (a business can hold one per state, or none)."""
 
     RegistrationType = GstRegistrationRegistrationType
@@ -124,7 +125,7 @@ class GstRegistration(models.Model):
         ]
 
 
-class DocumentSeries(models.Model):
+class DocumentSeries(TenantScoped):
     """Number series per registration, document type and financial year."""
 
     id = uuid7_pk()

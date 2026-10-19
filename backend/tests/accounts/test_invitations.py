@@ -9,7 +9,6 @@ from rest_framework.test import APIClient
 
 from apps.accounts.models import Membership, User
 from apps.core.tenancy import tenant_context, user_context
-from apps.parties.models import Party
 from tests.factories import Member, TenantFixture, add_member, make_party, make_tenant, owner_member
 
 from .conftest import Account, bearer
@@ -138,8 +137,9 @@ def test_invitee_sees_only_the_inviters_name_not_its_data(
     invitee = make_account()
     _invite(api, owner, invitee.email)
     user = User.objects.get(email=invitee.email)
-    with user_context(user.pk):
-        assert Party.objects.count() == 0
+    with user_context(user.pk), connection.cursor() as cursor:
+        cursor.execute("SELECT count(*) FROM parties")  # RLS: no tenant, no rows
+        assert cursor.fetchone() == (0,)
         assert Membership.objects.filter(tenant_id=tenant.tenant_id).count() == 1  # own row only
 
 

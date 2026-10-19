@@ -15,6 +15,7 @@ from apps.core.db import (
     updated_at,
     uuid7_pk,
 )
+from apps.core.managers import TenantScoped
 from apps.tenants.models import GSTIN_RE, PAN_RE, STATE_CODE_RE
 
 
@@ -27,7 +28,7 @@ class PartyGstTreatment(models.TextChoices):
     OVERSEAS = "OVERSEAS"
 
 
-class Party(models.Model):
+class Party(TenantScoped):
     """A customer, vendor or subcontractor."""
 
     GstTreatment = PartyGstTreatment

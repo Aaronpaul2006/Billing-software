@@ -2,6 +2,7 @@ from django.db import models
 from django.db.models import Q
 
 from apps.core.db import SQLDefault, created_at, length_between, one_of, ref, tenant_ref, uuid7_pk
+from apps.core.managers import TenantScoped
 
 
 class IdempotencyKeyState(models.TextChoices):
@@ -9,7 +10,7 @@ class IdempotencyKeyState(models.TextChoices):
     COMPLETED = "COMPLETED"
 
 
-class IdempotencyKey(models.Model):
+class IdempotencyKey(TenantScoped):
     """Makes POST retries safe: same key + same body → the stored response is replayed."""
 
     State = IdempotencyKeyState

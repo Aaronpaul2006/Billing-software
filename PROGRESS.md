@@ -4,7 +4,7 @@ Last updated: 2026-10-19
 
 ## Current phase
 
-**Phase 0 — Foundations**: all 8 steps done (2026-10-19). Next: Phase 1 — core billing.
+**Phase 1 — Core billing** (in progress): step 1.1 of 7 done. Phase 0 (Foundations) complete.
 
 ## Done
 
@@ -25,10 +25,11 @@ Last updated: 2026-10-19
 - [x] Phase 0.6 (rest): invitations, invite + accept (owner decision 2026-10-19): `POST /members` invites an existing account (INVITED), `GET /invitations`, `POST /invitations/{id}/accept|decline`. Schema: `tenant_member_read` also covers INVITED; new function `respond_to_invitation()` (schema.sql + migration, sync test passes). 119 tests
 - [x] Phase 0.7: all 32 `db/tests` checks ported to pytest on real Postgres (`tests/db/test_schema_rules.py`, independent tests, raw SQL as the app role), plus concurrency tests with two real connections and overlapping transactions (`tests/db/test_concurrency.py`): series-lock issue is unique and gapless, the unique index catches the unlocked anti-pattern, a failed issue leaves no gap, parallel allocations cannot overpay an invoice or spend a payment twice. Stable over repeated runs. 156 tests
 - [x] Phase 0.8: GitHub Actions CI (`.github/workflows/ci.yml`): backend job with Postgres 17.11 + Redis 8.10 services runs `uv sync --locked`, ruff (lint + format), mypy, role bootstrap, `makemigrations --check`, migrations on a fresh database as `billing_owner`, pytest (all 156 tests incl. concurrency), pip-audit; a second job runs the PGlite `schema.sql` checks. Actions pinned to commit SHAs. Rehearsed locally step by step on a fresh database
+- [x] Phase 1.1: API building blocks — tenant-aware manager `TenantScoped` on the 13 business tables (isolation layer 1: `objects` raises without a tenant context, `save()` refuses another tenant), cursor pagination `{results, next_cursor}` (limit ≤ 100), django-filter + allow-listed ordering, `MoneyField`/`QuantityField`/`PercentField` (reject JSON numbers), optimistic locking (`ETag`, `If-Match` 428/412 with `current`, compare-and-set `update_versioned`), `@idempotent` POSTs (replay, 422 on reuse, 428 if missing, nothing stored on failure, concurrent duplicates run once), cross-tenant test generated from the URL conf (unregistered routes fail). Mutation-checked. 183 tests
 
 ## In progress
 
-- Nothing. Confirm the first CI run on GitHub is green (Actions tab).
+- Phase 1.2: business profile (`/tenant`), GST registrations, number series.
 
 ## Next
 
@@ -43,10 +44,15 @@ Phase 0 — Foundations, in order:
 7. ~~Port `db/tests` to pytest + concurrency tests~~ (done)
 8. ~~GitHub Actions CI~~ (done)
 
-Then Phase 1 — core billing (parties, projects, documents, tax engine, PDF). Start with:
-tenant profile + GST registrations + number series endpoints, a tenant-aware ORM
-manager (isolation layer 1), idempotency keys, cursor pagination, and the
-cross-tenant test generated from the URL conf (architecture §8).
+Phase 1 — core billing:
+
+1. ~~API building blocks~~ (done)
+2. Business profile, GST registrations, number series
+3. Parties (GSTIN checksum), projects, BOQ items, catalog
+4. Tax engine (pure Python, table-driven + property tests)
+5. Draft documents with lines, server-computed totals, `preview-totals`
+6. Issue / cancel / accept / decline / convert; gapless numbering, snapshots
+7. PDF generation (Celery worker) and file storage with presigned URLs
 Full roadmap: `docs/01-architecture.md` §9.
 
 ## Open questions (for the owner)
@@ -66,7 +72,7 @@ Full roadmap: `docs/01-architecture.md` §9.
 - **Auth items deferred** (need email sending, Redis or a schema decision): email verification (`verify-email`; architecture says it gates issuing documents), password forgot/reset, `PATCH /me`, Redis rate limits (login per IP, API per user, `RateLimit-*` headers), `Idempotency-Key` on signup (`idempotency_keys` requires a tenant and user, which do not exist yet at signup), HaveIBeenPwned check (Django's common-password list is used for now), sliding vs absolute session lifetime (sliding 30 days now).
 - Invitations work only for people who already have an account (`422 no_account` otherwise, which tells an OWNER/ADMIN whether an email is registered). Email invitation links for new people come with email sending.
 - Signup reveals whether an email is registered (`422 email_taken`); login and reset do not. Revisit with email verification (send a "you already have an account" email instead).
-- Layer 1 of isolation (a tenant-aware ORM manager) is not built yet; RLS + composite FKs already enforce isolation. Add it with the first tenant-scoped endpoints (Phase 1).
+- Expired idempotency keys are reused on demand; a periodic purge (Celery beat) comes with step 1.7.
 - `auth_sessions` has a `tenant_id` column but no RLS, by design (global table, read only by id / token hash).
 - The app role has no privileges on `django_migrations`. `TransactionTestCase`-style flushes (TRUNCATE) will not work as the app role; concurrency tests in step 7 need their own setup/cleanup.
 - Until JWT lands (step 5), unauthenticated API calls get 403 `permission_denied`; step 5 makes them 401.

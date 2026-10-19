@@ -53,12 +53,13 @@ def make_tenant(name: str = "Acme Builders", state_code: str = "32") -> TenantFi
 
 def make_party(t: TenantFixture, name: str = "Client Ltd") -> Party:
     with tenant_context(t.tenant_id, t.user_id):
-        return Party.objects.create(
+        party: Party = Party.objects.create(
             tenant_id=t.tenant_id,
             display_name=name,
             gst_treatment=Party.GstTreatment.UNREGISTERED,
             created_by_id=t.user_id,
         )
+        return party
 
 
 @dataclass(frozen=True)

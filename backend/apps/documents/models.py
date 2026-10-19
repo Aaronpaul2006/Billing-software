@@ -24,6 +24,7 @@ from apps.core.db import (
     updated_at,
     uuid7_pk,
 )
+from apps.core.managers import TenantScoped
 from apps.projects.models import SAC_HSN_RE
 from apps.tenants.models import STATE_CODE_RE, DocType
 
@@ -52,7 +53,7 @@ class DocumentStatus(models.TextChoices):
     CANCELLED = "CANCELLED"
 
 
-class Document(models.Model):
+class Document(TenantScoped):
     Status = DocumentStatus
     SupplyType = DocumentSupplyType
     id = uuid7_pk()
@@ -298,7 +299,7 @@ class Document(models.Model):
         return f"{self.doc_type} {self.doc_number or '(draft)'}"
 
 
-class DocumentLine(models.Model):
+class DocumentLine(TenantScoped):
     id = uuid7_pk()
     tenant = tenant_ref()
     # CASCADE: only drafts can be deleted (trigger), and their lines go with them.

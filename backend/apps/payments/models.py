@@ -11,6 +11,7 @@ from apps.core.db import (
     updated_at,
     uuid7_pk,
 )
+from apps.core.managers import TenantScoped
 
 
 class PaymentMode(models.TextChoices):
@@ -27,7 +28,7 @@ class PaymentStatus(models.TextChoices):
     VOIDED = "VOIDED"
 
 
-class Payment(models.Model):
+class Payment(TenantScoped):
     """Money received from a party."""
 
     Status = PaymentStatus
@@ -73,7 +74,7 @@ class Payment(models.Model):
         ]
 
 
-class Allocation(models.Model):
+class Allocation(TenantScoped):
     """Settles a document from a payment or an issued credit note.
 
     Immutable: the allocations trigger keeps documents.amount_settled in step
