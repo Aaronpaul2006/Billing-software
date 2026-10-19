@@ -59,17 +59,27 @@ the best fit for a small team building a money-heavy business app.
 
 ```
 HTTP request
-  └─ AuthenticationMiddleware   verify JWT → user_id, tenant_id, role
-  └─ TenantContextMiddleware    BEGIN (ATOMIC_REQUESTS)
+  └─ RequestIdMiddleware        server-generated UUIDv7 request id
+  └─ AuthenticationMiddleware   verify JWT → request.principal (user_id, tenant_id, role)
+  └─ TenantContextMiddleware    BEGIN
                                 SELECT set_config('app.tenant_id', :tenant, true),
                                        set_config('app.user_id',   :user,   true),
                                        set_config('app.request_id', :req,   true);
-  └─ View / service code        ordinary ORM queries; RLS filters every row
+     └─ View (ATOMIC_REQUESTS)  SAVEPOINT; ordinary ORM queries; RLS filters every row;
+                                an error rolls back to the savepoint
   └─ COMMIT / ROLLBACK          settings vanish with the transaction
 ```
 
-Celery tasks do the same: every task receives `tenant_id` and `user_id`
-explicitly and runs inside `tenant_context(tenant_id, user_id)`.
+Django's `ATOMIC_REQUESTS` wraps only the view, so the middleware opens the
+request transaction itself (`apps/core/middleware.py`) and the view's atomic
+block nests inside it as a savepoint. Requests without a principal get no
+transaction and no tenant: RLS returns nothing.
+
+Celery tasks, management commands and tests do the same through
+`apps.core.tenancy.tenant_context(tenant_id, user_id)`: every task receives
+`tenant_id` and `user_id` explicitly. Switching to a different tenant while a
+context is active raises; when nested in a longer transaction the settings
+are cleared on exit.
 
 ### 2.4 Rules that must never be broken
 

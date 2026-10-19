@@ -35,3 +35,18 @@ def django_db_setup(
     with django_db_blocker.unblock():
         connections.close_all()  # the app connection would block DROP DATABASE
         teardown_databases(config, verbosity=verbosity, keepdb=django_db_keepdb)
+
+
+@pytest.fixture
+def committed_db(django_db_setup: None, django_db_blocker: Any) -> Iterator[None]:
+    """Database access with real COMMITs (no per-test wrapping transaction).
+
+    Needed to test transaction boundaries and concurrency. pytest-django's
+    transaction=True would TRUNCATE all tables afterwards, which the app role
+    may not do (and audit_log forbids); instead each test creates its own
+    tenants with fresh ids, and the whole test database is dropped at the end
+    of the session.
+    """
+    with django_db_blocker.unblock():
+        yield
+        connections["default"].close()

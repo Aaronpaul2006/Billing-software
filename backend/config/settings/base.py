@@ -46,6 +46,9 @@ MIDDLEWARE = [
     "apps.core.middleware.RequestIdMiddleware",
     "django.middleware.common.CommonMiddleware",
     "django.middleware.clickjacking.XFrameOptionsMiddleware",
+    # Must stay after the authentication middleware (step 5) that sets
+    # request.principal from the verified access token.
+    "apps.core.middleware.TenantContextMiddleware",
 ]
 
 # API paths have no trailing slash; never redirect (it would drop POST bodies).
