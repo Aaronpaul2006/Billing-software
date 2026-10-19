@@ -25,6 +25,17 @@ urlpatterns = [
     path("auth/mfa/disable", views.MfaDisableView.as_view(), name="auth-mfa-disable"),
     path("me", views.MeView.as_view(), name="me"),
     path("members", member_views.MemberListView.as_view(), name="members"),
+    path("invitations", member_views.InvitationListView.as_view(), name="invitations"),
+    path(
+        "invitations/<uuid:membership_id>/accept",
+        member_views.InvitationAcceptView.as_view(),
+        name="invitation-accept",
+    ),
+    path(
+        "invitations/<uuid:membership_id>/decline",
+        member_views.InvitationDeclineView.as_view(),
+        name="invitation-decline",
+    ),
     path(
         "members/<uuid:membership_id>",
         member_views.MemberDetailView.as_view(),

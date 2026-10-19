@@ -149,3 +149,21 @@ class MemberSerializer(serializers.Serializer[Any]):
 
 class MemberListSerializer(serializers.Serializer[Any]):
     results = MemberSerializer(many=True)
+
+
+class InviteSerializer(serializers.Serializer[Any]):
+    email = serializers.EmailField(max_length=254)
+    role = serializers.ChoiceField(choices=Role.values)
+
+
+class InvitationSerializer(serializers.Serializer[Any]):
+    id = serializers.UUIDField()
+    tenant_id = serializers.UUIDField()
+    legal_name = serializers.CharField()
+    role = serializers.CharField()
+    invited_by_name = serializers.CharField(allow_null=True)
+    invited_at = serializers.DateTimeField()
+
+
+class InvitationListSerializer(serializers.Serializer[Any]):
+    results = InvitationSerializer(many=True)

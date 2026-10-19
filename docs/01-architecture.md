@@ -135,6 +135,11 @@ Member rules on top of the matrix: nobody changes or revokes their own
 membership; an ADMIN cannot touch an OWNER or appoint one; a tenant always
 keeps an active OWNER. Revoking a member or changing their role signs out
 their sessions for that tenant immediately (stricter than "within 10 minutes").
+New members are **invited** (status INVITED) and join only when they accept.
+An invitee can read the inviting tenant's row (to see who invited them) and
+nothing else of it; accepting goes through the database function
+`respond_to_invitation()`, the only path that may update a membership of a
+tenant the user is not signed in to, and it changes nothing but the status.
 
 Later: project-level scoping (site engineers see only assigned projects) via a
 `project_members` table plus an extra RLS predicate.

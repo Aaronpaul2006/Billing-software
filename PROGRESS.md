@@ -4,7 +4,7 @@ Last updated: 2026-10-19
 
 ## Current phase
 
-**Phase 0 — Foundations** (in progress): steps 1–5 of 8 done, step 6 mostly done.
+**Phase 0 — Foundations** (in progress): steps 1–6 of 8 done.
 
 ## Done
 
@@ -22,10 +22,11 @@ Last updated: 2026-10-19
 - [x] Phase 0.4: `apps/core/tenancy.py` (`Principal`, `tenant_context()`: transaction-local `set_config`, refuses tenant switching, clears itself when nested) and `TenantContextMiddleware` (opens the request transaction, view's `ATOMIC_REQUESTS` nests as a savepoint; tenant only from `request.principal`). Tests with real commits: context gone after commit, no leak across requests on the same pooled connection, RLS read/write/update isolation, composite-FK cross-tenant reference blocked, failing view rolls back. Mutation-checked (session-level `set_config` makes 3 tests fail). 49 tests
 - [x] Phase 0.5: auth — signup (user + tenant + OWNER), login with generic errors, timing-equalised unknown emails and progressive lockout, Argon2id, JWT access tokens (HS256, 10 min, `kid`), opaque refresh tokens stored as SHA-256 and rotated with reuse detection (row-locked; concurrency-tested), per-request session liveness (instant logout/revoke), web cookie vs mobile body, switch-tenant, sessions list/revoke, TOTP MFA (encrypted secret, replay-proof, 10 hashed one-time recovery codes, OWNER/ADMIN gated until enrolled, cannot disable), `/me`. OpenAPI schema documents every endpoint (generation must be warning-free). Schema change: `users.mfa_recovery_codes`, `users.mfa_last_used_step` (schema.sql + migration). Also fixed: error responses now roll back the request transaction (custom DRF handler lacked `set_rollback`); app role may read `django_migrations` so `runserver` works. 84 tests
 - [x] Phase 0.6 (part): role/action matrix as data (`apps/core/permissions.py`: `can`, `require`, `HasAction`), tested cell by cell against architecture §3; member management `GET /members`, `PATCH /members/{id}` (role), `DELETE /members/{id}` (revoke) with owner protection, no self-modification, last-owner guard, immediate sign-out on revoke/role change, 404 across tenants. Mutation-checked. 111 tests
+- [x] Phase 0.6 (rest): invitations, invite + accept (owner decision 2026-10-19): `POST /members` invites an existing account (INVITED), `GET /invitations`, `POST /invitations/{id}/accept|decline`. Schema: `tenant_member_read` also covers INVITED; new function `respond_to_invitation()` (schema.sql + migration, sync test passes). 119 tests
 
 ## In progress
 
-- Phase 0.6: inviting members (`POST /members`) — **waiting for an owner decision** on the invitation model (see Open questions).
+- Phase 0.7: port `db/tests` checks to pytest against real Postgres; concurrency tests.
 
 ## Next
 
@@ -36,7 +37,7 @@ Phase 0 — Foundations, in order:
 3. ~~Database roles and migrations mirroring `db/schema.sql`~~ (done)
 4. ~~Tenant context middleware + `tenant_context()`~~ (done)
 5. ~~Auth~~ (done; see deferred items below)
-6. Memberships and role permissions
+6. ~~Memberships and role permissions~~ (done)
 7. Port `db/tests` checks to pytest against real Postgres; add concurrency tests (parallel issue, parallel allocation)
 8. GitHub Actions CI: lint, type-check, tests, `pip-audit`, `makemigrations --check`
 
@@ -45,7 +46,6 @@ Full roadmap: `docs/01-architecture.md` §9.
 
 ## Open questions (for the owner)
 
-- **Invitations** (blocks the rest of step 6): add existing users directly, or invite with accept step (status INVITED; needs RLS changes so the invitee can see and accept), or email invitations with a token that also works for people without an account (needs email sending + schema).
 
 - Are the first customers GST-registered, and above the ₹5 Cr e-invoicing threshold?
 - Do site engineers need offline drafts on mobile in v1?
@@ -59,6 +59,7 @@ Full roadmap: `docs/01-architecture.md` §9.
 - Tests: `default` mirrors `owner`; `tests/conftest.py` overrides `django_db_setup` so the owner alias always gets a `test_` database (pytest-django alone would leave the mirror pointing at the real dev database).
 - Tests needing real COMMITs use the `committed_db` fixture (no TRUNCATE flush; fresh tenant ids per test; the test DB is dropped at session end).
 - **Auth items deferred** (need email sending, Redis or a schema decision): email verification (`verify-email`; architecture says it gates issuing documents), password forgot/reset, `PATCH /me`, Redis rate limits (login per IP, API per user, `RateLimit-*` headers), `Idempotency-Key` on signup (`idempotency_keys` requires a tenant and user, which do not exist yet at signup), HaveIBeenPwned check (Django's common-password list is used for now), sliding vs absolute session lifetime (sliding 30 days now).
+- Invitations work only for people who already have an account (`422 no_account` otherwise, which tells an OWNER/ADMIN whether an email is registered). Email invitation links for new people come with email sending.
 - Signup reveals whether an email is registered (`422 email_taken`); login and reset do not. Revisit with email verification (send a "you already have an account" email instead).
 - Layer 1 of isolation (a tenant-aware ORM manager) is not built yet; RLS + composite FKs already enforce isolation. Add it with the first tenant-scoped endpoints (Phase 1).
 - `auth_sessions` has a `tenant_id` column but no RLS, by design (global table, read only by id / token hash).
