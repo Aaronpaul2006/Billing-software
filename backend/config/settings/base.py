@@ -21,13 +21,24 @@ SECRET_KEY: str = env("DJANGO_SECRET_KEY")
 DEBUG = False
 ALLOWED_HOSTS: list[str] = env.list("DJANGO_ALLOWED_HOSTS", default=[])
 
-# contrib.auth / admin are not installed yet: the custom users table and auth
-# arrive in Phase 0 steps 3 and 5.
+# contrib.auth / admin are not installed: users live in the `users` table
+# (apps.accounts) and authentication is JWT (Phase 0 step 5).
 INSTALLED_APPS = [
+    "django.contrib.postgres",
     "django.contrib.staticfiles",
     "rest_framework",
     "drf_spectacular",
     "apps.core",
+    "apps.audit",
+    "apps.tenants",
+    "apps.accounts",
+    "apps.parties",
+    "apps.projects",
+    "apps.catalog",
+    "apps.files",
+    "apps.documents",
+    "apps.payments",
+    "apps.expenses",
 ]
 
 MIDDLEWARE = [
@@ -59,8 +70,13 @@ WSGI_APPLICATION = "config.wsgi.application"
 ASGI_APPLICATION = "config.asgi.application"
 
 # --- Database ------------------------------------------------------------------
+# Two connections to the same database (docs/01-architecture.md §2.4):
+#   default  billing_app login: every query, always subject to RLS.
+#   owner    billing_owner: migrations only (manage.py migrate --database=owner).
 # ATOMIC_REQUESTS: every request is one transaction, which is what makes the
 # transaction-local tenant context (set_config(..., true)) safe with pooling.
+# In tests `default` mirrors `owner`: the owner creates and migrates the test
+# database, and tests then run against it as the app role.
 DATABASES = {
     "default": {
         **env.db("DATABASE_URL"),
@@ -68,8 +84,15 @@ DATABASES = {
         "CONN_MAX_AGE": env.int("DB_CONN_MAX_AGE", default=60),
         "CONN_HEALTH_CHECKS": True,
         "OPTIONS": {"connect_timeout": 5},  # fail fast instead of hanging
-    }
+        "TEST": {"MIRROR": "owner"},
+    },
+    "owner": {
+        **env.db("DATABASE_OWNER_URL"),
+        "CONN_MAX_AGE": 0,
+        "OPTIONS": {"connect_timeout": 5},
+    },
 }
+DATABASE_ROUTERS = ["apps.core.db_router.MigrationsAsOwnerRouter"]
 DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
 
 REDIS_URL: str = env("REDIS_URL")

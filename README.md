@@ -28,6 +28,8 @@ docker compose up -d --wait  # Postgres :5433, Redis :6380, S3 (SeaweedFS) :8333
 ```bash
 cd backend
 uv sync
+uv run python scripts/bootstrap_db.py           # roles: billing_owner / billing_app
+uv run python manage.py migrate --database=owner
 uv run pytest
 uv run python manage.py runserver   # http://127.0.0.1:8000/healthz, /api/v1/docs/
 ```

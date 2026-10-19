@@ -24,6 +24,9 @@ Original concept: `Project billling software.docx`.
 | `db/tests/` | Executable checks of the schema (PGlite = real Postgres 17 in WASM) |
 | `docker-compose.yml` | Local dev services: Postgres 5433, Redis 6380, SeaweedFS (S3) 8333, Mailpit 1025/8025 |
 | `backend/` | Django project: `config/` (settings base/dev/test/prod, urls), `apps/` (one Django app per module), `tests/` |
+| `backend/apps/core/db.py` | Field types / lookups that make models produce exactly `db/schema.sql` |
+| `backend/apps/core/migrations/0003_database_security.py` | Composite FKs, triggers, RLS, views, grants (frozen copy of `schema.sql` §7–§10) |
+| `backend/scripts/bootstrap_db.py` | Creates the roles `billing_owner`, `billing_app`, `billing_app_login` (run once per cluster, as superuser) |
 
 ## Stack (decided, do not change without asking)
 
@@ -54,6 +57,9 @@ S3-compatible storage, drf-spectacular (OpenAPI), Docker Compose for local dev.
 - Serializers list fields explicitly (no `__all__`).
 - Every new endpoint gets a cross-tenant test (tenant B must get 404 on tenant A's objects).
 - Keep `db/schema.sql` and the Django migrations in sync — change both or neither.
+  `tests/db/test_schema_sync.py` builds a database from each and compares the catalogs;
+  it fails on any difference. Model FKs use `ref()` (`db_constraint=False`); the real
+  (composite) FK constraints are added in RunSQL.
 
 ## Workflow rules
 
@@ -86,6 +92,8 @@ cd db/tests && npm install && npm test
 
 # Backend (run inside backend/; needs uv and the compose services up)
 uv sync                                  # install exact versions from uv.lock
+uv run python scripts/bootstrap_db.py    # once per Postgres cluster: roles + db owner
+uv run python manage.py migrate --database=owner   # migrations run ONLY as billing_owner
 uv run ruff check . && uv run ruff format --check .
 uv run mypy .
 uv run pytest
