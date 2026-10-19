@@ -1,8 +1,10 @@
+from django.contrib.postgres.fields import ArrayField
 from django.db import models
 from django.db.models import Q
 
 from apps.core.db import (
     CITextField,
+    SQLDefault,
     created_at,
     length_between,
     one_of,
@@ -39,6 +41,13 @@ class User(models.Model):
     phone = models.TextField(null=True)  # noqa: DJ001 - mirrors schema (NULL = not given)
     mfa_enabled = models.BooleanField(default=False, db_default=False)
     mfa_secret_enc = models.BinaryField(null=True)  # TOTP secret, envelope-encrypted
+    # SHA-256 (hex) of the unused one-time recovery codes.
+    mfa_recovery_codes = ArrayField(
+        models.TextField(),
+        default=list,
+        db_default=SQLDefault("'{}'::text[]", ArrayField(models.TextField())),
+    )
+    mfa_last_used_step = models.BigIntegerField(null=True)  # TOTP replay protection
     status = models.TextField(
         choices=Status, default=UserStatus.ACTIVE, db_default=UserStatus.ACTIVE
     )

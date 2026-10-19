@@ -1,3 +1,5 @@
+import base64
+
 from django.core.exceptions import ImproperlyConfigured
 
 from .base import *
@@ -8,6 +10,11 @@ if len(SECRET_KEY) < 50 or "insecure" in SECRET_KEY or "change-me" in SECRET_KEY
     raise ImproperlyConfigured("DJANGO_SECRET_KEY must be a random value of at least 50 characters")
 if not ALLOWED_HOSTS:
     raise ImproperlyConfigured("DJANGO_ALLOWED_HOSTS must be set in production")
+if len(JWT_SIGNING_KEY) < 43 or "local-dev" in JWT_SIGNING_KEY:
+    raise ImproperlyConfigured("JWT_SIGNING_KEY must be a random value of at least 32 bytes")
+_mfa_key = base64.b64decode(MFA_ENCRYPTION_KEY)
+if len(_mfa_key) != 32 or b"local-dev" in _mfa_key:
+    raise ImproperlyConfigured("MFA_ENCRYPTION_KEY must be 32 random bytes, base64-encoded")
 
 # TLS terminates at the load balancer, which sets X-Forwarded-Proto.
 SECURE_PROXY_SSL_HEADER = ("HTTP_X_FORWARDED_PROTO", "https")

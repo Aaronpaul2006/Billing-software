@@ -114,8 +114,35 @@ See the architecture doc §6 for the limits.
 | `POST /auth/mfa/setup` · `POST /auth/mfa/enable` · `POST /auth/mfa/disable` | TOTP enrolment (disable requires password + code) |
 | `GET /me` · `PATCH /me` | Profile, memberships |
 
-Access token claims: `sub` (user), `tid` (tenant), `role`, `sid` (session),
-`exp` (10 min).
+Access token claims: `sub` (user), `tid` (tenant), `role`, `sid` (session
+family), `amr` (`["pwd"]` or `["otp","pwd"]`), `iss`, `iat`, `exp` (10 min),
+`typ`. HS256 only, `kid` in the header for key rotation.
+
+Implemented (Phase 0.5) as of 2026-10-19:
+
+* **`client`**: login, signup, MFA verify, switch-tenant and MFA enable take
+  `client: "web" | "mobile"` (default `mobile`). Mobile gets `refresh_token`
+  in the body; web gets it only as an `HttpOnly; SameSite=Strict` cookie on
+  path `/api/v1/auth`, and `POST /auth/token/refresh` with an empty body uses
+  the cookie.
+* **Sessions** are refresh-token families; `sid` is the family id. Every
+  request checks the family is live, so logout and `DELETE /auth/sessions/{id}`
+  take effect immediately. Reusing a rotated refresh token revokes the family
+  (`401 refresh_token_reused`); two concurrent refreshes with one token count
+  as reuse, so clients must serialise refreshes.
+* **MFA gate**: an OWNER/ADMIN whose token lacks `otp` gets
+  `403 mfa_enrollment_required` everywhere except `/me`, `/auth/mfa/setup`,
+  `/auth/mfa/enable`, `/auth/sessions*`, `/auth/switch-tenant` and
+  `/auth/logout`. Token responses carry `mfa_enrollment_required`. Enabling MFA
+  returns 10 one-time `recovery_codes` and new tokens, and signs out every
+  other session. OWNER/ADMIN cannot disable MFA (`409 mfa_required_for_role`).
+* **Error codes**: `401 invalid_credentials` (wrong password, unknown email and
+  locked account look identical), `invalid_mfa_code`, `invalid_mfa_token`,
+  `invalid_refresh_token`, `refresh_token_reused`, `token_expired`,
+  `invalid_token`, `session_revoked`; `403 no_active_membership`;
+  `422 weak_password` / `email_taken` (field errors).
+* Not yet built: `verify-email`, `password/forgot|reset`, `PATCH /me`, rate
+  limit headers, `Idempotency-Key` on signup (see PROGRESS.md).
 
 ---
 

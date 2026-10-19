@@ -5,6 +5,7 @@ from the repository-root `.env` (the same file docker-compose uses); real
 environments inject them from a secrets manager and ship no `.env` file.
 """
 
+from datetime import timedelta
 from pathlib import Path
 
 import environ
@@ -46,8 +47,9 @@ MIDDLEWARE = [
     "apps.core.middleware.RequestIdMiddleware",
     "django.middleware.common.CommonMiddleware",
     "django.middleware.clickjacking.XFrameOptionsMiddleware",
-    # Must stay after the authentication middleware (step 5) that sets
-    # request.principal from the verified access token.
+    # Verifies the access token and sets request.principal ...
+    "apps.accounts.middleware.JWTAuthenticationMiddleware",
+    # ... which this one turns into the request's tenant context.
     "apps.core.middleware.TenantContextMiddleware",
 ]
 
@@ -104,6 +106,36 @@ REDIS_URL: str = env("REDIS_URL")
 PASSWORD_HASHERS = [
     "django.contrib.auth.hashers.Argon2PasswordHasher",
 ]
+_validators = "django.contrib.auth.password_validation"
+AUTH_PASSWORD_VALIDATORS = [
+    {
+        "NAME": f"{_validators}.UserAttributeSimilarityValidator",
+        "OPTIONS": {"user_attributes": ("email", "full_name")},
+    },
+    {"NAME": f"{_validators}.MinimumLengthValidator", "OPTIONS": {"min_length": 10}},
+    {"NAME": f"{_validators}.CommonPasswordValidator"},  # ~20k breached/common passwords
+    {"NAME": f"{_validators}.NumericPasswordValidator"},
+]
+
+# --- Authentication (docs/01-architecture.md §6) -------------------------------
+# Access tokens: JWT, HS256, short-lived. The key id goes in the JWT header so
+# the key can be rotated later without invalidating every session at once.
+JWT_SIGNING_KEY: str = env("JWT_SIGNING_KEY")
+JWT_KEY_ID: str = env("JWT_KEY_ID", default="k1")
+JWT_ISSUER: str = env("JWT_ISSUER", default="billing-api")
+ACCESS_TOKEN_TTL = timedelta(minutes=10)
+MFA_CHALLENGE_TTL = timedelta(minutes=5)
+# Refresh tokens: opaque, stored as SHA-256, rotated on every use.
+REFRESH_TOKEN_TTL = timedelta(days=30)
+REFRESH_COOKIE_NAME = "refresh_token"
+REFRESH_COOKIE_PATH = "/api/v1/auth"
+REFRESH_COOKIE_SECURE = True
+# Account lockout after repeated failures: 1, 2, 4 ... minutes, capped.
+LOGIN_LOCKOUT_THRESHOLD = 5
+LOGIN_LOCKOUT_MAX = timedelta(hours=1)
+# AES-256-GCM key (base64, 32 bytes) for TOTP secrets. Production: from a KMS.
+MFA_ENCRYPTION_KEY: str = env("MFA_ENCRYPTION_KEY")
+MFA_ISSUER_NAME = "Construction Billing"
 
 # --- Internationalisation ------------------------------------------------------
 LANGUAGE_CODE = "en-in"
@@ -119,10 +151,13 @@ X_FRAME_OPTIONS = "DENY"
 
 # --- REST framework ------------------------------------------------------------
 REST_FRAMEWORK = {
-    # Secure by default: every endpoint needs an authenticated user unless it
-    # opts out explicitly. Authentication classes arrive with JWT (step 5).
-    "DEFAULT_AUTHENTICATION_CLASSES": [],
-    "DEFAULT_PERMISSION_CLASSES": ["rest_framework.permissions.IsAuthenticated"],
+    # Secure by default: every endpoint needs an authenticated user, and
+    # OWNER/ADMIN must have passed MFA, unless a view opts out explicitly.
+    "DEFAULT_AUTHENTICATION_CLASSES": ["apps.accounts.authentication.PrincipalAuthentication"],
+    "DEFAULT_PERMISSION_CLASSES": [
+        "rest_framework.permissions.IsAuthenticated",
+        "apps.core.permissions.MfaSatisfied",
+    ],
     "UNAUTHENTICATED_USER": None,
     "DEFAULT_RENDERER_CLASSES": ["rest_framework.renderers.JSONRenderer"],
     "DEFAULT_PARSER_CLASSES": ["rest_framework.parsers.JSONParser"],

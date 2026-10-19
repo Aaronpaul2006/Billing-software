@@ -1,0 +1,625 @@
+"""Authentication use cases: signup, login (+MFA), refresh rotation, sessions.
+
+Plain functions (docs/01-architecture.md §4). Each manages its own
+transactions explicitly, because some outcomes must be committed even when
+the request then fails: a failed-login counter, or revoking a token family
+after refresh-token reuse.
+"""
+
+import hashlib
+import hmac
+import logging
+import secrets
+import time
+import uuid
+from dataclasses import dataclass, field, replace
+from datetime import datetime, timedelta
+
+import pyotp
+from django.conf import settings
+from django.contrib.auth.hashers import check_password, make_password
+from django.contrib.auth.password_validation import validate_password
+from django.core.exceptions import ValidationError as DjangoValidationError
+from django.db import IntegrityError, transaction
+from django.db.models import F, Func, Max, Min, OuterRef, Q, Subquery, Value
+from django.utils import timezone
+
+from apps.core.errors import Conflict, Forbidden, Invalid, NotFound, Unauthenticated
+from apps.core.tenancy import Principal, tenant_context, user_context
+from apps.tenants.models import Tenant, TenantStatus
+
+from .crypto import decrypt_secret, encrypt_secret
+from .models import AuthSession, Membership, MembershipStatus, Role, User, UserStatus
+from .tokens import (
+    InvalidToken,
+    hash_refresh_token,
+    issue_access_token,
+    issue_mfa_challenge,
+    new_refresh_token,
+    verify_mfa_challenge,
+)
+
+security_log = logging.getLogger("security")
+
+MFA_ROLES = frozenset({Role.OWNER, Role.ADMIN})
+RECOVERY_CODE_COUNT = 10
+
+
+# --- results & errors ------------------------------------------------------------
+
+
+@dataclass(frozen=True)
+class ClientInfo:
+    ip: str | None = None
+    user_agent: str | None = None
+    device_label: str | None = None
+
+
+@dataclass(frozen=True)
+class TenantSummary:
+    id: uuid.UUID
+    legal_name: str
+    role: str
+
+
+@dataclass(frozen=True)
+class SessionTokens:
+    access_token: str
+    access_expires_at: datetime
+    refresh_token: str
+    refresh_expires_at: datetime
+    session_id: uuid.UUID
+    user_id: uuid.UUID
+    tenant_id: uuid.UUID
+    role: str
+    amr: frozenset[str]
+    tenants: list[TenantSummary] = field(default_factory=list)
+
+
+@dataclass(frozen=True)
+class MfaChallenge:
+    mfa_token: str
+
+
+class InvalidCredentials(Unauthenticated):
+    code = "invalid_credentials"
+    detail = "Invalid email or password."  # same for unknown email, bad password, locked
+
+
+class InvalidRefreshToken(Unauthenticated):
+    code = "invalid_refresh_token"
+    detail = "The refresh token is invalid or expired. Sign in again."
+
+
+class InvalidMfaCode(Unauthenticated):
+    code = "invalid_mfa_code"
+    detail = "The verification code is invalid."
+
+
+# --- helpers ---------------------------------------------------------------------
+
+
+def normalise_email(email: str) -> str:
+    return email.strip().lower()
+
+
+_dummy_hash: str | None = None
+
+
+def _burn_password_check(password: str) -> None:
+    """Spend the same time as a real check, so timing reveals no accounts."""
+    global _dummy_hash
+    if _dummy_hash is None:
+        _dummy_hash = make_password(secrets.token_urlsafe(16))
+    check_password(password, _dummy_hash)
+
+
+def _is_locked(user: User) -> bool:
+    return user.locked_until is not None and user.locked_until > timezone.now()
+
+
+def _register_failure(user_id: uuid.UUID) -> None:
+    """Count a failed password/MFA attempt; lock progressively (committed)."""
+    with transaction.atomic():
+        user = User.objects.select_for_update().get(pk=user_id)
+        user.failed_login_count += 1
+        over = user.failed_login_count - settings.LOGIN_LOCKOUT_THRESHOLD
+        fields = ["failed_login_count", "updated_at"]
+        if over >= 0:
+            lock_for = min(timedelta(minutes=2 ** min(over, 10)), settings.LOGIN_LOCKOUT_MAX)
+            user.locked_until = timezone.now() + lock_for
+            fields.append("locked_until")
+            security_log.warning("account_locked user=%s for=%s", user.pk, lock_for)
+        user.save(update_fields=fields)
+    security_log.info("login_failed user=%s", user_id)
+
+
+def _reset_failures(user: User) -> None:
+    if user.failed_login_count or user.locked_until:
+        User.objects.filter(pk=user.pk).update(
+            failed_login_count=0, locked_until=None, updated_at=timezone.now()
+        )
+
+
+def _start_session(
+    *,
+    user_id: uuid.UUID,
+    tenant_id: uuid.UUID,
+    role: str,
+    amr: frozenset[str],
+    client: ClientInfo,
+    family_id: uuid.UUID | None = None,
+) -> SessionTokens:
+    refresh_token, digest = new_refresh_token()
+    family_id = family_id or uuid.uuid7()
+    refresh_expires_at = timezone.now() + settings.REFRESH_TOKEN_TTL
+    AuthSession.objects.create(
+        user_id=user_id,
+        tenant_id=tenant_id,
+        family_id=family_id,
+        refresh_token_hash=digest,
+        device_label=client.device_label,
+        ip=client.ip,
+        user_agent=(client.user_agent or "")[:500] or None,
+        expires_at=refresh_expires_at,
+    )
+    access_token, access_expires_at = issue_access_token(
+        user_id=user_id, tenant_id=tenant_id, role=role, session_id=family_id, amr=amr
+    )
+    return SessionTokens(
+        access_token=access_token,
+        access_expires_at=access_expires_at,
+        refresh_token=refresh_token,
+        refresh_expires_at=refresh_expires_at,
+        session_id=family_id,
+        user_id=user_id,
+        tenant_id=tenant_id,
+        role=role,
+        amr=amr,
+    )
+
+
+def active_memberships(user_id: uuid.UUID) -> list[tuple[Membership, Tenant]]:
+    """The user's active memberships in active tenants. Needs user_context."""
+    memberships = list(
+        Membership.objects.filter(user_id=user_id, status=MembershipStatus.ACTIVE).order_by(
+            "created_at"
+        )
+    )
+    tenants = {
+        t.id: t
+        for t in Tenant.objects.filter(
+            id__in=[m.tenant_id for m in memberships], status=TenantStatus.ACTIVE
+        )
+    }
+    return [(m, tenants[m.tenant_id]) for m in memberships if m.tenant_id in tenants]
+
+
+def revoke_family(family_id: uuid.UUID) -> int:
+    return AuthSession.objects.filter(family_id=family_id, revoked_at__isnull=True).update(
+        revoked_at=timezone.now()
+    )
+
+
+def _revoke_all_sessions(user_id: uuid.UUID, *, except_family: uuid.UUID | None = None) -> None:
+    sessions = AuthSession.objects.filter(user_id=user_id, revoked_at__isnull=True)
+    if except_family is not None:
+        sessions = sessions.exclude(family_id=except_family)
+    sessions.update(revoked_at=timezone.now())
+
+
+def session_is_live(family_id: uuid.UUID) -> bool:
+    """True while the session family has an unrotated, unrevoked, unexpired token.
+
+    Checked on every request, so logout and "revoke session" take effect
+    immediately instead of when the 10-minute access token expires.
+    """
+    return AuthSession.objects.filter(
+        family_id=family_id,
+        revoked_at__isnull=True,
+        rotated_at__isnull=True,
+        expires_at__gt=timezone.now(),
+    ).exists()
+
+
+# --- signup & login ----------------------------------------------------------------
+
+
+def signup(
+    *, email: str, password: str, full_name: str, business_name: str, client: ClientInfo
+) -> SessionTokens:
+    """Create a user, their first tenant and the OWNER membership."""
+    email = normalise_email(email)
+    try:
+        # The validators only read attributes (email, full_name) of `user`.
+        validate_password(password, user=User(email=email, full_name=full_name))  # type: ignore[arg-type]
+    except DjangoValidationError as exc:
+        raise Invalid("password", " ".join(exc.messages), code="weak_password") from exc
+
+    tenant_id = uuid.uuid7()
+    try:
+        with transaction.atomic():
+            user = User.objects.create(
+                email=email, password_hash=make_password(password), full_name=full_name
+            )
+            # db/schema.sql §8: choose the tenant id, make it the context, then
+            # insert the tenant and its OWNER membership in one transaction.
+            with tenant_context(tenant_id, user.id):
+                Tenant.objects.create(id=tenant_id, legal_name=business_name)
+                Membership.objects.create(tenant_id=tenant_id, user=user, role=Role.OWNER)
+            tokens = _start_session(
+                user_id=user.id,
+                tenant_id=tenant_id,
+                role=Role.OWNER,
+                amr=frozenset({"pwd"}),
+                client=client,
+            )
+    except IntegrityError as exc:
+        if User.objects.filter(email=email).exists():
+            raise Invalid(
+                "email", "An account with this email already exists.", code="email_taken"
+            ) from exc
+        raise
+    security_log.info("signup user=%s tenant=%s", user.id, tenant_id)
+    return _with_tenants(tokens, [TenantSummary(tenant_id, business_name, Role.OWNER)])
+
+
+def login(
+    *, email: str, password: str, tenant_id: uuid.UUID | None, client: ClientInfo
+) -> SessionTokens | MfaChallenge:
+    user = User.objects.filter(email=normalise_email(email)).first()
+    if user is None or user.status != UserStatus.ACTIVE or _is_locked(user):
+        _burn_password_check(password)
+        if user is not None:
+            security_log.info("login_rejected user=%s status=%s", user.pk, user.status)
+        raise InvalidCredentials
+
+    def upgrade_hash(raw: str) -> None:
+        User.objects.filter(pk=user.pk).update(password_hash=make_password(raw))
+
+    if not check_password(password, user.password_hash, setter=upgrade_hash):
+        _register_failure(user.pk)
+        raise InvalidCredentials
+    _reset_failures(user)
+
+    if user.mfa_enabled:
+        return MfaChallenge(mfa_token=issue_mfa_challenge(user.pk))
+    return _complete_login(user, frozenset({"pwd"}), tenant_id, client)
+
+
+def verify_mfa_login(
+    *,
+    mfa_token: str,
+    code: str | None,
+    recovery_code: str | None,
+    tenant_id: uuid.UUID | None,
+    client: ClientInfo,
+) -> SessionTokens:
+    try:
+        user_id = verify_mfa_challenge(mfa_token)
+    except InvalidToken as exc:
+        raise Unauthenticated(
+            "The sign-in attempt expired. Sign in again.", code="invalid_mfa_token"
+        ) from exc
+    user = User.objects.filter(pk=user_id, status=UserStatus.ACTIVE).first()
+    if user is None or not user.mfa_enabled or _is_locked(user):
+        raise InvalidMfaCode
+    if not _consume_second_factor(user, code=code, recovery_code=recovery_code):
+        _register_failure(user.pk)
+        raise InvalidMfaCode
+    _reset_failures(user)
+    return _complete_login(user, frozenset({"pwd", "otp"}), tenant_id, client)
+
+
+def _complete_login(
+    user: User, amr: frozenset[str], tenant_id: uuid.UUID | None, client: ClientInfo
+) -> SessionTokens:
+    with user_context(user.pk):
+        available = active_memberships(user.pk)
+        if tenant_id is not None:
+            chosen = next((mt for mt in available if mt[0].tenant_id == tenant_id), None)
+            if chosen is None:
+                raise NotFound
+        elif available:
+            chosen = available[0]
+        else:
+            raise Forbidden(
+                "This account is not an active member of any business.",
+                code="no_active_membership",
+            )
+        membership, _ = chosen
+        tokens = _start_session(
+            user_id=user.pk,
+            tenant_id=membership.tenant_id,
+            role=membership.role,
+            amr=amr,
+            client=client,
+        )
+        User.objects.filter(pk=user.pk).update(last_login_at=timezone.now())
+    security_log.info("login_succeeded user=%s amr=%s", user.pk, ",".join(sorted(amr)))
+    return _with_tenants(tokens, [TenantSummary(t.id, t.legal_name, m.role) for m, t in available])
+
+
+def _with_tenants(tokens: SessionTokens, tenants: list[TenantSummary]) -> SessionTokens:
+    return replace(tokens, tenants=tenants)
+
+
+# --- refresh, switch, logout -----------------------------------------------------
+
+
+class RefreshTokenReused(InvalidRefreshToken):
+    code = "refresh_token_reused"
+    detail = "This sign-in was ended for security reasons. Sign in again."
+
+
+def refresh(token: str, client: ClientInfo) -> SessionTokens:
+    """Rotate a refresh token: the presented one is used up, a new one issued.
+
+    Presenting an already-rotated token means it was copied (or replayed):
+    the whole family is revoked. The row lock makes two concurrent refreshes
+    with the same token behave the same way: one wins, the other is reuse.
+    """
+    outcome: SessionTokens | type[InvalidRefreshToken] = InvalidRefreshToken
+    now = timezone.now()
+    with transaction.atomic():
+        session = (
+            AuthSession.objects.select_for_update()
+            .filter(refresh_token_hash=hash_refresh_token(token))
+            .first()
+        )
+        if session is None or session.revoked_at is not None or session.expires_at <= now:
+            pass
+        elif session.rotated_at is not None:
+            revoke_family(session.family_id)  # committed before we raise below
+            security_log.warning(
+                "refresh_token_reuse user=%s family=%s", session.user_id, session.family_id
+            )
+            outcome = RefreshTokenReused
+        else:
+            user = User.objects.get(pk=session.user_id)
+            membership = None
+            if user.status == UserStatus.ACTIVE and session.tenant_id is not None:
+                with user_context(user.pk):
+                    membership = next(
+                        (
+                            m
+                            for m, _ in active_memberships(user.pk)
+                            if m.tenant_id == session.tenant_id
+                        ),
+                        None,
+                    )
+            if membership is None:
+                revoke_family(session.family_id)  # membership revoked: end the session
+            else:
+                session.rotated_at = now
+                session.save(update_fields=["rotated_at"])
+                outcome = _start_session(
+                    user_id=user.pk,
+                    tenant_id=membership.tenant_id,
+                    role=membership.role,  # role re-checked at every refresh
+                    amr=frozenset({"pwd", "otp"} if user.mfa_enabled else {"pwd"}),
+                    client=ClientInfo(client.ip, client.user_agent, session.device_label),
+                    family_id=session.family_id,
+                )
+    if isinstance(outcome, SessionTokens):
+        return outcome
+    raise outcome
+
+
+def switch_tenant(principal: Principal, tenant_id: uuid.UUID, client: ClientInfo) -> SessionTokens:
+    with user_context(principal.user_id):
+        available = active_memberships(principal.user_id)
+        chosen = next((mt for mt in available if mt[0].tenant_id == tenant_id), None)
+        if chosen is None:
+            raise NotFound
+        membership, _ = chosen
+        if principal.session_id is not None:
+            revoke_family(principal.session_id)
+        tokens = _start_session(
+            user_id=principal.user_id,
+            tenant_id=tenant_id,
+            role=membership.role,
+            amr=principal.amr,
+            client=client,
+        )
+    return _with_tenants(tokens, [TenantSummary(t.id, t.legal_name, m.role) for m, t in available])
+
+
+def logout(principal: Principal) -> None:
+    if principal.session_id is not None:
+        revoke_family(principal.session_id)
+
+
+def logout_refresh_token(token: str) -> None:
+    """Logout for a client that only holds the refresh token (web cookie)."""
+    session = AuthSession.objects.filter(refresh_token_hash=hash_refresh_token(token)).first()
+    if session is not None:
+        revoke_family(session.family_id)
+
+
+@dataclass(frozen=True)
+class SessionInfo:
+    id: uuid.UUID
+    tenant_id: uuid.UUID | None
+    device_label: str | None
+    ip: str | None
+    user_agent: str | None
+    started_at: datetime
+    last_refreshed_at: datetime
+    current: bool
+
+
+def list_sessions(principal: Principal) -> list[SessionInfo]:
+    family = AuthSession.objects.filter(family_id=OuterRef("family_id"))
+    live = (
+        AuthSession.objects.filter(
+            user_id=principal.user_id,
+            revoked_at__isnull=True,
+            rotated_at__isnull=True,
+            expires_at__gt=timezone.now(),
+        )
+        .annotate(
+            started_at=Subquery(
+                family.values("family_id").annotate(v=Min("created_at")).values("v")[:1]
+            ),
+            last_refreshed_at=Subquery(
+                family.values("family_id").annotate(v=Max("created_at")).values("v")[:1]
+            ),
+        )
+        .order_by("-created_at")
+    )
+    return [
+        SessionInfo(
+            id=s.family_id,
+            tenant_id=s.tenant_id,
+            device_label=s.device_label,
+            ip=s.ip,
+            user_agent=s.user_agent,
+            started_at=s.started_at,
+            last_refreshed_at=s.last_refreshed_at,
+            current=s.family_id == principal.session_id,
+        )
+        for s in live
+    ]
+
+
+def revoke_session(principal: Principal, family_id: uuid.UUID) -> None:
+    owned = AuthSession.objects.filter(user_id=principal.user_id, family_id=family_id)
+    if not owned.exists():
+        raise NotFound  # someone else's session: indistinguishable from none
+    revoke_family(family_id)
+    security_log.info("session_revoked user=%s family=%s", principal.user_id, family_id)
+
+
+# --- MFA (TOTP) ----------------------------------------------------------------------
+
+
+def _clock() -> float:
+    return time.time()  # patched in tests to step through TOTP windows
+
+
+def _match_totp(secret: str, code: str, last_step: int | None) -> int | None:
+    """The time step `code` belongs to (±1 step for clock drift), if unused."""
+    code = code.strip().replace(" ", "")
+    if len(code) != 6 or not code.isdigit():
+        return None
+    totp = pyotp.TOTP(secret)
+    now_step = int(_clock()) // totp.interval
+    for step in (now_step - 1, now_step, now_step + 1):
+        if hmac.compare_digest(totp.generate_otp(step), code) and (
+            last_step is None or step > last_step
+        ):
+            return step
+    return None
+
+
+def _hash_recovery_code(code: str) -> str:
+    normalised = code.strip().lower().replace("-", "").replace(" ", "")
+    return hashlib.sha256(normalised.encode()).hexdigest()
+
+
+def _consume_second_factor(user: User, *, code: str | None, recovery_code: str | None) -> bool:
+    """Verify a TOTP or recovery code and use it up, atomically (no replay)."""
+    if code:
+        if user.mfa_secret_enc is None:
+            return False
+        secret = decrypt_secret(bytes(user.mfa_secret_enc), user_id=user.pk)
+        step = _match_totp(secret, code, user.mfa_last_used_step)
+        if step is None:
+            return False
+        claimed = User.objects.filter(
+            Q(mfa_last_used_step__isnull=True) | Q(mfa_last_used_step__lt=step), pk=user.pk
+        ).update(mfa_last_used_step=step)
+        return claimed == 1
+    if recovery_code:
+        digest = _hash_recovery_code(recovery_code)
+        used = User.objects.filter(pk=user.pk, mfa_recovery_codes__contains=[digest]).update(
+            mfa_recovery_codes=Func(F("mfa_recovery_codes"), Value(digest), function="array_remove")
+        )
+        if used:
+            security_log.info("mfa_recovery_code_used user=%s", user.pk)
+        return used == 1
+    return False
+
+
+@dataclass(frozen=True)
+class MfaSetup:
+    secret: str
+    otpauth_uri: str
+
+
+def mfa_setup(principal: Principal) -> MfaSetup:
+    user = User.objects.get(pk=principal.user_id)
+    if user.mfa_enabled:
+        raise Conflict("Two-factor authentication is already on.", code="mfa_already_enabled")
+    secret = pyotp.random_base32()
+    user.mfa_secret_enc = encrypt_secret(secret, user_id=user.pk)
+    user.mfa_last_used_step = None
+    user.save(update_fields=["mfa_secret_enc", "mfa_last_used_step", "updated_at"])
+    uri = pyotp.TOTP(secret).provisioning_uri(
+        name=str(user.email), issuer_name=settings.MFA_ISSUER_NAME
+    )
+    return MfaSetup(secret=secret, otpauth_uri=uri)
+
+
+def mfa_enable(
+    principal: Principal, code: str, client: ClientInfo
+) -> tuple[list[str], SessionTokens]:
+    """Turn MFA on after proving the authenticator works.
+
+    Returns the one-time recovery codes (shown once, stored hashed) and new
+    tokens with amr=[otp, pwd]. Every other session is signed out, so no
+    session without MFA survives.
+    """
+    user = User.objects.get(pk=principal.user_id)
+    if user.mfa_enabled:
+        raise Conflict("Two-factor authentication is already on.", code="mfa_already_enabled")
+    if user.mfa_secret_enc is None:
+        raise Conflict("Start the setup first.", code="mfa_setup_required")
+    if not _consume_second_factor(user, code=code, recovery_code=None):
+        raise Invalid("code", "The verification code is invalid.", code="invalid_mfa_code")
+
+    codes = [secrets.token_hex(5) for _ in range(RECOVERY_CODE_COUNT)]
+    with transaction.atomic():
+        User.objects.filter(pk=user.pk).update(
+            mfa_enabled=True,
+            mfa_recovery_codes=[_hash_recovery_code(c) for c in codes],
+            updated_at=timezone.now(),
+        )
+        _revoke_all_sessions(user.pk)
+        tokens = _start_session(
+            user_id=user.pk,
+            tenant_id=principal.tenant_id,
+            role=principal.role,
+            amr=frozenset({"pwd", "otp"}),
+            client=client,
+        )
+    security_log.info("mfa_enabled user=%s", user.pk)
+    return [f"{c[:5]}-{c[5:]}" for c in codes], tokens
+
+
+def mfa_disable(principal: Principal, password: str, code: str) -> None:
+    user = User.objects.get(pk=principal.user_id)
+    if not user.mfa_enabled:
+        raise Conflict("Two-factor authentication is not on.", code="mfa_not_enabled")
+    with user_context(user.pk):
+        privileged = any(m.role in MFA_ROLES for m, _ in active_memberships(user.pk))
+    if privileged:
+        raise Conflict(
+            "Owners and admins must keep two-factor authentication on.",
+            code="mfa_required_for_role",
+        )
+    if not check_password(password, user.password_hash):
+        raise Invalid("password", "The password is incorrect.", code="invalid_password")
+    if not _consume_second_factor(user, code=code, recovery_code=None):
+        raise Invalid("code", "The verification code is invalid.", code="invalid_mfa_code")
+    with transaction.atomic():
+        User.objects.filter(pk=user.pk).update(
+            mfa_enabled=False,
+            mfa_secret_enc=None,
+            mfa_recovery_codes=[],
+            mfa_last_used_step=None,
+            updated_at=timezone.now(),
+        )
+        _revoke_all_sessions(user.pk, except_family=principal.session_id)
+    security_log.info("mfa_disabled user=%s", user.pk)

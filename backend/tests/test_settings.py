@@ -1,3 +1,4 @@
+import base64
 import os
 import subprocess
 import sys
@@ -32,6 +33,8 @@ def _import_prod_settings(**overrides: str) -> subprocess.CompletedProcess[str]:
         "DJANGO_SETTINGS_MODULE": "config.settings.prod",
         "DJANGO_ALLOWED_HOSTS": "api.example.com",
         "DJANGO_SECRET_KEY": "x" * 64,
+        "JWT_SIGNING_KEY": "j" * 64,
+        "MFA_ENCRYPTION_KEY": base64.b64encode(b"k" * 32).decode(),
         **overrides,
     }
     return subprocess.run(
@@ -55,6 +58,16 @@ def test_prod_refuses_weak_secret_key() -> None:
     assert "DJANGO_SECRET_KEY" in result.stderr
 
 
+def test_prod_refuses_dev_jwt_and_mfa_keys() -> None:
+    for name, value in [
+        ("JWT_SIGNING_KEY", "local-dev-jwt-signing-key-not-a-secret-0123456789"),
+        ("MFA_ENCRYPTION_KEY", base64.b64encode(b"local-dev-mfa-key-32-bytes-long!").decode()),
+    ]:
+        result = _import_prod_settings(**{name: value})
+        assert result.returncode != 0
+        assert name in result.stderr
+
+
 def test_prod_refuses_missing_allowed_hosts() -> None:
     result = _import_prod_settings(DJANGO_ALLOWED_HOSTS="")
     assert result.returncode != 0
@@ -71,3 +84,23 @@ def test_openapi_schema_is_3_1(client: Client) -> None:
     response = client.get("/api/v1/schema/", headers={"Accept": "application/json"})
     assert response.status_code == 200
     assert response.json()["openapi"].startswith("3.1")
+
+
+def test_openapi_schema_generates_without_warnings(tmp_path: Path) -> None:
+    """The schema is the contract for web and mobile: every endpoint documented."""
+    result = subprocess.run(
+        [
+            sys.executable,
+            "manage.py",
+            "spectacular",
+            "--fail-on-warn",
+            "--file",
+            str(tmp_path / "schema.yaml"),
+        ],
+        cwd=BACKEND_DIR,
+        env={**os.environ, "DJANGO_SETTINGS_MODULE": "config.settings.test"},
+        capture_output=True,
+        text=True,
+        check=False,
+    )
+    assert result.returncode == 0, result.stderr[-3000:]

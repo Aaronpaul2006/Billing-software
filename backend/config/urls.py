@@ -1,5 +1,5 @@
 from django.conf import settings
-from django.urls import URLPattern, URLResolver, path
+from django.urls import URLPattern, URLResolver, include, path
 from drf_spectacular.views import SpectacularAPIView, SpectacularSwaggerView
 
 from apps.core import views as core_views
@@ -8,6 +8,7 @@ urlpatterns: list[URLPattern | URLResolver] = [
     path("healthz", core_views.healthz, name="healthz"),
     path("readyz", core_views.readyz, name="readyz"),
     path("api/v1/schema/", SpectacularAPIView.as_view(), name="schema"),
+    path("api/v1/", include("apps.accounts.urls")),
 ]
 
 if settings.DEBUG:

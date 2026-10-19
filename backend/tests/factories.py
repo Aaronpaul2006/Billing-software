@@ -8,7 +8,7 @@ from apps.core.tenancy import tenant_context
 from apps.parties.models import Party
 from apps.tenants.models import GstRegistration, Tenant
 
-UNUSABLE_PASSWORD = "!"  # noqa: S105 - not a secret: an unusable hash that matches nothing
+UNUSABLE_PASSWORD = "!"
 
 
 @dataclass(frozen=True)

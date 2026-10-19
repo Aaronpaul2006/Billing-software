@@ -2,6 +2,7 @@ import uuid
 from typing import Any
 
 import pytest
+from django.db import transaction
 from django.test import Client
 from rest_framework import exceptions, serializers
 from rest_framework.permissions import AllowAny
@@ -81,10 +82,9 @@ def test_validation_error_is_422_with_field_paths() -> None:
 @pytest.mark.django_db
 def test_endpoints_require_authentication_by_default() -> None:
     response = _ProtectedView.as_view()(APIRequestFactory().get("/x"))
-    # With no authentication classes configured yet DRF denies with 403
-    # permission_denied. Phase 0 step 5 (JWT) tightens this to 401.
-    assert response.status_code == 403
-    assert response.data["code"] == "permission_denied"
+    assert response.status_code == 401
+    assert response.data["code"] == "not_authenticated"
+    assert response["WWW-Authenticate"] == 'Bearer realm="api"'
     assert "secret" not in response.data
 
 
@@ -107,3 +107,13 @@ def test_flatten_handles_list_and_index_keyed_item_errors() -> None:
     expected = [{"field": "lines[1].rate", "code": "max_decimal_places", "message": "too precise"}]
     assert flatten_validation_errors({"lines": [{}, {"rate": err}]}) == expected
     assert flatten_validation_errors({"lines": {1: {"rate": err}}}) == expected
+
+
+@pytest.mark.django_db
+def test_error_response_rolls_back_the_request_transaction() -> None:
+    """A view that fails after writing must not commit (ATOMIC_REQUESTS)."""
+    with transaction.atomic():  # stands in for the request transaction
+        response = _ValidatingView.as_view()(APIRequestFactory().post("/x", {}, format="json"))
+        assert response.status_code == 422
+        assert transaction.get_rollback() is True
+        transaction.set_rollback(False)  # let the test transaction continue

@@ -72,6 +72,8 @@ CREATE TABLE users (
   phone              text CHECK (phone ~ '^\+?[0-9]{10,15}$'),
   mfa_enabled        boolean NOT NULL DEFAULT false,
   mfa_secret_enc     bytea,                               -- TOTP secret, envelope-encrypted by the app
+  mfa_recovery_codes text[] NOT NULL DEFAULT '{}',        -- SHA-256 (hex) of unused one-time recovery codes
+  mfa_last_used_step bigint,                              -- last accepted TOTP time step (no code replay)
   status             text NOT NULL DEFAULT 'ACTIVE' CHECK (status IN ('ACTIVE', 'LOCKED', 'DISABLED')),
   failed_login_count integer NOT NULL DEFAULT 0 CHECK (failed_login_count >= 0),
   locked_until       timestamptz,

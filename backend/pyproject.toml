@@ -10,6 +10,9 @@ dependencies = [
     "psycopg[binary]>=3.3",
     "django-environ>=0.14",
     "redis>=8.1",
+    "pyjwt>=2.15",
+    "pyotp>=2.10",
+    "cryptography>=46",
 ]
 
 [dependency-groups]
@@ -48,10 +51,11 @@ select = [
 ]
 ignore = [
     "DJ008",  # __str__ on every model: no admin site; add where useful
+    "N818",   # exception names follow DRF (NotFound, PermissionDenied), no Error suffix
 ]
 
 [tool.ruff.lint.per-file-ignores]
-"tests/**" = ["S101"]  # assert is the point of a test
+"tests/**" = ["S101", "S105", "S106", "S603"]  # asserts, fake passwords, fixed-argv subprocess
 "config/settings/*.py" = ["F405", "F403"]  # star import of base settings
 "apps/*/models.py" = ["RUF012"]  # Django's Meta.constraints / indexes lists
 

@@ -1,0 +1,288 @@
+"""Auth endpoints (docs/02-api-design.md §2). Thin: validate, call a service, respond."""
+
+import uuid
+from typing import Any
+
+from django.conf import settings
+from drf_spectacular.utils import PolymorphicProxySerializer, extend_schema
+from rest_framework.exceptions import NotAuthenticated
+from rest_framework.permissions import AllowAny, IsAuthenticated
+from rest_framework.request import Request
+from rest_framework.response import Response
+from rest_framework.views import APIView
+
+from apps.core.permissions import MFA_REQUIRED_ROLES
+from apps.core.tenancy import Principal, user_context
+
+from . import services
+from .models import User
+from .serializers import (
+    LoginSerializer,
+    MeSerializer,
+    MfaChallengeSerializer,
+    MfaDisableSerializer,
+    MfaEnabledSerializer,
+    MfaEnableSerializer,
+    MfaSetupResponseSerializer,
+    MfaVerifySerializer,
+    RefreshSerializer,
+    SessionListSerializer,
+    SignupSerializer,
+    SwitchTenantSerializer,
+    TokensSerializer,
+)
+from .services import ClientInfo, MfaChallenge, SessionTokens
+
+ENROLMENT_ALLOWED = [IsAuthenticated]  # reachable before an OWNER/ADMIN has MFA
+
+LOGIN_RESULT = PolymorphicProxySerializer(
+    component_name="LoginResult",
+    serializers=[TokensSerializer, MfaChallengeSerializer],
+    resource_type_field_name=None,
+)
+
+
+def _client(request: Request, data: dict[str, Any] | None = None) -> ClientInfo:
+    meta = request.META
+    return ClientInfo(
+        ip=meta.get("REMOTE_ADDR") or None,
+        user_agent=meta.get("HTTP_USER_AGENT") or None,
+        device_label=(data or {}).get("device_label") or None,
+    )
+
+
+def _principal(request: Request) -> Principal:
+    if not isinstance(request.auth, Principal):  # views using this require authentication
+        raise NotAuthenticated
+    return request.auth
+
+
+def _tokens_response(tokens: SessionTokens, client: str, status: int = 200) -> Response:
+    body: dict[str, Any] = {
+        "token_type": "Bearer",
+        "access_token": tokens.access_token,
+        "expires_in": int(settings.ACCESS_TOKEN_TTL.total_seconds()),
+        "session_id": str(tokens.session_id),
+        "user_id": str(tokens.user_id),
+        "tenant_id": str(tokens.tenant_id),
+        "role": tokens.role,
+        "mfa_enrollment_required": tokens.role in MFA_REQUIRED_ROLES and "otp" not in tokens.amr,
+        "tenants": [
+            {"id": str(t.id), "legal_name": t.legal_name, "role": t.role} for t in tokens.tenants
+        ],
+    }
+    if client == "mobile":
+        body["refresh_token"] = tokens.refresh_token
+        body["refresh_expires_at"] = tokens.refresh_expires_at
+    response = Response(body, status=status)
+    if client == "web":
+        response.set_cookie(
+            settings.REFRESH_COOKIE_NAME,
+            tokens.refresh_token,
+            expires=tokens.refresh_expires_at,
+            path=settings.REFRESH_COOKIE_PATH,
+            secure=settings.REFRESH_COOKIE_SECURE,
+            httponly=True,
+            samesite="Strict",
+        )
+    response["Cache-Control"] = "no-store"
+    return response
+
+
+class PublicAuthView(APIView):
+    """Sign-in endpoints: no access token needed, and any sent is ignored
+    (JWTAuthenticationMiddleware checks `ignores_access_token`)."""
+
+    ignores_access_token = True
+    authentication_classes = ()
+    permission_classes = (AllowAny,)
+
+
+class SignupView(PublicAuthView):
+    @extend_schema(request=SignupSerializer, responses={201: TokensSerializer}, tags=["auth"])
+    def post(self, request: Request) -> Response:
+        data = SignupSerializer(data=request.data)
+        data.is_valid(raise_exception=True)
+        v = data.validated_data
+        tokens = services.signup(
+            email=v["email"],
+            password=v["password"],
+            full_name=v["full_name"],
+            business_name=v["business_name"],
+            client=_client(request, v),
+        )
+        return _tokens_response(tokens, v["client"], status=201)
+
+
+class LoginView(PublicAuthView):
+    @extend_schema(request=LoginSerializer, responses={200: LOGIN_RESULT}, tags=["auth"])
+    def post(self, request: Request) -> Response:
+        data = LoginSerializer(data=request.data)
+        data.is_valid(raise_exception=True)
+        v = data.validated_data
+        result = services.login(
+            email=v["email"],
+            password=v["password"],
+            tenant_id=v.get("tenant_id"),
+            client=_client(request, v),
+        )
+        if isinstance(result, MfaChallenge):
+            return Response({"mfa_required": True, "mfa_token": result.mfa_token})
+        return _tokens_response(result, v["client"])
+
+
+class MfaVerifyView(PublicAuthView):
+    @extend_schema(request=MfaVerifySerializer, responses={200: TokensSerializer}, tags=["auth"])
+    def post(self, request: Request) -> Response:
+        data = MfaVerifySerializer(data=request.data)
+        data.is_valid(raise_exception=True)
+        v = data.validated_data
+        tokens = services.verify_mfa_login(
+            mfa_token=v["mfa_token"],
+            code=v.get("code"),
+            recovery_code=v.get("recovery_code"),
+            tenant_id=v.get("tenant_id"),
+            client=_client(request, v),
+        )
+        return _tokens_response(tokens, v["client"])
+
+
+class RefreshView(PublicAuthView):
+    @extend_schema(request=RefreshSerializer, responses={200: TokensSerializer}, tags=["auth"])
+    def post(self, request: Request) -> Response:
+        data = RefreshSerializer(data=request.data)
+        data.is_valid(raise_exception=True)
+        body_token = data.validated_data.get("refresh_token")
+        cookie_token = request.COOKIES.get(settings.REFRESH_COOKIE_NAME)
+        token = body_token or cookie_token
+        if not token:
+            raise services.InvalidRefreshToken
+        tokens = services.refresh(token, _client(request))
+        return _tokens_response(tokens, "mobile" if body_token else "web")
+
+
+class LogoutView(APIView):
+    permission_classes = (AllowAny,)
+
+    @extend_schema(request=RefreshSerializer, responses={204: None}, tags=["auth"])
+    def post(self, request: Request) -> Response:
+        if isinstance(request.auth, Principal):
+            services.logout(request.auth)
+        else:
+            token = request.data.get("refresh_token") or request.COOKIES.get(
+                settings.REFRESH_COOKIE_NAME
+            )
+            if isinstance(token, str) and token:
+                services.logout_refresh_token(token)
+        response = Response(status=204)
+        response.delete_cookie(settings.REFRESH_COOKIE_NAME, path=settings.REFRESH_COOKIE_PATH)
+        return response
+
+
+class SwitchTenantView(APIView):
+    permission_classes = ENROLMENT_ALLOWED
+
+    @extend_schema(request=SwitchTenantSerializer, responses={200: TokensSerializer}, tags=["auth"])
+    def post(self, request: Request) -> Response:
+        data = SwitchTenantSerializer(data=request.data)
+        data.is_valid(raise_exception=True)
+        v = data.validated_data
+        tokens = services.switch_tenant(_principal(request), v["tenant_id"], _client(request, v))
+        return _tokens_response(tokens, v["client"])
+
+
+class SessionListView(APIView):
+    permission_classes = ENROLMENT_ALLOWED
+
+    @extend_schema(responses={200: SessionListSerializer}, tags=["auth"])
+    def get(self, request: Request) -> Response:
+        return Response(
+            {
+                "results": [
+                    {
+                        "id": str(s.id),
+                        "tenant_id": str(s.tenant_id) if s.tenant_id else None,
+                        "device_label": s.device_label,
+                        "ip": s.ip,
+                        "user_agent": s.user_agent,
+                        "started_at": s.started_at,
+                        "last_refreshed_at": s.last_refreshed_at,
+                        "current": s.current,
+                    }
+                    for s in services.list_sessions(_principal(request))
+                ]
+            }
+        )
+
+
+class SessionDetailView(APIView):
+    permission_classes = ENROLMENT_ALLOWED
+
+    @extend_schema(responses={204: None}, tags=["auth"])
+    def delete(self, request: Request, session_id: uuid.UUID) -> Response:
+        services.revoke_session(_principal(request), session_id)
+        return Response(status=204)
+
+
+class MfaSetupView(APIView):
+    permission_classes = ENROLMENT_ALLOWED
+
+    @extend_schema(request=None, responses={200: MfaSetupResponseSerializer}, tags=["mfa"])
+    def post(self, request: Request) -> Response:
+        setup = services.mfa_setup(_principal(request))
+        response = Response({"secret": setup.secret, "otpauth_uri": setup.otpauth_uri})
+        response["Cache-Control"] = "no-store"
+        return response
+
+
+class MfaEnableView(APIView):
+    permission_classes = ENROLMENT_ALLOWED
+
+    @extend_schema(request=MfaEnableSerializer, responses={200: MfaEnabledSerializer}, tags=["mfa"])
+    def post(self, request: Request) -> Response:
+        data = MfaEnableSerializer(data=request.data)
+        data.is_valid(raise_exception=True)
+        v = data.validated_data
+        codes, tokens = services.mfa_enable(_principal(request), v["code"], _client(request, v))
+        response = _tokens_response(tokens, v["client"])
+        response.data["recovery_codes"] = codes  # shown once; stored hashed
+        return response
+
+
+class MfaDisableView(APIView):
+    @extend_schema(request=MfaDisableSerializer, responses={204: None}, tags=["mfa"])
+    def post(self, request: Request) -> Response:
+        data = MfaDisableSerializer(data=request.data)
+        data.is_valid(raise_exception=True)
+        services.mfa_disable(
+            _principal(request), data.validated_data["password"], data.validated_data["code"]
+        )
+        return Response(status=204)
+
+
+class MeView(APIView):
+    permission_classes = ENROLMENT_ALLOWED
+
+    @extend_schema(responses={200: MeSerializer}, tags=["me"])
+    def get(self, request: Request) -> Response:
+        principal = _principal(request)
+        user = User.objects.get(pk=principal.user_id)
+        with user_context(principal.user_id):
+            memberships = services.active_memberships(principal.user_id)
+        return Response(
+            {
+                "id": str(user.pk),
+                "email": user.email,
+                "full_name": user.full_name,
+                "phone": user.phone,
+                "mfa_enabled": user.mfa_enabled,
+                "mfa_enrollment_required": principal.role in MFA_REQUIRED_ROLES
+                and "otp" not in principal.amr,
+                "tenant_id": str(principal.tenant_id),
+                "role": principal.role,
+                "memberships": [
+                    {"tenant_id": str(t.id), "legal_name": t.legal_name, "role": m.role}
+                    for m, t in memberships
+                ],
+            }
+        )

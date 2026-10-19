@@ -13,6 +13,9 @@ from django.http import Http404, HttpRequest
 from rest_framework import exceptions
 from rest_framework.response import Response
 from rest_framework.settings import api_settings
+from rest_framework.views import set_rollback
+
+from .errors import BEARER_CHALLENGE, DomainError, Invalid
 
 PROBLEM_CONTENT_TYPE = "application/problem+json"
 
@@ -72,8 +75,27 @@ def flatten_validation_errors(detail: Any, path: str = "") -> list[dict[str, Any
     return out
 
 
+def _rollback_request_transaction(request: Any) -> None:
+    """An error response must not commit the request's partial writes.
+
+    DRF's default handler calls set_rollback(); a custom handler has to do it
+    itself. Views marked non_atomic_requests (sign-in endpoints) manage their
+    own transactions and deliberately commit some work before failing (a
+    failed-login counter, a revoked token family), so they are left alone.
+    """
+    match = getattr(getattr(request, "_request", request), "resolver_match", None)
+    if getattr(getattr(match, "func", None), "_non_atomic_requests", None):
+        return
+    set_rollback()
+
+
 def problem_exception_handler(exc: Exception, context: dict[str, Any]) -> Response | None:
     """DRF EXCEPTION_HANDLER. Unhandled exceptions return None → handler500."""
+    request = context.get("request")
+    if isinstance(exc, DomainError):
+        _rollback_request_transaction(request)
+        return domain_error_response(exc, request)
+
     if isinstance(exc, Http404):
         exc = exceptions.NotFound()
     elif isinstance(exc, DjangoPermissionDenied):
@@ -81,7 +103,7 @@ def problem_exception_handler(exc: Exception, context: dict[str, Any]) -> Respon
     if not isinstance(exc, exceptions.APIException):
         return None
 
-    request = context.get("request")
+    _rollback_request_transaction(request)
     headers: dict[str, str] = {}
 
     if isinstance(exc, exceptions.ValidationError):
@@ -107,4 +129,22 @@ def problem_exception_handler(exc: Exception, context: dict[str, Any]) -> Respon
         if auth_header:
             headers["WWW-Authenticate"] = auth_header
 
+    return Response(body, status=body["status"], headers=headers, content_type=PROBLEM_CONTENT_TYPE)
+
+
+def domain_error_response(exc: DomainError, request: HttpRequest | None) -> Response:
+    headers: dict[str, str] = {}
+    if isinstance(exc, Invalid):
+        body = problem_body(
+            request,
+            status=422,
+            code="validation_error",
+            title="Validation failed",
+            detail="1 field is invalid.",
+            errors=[{"field": exc.field, "code": exc.code, "message": exc.detail}],
+        )
+    else:
+        body = problem_body(request, status=exc.status, code=exc.code, detail=exc.detail)
+    if exc.status == 401:
+        headers["WWW-Authenticate"] = BEARER_CHALLENGE
     return Response(body, status=body["status"], headers=headers, content_type=PROBLEM_CONTENT_TYPE)

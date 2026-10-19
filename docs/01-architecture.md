@@ -281,7 +281,10 @@ allowed only for items flagged as variations.
 * Passwords hashed with Argon2id (`django[argon2]`), checked against a breached
   password list, minimum 10 characters.
 * **TOTP MFA required for OWNER and ADMIN**, optional for others; recovery codes
-  hashed.
+  hashed. Enforced by the default permission `MfaSatisfied`: until the token's
+  `amr` contains `otp`, an OWNER/ADMIN can only reach the enrolment endpoints.
+  TOTP secrets are AES-256-GCM encrypted (user id as associated data); the
+  last accepted time step is stored, so a code cannot be replayed.
 * Access token: JWT, 10 minutes, contains `sub`, `tid` (tenant), `role`, `sid`.
   Refresh token: opaque, random, 30 days, stored as SHA-256, **rotated on every
   use, with reuse detection** (reusing a rotated token revokes the whole
@@ -294,6 +297,8 @@ allowed only for items flagged as variations.
 **Abuse prevention**
 * Rate limits (Redis): login 5/min per account and 20/min per IP, with
   progressive lockout; password reset 3/hour; general API 600/min per user.
+  (Built so far: per-account progressive lockout in the database, 5 failures →
+  1, 2, 4 … minutes, capped at 1 hour. The Redis limits are still to do.)
 * Generic auth errors ("invalid email or password") and identical timing, so
   attackers can't enumerate accounts.
 * Idempotency keys on all money-moving POSTs.
