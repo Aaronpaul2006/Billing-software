@@ -96,7 +96,7 @@ stable `code`. Raw database messages are never returned.
   and reused on retries.
 * Same key + same body → the original response is replayed (with
   `Idempotent-Replayed: true`). Same key + different body → 422. Keys expire
-  after 24 h.
+  after 24 h; an hourly job (Celery beat) deletes expired keys.
   Codes: `428 idempotency_key_required`, `422 idempotency_key_reused`. A request
   that fails stores nothing, so its retry runs again.
 

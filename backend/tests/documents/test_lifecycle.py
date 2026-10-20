@@ -165,6 +165,37 @@ def test_cancel_keeps_the_number_used(w: World) -> None:
     assert problem(act(w, draft, "cancel", body={"reason": "x" * 5})) == (409, "not_cancellable")
 
 
+def test_cancel_replaces_the_stored_pdf_with_a_cancelled_one(
+    w: World, settings: Any, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    from apps.documents.services import lifecycle, pdfs
+    from apps.files.models import Attachment
+
+    queued: list[uuid.UUID] = []
+    monkeypatch.setattr(lifecycle, "enqueue_pdf", lambda t, u, doc_id: queued.append(doc_id))
+    settings.RENDER_PDF_ON_ISSUE = True
+    series(w)
+    issued = act(w, w.create().json(), "issue").json()
+    with tenant_context(w.t.tenant_id, w.t.user_id):
+        sent = Attachment.objects.create(
+            storage_key="tenants/x/documents/inv.pdf",
+            original_filename="tax_invoice-INV-0001.pdf",
+            content_type="application/pdf",
+            size_bytes=100,
+            status="AVAILABLE",
+            uploaded_by_id=w.t.user_id,
+        )
+        Document.objects.filter(pk=issued["id"]).update(pdf_attachment_id=sent.pk)
+    queued.clear()
+    act(w, issued, "cancel", body={"reason": "Wrong client"})
+    assert [str(d) for d in queued] == [issued["id"]]  # rendered again, after commit
+    with tenant_context(w.t.tenant_id, w.t.user_id):
+        doc = Document.objects.get(pk=issued["id"])
+        assert doc.pdf_attachment_id is None
+        assert Attachment.objects.filter(pk=sent.pk).exists()  # the sent copy is kept
+    assert pdfs.pdf_filename(doc) == "tax_invoice-INV-0001-cancelled.pdf"
+
+
 # --- quotations, conversion -----------------------------------------------------------------
 
 

@@ -154,6 +154,13 @@ services:
     command: ["celery", "-A", "config", "worker", "--loglevel=info", "--concurrency=2"]
     ports: []
 
+  # Celery beat: hourly housekeeping (expired idempotency keys, uploads never
+  # completed). Exactly one per deployment.
+  beat:
+    <<: *backend
+    command: ["celery", "-A", "config", "beat", "--loglevel=info", "--schedule=/tmp/celerybeat-schedule"]
+    ports: []
+
 volumes:
   clamav-data:
   postgres-data:

@@ -134,6 +134,14 @@ CELERY_TASK_ACKS_LATE = True
 CELERY_WORKER_PREFETCH_MULTIPLIER = 1
 # Run tasks in the calling process (no worker): handy for local development only.
 CELERY_TASK_ALWAYS_EAGER: bool = env.bool("CELERY_TASK_ALWAYS_EAGER", default=False)
+# Periodic housekeeping; run exactly one `celery -A config beat` per deployment.
+CELERY_BEAT_SCHEDULE = {
+    "purge-idempotency-keys": {
+        "task": "apps.core.tasks.purge_idempotency_keys",
+        "schedule": 3600.0,
+    },
+    "purge-stale-uploads": {"task": "apps.files.tasks.purge_stale_uploads", "schedule": 3600.0},
+}
 RENDER_PDF_ON_ISSUE = True
 
 # --- Email (SMTP; Mailpit locally, a transactional provider in production) ----------

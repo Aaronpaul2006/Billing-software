@@ -53,10 +53,16 @@ in `backend/`), then `npm run gen:api` in `web/`. CI fails if either is stale.
 ## Running the whole backend in Docker
 
 ```bash
-docker compose --profile app up -d --build   # + api (http://127.0.0.1:8000) and the Celery worker
+docker compose --profile app up -d --build   # + api (http://127.0.0.1:8000), Celery worker and beat
 docker compose --profile app run --rm api python manage.py migrate --database=owner
+docker compose --profile app run --rm api python manage.py setup_storage   # bucket + CORS for uploads
 docker compose --profile app run --rm api pytest   # incl. real PDF rendering (WeasyPrint)
+docker compose --profile scan up -d clamav   # optional virus scanner; then CLAMD_HOST in .env
 ```
+
+Running the API on the host instead (`manage.py runserver`): set
+`CELERY_TASK_ALWAYS_EAGER=true` in `.env` so emails, PDFs and upload checks run
+without a worker.
 
 ## Running the schema checks
 

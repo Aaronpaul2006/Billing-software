@@ -188,7 +188,12 @@ def cancel(principal: Principal, doc_id: uuid.UUID, expected: int, reason: str) 
             cancelled_at=timezone.now(),
             cancelled_by_id=principal.user_id,
             cancel_reason=reason,
+            # The stored PDF shows it issued: render again with CANCELLED across
+            # it. The old file stays in storage as a record of what was sent.
+            pdf_attachment_id=None,
         )
+        if settings.RENDER_PDF_ON_ISSUE:
+            enqueue_pdf(principal.tenant_id, principal.user_id, doc.pk)
     return get_or_404(Document, doc_id)
 
 

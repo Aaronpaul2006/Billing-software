@@ -14,7 +14,8 @@ from ..pdf.render import render_pdf
 
 def pdf_filename(doc: Document) -> str:
     name = (doc.doc_number or "draft").replace("/", "-")
-    return f"{doc.doc_type.lower()}-{name}.pdf"
+    suffix = "-cancelled" if doc.status == "CANCELLED" else ""
+    return f"{doc.doc_type.lower()}-{name}{suffix}.pdf"
 
 
 def store_pdf(document_id: uuid.UUID, user_id: uuid.UUID) -> uuid.UUID | None:

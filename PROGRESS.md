@@ -4,7 +4,7 @@ Last updated: 2026-10-21
 
 ## Current phase
 
-**Launch gaps** (owner decision 2026-10-21, after the web app W.1–W.7): L.1 email, L.2 rate limits and L.3 user uploads done; next L.4 housekeeping. Backend Phases 0–3 and web W.1–W.7 complete.
+**Launch gaps** (owner decision 2026-10-21, after the web app W.1–W.7): L.1–L.4 done (email, rate limits, user uploads, housekeeping). Next to be chosen by the owner. Backend Phases 0–3 and web W.1–W.7 complete.
 
 ## Done
 
@@ -54,9 +54,11 @@ Last updated: 2026-10-21
 
 - [x] Launch gap L.3: user uploads — `POST /attachments` (PENDING row + presigned PUT that signs `Content-Type` and `Content-Length`: storage refuses another type or size, checked against SeaweedFS), `POST /attachments/{id}/complete` (uploader only: present, size, type and magic bytes, else `409 upload_missing` / `422 upload_mismatch` with the object deleted), `GET /attachments/{id}` (5-minute download link once AVAILABLE, header-safe `Content-Disposition`). Celery task `process_upload_task`: SHA-256 and ClamAV scan over clamd INSTREAM (`apps/files/scan.py`, no new dependency) → AVAILABLE or QUARANTINED (deleted); scanner down → retried, stays PENDING. Storage keys hold no client text; filenames lose paths and control characters. New action `files.upload` (all but VIEWER; architecture §3 table and matrix test updated). `manage.py setup_storage` (bucket + CORS for `S3_CORS_ORIGINS`; browsers PUT straight to storage). Settings `CLAMD_HOST` / `CLAMD_PORT`; production refuses to start without a scanner. Compose: `clamav` (1.4.6 LTS) in profile `scan`. No schema change (the `attachments` table had every column). Web: "Bill or receipt" on the expense form (photo or PDF, checked before sending, "Uploading…" / "Checking the file…", link to view, remove), `uploadFile()` helper. Tests: moto storage, a fake clamd speaking INSTREAM (EICAR found, chunking), scanner down, mismatches, roles, cross-tenant routes. Web 111 tests; backend 515.
 
+- [x] Launch gap L.4: housekeeping — cancelling a document clears its stored PDF and queues a new render (the template's CANCELLED watermark; file name `…-cancelled.pdf`); the copy that was sent stays in storage. Celery beat (`CELERY_BEAT_SCHEDULE`, compose service `beat`, exactly one per deployment) runs hourly `purge_idempotency_keys` and `purge_stale_uploads` (PENDING for over a day: rows and objects together, in one transaction, so a storage error keeps both for the next run). Workers have no tenant, so the purges go through SECURITY DEFINER functions `purge_expired_idempotency_keys()` / `purge_stale_uploads(limit)` and policies `housekeeping_purge` that match only for the table owner and only the rows to purge; RLS stays forced and the app role gains nothing (tests: no context and another tenant see none of them; the app role still cannot delete attachments). Schema: those two policies and functions (schema.sql §8 + migration `core/0006`, sync test passes). README: running with beat, `setup_storage`, ClamAV, eager mode on the host. Backend 522.
+
 ## In progress
 
-- Nothing. Next: L.4 housekeeping.
+- Nothing. Launch gaps done; next to be chosen by the owner.
 
 ## Next
 
@@ -110,7 +112,7 @@ Launch gaps (owner decision 2026-10-21):
 1. ~~Email: verification and password reset (backend + screens)~~ (done)
 2. ~~Rate limits in Redis~~ (done)
 3. ~~User uploads~~ (done)
-4. Housekeeping: re-render the PDF on cancel, Celery beat (purge expired idempotency keys)
+4. ~~Housekeeping: re-render the PDF on cancel, Celery beat~~ (done)
 
 Full roadmap: `docs/01-architecture.md` §9.
 
@@ -134,10 +136,8 @@ Full roadmap: `docs/01-architecture.md` §9.
 - Email: plain-text messages only; production needs a transactional SMTP provider (`EMAIL_HOST`, `EMAIL_HOST_USER`, `EMAIL_HOST_PASSWORD`, `EMAIL_USE_TLS`) with SPF / DKIM on the sending domain, and `APP_BASE_URL` set to the web app. Accounts created before migration `accounts/0003` are unverified and cannot issue until they confirm (use "Send a new link"). Without a running worker (and without `CELERY_TASK_ALWAYS_EAGER=true`) emails wait in Redis.
 - Documents: cess is not exposed on lines yet (no stored cess rate); a document with a project must bill the project's client.
 - Tax engine: reverse-charge documents and real invoices checked by a CA are still to do; the GST-TDS ₹2.5 lakh contract threshold is left to the caller (project flag).
-- Expired idempotency keys are reused on demand; a periodic purge needs Celery beat (not set up yet).
-- A PDF rendered before a document is cancelled still shows it as issued; re-render on cancel is not done yet.
 - Expenses have no void reason column; the audit trail records who voided and when.
-- Uploads: only expenses take a file in the web app so far (documents, projects and payments could link files later; one file per expense). PENDING uploads that are never completed leave a row and maybe an object behind until housekeeping purges them (L.4). Images are not resized or stripped of EXIF location data.
+- Uploads: only expenses take a file in the web app so far (documents, projects and payments could link files later; one file per expense). PENDING uploads never completed are purged after a day (L.4). Images are not resized or stripped of EXIF location data.
 - `auth_sessions` has a `tenant_id` column but no RLS, by design (global table, read only by id / token hash).
 - The app role has no privileges on `django_migrations`. `TransactionTestCase`-style flushes (TRUNCATE) will not work as the app role; concurrency tests in step 7 need their own setup/cleanup.
 - Until JWT lands (step 5), unauthenticated API calls get 403 `permission_denied`; step 5 makes them 401.
