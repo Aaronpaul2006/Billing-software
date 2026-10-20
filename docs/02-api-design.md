@@ -319,6 +319,13 @@ POST /api/v1/payments
 Over-allocation fails with `422 allocation_exceeds_outstanding`. The database
 enforces this too, so concurrent requests can't double-settle an invoice.
 
+Built in Phase 2.1. Codes: `422 allocation_exceeds_outstanding`,
+`allocation_exceeds_payment`, `document_not_settleable` (only issued invoices,
+bills of supply, debit notes), `party_mismatch`, `duplicate`; `409
+already_allocated`, `payment_voided`. Payment responses carry `allocated`,
+`unallocated` and `allocations` (with `doc_number`). Void needs `If-Match`
+and a reason; it unwinds the allocations first. Payments are never deleted.
+
 ---
 
 ## 7. Files

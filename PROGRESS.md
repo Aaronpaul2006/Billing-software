@@ -4,7 +4,7 @@ Last updated: 2026-10-19
 
 ## Current phase
 
-**Phase 1 — Core billing**: all 7 steps done (2026-10-19). Next: Phase 2 — money (payments, allocations, expenses, receivables). Phase 0 (Foundations) complete.
+**Phase 2 — Money** (in progress): step 2.1 of 4 done. Phases 0 and 1 complete. Phase 0 (Foundations) complete.
 
 ## Done
 
@@ -32,10 +32,11 @@ Last updated: 2026-10-19
 - [x] Phase 1.5: draft documents — `GET/POST /documents` (filters doc_type, status, book, party, project, date ranges, payment_state, q; idempotent create), `GET/PATCH/DELETE /documents/{id}` (drafts only, `lines` replaces all, recompute on every save, If-Match), `POST /documents:preview-totals`. Server derives registration, place of supply (site state), supply type, all amounts and project deductions (advance recovery capped at the outstanding advance); catalog/BOQ lines fill defaults. Schema: `documents.round_to_rupee` (+ column grant). Hypothesis found an edge case: a sub-rupee bill rounded to ₹0 with retention is refused (`deductions_exceed_total`), now pinned by a test. 305 tests
 - [x] Phase 1.6: document lifecycle — `issue` (recompute, series row lock, gapless number, snapshots; idempotent + If-Match), `cancel`, `accept` / `decline`, `convert` (with `source_document_id`), `credit-notes` / `debit-notes` (copied lines, can't change type, credit total ≤ invoice). Tests incl. 4 parallel issues → INV/0001–0004 (mutation: without the series lock it fails 3/3), retries don't consume numbers, failed issues leave no gap, snapshots frozen; all 7 routes in the cross-tenant registry. 326 tests
 - [x] Phase 1.7: PDFs and storage (owner decisions: WeasyPrint, worker in Docker) — HTML template with the CGST Rule 46 particulars, Indian digit grouping and amount in words (lakh/crore), auto-escaped; Celery task `render_document_pdf` queued on commit after issue, idempotent, stores to S3 (`apps/files/storage.py`; SeaweedFS locally) with an `attachments` row (size, SHA-256); `GET /documents/{id}/pdf` (302 to a 5-minute link / 202 while rendering / drafts on demand with DRAFT watermark). Backend `Dockerfile` (Python 3.14.8 slim, Pango, DejaVu fonts with ₹), compose profile `app` with `api` + `worker`; CI installs Pango and builds the image. Storage tests use moto. 352 tests
+- [x] Phase 2.1: payments and allocations — `GET/POST /payments` (idempotent, optional allocations in the same request), `GET /payments/{id}` (allocated / unallocated), `POST /payments/{id}/allocations`, `DELETE /allocations/{id}`, `POST /payments/{id}/void` (If-Match, unwinds allocations). Service pre-checks give per-field codes; database rejections in races map to the same codes (threaded race test: one wins, the loser gets `allocation_exceeds_outstanding`). 369 tests
 
 ## In progress
 
-- Phase 2 planning: payments + allocations, credit-note allocation, expenses, receivables and dashboard endpoints.
+- Phase 2.2: applying issued credit notes to invoices.
 
 ## Next
 
@@ -59,6 +60,13 @@ Phase 1 — core billing:
 5. ~~Draft documents~~ (done)
 6. ~~Issue / cancel / accept / decline / convert, notes~~ (done)
 7. ~~PDF generation and file storage~~ (done)
+Phase 2 — money:
+
+1. ~~Payments and allocations~~ (done)
+2. Credit-note allocation (apply an issued credit note to invoices)
+3. Expenses (site / office costs, payment status, void)
+4. Reports: summary, billing by month, receivables ageing, projects, GST summary
+
 Full roadmap: `docs/01-architecture.md` §9.
 
 ## Open questions (for the owner)

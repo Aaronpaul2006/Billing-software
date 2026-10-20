@@ -206,6 +206,7 @@ SPECTACULAR_SETTINGS = {
         "ProjectStatusEnum": "apps.projects.models.ProjectStatus",
         "TenantStatusEnum": "apps.tenants.models.TenantStatus",
         "MembershipStatusEnum": "apps.accounts.models.MembershipStatus",
+        "PaymentStatusEnum": "apps.payments.models.PaymentStatus",
     },
     # The schema is public only in dev (see dev.py).
     "SERVE_PERMISSIONS": ["rest_framework.permissions.IsAuthenticated"],

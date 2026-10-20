@@ -467,3 +467,138 @@ def test_document_pdf_rejects_other_tenant(world: World, a_document: str) -> Non
 
 
 OBJECT_ROUTES["document-pdf"] = lambda w: None  # test_document_pdf_rejects_other_tenant
+
+
+# --- Phase 2.1 payments ------------------------------------------------------------------
+
+
+@pytest.fixture
+def a_payment(world: World, masters: dict[str, str]) -> dict[str, str]:
+    """Tenant A: an issued invoice, a payment allocated 1.00 to it."""
+    from django.db import connection
+    from django.utils import timezone
+
+    from apps.documents.models import Document, DocumentLine
+    from apps.payments.models import Allocation, Payment
+
+    a = world.a
+    with tenant_context(a.tenant_id, a.user_id):
+        series = (
+            DocumentSeries.objects.create(
+                gst_registration_id=a.registration_id,
+                doc_type="TAX_INVOICE",
+                fy_start_year=2026,
+                prefix="A/",
+            )
+            if not DocumentSeries.objects.filter(doc_type="TAX_INVOICE").exists()
+            else DocumentSeries.objects.get(doc_type="TAX_INVOICE")
+        )
+        doc = Document.objects.create(
+            doc_type="TAX_INVOICE",
+            gst_registration_id=a.registration_id,
+            doc_date="2026-10-19",
+            party_id=masters["party"],
+            place_of_supply="32",
+            supply_type="INTRA_STATE",
+            subtotal=100,
+            grand_total=100,
+            net_receivable=100,
+            created_by_id=a.user_id,
+        )
+        DocumentLine.objects.create(
+            document=doc,
+            line_no=1,
+            description="x",
+            quantity=1,
+            rate=100,
+            taxable_value=100,
+            line_total=100,
+        )
+        with connection.cursor() as c:
+            c.execute(
+                "UPDATE documents SET status = 'ISSUED', series_id = %s, doc_number = 'A/9',"
+                " issued_at = %s, issued_by = %s, supplier_snapshot = '{}', party_snapshot = '{}'"
+                " WHERE id = %s",
+                [series.pk, timezone.now(), a.user_id, doc.pk],
+            )
+        payment = Payment.objects.create(
+            party_id=masters["party"],
+            payment_date="2026-10-20",
+            amount=50,
+            mode="UPI",
+            created_by_id=a.user_id,
+        )
+        allocation = Allocation.objects.create(
+            document=doc, payment=payment, amount=1, created_by_id=a.user_id
+        )
+    return {"invoice": str(doc.pk), "payment": str(payment.pk), "allocation": str(allocation.pk)}
+
+
+def _a_state(world: World, ids: dict[str, str]) -> tuple[object, ...]:
+    from apps.documents.models import Document
+    from apps.payments.models import Allocation, Payment
+
+    with tenant_context(world.a.tenant_id, world.a.user_id):
+        p = Payment.objects.get(pk=ids["payment"])
+        return (
+            p.status,
+            p.version,
+            Allocation.objects.count(),
+            Document.objects.get(pk=ids["invoice"]).amount_settled,
+        )
+
+
+def test_payment_routes_reject_other_tenant(world: World, a_payment: dict[str, str]) -> None:
+    api, b = world.api, world.as_b()
+    before = _a_state(world, a_payment)
+    pay = a_payment["payment"]
+    assert api.get(f"/api/v1/payments/{pay}", **b).status_code == 404
+    assert (
+        api.post(
+            f"/api/v1/payments/{pay}/allocations",
+            {"allocations": [{"document_id": a_payment["invoice"], "amount": "1.00"}]},
+            format="json",
+            HTTP_IDEMPOTENCY_KEY=str(uuid.uuid4()),
+            **b,
+        ).status_code
+        == 404
+    )
+    assert (
+        api.post(
+            f"/api/v1/payments/{pay}/void",
+            {"reason": "hijack"},
+            format="json",
+            HTTP_IF_MATCH='"v1"',
+            **b,
+        ).status_code
+        == 404
+    )
+    assert api.delete(f"/api/v1/allocations/{a_payment['allocation']}", **b).status_code == 404
+    assert _a_state(world, a_payment) == before
+
+
+def test_payments_list_and_create_hide_other_tenant(
+    world: World, masters: dict[str, str], a_payment: dict[str, str]
+) -> None:
+    api, b = world.api, world.as_b()
+    ids = {p["id"] for p in api.get("/api/v1/payments", **b).json()["results"]}
+    assert a_payment["payment"] not in ids
+    smuggled = api.post(
+        "/api/v1/payments",
+        {
+            "party_id": masters["party"],
+            "payment_date": "2026-10-20",
+            "amount": "1.00",
+            "mode": "UPI",
+        },
+        format="json",
+        HTTP_IDEMPOTENCY_KEY=str(uuid.uuid4()),
+        **b,
+    )
+    assert smuggled.status_code == 422
+    assert smuggled.json()["errors"][0]["code"] == "not_found"
+
+
+for _name in ("payment-detail", "payment-allocations", "payment-void", "allocation-detail"):
+    OBJECT_ROUTES[_name] = lambda w: None  # test_payment_routes_reject_other_tenant
+COLLECTION_ROUTES["payments"] = lambda w: None  # test_payments_list_and_create_hide_other_tenant
