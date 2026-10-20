@@ -156,3 +156,9 @@ def test_idempotent_create_and_filters(c: Costs) -> None:
     assert descriptions(payment_state="UNPAID") == ["100 bags OPC 53"]
     assert descriptions(expense_date_from="2026-10-21") == ["Masons, week 42"]
     assert descriptions(vendor_party_id=str(c.vendor.pk)) == ["100 bags OPC 53"]
+
+
+def test_expenses_carry_vendor_and_project_names(c: Costs) -> None:
+    c.record()
+    [row] = APIClient().get("/api/v1/expenses", **c.h()).json()["results"]
+    assert (row["vendor_name"], row["project_name"]) == ("Coastal Cement", "VILLA-1")

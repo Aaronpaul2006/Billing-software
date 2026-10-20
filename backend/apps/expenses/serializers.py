@@ -13,7 +13,11 @@ ZERO = Decimal("0")
 
 class ExpenseSerializer(serializers.ModelSerializer[Expense]):
     project_id = serializers.UUIDField(allow_null=True)
+    project_name = serializers.CharField(source="project.name", allow_null=True, read_only=True)
     vendor_party_id = serializers.UUIDField(allow_null=True)
+    vendor_name = serializers.CharField(
+        source="vendor_party.display_name", allow_null=True, read_only=True
+    )
     attachment_id = serializers.UUIDField(allow_null=True)
     taxable_value = MoneyField()
     gst_amount = MoneyField()
@@ -27,7 +31,9 @@ class ExpenseSerializer(serializers.ModelSerializer[Expense]):
             "id",
             "version",
             "project_id",
+            "project_name",
             "vendor_party_id",
+            "vendor_name",
             "category",
             "expense_date",
             "description",

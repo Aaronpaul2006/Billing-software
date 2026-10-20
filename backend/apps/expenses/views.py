@@ -61,7 +61,7 @@ class ExpenseListView(ActionAPIView):
     ordering_fields = ("expense_date", "total_amount")
 
     def get_queryset(self) -> Any:
-        return Expense.objects.all()
+        return Expense.objects.select_related("project", "vendor_party")  # names, one query
 
     @extend_schema(responses={200: ExpenseSerializer(many=True)}, tags=["expenses"])
     def get(self, request: Request) -> Response:

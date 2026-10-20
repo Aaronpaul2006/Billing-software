@@ -4,7 +4,7 @@ Last updated: 2026-10-20
 
 ## Current phase
 
-**Web app** (in progress, owner decision 2026-10-20: React + Vite SPA, shadcn/ui + Tailwind, core billing loop first): steps W.1–W.5 done: the core billing loop. Backend Phases 0–3 complete. Phases 0, 1 and 2 complete.
+**Web app** (in progress, owner decision 2026-10-20: React + Vite SPA, shadcn/ui + Tailwind, core billing loop first): steps W.1–W.6 done: the core billing loop, expenses and reports. Backend Phases 0–3 complete. Phases 0, 1 and 2 complete.
 
 ## Done
 
@@ -45,10 +45,11 @@ Last updated: 2026-10-20
 - [x] Web W.3: projects and BOQ — projects list (search, status), project page with tabs: details (one form for create / edit: client picker searching customers, bill-from registration, site state and address, contract value, retention / TDS / GST TDS / advance recovery, status, dates; If-Match), BOQ (items with add / edit / delete, billed items explained; import from CSV / XLSX: check file first with a preview or row-by-row errors, then import), progress (billed vs contract per item with bars, totals, retention held per book). Settings → GST registrations (list, add; the project form links there when none exists: a new company has none). Backend: project responses carry `client_name` (one joined query). Fixed in the API client: copying Headers dropped Idempotency-Key and other headers in the test environment (now the token is set on the request itself; a test that compared two missing keys had hidden it). Smoke-tested through the proxy, incl. a real multipart BOQ upload. Web 66 tests; backend 475.
 - [x] Web W.4: invoices and quotes — documents list (type, status, paid / unpaid, number search; party, project, total, outstanding); editor for new and draft documents: type, client picker, the client's projects, dates, RA bill and round-off switches, lines from the BOQ, the catalog or free text (picking an item fills description, unit, HSN, rate, GST), live totals from `documents:preview-totals` (400 ms after typing stops; server errors shown under the line they are about), save draft (Idempotency-Key / If-Match); notes keep type, party and project. Document page: header, lines (RA: previous / this bill / up to date), totals with deductions and what is outstanding; issue (If-Match + key; a missing number series links to Settings), PDF (drafts on demand; issued through `?as=link`, or "being prepared"), cancel with reason, accept / decline, convert, credit / debit note (open the new draft). Settings → number series (list, add with a live sample number). Lazy routes: the first download fell from 697 kB to 334 kB (107 kB gzipped). Backend: documents carry `party_name` / `project_name` (one joined query), `pdf?as=link`, typed document and preview lines in the schema; the client sends list filters as one comma-separated value (django-filter `in`). Smoke-tested through the proxy: series, preview, draft, issue, credit note, cancel, quotation accept and convert. Web 76 tests; backend 476.
 - [x] Web W.5: payments and allocations — payments list (status, mode; client, reference, unallocated); record a payment with the client's open invoices, bills of supply, debit notes and retention releases in an allocation table ("fill oldest first", live allocated / left; the only client-side money sums, done exactly in BigInt paise, never floats; the server still checks); payment page: allocations with unwind, "allocate the rest", void with a reason (If-Match). Document page: "settled by" (payments, credit notes); issued credit notes: applied / available and "apply to invoices". Backend: payments carry `party_name` / `project_name`, `payment_state=OPEN`, typed allocation lists in the schema. Smoke test caught same-day invoices coming back in arbitrary order; open items now order by date then number. Web 85 tests; backend 477.
+- [x] Web W.6: expenses and reports — expenses list (category, paid / unpaid, voided; vendor, project, total, ITC, left to pay); one form for new and edit (category, date, description, vendor picker, vendor bill number, project or office, amount before GST, GST, ITC claimable, paid so far and mode, the mode only when something is paid; total shown while typing, exact paise), If-Match, void. Reports page: GST summary for a month (B2B / B2C by rate, totals), project margins (negative in red), TDS reconciliation by financial year (matched / short / excess / not received, overdue), billing by month with bars (widths from BigInt paise ratios: no amount becomes a float). Backend: expenses carry `vendor_name` / `project_name`. Every placeholder page is gone. Smoke-tested through the proxy. Web 90 tests; backend 478.
 
 ## In progress
 
-- Nothing. The core billing loop is in the web app; next to be chosen by the owner.
+- Nothing. Next to be chosen by the owner (see the options in the last report).
 
 ## Next
 
@@ -94,7 +95,8 @@ Web app (core billing loop first):
 3. ~~Projects and BOQ~~ (done)
 4. ~~Invoices and quotes~~ (done)
 5. ~~Payments and allocations~~ (done)
-6. Then: RA bills, retention, TDS, expenses, reports, settings (company, GST registrations, series, members)
+6. ~~Expenses and reports~~ (done)
+7. Retention releases and TDS certificates screens; settings (company profile, editing registrations / series, members and invitations)
 
 Full roadmap: `docs/01-architecture.md` §9.
 

@@ -5522,12 +5522,26 @@
                         ],
                         "format": "uuid"
                     },
+                    "project_name": {
+                        "type": [
+                            "string",
+                            "null"
+                        ],
+                        "readOnly": true
+                    },
                     "vendor_party_id": {
                         "type": [
                             "string",
                             "null"
                         ],
                         "format": "uuid"
+                    },
+                    "vendor_name": {
+                        "type": [
+                            "string",
+                            "null"
+                        ],
+                        "readOnly": true
                     },
                     "category": {
                         "allOf": [
@@ -5631,11 +5645,13 @@
                     "itc_eligible",
                     "payment_mode",
                     "project_id",
+                    "project_name",
                     "status",
                     "taxable_value",
                     "total_amount",
                     "updated_at",
                     "vendor_bill_number",
+                    "vendor_name",
                     "vendor_party_id",
                     "version"
                 ]

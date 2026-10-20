@@ -1,4 +1,5 @@
 import {
+  BarChart3,
   Building2,
   ChevronsUpDown,
   FileText,
@@ -34,6 +35,7 @@ const NAV = [
   { to: "/parties", label: "Parties", icon: Users },
   { to: "/projects", label: "Projects", icon: FolderKanban },
   { to: "/expenses", label: "Expenses", icon: Receipt },
+  { to: "/reports", label: "Reports", icon: BarChart3 },
   { to: "/settings/gst-registrations", label: "GST registrations", icon: Settings },
   { to: "/settings/series", label: "Number series", icon: Hash },
 ] as const;

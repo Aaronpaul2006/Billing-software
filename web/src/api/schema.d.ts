@@ -1830,8 +1830,10 @@ export interface components {
             readonly version: number;
             /** Format: uuid */
             project_id: string | null;
+            readonly project_name: string | null;
             /** Format: uuid */
             vendor_party_id: string | null;
+            readonly vendor_name: string | null;
             readonly category: components["schemas"]["ExpenseCategoryEnum"];
             /** Format: date */
             readonly expense_date: string;

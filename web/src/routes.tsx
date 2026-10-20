@@ -3,7 +3,7 @@ import type { RouteObject } from "react-router";
 
 import { RequireAuth } from "@/auth/RequireAuth";
 import { AppShell } from "@/layout/AppShell";
-import { NotFoundPage, PlaceholderPage } from "@/pages/PlaceholderPage";
+import { NotFoundPage } from "@/pages/PlaceholderPage";
 
 /** Load a page's code when it is first opened (keeps the first download small). */
 function lazyPage<M>(load: () => Promise<M>, pick: (module: M) => ComponentType) {
@@ -139,7 +139,34 @@ export const routes: RouteObject[] = [
               },
             ],
           },
-          { path: "expenses", element: <PlaceholderPage title="Expenses" /> },
+          {
+            path: "expenses",
+            lazy: lazyPage(
+              () => import("@/features/expenses/ExpensesPage"),
+              (m) => m.ExpensesPage,
+            ),
+          },
+          {
+            path: "expenses/new",
+            lazy: lazyPage(
+              () => import("@/features/expenses/ExpenseFormPage"),
+              (m) => m.ExpenseFormPage,
+            ),
+          },
+          {
+            path: "expenses/:expenseId",
+            lazy: lazyPage(
+              () => import("@/features/expenses/ExpenseFormPage"),
+              (m) => m.ExpenseFormPage,
+            ),
+          },
+          {
+            path: "reports",
+            lazy: lazyPage(
+              () => import("@/features/reports/ReportsPage"),
+              (m) => m.ReportsPage,
+            ),
+          },
           {
             path: "settings/gst-registrations",
             lazy: lazyPage(
