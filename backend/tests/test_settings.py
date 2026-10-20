@@ -94,8 +94,10 @@ def test_openapi_schema_generates_without_warnings(tmp_path: Path) -> None:
             "manage.py",
             "spectacular",
             "--fail-on-warn",
+            "--format",
+            "openapi-json",
             "--file",
-            str(tmp_path / "schema.yaml"),
+            str(tmp_path / "schema.json"),
         ],
         cwd=BACKEND_DIR,
         env={**os.environ, "DJANGO_SETTINGS_MODULE": "config.settings.test"},
@@ -104,13 +106,31 @@ def test_openapi_schema_generates_without_warnings(tmp_path: Path) -> None:
         check=False,
     )
     assert result.returncode == 0, result.stderr[-3000:]
-    # The web app generates its API types from the committed copy.
-    committed = BACKEND_DIR / "openapi.yaml"
-    assert committed.read_text(encoding="utf-8") == (tmp_path / "schema.yaml").read_text(
+    # The web app generates its API types from the committed copy. JSON, not YAML:
+    # YAML readers disagree on values like 08 (a string here, a number in YAML 1.2).
+    committed = BACKEND_DIR / "openapi.json"
+    assert committed.read_text(encoding="utf-8") == (tmp_path / "schema.json").read_text(
         encoding="utf-8"
     ), (
-        "backend/openapi.yaml is out of date. Regenerate it with\n"
+        "backend/openapi.json is out of date. Regenerate it with\n"
         "  DJANGO_SETTINGS_MODULE=config.settings.test uv run python manage.py"
-        " spectacular --file openapi.yaml\n"
+        " spectacular --format openapi-json --file openapi.json\n"
         "then run `npm run gen:api` in web/."
     )
+
+
+def test_openapi_has_no_bare_array_responses() -> None:
+    """Every list answer is an object ({results, next_cursor} or {results, totals}); a
+    documented bare array means a view's extend_schema disagrees with its Response."""
+    import json
+
+    schema = json.loads((BACKEND_DIR / "openapi.json").read_text(encoding="utf-8"))
+    bare = [
+        f"{method.upper()} {path} {status}"
+        for path, ops in schema["paths"].items()
+        for method, op in ops.items()
+        for status, response in op.get("responses", {}).items()
+        if response.get("content", {}).get("application/json", {}).get("schema", {}).get("type")
+        == "array"
+    ]
+    assert bare == []

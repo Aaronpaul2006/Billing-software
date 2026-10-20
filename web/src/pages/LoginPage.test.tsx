@@ -1,21 +1,8 @@
-import { render, screen } from "@testing-library/react";
+import { screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
-import { createMemoryRouter, RouterProvider } from "react-router";
 
-import { Providers } from "@/App";
-import { makeQueryClient } from "@/queryClient";
-import { routes } from "@/routes";
+import { renderApp as renderAt } from "@/test/render";
 import { API, http, HttpResponse, me, problem, server, tokens } from "@/test/server";
-
-function renderAt(path: string) {
-  const router = createMemoryRouter(routes, { initialEntries: [path] });
-  render(
-    <Providers queryClient={makeQueryClient()}>
-      <RouterProvider router={router} />
-    </Providers>,
-  );
-  return router;
-}
 
 describe("sign in", () => {
   it("sends a signed-out visitor to the login page", async () => {

@@ -94,13 +94,15 @@ def _claim(principal: Principal, key: str, request: Request, digest: bytes) -> I
     raise Conflict("Retry the request.", code="idempotency_key_in_use")
 
 
-def idempotent(handler: Handler) -> Handler:
+def _idempotent(handler: Handler, *, required: bool) -> Handler:
     @wraps(handler)
     def wrapper(view: Any, request: Request, *args: Any, **kwargs: Any) -> Response:
         principal = request.auth
         if not isinstance(principal, Principal):
             raise Unauthenticated
         key = request.headers.get(HEADER, "").strip()
+        if not key and not required:
+            return handler(view, request, *args, **kwargs)
         if not key:
             raise PreconditionRequired(
                 f"Send an {HEADER} header (a new UUID per action, reused on retries).",
@@ -135,3 +137,14 @@ def idempotent(handler: Handler) -> Handler:
         return response
 
     return wrapper
+
+
+def idempotent(handler: Handler) -> Handler:
+    """Money and documents: the key is required (428 without it)."""
+    return _idempotent(handler, required=True)
+
+
+def idempotent_if_keyed(handler: Handler) -> Handler:
+    """Master data: a key is honoured when sent (the web app always sends one,
+    so a retried create cannot make a duplicate), optional otherwise."""
+    return _idempotent(handler, required=False)

@@ -137,7 +137,7 @@ jobs:
           cache: npm
           cache-dependency-path: web/package-lock.json
       - run: npm ci
-      - name: API types match backend/openapi.yaml
+      - name: API types match backend/openapi.json
         run: |
           npm run gen:api
           git diff --exit-code -- src/api/schema.d.ts

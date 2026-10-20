@@ -9,6 +9,7 @@ from rest_framework.request import Request
 from rest_framework.response import Response
 
 from apps.core.api import ActionAPIView, detail_response, list_response, versioned_patch
+from apps.core.idempotency import idempotent_if_keyed
 
 from . import services
 from .models import DocumentSeries, GstRegistration
@@ -63,6 +64,7 @@ class GstRegistrationListView(ActionAPIView):
         responses={201: GstRegistrationSerializer},
         tags=["tenant"],
     )
+    @idempotent_if_keyed
     def post(self, request: Request) -> Response:
         data = GstRegistrationCreateSerializer(data=request.data)
         data.is_valid(raise_exception=True)
@@ -125,6 +127,7 @@ class DocumentSeriesListView(ActionAPIView):
         responses={201: DocumentSeriesSerializer},
         tags=["tenant"],
     )
+    @idempotent_if_keyed
     def post(self, request: Request) -> Response:
         data = DocumentSeriesCreateSerializer(data=request.data)
         data.is_valid(raise_exception=True)

@@ -86,7 +86,12 @@ stable `code`. Raw database messages are never returned.
 
 ### Idempotency
 * Required on: `POST /documents`, `/documents/{id}/issue`, `/payments`,
-  `/expenses`, `/documents/{id}/credit-notes`, signup.
+  `/expenses`, `/documents/{id}/credit-notes`, signup (and every other money or
+  document action marked so in the schema).
+* Honoured when sent (optional) on master-data creates: `POST /parties`,
+  `/projects`, `/projects/{id}/boq-items`, `/catalog-items`,
+  `/gst-registrations`, `/document-series`. The web app always sends one, so a
+  retried create cannot make a duplicate.
 * Header `Idempotency-Key: <uuid>`, generated once per user action by the client
   and reused on retries.
 * Same key + same body → the original response is replayed (with

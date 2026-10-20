@@ -10,6 +10,7 @@ from rest_framework.request import Request
 from rest_framework.response import Response
 
 from apps.core.api import ActionAPIView, detail_response, list_response, versioned_patch
+from apps.core.idempotency import idempotent_if_keyed
 
 from . import services
 from .models import Party
@@ -45,6 +46,7 @@ class PartyListView(ActionAPIView):
         return list_response(self, self.get_queryset(), PartySerializer)
 
     @extend_schema(request=PartyWriteSerializer, responses={201: PartySerializer}, tags=["parties"])
+    @idempotent_if_keyed
     def post(self, request: Request) -> Response:
         data = PartyWriteSerializer(data=request.data)
         data.is_valid(raise_exception=True)

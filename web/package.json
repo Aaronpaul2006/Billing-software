@@ -17,7 +17,7 @@
     "format:check": "prettier --check .",
     "test": "vitest run",
     "test:watch": "vitest",
-    "gen:api": "openapi-typescript ../backend/openapi.yaml -o src/api/schema.d.ts"
+    "gen:api": "openapi-typescript ../backend/openapi.json --default-non-nullable false -o src/api/schema.d.ts"
   },
   "dependencies": {
     "@hookform/resolvers": "5.9.2",

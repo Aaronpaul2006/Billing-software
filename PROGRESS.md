@@ -4,7 +4,7 @@ Last updated: 2026-10-20
 
 ## Current phase
 
-**Web app** (in progress, owner decision 2026-10-20: React + Vite SPA, shadcn/ui + Tailwind, core billing loop first): step W.1 done. Backend Phases 0–3 complete. Phases 0, 1 and 2 complete.
+**Web app** (in progress, owner decision 2026-10-20: React + Vite SPA, shadcn/ui + Tailwind, core billing loop first): steps W.1–W.2 done. Backend Phases 0–3 complete. Phases 0, 1 and 2 complete.
 
 ## Done
 
@@ -40,11 +40,12 @@ Last updated: 2026-10-20
 - [x] Phase 3.2: RA bills — `is_ra_bill` on invoices / bills of supply / proformas of a project; every line bills a BOQ item once; `ra_sequence` per project and type given at draft creation under a project row lock (one open RA draft, cancelled latest number reused); lines store this-bill quantity + `prev_cumulative_qty` snapshot (retaken at issue), API adds `up_to_date_qty`; BOQ cap for all billing documents unless the item is a variation, re-checked at issue with BOQ rows locked (parallel-issue test, mutation-checked: without the lock it fails 3/3); RA proforma → RA invoice on convert, notes never RA; contract quantity cannot drop below billed; `GET /projects/{id}/boq-progress`; PDF "RA Bill No. N" with previous / this bill / up to date columns; `is_ra_bill` list filter. No schema change (columns existed). 435 tests
 - [x] Phase 3.3: retention release (owner decision 2026-10-20: option A, a release record collected by payments, no new tax document) — schema: table `retention_releases` (RLS, composite FKs, audit, settlement only via the allocations trigger, cancel-only grants), `allocations` settles a document or a release (payments only), trigger and `v_receivables` / `v_project_billing` updated (schema.sql + migration `payments/0002`, sync test passes, migration reversible); `GET /projects/{id}/retention`, `GET/POST /retention-releases`, `GET /retention-releases/{id}`, `POST .../cancel`; at most the retention held per project and book, under a project row lock (parallel test, mutation-checked 3/3); bills whose retention was released cannot be cancelled; receivables, outstanding, project report and book collections include releases. 451 tests
 - [x] Phase 3.4: TDS certificate reconciliation — new app `apps/tds`, table `tds_certificates` (schema.sql + migration `tds/0001`, RLS, composite FKs, audit; editable / deletable as a record of the client's paper; unique per TAN and number), `GET/POST /tds-certificates`, `GET/PATCH/DELETE /tds-certificates/{id}`, `GET /reports/tds-reconciliation` (per client and FY quarter: s.194C TDS on issued bills by bill date vs certificates; MATCHED / SHORT / EXCESS / NOT_RECEIVED; Form 16A due date and overdue flag). Quarter boundaries tested. 471 tests
-- [x] Web W.1: foundation and sign-in — `web/`: React 19 + TypeScript (strict) on Vite 8, Tailwind 4 + shadcn/ui (new-york, components in the repo), React Router 8, TanStack Query 5, react-hook-form + zod 4; exact versions in package-lock. API types generated from the committed `backend/openapi.yaml` (backend test fails when it is stale; CI fails when the TS types are). Auth: access token in memory only, refresh via the HttpOnly cookie, single-flight refresh (one promise per tab, Web Lock across tabs), retry once on `token_expired` (POST bodies intact), other 401s not retried, network errors keep the session; screens: login, MFA code / recovery code, mandatory MFA enrolment for OWNER/ADMIN (QR, recovery codes), app shell with company switcher and sign-out. Money formatted from strings with Indian grouping, never floats (lint bans parseFloat). 34 tests (Vitest + Testing Library + MSW); CI job `web` (types up to date, prettier, eslint strict-type-checked, tsc, tests, build, npm audit). Smoke-tested through the Vite proxy against the real API (signup, cookie refresh, /me, logout).
+- [x] Web W.1: foundation and sign-in — `web/`: React 19 + TypeScript (strict) on Vite 8, Tailwind 4 + shadcn/ui (new-york, components in the repo), React Router 8, TanStack Query 5, react-hook-form + zod 4; exact versions in package-lock. API types generated from the committed `backend/openapi.json` (backend test fails when it is stale; CI fails when the TS types are). Auth: access token in memory only, refresh via the HttpOnly cookie, single-flight refresh (one promise per tab, Web Lock across tabs), retry once on `token_expired` (POST bodies intact), other 401s not retried, network errors keep the session; screens: login, MFA code / recovery code, mandatory MFA enrolment for OWNER/ADMIN (QR, recovery codes), app shell with company switcher and sign-out. Money formatted from strings with Indian grouping, never floats (lint bans parseFloat). 34 tests (Vitest + Testing Library + MSW); CI job `web` (types up to date, prettier, eslint strict-type-checked, tsc, tests, build, npm audit). Smoke-tested through the Vite proxy against the real API (signup, cookie refresh, /me, logout).
+- [x] Web W.2: dashboard and parties — dashboard: period (this / last month, this / last FY) and book selectors, cards for billed, collected, outstanding, expenses with the previous period, receivables by party with ageing buckets and totals, plain message for roles without reports. Parties: search, customer / vendor filter, archived toggle, cursor "load more"; one form for create and edit (GST status drives GSTIN vs PAN / state, overseas addresses), client checks, the server's field errors on the fields, If-Match with a clear 412 + reload, archive / restore. API fixes found on the way: four report endpoints documented bare arrays (now `{results, totals}` envelopes, plus a test that no endpoint documents a bare array); the committed spec is now `backend/openapi.json` (YAML made "08"/"09" numbers in the TS types); state choices carry names; TS types no longer mark defaulted request fields required; master-data creates honour an Idempotency-Key when sent (`idempotent_if_keyed`; a smoke test had shown a retried create made a duplicate). Web 51 tests; backend 474.
 
 ## In progress
 
-- Nothing. Next up: Web W.2, dashboard and parties.
+- Nothing. Next up: Web W.3, projects and BOQ.
 
 ## Next
 
@@ -86,7 +87,7 @@ retention / TDS / GST-TDS / advance-recovery deductions on bills, project report
 Web app (core billing loop first):
 
 1. ~~Foundation and sign-in~~ (done)
-2. Dashboard (summary, receivables) and parties
+2. ~~Dashboard and parties~~ (done)
 3. Projects and BOQ (incl. import, progress)
 4. Invoices and quotes: list, editor with live totals, issue, PDF, cancel, convert, notes
 5. Payments and allocations

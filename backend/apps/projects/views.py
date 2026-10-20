@@ -12,7 +12,7 @@ from rest_framework.response import Response
 
 from apps.core.api import ActionAPIView, detail_response, list_response, versioned_patch
 from apps.core.errors import Invalid
-from apps.core.idempotency import idempotent
+from apps.core.idempotency import idempotent, idempotent_if_keyed
 
 from . import boq_import, services
 from .models import BoqItem, Project
@@ -56,6 +56,7 @@ class ProjectListView(ActionAPIView):
     @extend_schema(
         request=ProjectWriteSerializer, responses={201: ProjectSerializer}, tags=["projects"]
     )
+    @idempotent_if_keyed
     def post(self, request: Request) -> Response:
         data = ProjectWriteSerializer(data=request.data)
         data.is_valid(raise_exception=True)
@@ -103,6 +104,7 @@ class BoqItemListView(ActionAPIView):
     @extend_schema(
         request=BoqItemWriteSerializer, responses={201: BoqItemSerializer}, tags=["projects"]
     )
+    @idempotent_if_keyed
     def post(self, request: Request, project_id: uuid.UUID) -> Response:
         data = BoqItemWriteSerializer(data=request.data)
         data.is_valid(raise_exception=True)

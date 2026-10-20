@@ -1130,7 +1130,7 @@ export interface paths {
          *     for GET/HEAD/OPTIONS, `write_action` for everything else. Generic, so list
          *     endpoints get pagination and filtering from the DRF defaults.
          */
-        get: operations["reports_billing_by_month_list"];
+        get: operations["reports_billing_by_month_retrieve"];
         put?: never;
         post?: never;
         delete?: never;
@@ -1151,7 +1151,7 @@ export interface paths {
          *     for GET/HEAD/OPTIONS, `write_action` for everything else. Generic, so list
          *     endpoints get pagination and filtering from the DRF defaults.
          */
-        get: operations["reports_gst_summary_list"];
+        get: operations["reports_gst_summary_retrieve"];
         put?: never;
         post?: never;
         delete?: never;
@@ -1214,7 +1214,7 @@ export interface paths {
          *     for GET/HEAD/OPTIONS, `write_action` for everything else. Generic, so list
          *     endpoints get pagination and filtering from the DRF defaults.
          */
-        get: operations["reports_receivables_list"];
+        get: operations["reports_receivables_retrieve"];
         put?: never;
         post?: never;
         delete?: never;
@@ -1479,7 +1479,7 @@ export interface components {
              * @description Validate and preview; save nothing.
              * @default false
              */
-            dry_run: boolean;
+            dry_run?: boolean;
         };
         BoqImportResult: {
             dry_run: boolean;
@@ -1528,11 +1528,11 @@ export interface components {
              * Format: decimal
              * @default 18.00
              */
-            gst_rate: string;
+            gst_rate?: string;
             /** @default false */
-            is_variation: boolean;
+            is_variation?: boolean;
             /** @default 0 */
-            sort_order: number;
+            sort_order?: number;
         };
         BoqProgress: {
             results: components["schemas"]["BoqProgressRow"][];
@@ -1618,9 +1618,9 @@ export interface components {
              * Format: decimal
              * @default 18.00
              */
-            gst_rate: string;
+            gst_rate?: string;
             /** @default true */
-            is_active: boolean;
+            is_active?: boolean;
         };
         /**
          * @description * `web` - web
@@ -1762,11 +1762,11 @@ export interface components {
             fy_start_year: number;
             prefix?: string;
             /** @default 1 */
-            next_number: number;
+            next_number?: number;
             /** @default 4 */
-            pad_width: number;
+            pad_width?: number;
             /** @default true */
-            is_active: boolean;
+            is_active?: boolean;
         };
         /**
          * @description * `QUOTATION` - QUOTATION
@@ -1924,7 +1924,7 @@ export interface components {
             trade_name?: string | null;
             address: components["schemas"]["Address"];
             /** @default false */
-            is_default: boolean;
+            is_default?: boolean;
         };
         /**
          * @description * `REGULAR` - REGULAR
@@ -1945,6 +1945,24 @@ export interface components {
             /** Format: decimal */
             gst_rate: string;
             document_count: number;
+            /** Format: decimal */
+            taxable_value: string;
+            /** Format: decimal */
+            cgst: string;
+            /** Format: decimal */
+            sgst: string;
+            /** Format: decimal */
+            igst: string;
+            /** Format: decimal */
+            cess: string;
+        };
+        GstSummaryReport: {
+            /** @description YYYY-MM */
+            period: string;
+            results: components["schemas"]["GstRow"][];
+            totals: components["schemas"]["GstTotals"];
+        };
+        GstTotals: {
             /** Format: decimal */
             taxable_value: string;
             /** Format: decimal */
@@ -1998,7 +2016,7 @@ export interface components {
         };
         Login: {
             /** @default mobile */
-            client: components["schemas"]["ClientEnum"];
+            client?: components["schemas"]["ClientEnum"];
             device_label?: string;
             /** Format: email */
             email: string;
@@ -2056,7 +2074,7 @@ export interface components {
         };
         MfaEnable: {
             /** @default mobile */
-            client: components["schemas"]["ClientEnum"];
+            client?: components["schemas"]["ClientEnum"];
             device_label?: string;
             code: string;
         };
@@ -2089,7 +2107,7 @@ export interface components {
         };
         MfaVerify: {
             /** @default mobile */
-            client: components["schemas"]["ClientEnum"];
+            client?: components["schemas"]["ClientEnum"];
             device_label?: string;
             mfa_token: string;
             code?: string;
@@ -2108,6 +2126,9 @@ export interface components {
             tax: string;
             /** Format: decimal */
             billed: string;
+        };
+        Months: {
+            results: components["schemas"]["Month"][];
         };
         Note: {
             /** Format: date */
@@ -2205,7 +2226,7 @@ export interface components {
             state_code?: components["schemas"]["StateCodeEnum"];
             pincode?: string;
             /** @default IN */
-            country: string;
+            country?: string;
         };
         /**
          * @description * `REGISTERED` - Registered
@@ -2221,9 +2242,9 @@ export interface components {
             display_name: string;
             legal_name?: string | null;
             /** @default true */
-            is_customer: boolean;
+            is_customer?: boolean;
             /** @default false */
-            is_vendor: boolean;
+            is_vendor?: boolean;
             gst_treatment: components["schemas"]["PartyWriteGstTreatmentEnum"];
             gstin?: string | null;
             pan?: string | null;
@@ -2233,7 +2254,7 @@ export interface components {
             email?: string | null;
             phone?: string | null;
             /** @default true */
-            is_active: boolean;
+            is_active?: boolean;
         };
         /**
          * @description * `REGISTERED` - REGISTERED
@@ -2260,11 +2281,11 @@ export interface components {
              * Format: decimal
              * @default 18.00
              */
-            gst_rate: string;
+            gst_rate?: string;
             /** @default false */
-            is_variation: boolean;
+            is_variation?: boolean;
             /** @default 0 */
-            sort_order: number;
+            sort_order?: number;
         };
         PatchedCatalogItemWrite: {
             name?: string;
@@ -2277,9 +2298,9 @@ export interface components {
              * Format: decimal
              * @default 18.00
              */
-            gst_rate: string;
+            gst_rate?: string;
             /** @default true */
-            is_active: boolean;
+            is_active?: boolean;
         };
         /** @description Registration, type and year are fixed; the rest is locked once used. */
         PatchedDocumentSeriesUpdate: {
@@ -2350,9 +2371,9 @@ export interface components {
             display_name?: string;
             legal_name?: string | null;
             /** @default true */
-            is_customer: boolean;
+            is_customer?: boolean;
             /** @default false */
-            is_vendor: boolean;
+            is_vendor?: boolean;
             gst_treatment?: components["schemas"]["PartyWriteGstTreatmentEnum"];
             gstin?: string | null;
             pan?: string | null;
@@ -2362,7 +2383,7 @@ export interface components {
             email?: string | null;
             phone?: string | null;
             /** @default true */
-            is_active: boolean;
+            is_active?: boolean;
         };
         PatchedProjectWrite: {
             code?: string;
@@ -2375,45 +2396,45 @@ export interface components {
             /**
              * @description Place of supply for works on immovable property (IGST Act s.12(3)).
              *
-             *     * `01` - 01
-             *     * `02` - 02
-             *     * `03` - 03
-             *     * `04` - 04
-             *     * `05` - 05
-             *     * `06` - 06
-             *     * `07` - 07
-             *     * `08` - 08
-             *     * `09` - 09
-             *     * `10` - 10
-             *     * `11` - 11
-             *     * `12` - 12
-             *     * `13` - 13
-             *     * `14` - 14
-             *     * `15` - 15
-             *     * `16` - 16
-             *     * `17` - 17
-             *     * `18` - 18
-             *     * `19` - 19
-             *     * `20` - 20
-             *     * `21` - 21
-             *     * `22` - 22
-             *     * `23` - 23
-             *     * `24` - 24
-             *     * `25` - 25
-             *     * `26` - 26
-             *     * `27` - 27
-             *     * `28` - 28
-             *     * `29` - 29
-             *     * `30` - 30
-             *     * `31` - 31
-             *     * `32` - 32
-             *     * `33` - 33
-             *     * `34` - 34
-             *     * `35` - 35
-             *     * `36` - 36
-             *     * `37` - 37
-             *     * `38` - 38
-             *     * `97` - 97
+             *     * `01` - Jammu and Kashmir
+             *     * `02` - Himachal Pradesh
+             *     * `03` - Punjab
+             *     * `04` - Chandigarh
+             *     * `05` - Uttarakhand
+             *     * `06` - Haryana
+             *     * `07` - Delhi
+             *     * `08` - Rajasthan
+             *     * `09` - Uttar Pradesh
+             *     * `10` - Bihar
+             *     * `11` - Sikkim
+             *     * `12` - Arunachal Pradesh
+             *     * `13` - Nagaland
+             *     * `14` - Manipur
+             *     * `15` - Mizoram
+             *     * `16` - Tripura
+             *     * `17` - Meghalaya
+             *     * `18` - Assam
+             *     * `19` - West Bengal
+             *     * `20` - Jharkhand
+             *     * `21` - Odisha
+             *     * `22` - Chhattisgarh
+             *     * `23` - Madhya Pradesh
+             *     * `24` - Gujarat
+             *     * `25` - Daman and Diu (before 2020)
+             *     * `26` - Dadra and Nagar Haveli and Daman and Diu
+             *     * `27` - Maharashtra
+             *     * `28` - Andhra Pradesh (before 2014)
+             *     * `29` - Karnataka
+             *     * `30` - Goa
+             *     * `31` - Lakshadweep
+             *     * `32` - Kerala
+             *     * `33` - Tamil Nadu
+             *     * `34` - Puducherry
+             *     * `35` - Andaman and Nicobar Islands
+             *     * `36` - Telangana
+             *     * `37` - Andhra Pradesh
+             *     * `38` - Ladakh
+             *     * `97` - Other Territory
              */
             site_state_code?: components["schemas"]["StateCodeEnum"];
             /** Format: decimal */
@@ -2422,26 +2443,26 @@ export interface components {
              * Format: decimal
              * @default 0.00
              */
-            retention_pct: string;
+            retention_pct?: string;
             /**
              * Format: decimal
              * @default 0.00
              */
-            income_tax_tds_pct: string;
+            income_tax_tds_pct?: string;
             /** @default false */
-            gst_tds_applicable: boolean;
+            gst_tds_applicable?: boolean;
             /**
              * Format: decimal
              * @default 0.00
              */
-            mobilisation_advance: string;
+            mobilisation_advance?: string;
             /**
              * Format: decimal
              * @default 0.00
              */
-            advance_recovery_pct: string;
+            advance_recovery_pct?: string;
             /** @default ACTIVE */
-            status: components["schemas"]["ProjectWriteStatusEnum"];
+            status?: components["schemas"]["ProjectWriteStatusEnum"];
             /** Format: date */
             start_date?: string | null;
             /** Format: date */
@@ -2456,7 +2477,7 @@ export interface components {
             /** @description The client's TAN, e.g. BLRS12345E. */
             deductor_tan?: string;
             /** @default 194C */
-            section: string;
+            section?: string;
             /** @description 2026 = FY 2026-27. */
             fy_start_year?: number;
             /** @description 1 = Apr-Jun ... 4 = Jan-Mar. */
@@ -2607,6 +2628,9 @@ export interface components {
              */
             margin: string;
         };
+        ProjectReports: {
+            results: components["schemas"]["ProjectReport"][];
+        };
         ProjectRetention: {
             /** Format: uuid */
             project_id: string;
@@ -2633,45 +2657,45 @@ export interface components {
             /**
              * @description Place of supply for works on immovable property (IGST Act s.12(3)).
              *
-             *     * `01` - 01
-             *     * `02` - 02
-             *     * `03` - 03
-             *     * `04` - 04
-             *     * `05` - 05
-             *     * `06` - 06
-             *     * `07` - 07
-             *     * `08` - 08
-             *     * `09` - 09
-             *     * `10` - 10
-             *     * `11` - 11
-             *     * `12` - 12
-             *     * `13` - 13
-             *     * `14` - 14
-             *     * `15` - 15
-             *     * `16` - 16
-             *     * `17` - 17
-             *     * `18` - 18
-             *     * `19` - 19
-             *     * `20` - 20
-             *     * `21` - 21
-             *     * `22` - 22
-             *     * `23` - 23
-             *     * `24` - 24
-             *     * `25` - 25
-             *     * `26` - 26
-             *     * `27` - 27
-             *     * `28` - 28
-             *     * `29` - 29
-             *     * `30` - 30
-             *     * `31` - 31
-             *     * `32` - 32
-             *     * `33` - 33
-             *     * `34` - 34
-             *     * `35` - 35
-             *     * `36` - 36
-             *     * `37` - 37
-             *     * `38` - 38
-             *     * `97` - 97
+             *     * `01` - Jammu and Kashmir
+             *     * `02` - Himachal Pradesh
+             *     * `03` - Punjab
+             *     * `04` - Chandigarh
+             *     * `05` - Uttarakhand
+             *     * `06` - Haryana
+             *     * `07` - Delhi
+             *     * `08` - Rajasthan
+             *     * `09` - Uttar Pradesh
+             *     * `10` - Bihar
+             *     * `11` - Sikkim
+             *     * `12` - Arunachal Pradesh
+             *     * `13` - Nagaland
+             *     * `14` - Manipur
+             *     * `15` - Mizoram
+             *     * `16` - Tripura
+             *     * `17` - Meghalaya
+             *     * `18` - Assam
+             *     * `19` - West Bengal
+             *     * `20` - Jharkhand
+             *     * `21` - Odisha
+             *     * `22` - Chhattisgarh
+             *     * `23` - Madhya Pradesh
+             *     * `24` - Gujarat
+             *     * `25` - Daman and Diu (before 2020)
+             *     * `26` - Dadra and Nagar Haveli and Daman and Diu
+             *     * `27` - Maharashtra
+             *     * `28` - Andhra Pradesh (before 2014)
+             *     * `29` - Karnataka
+             *     * `30` - Goa
+             *     * `31` - Lakshadweep
+             *     * `32` - Kerala
+             *     * `33` - Tamil Nadu
+             *     * `34` - Puducherry
+             *     * `35` - Andaman and Nicobar Islands
+             *     * `36` - Telangana
+             *     * `37` - Andhra Pradesh
+             *     * `38` - Ladakh
+             *     * `97` - Other Territory
              */
             site_state_code: components["schemas"]["StateCodeEnum"];
             /** Format: decimal */
@@ -2680,26 +2704,26 @@ export interface components {
              * Format: decimal
              * @default 0.00
              */
-            retention_pct: string;
+            retention_pct?: string;
             /**
              * Format: decimal
              * @default 0.00
              */
-            income_tax_tds_pct: string;
+            income_tax_tds_pct?: string;
             /** @default false */
-            gst_tds_applicable: boolean;
+            gst_tds_applicable?: boolean;
             /**
              * Format: decimal
              * @default 0.00
              */
-            mobilisation_advance: string;
+            mobilisation_advance?: string;
             /**
              * Format: decimal
              * @default 0.00
              */
-            advance_recovery_pct: string;
+            advance_recovery_pct?: string;
             /** @default ACTIVE */
-            status: components["schemas"]["ProjectWriteStatusEnum"];
+            status?: components["schemas"]["ProjectWriteStatusEnum"];
             /** Format: date */
             start_date?: string | null;
             /** Format: date */
@@ -2731,6 +2755,11 @@ export interface components {
             days_90_plus: string;
             /** Format: decimal */
             total: string;
+        };
+        Receivables: {
+            results: components["schemas"]["Receivable"][];
+            /** @description All parties together. */
+            totals: components["schemas"]["Receivable"];
         };
         /**
          * @description * `RECORDED` - Recorded
@@ -2896,7 +2925,7 @@ export interface components {
         };
         Signup: {
             /** @default mobile */
-            client: components["schemas"]["ClientEnum"];
+            client?: components["schemas"]["ClientEnum"];
             device_label?: string;
             /** Format: email */
             email: string;
@@ -2905,48 +2934,48 @@ export interface components {
             business_name: string;
         };
         /**
-         * @description * `01` - 01
-         *     * `02` - 02
-         *     * `03` - 03
-         *     * `04` - 04
-         *     * `05` - 05
-         *     * `06` - 06
-         *     * `07` - 07
-         *     * `08` - 08
-         *     * `09` - 09
-         *     * `10` - 10
-         *     * `11` - 11
-         *     * `12` - 12
-         *     * `13` - 13
-         *     * `14` - 14
-         *     * `15` - 15
-         *     * `16` - 16
-         *     * `17` - 17
-         *     * `18` - 18
-         *     * `19` - 19
-         *     * `20` - 20
-         *     * `21` - 21
-         *     * `22` - 22
-         *     * `23` - 23
-         *     * `24` - 24
-         *     * `25` - 25
-         *     * `26` - 26
-         *     * `27` - 27
-         *     * `28` - 28
-         *     * `29` - 29
-         *     * `30` - 30
-         *     * `31` - 31
-         *     * `32` - 32
-         *     * `33` - 33
-         *     * `34` - 34
-         *     * `35` - 35
-         *     * `36` - 36
-         *     * `37` - 37
-         *     * `38` - 38
-         *     * `97` - 97
+         * @description * `01` - Jammu and Kashmir
+         *     * `02` - Himachal Pradesh
+         *     * `03` - Punjab
+         *     * `04` - Chandigarh
+         *     * `05` - Uttarakhand
+         *     * `06` - Haryana
+         *     * `07` - Delhi
+         *     * `08` - Rajasthan
+         *     * `09` - Uttar Pradesh
+         *     * `10` - Bihar
+         *     * `11` - Sikkim
+         *     * `12` - Arunachal Pradesh
+         *     * `13` - Nagaland
+         *     * `14` - Manipur
+         *     * `15` - Mizoram
+         *     * `16` - Tripura
+         *     * `17` - Meghalaya
+         *     * `18` - Assam
+         *     * `19` - West Bengal
+         *     * `20` - Jharkhand
+         *     * `21` - Odisha
+         *     * `22` - Chhattisgarh
+         *     * `23` - Madhya Pradesh
+         *     * `24` - Gujarat
+         *     * `25` - Daman and Diu (before 2020)
+         *     * `26` - Dadra and Nagar Haveli and Daman and Diu
+         *     * `27` - Maharashtra
+         *     * `28` - Andhra Pradesh (before 2014)
+         *     * `29` - Karnataka
+         *     * `30` - Goa
+         *     * `31` - Lakshadweep
+         *     * `32` - Kerala
+         *     * `33` - Tamil Nadu
+         *     * `34` - Puducherry
+         *     * `35` - Andaman and Nicobar Islands
+         *     * `36` - Telangana
+         *     * `37` - Andhra Pradesh
+         *     * `38` - Ladakh
+         *     * `97` - Other Territory
          * @enum {string}
          */
-        StateCodeEnum: "01" | "02" | "03" | "04" | "05" | "06" | "07" | 8 | 9 | "10" | "11" | "12" | "13" | "14" | "15" | "16" | "17" | "18" | "19" | "20" | "21" | "22" | "23" | "24" | "25" | "26" | "27" | "28" | "29" | "30" | "31" | "32" | "33" | "34" | "35" | "36" | "37" | "38" | "97";
+        StateCodeEnum: "01" | "02" | "03" | "04" | "05" | "06" | "07" | "08" | "09" | "10" | "11" | "12" | "13" | "14" | "15" | "16" | "17" | "18" | "19" | "20" | "21" | "22" | "23" | "24" | "25" | "26" | "27" | "28" | "29" | "30" | "31" | "32" | "33" | "34" | "35" | "36" | "37" | "38" | "97";
         Summary: {
             book: string;
             period: {
@@ -2972,7 +3001,7 @@ export interface components {
         SupplyTypeEnum: "INTRA_STATE" | "INTER_STATE";
         SwitchTenant: {
             /** @default mobile */
-            client: components["schemas"]["ClientEnum"];
+            client?: components["schemas"]["ClientEnum"];
             device_label?: string;
             /** Format: uuid */
             tenant_id: string;
@@ -3009,7 +3038,7 @@ export interface components {
             /** @description The client's TAN, e.g. BLRS12345E. */
             deductor_tan: string;
             /** @default 194C */
-            section: string;
+            section?: string;
             /** @description 2026 = FY 2026-27. */
             fy_start_year: number;
             /** @description 1 = Apr-Jun ... 4 = Jan-Mar. */
@@ -5618,7 +5647,7 @@ export interface operations {
             };
         };
     };
-    reports_billing_by_month_list: {
+    reports_billing_by_month_retrieve: {
         parameters: {
             query?: {
                 book?: "ALL" | "GST" | "NON_GST";
@@ -5638,12 +5667,12 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Month"][];
+                    "application/json": components["schemas"]["Months"];
                 };
             };
         };
     };
-    reports_gst_summary_list: {
+    reports_gst_summary_retrieve: {
         parameters: {
             query: {
                 /** @description YYYY-MM */
@@ -5660,7 +5689,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["GstRow"][];
+                    "application/json": components["schemas"]["GstSummaryReport"];
                 };
             };
         };
@@ -5679,7 +5708,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["ProjectReport"][];
+                    "application/json": components["schemas"]["ProjectReports"];
                 };
             };
         };
@@ -5705,7 +5734,7 @@ export interface operations {
             };
         };
     };
-    reports_receivables_list: {
+    reports_receivables_retrieve: {
         parameters: {
             query?: {
                 book?: "ALL" | "GST" | "NON_GST";
@@ -5721,7 +5750,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Receivable"][];
+                    "application/json": components["schemas"]["Receivables"];
                 };
             };
         };

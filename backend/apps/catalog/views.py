@@ -8,6 +8,7 @@ from rest_framework.request import Request
 from rest_framework.response import Response
 
 from apps.core.api import ActionAPIView, detail_response, list_response, versioned_patch
+from apps.core.idempotency import idempotent_if_keyed
 
 from . import services
 from .models import CatalogItem
@@ -32,6 +33,7 @@ class CatalogItemListView(ActionAPIView):
     @extend_schema(
         request=CatalogItemWriteSerializer, responses={201: CatalogItemSerializer}, tags=["catalog"]
     )
+    @idempotent_if_keyed
     def post(self, request: Request) -> Response:
         data = CatalogItemWriteSerializer(data=request.data)
         data.is_valid(raise_exception=True)

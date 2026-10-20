@@ -6,7 +6,7 @@ from rest_framework import serializers
 
 from .india import STATE_CODES, is_valid_pincode
 
-STATE_CHOICES = sorted(STATE_CODES)
+STATE_CHOICES = sorted(STATE_CODES.items())  # (code, name): names reach the OpenAPI enum
 
 
 class AddressSerializer(serializers.Serializer[Any]):

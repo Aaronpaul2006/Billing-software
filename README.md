@@ -46,8 +46,8 @@ npm test           # Vitest + Testing Library, API mocked with MSW
 npm run lint && npm run typecheck && npm run build
 ```
 
-After an API change: regenerate `backend/openapi.yaml`
-(`DJANGO_SETTINGS_MODULE=config.settings.test uv run python manage.py spectacular --file openapi.yaml`
+After an API change: regenerate `backend/openapi.json`
+(`DJANGO_SETTINGS_MODULE=config.settings.test uv run python manage.py spectacular --format openapi-json --file openapi.json`
 in `backend/`), then `npm run gen:api` in `web/`. CI fails if either is stale.
 
 ## Running the whole backend in Docker

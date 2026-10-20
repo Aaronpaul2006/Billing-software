@@ -122,7 +122,7 @@ docker compose --profile app run --rm api pytest       # runs the PDF rendering 
 npm ci
 npm run dev                  # http://localhost:5173, proxies /api to 127.0.0.1:8000
 npm run format:check && npm run lint && npm run typecheck && npm test && npm run build
-npm run gen:api              # after regenerating backend/openapi.yaml (see README)
+npm run gen:api              # after regenerating backend/openapi.json (see README)
 ```
 
 Web rules: money stays a string from API to screen (format with `src/lib/money.ts`,

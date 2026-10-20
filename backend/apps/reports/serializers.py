@@ -130,6 +130,36 @@ class GstRowSerializer(serializers.Serializer[Any]):
     cess = MoneyField()
 
 
+# Response envelopes, so the OpenAPI schema matches what the views return.
+
+
+class MonthsSerializer(serializers.Serializer[Any]):
+    results = MonthSerializer(many=True)
+
+
+class ReceivablesSerializer(serializers.Serializer[Any]):
+    results = ReceivableSerializer(many=True)
+    totals = ReceivableSerializer(help_text="All parties together.")
+
+
+class ProjectReportsSerializer(serializers.Serializer[Any]):
+    results = ProjectReportSerializer(many=True)
+
+
+class GstTotalsSerializer(serializers.Serializer[Any]):
+    taxable_value = MoneyField()
+    cgst = MoneyField()
+    sgst = MoneyField()
+    igst = MoneyField()
+    cess = MoneyField()
+
+
+class GstSummaryReportSerializer(serializers.Serializer[Any]):
+    period = serializers.CharField(help_text="YYYY-MM")
+    results = GstRowSerializer(many=True)
+    totals = GstTotalsSerializer()
+
+
 # --- TDS reconciliation (Phase 3.4) ------------------------------------------------------
 
 

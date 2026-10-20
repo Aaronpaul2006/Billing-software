@@ -22,10 +22,15 @@ from . import queries
 from .serializers import (
     GstPeriodSerializer,
     GstRowSerializer,
+    GstSummaryReportSerializer,
+    GstTotalsSerializer,
     MonthSerializer,
+    MonthsSerializer,
     PeriodSerializer,
     ProjectReportSerializer,
+    ProjectReportsSerializer,
     ReceivableSerializer,
+    ReceivablesSerializer,
     ReportTotalsSerializer,
     SummarySerializer,
     TdsParamsSerializer,
@@ -73,9 +78,7 @@ class SummaryView(ReportView):
 
 
 class BillingByMonthView(ReportView):
-    @extend_schema(
-        parameters=PERIOD_PARAMS, responses={200: MonthSerializer(many=True)}, tags=["reports"]
-    )
+    @extend_schema(parameters=PERIOD_PARAMS, responses={200: MonthsSerializer}, tags=["reports"])
     def get(self, request: Request) -> Response:
         p = self.period(request)
         rows = queries.billing_by_month(self.principal.tenant_id, p["start"], p["end"], p["book"])
@@ -85,7 +88,7 @@ class BillingByMonthView(ReportView):
 class ReceivablesView(ReportView):
     @extend_schema(
         parameters=PERIOD_PARAMS[2:],
-        responses={200: ReceivableSerializer(many=True)},
+        responses={200: ReceivablesSerializer},
         tags=["reports"],
     )
     def get(self, request: Request) -> Response:
@@ -118,7 +121,11 @@ class ReceivablesView(ReportView):
 
 
 class ProjectsReportView(ReportView):
-    @extend_schema(responses={200: ProjectReportSerializer(many=True)}, tags=["reports"])
+    @extend_schema(
+        operation_id="reports_projects_list",
+        responses={200: ProjectReportsSerializer},
+        tags=["reports"],
+    )
     def get(self, request: Request) -> Response:
         rows = queries.projects(self.principal.tenant_id)
         return Response({"results": ProjectReportSerializer(rows, many=True).data})
@@ -135,7 +142,7 @@ class ProjectReportView(ReportView):
 class GstSummaryView(ReportView):
     @extend_schema(
         parameters=[OpenApiParameter("period", str, required=True, description="YYYY-MM")],
-        responses={200: GstRowSerializer(many=True)},
+        responses={200: GstSummaryReportSerializer},
         tags=["reports"],
     )
     def get(self, request: Request) -> Response:
@@ -151,7 +158,7 @@ class GstSummaryView(ReportView):
             {
                 "period": p["period"],
                 "results": GstRowSerializer(rows, many=True).data,
-                "totals": {k: f"{v:.2f}" for k, v in totals.items()},
+                "totals": GstTotalsSerializer(totals).data,
             }
         )
 

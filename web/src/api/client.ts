@@ -1,5 +1,5 @@
 /**
- * The typed API client. Types come from backend/openapi.yaml
+ * The typed API client. Types come from backend/openapi.json
  * (`npm run gen:api` writes src/api/schema.d.ts).
  *
  * authFetch adds the access token, and on `401 token_expired` refreshes the
