@@ -19,12 +19,16 @@ function isAuthEndpoint(url: string): boolean {
   return new URL(url, window.location.origin).pathname.startsWith("/api/v1/auth/");
 }
 
+/**
+ * Set the token on the request itself (allowed for script-made requests).
+ * Not `new Request(request, { headers: new Headers(request.headers) })`:
+ * copying Headers like that lost every header in the test environment
+ * (Idempotency-Key included), so nothing is copied.
+ */
 function withToken(request: Request): Request {
   const token = getAccessToken();
-  if (!token) return request;
-  const headers = new Headers(request.headers);
-  headers.set("Authorization", `Bearer ${token}`);
-  return new Request(request, { headers });
+  if (token) request.headers.set("Authorization", `Bearer ${token}`);
+  return request;
 }
 
 async function problemCode(response: Response): Promise<string | null> {

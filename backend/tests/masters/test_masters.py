@@ -174,6 +174,14 @@ def test_create_project_with_money_as_strings(t: TenantFixture, owner: Member) -
     )
 
 
+def test_projects_carry_the_client_name(t: TenantFixture, owner: Member) -> None:
+    client = party(owner).json()
+    created = project(owner, t, client["id"]).json()
+    assert created["client_name"] == client["display_name"]
+    rows = APIClient().get("/api/v1/projects", **h(owner)).json()["results"]
+    assert [r["client_name"] for r in rows] == [client["display_name"]]
+
+
 def test_project_reference_rules(t: TenantFixture, owner: Member) -> None:
     vendor = party(owner, is_customer=False, is_vendor=True).json()["id"]
     client = party(owner).json()["id"]

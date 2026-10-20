@@ -3,7 +3,6 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { AlertCircle, ArrowLeft, CheckCircle2 } from "lucide-react";
 import { useEffect, useState } from "react";
 import { useForm, useWatch } from "react-hook-form";
-import type { UseFormRegisterReturn } from "react-hook-form";
 import { Link, useNavigate, useParams } from "react-router";
 import { z } from "zod";
 
@@ -11,12 +10,11 @@ import { api, newIdempotencyKey, unwrap } from "@/api/client";
 import { ApiError } from "@/api/problem";
 import type { components } from "@/api/schema";
 import { ErrorState } from "@/components/ErrorState";
+import { Field, TextField } from "@/components/FormField";
 import { PageHeader } from "@/components/PageHeader";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
 import { NativeSelect } from "@/components/ui/native-select";
 import { Skeleton } from "@/components/ui/skeleton";
 import { applyServerErrors, blankToNull, ifMatch } from "@/lib/forms";
@@ -164,61 +162,6 @@ function toApi(v: FormValues): PartyWrite {
         }
       : null,
   };
-}
-
-function Field({
-  id,
-  label,
-  error,
-  hint,
-  children,
-}: {
-  id: string;
-  label: string;
-  error?: string | undefined;
-  hint?: string;
-  children: React.ReactNode;
-}) {
-  return (
-    <div className="grid gap-2">
-      <Label htmlFor={id}>{label}</Label>
-      {children}
-      {error ? (
-        <p className="text-destructive text-sm" id={`${id}-error`}>
-          {error}
-        </p>
-      ) : (
-        hint && <p className="text-muted-foreground text-xs">{hint}</p>
-      )}
-    </div>
-  );
-}
-
-function TextField({
-  id,
-  label,
-  error,
-  hint,
-  registration,
-  ...input
-}: {
-  id: string;
-  label: string;
-  error?: string | undefined;
-  hint?: string;
-  registration: UseFormRegisterReturn;
-} & Omit<React.ComponentProps<"input">, "id">) {
-  return (
-    <Field id={id} label={label} error={error} {...(hint ? { hint } : {})}>
-      <Input
-        id={id}
-        aria-invalid={!!error}
-        aria-describedby={error ? `${id}-error` : undefined}
-        {...input}
-        {...registration}
-      />
-    </Field>
-  );
 }
 
 export function PartyFormPage() {

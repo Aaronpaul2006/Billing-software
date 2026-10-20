@@ -4,6 +4,15 @@ import { RequireAuth } from "@/auth/RequireAuth";
 import { DashboardPage } from "@/features/dashboard/DashboardPage";
 import { PartiesPage } from "@/features/parties/PartiesPage";
 import { PartyFormPage } from "@/features/parties/PartyFormPage";
+import { BoqTab } from "@/features/projects/BoqTab";
+import {
+  NewProjectPage,
+  ProjectDetailsTab,
+  ProjectLayout,
+} from "@/features/projects/ProjectLayout";
+import { ProjectsPage } from "@/features/projects/ProjectsPage";
+import { ProgressTab } from "@/features/projects/ProgressTab";
+import { GstRegistrationsPage } from "@/features/settings/GstRegistrationsPage";
 import { AppShell } from "@/layout/AppShell";
 import { LoginPage } from "@/pages/LoginPage";
 import { MfaSetupPage } from "@/pages/MfaSetupPage";
@@ -27,8 +36,19 @@ export const routes: RouteObject[] = [
           { path: "parties", element: <PartiesPage /> },
           { path: "parties/new", element: <PartyFormPage /> },
           { path: "parties/:partyId", element: <PartyFormPage /> },
-          { path: "projects", element: <PlaceholderPage title="Projects" /> },
+          { path: "projects", element: <ProjectsPage /> },
+          { path: "projects/new", element: <NewProjectPage /> },
+          {
+            path: "projects/:projectId",
+            element: <ProjectLayout />,
+            children: [
+              { index: true, element: <ProjectDetailsTab /> },
+              { path: "boq", element: <BoqTab /> },
+              { path: "progress", element: <ProgressTab /> },
+            ],
+          },
           { path: "expenses", element: <PlaceholderPage title="Expenses" /> },
+          { path: "settings/gst-registrations", element: <GstRegistrationsPage /> },
           { path: "*", element: <NotFoundPage /> },
         ],
       },

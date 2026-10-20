@@ -13,6 +13,9 @@ FIFTY = Decimal("50")
 
 class ProjectSerializer(serializers.ModelSerializer[Project]):
     client_party_id = serializers.UUIDField()
+    client_name = serializers.CharField(
+        source="client_party.display_name", read_only=True, help_text="The client's display name."
+    )
     gst_registration_id = serializers.UUIDField()
     site_address = AddressOutSerializer(allow_null=True)
     contract_value = MoneyField(allow_null=True)
@@ -28,6 +31,7 @@ class ProjectSerializer(serializers.ModelSerializer[Project]):
             "code",
             "name",
             "client_party_id",
+            "client_name",
             "gst_registration_id",
             "site_address",
             "site_state_code",

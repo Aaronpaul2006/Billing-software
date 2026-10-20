@@ -7856,6 +7856,11 @@
                         "type": "string",
                         "format": "uuid"
                     },
+                    "client_name": {
+                        "type": "string",
+                        "readOnly": true,
+                        "description": "The client's display name."
+                    },
                     "gst_registration_id": {
                         "type": "string",
                         "format": "uuid"
@@ -7947,6 +7952,7 @@
                 },
                 "required": [
                     "advance_recovery_pct",
+                    "client_name",
                     "client_party_id",
                     "code",
                     "contract_value",

@@ -172,7 +172,7 @@ Implemented (Phase 0.5) as of 2026-10-19:
 | Method & path | Notes |
 |---|---|
 | `GET/POST /parties` · `GET/PATCH /parties/{id}` | `?is_customer=true&q=...`. GSTIN validated (format + checksum). Archive with `PATCH {is_active: false}`; no delete. |
-| `GET/POST /projects` · `GET/PATCH /projects/{id}` | `?status=ACTIVE&client_party_id=...` |
+| `GET/POST /projects` · `GET/PATCH /projects/{id}` | `?status=ACTIVE&client_party_id=...&q=`; responses carry `client_name` |
 | `GET/POST /projects/{id}/boq-items` · `PATCH/DELETE /boq-items/{id}` | Bulk import: `POST /projects/{id}/boq-items:import` (CSV/XLSX, validated, all-or-nothing). Delete only if never billed; `contract_qty` cannot go below the quantity billed, nor `is_variation` be turned off once billed past it (`422 below_billed`). |
 | `GET /projects/{id}/boq-progress` | Per BOQ item: contract vs billed quantity and value, balance, progress %; plus totals. All items, not paginated. |
 | `GET/POST /catalog-items` · `PATCH/DELETE /catalog-items/{id}` | Reusable items and rates |

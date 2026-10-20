@@ -7,6 +7,7 @@ import {
   LayoutDashboard,
   LogOut,
   Receipt,
+  Settings,
   Users,
 } from "lucide-react";
 import { NavLink, Outlet } from "react-router";
@@ -32,6 +33,7 @@ const NAV = [
   { to: "/parties", label: "Parties", icon: Users },
   { to: "/projects", label: "Projects", icon: FolderKanban },
   { to: "/expenses", label: "Expenses", icon: Receipt },
+  { to: "/settings/gst-registrations", label: "GST registrations", icon: Settings },
 ] as const;
 
 function TenantSwitcher() {

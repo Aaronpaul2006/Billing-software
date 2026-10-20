@@ -47,7 +47,7 @@ class ProjectListView(ActionAPIView):
     ordering_fields = ("code", "name", "start_date")
 
     def get_queryset(self) -> Any:
-        return Project.objects.all()
+        return Project.objects.select_related("client_party")  # client_name, one query
 
     @extend_schema(responses={200: ProjectSerializer(many=True)}, tags=["projects"])
     def get(self, request: Request) -> Response:

@@ -2569,6 +2569,8 @@ export interface components {
             readonly name: string;
             /** Format: uuid */
             client_party_id: string;
+            /** @description The client's display name. */
+            readonly client_name: string;
             /** Format: uuid */
             gst_registration_id: string;
             site_address: components["schemas"]["AddressOut"] | null;

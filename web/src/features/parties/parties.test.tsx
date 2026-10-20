@@ -125,6 +125,7 @@ describe("party form", () => {
     await waitFor(() => {
       expect(router.state.location.pathname).toBe("/parties/new-id");
     });
+    expect(posts[0]?.key).toMatch(/^[0-9a-f-]{36}$/); // sent at all
     expect(posts[1]?.key).toBe(posts[0]?.key); // the same action, retried
   });
 
