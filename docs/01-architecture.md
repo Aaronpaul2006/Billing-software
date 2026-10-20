@@ -327,8 +327,10 @@ tax-invoice number itself still comes from the locked series at issue.
 **Abuse prevention**
 * Rate limits (Redis): login 5/min per account and 20/min per IP, with
   progressive lockout; password reset 3/hour; general API 600/min per user.
-  (Built so far: per-account progressive lockout in the database, 5 failures →
-  1, 2, 4 … minutes, capped at 1 hour. The Redis limits are still to do.)
+  Built: per-account progressive lockout in the database (5 failures → 1, 2,
+  4 … minutes, capped at 1 hour) and the Redis limits (L.2; full table in
+  docs/02-api-design.md §1, plus signup, MFA verify and email resend). Redis
+  down → limits skipped with a warning, the lockout still applies.
 * Generic auth errors ("invalid email or password") and identical timing, so
   attackers can't enumerate accounts.
 * Idempotency keys on all money-moving POSTs.

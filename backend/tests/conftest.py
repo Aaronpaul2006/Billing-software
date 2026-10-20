@@ -1,3 +1,4 @@
+import uuid
 from collections.abc import Iterator
 from typing import Any
 
@@ -50,3 +51,9 @@ def committed_db(django_db_setup: None, django_db_blocker: Any) -> Iterator[None
     with django_db_blocker.unblock():
         yield
         connections["default"].close()
+
+
+@pytest.fixture(autouse=True)
+def _own_rate_limit_counters(settings: Any) -> None:
+    """Every test counts from zero (all test requests come from one IP)."""
+    settings.RATE_LIMIT_PREFIX = f"rl-test:{uuid.uuid4().hex}:"

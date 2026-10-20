@@ -58,6 +58,22 @@ describe("sign in", () => {
     expect(await screen.findByText("Email or password is wrong.")).toBeInTheDocument();
   });
 
+  it("says how long to wait when sign-in is rate limited", async () => {
+    const user = userEvent.setup();
+    server.use(
+      http.post(`${API}/auth/login`, () =>
+        problem(429, "rate_limited", "Too many attempts. Try again in 42 seconds."),
+      ),
+    );
+    renderAt("/login");
+    await user.type(await screen.findByLabelText("Email"), "x@example.com");
+    await user.type(screen.getByLabelText("Password"), "nope");
+    await user.click(screen.getByRole("button", { name: "Sign in" }));
+    expect(
+      await screen.findByText("Too many attempts. Try again in 42 seconds."),
+    ).toBeInTheDocument();
+  });
+
   it("validates before calling the API", async () => {
     const user = userEvent.setup();
     renderAt("/login");

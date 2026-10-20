@@ -101,8 +101,30 @@ stable `code`. Raw database messages are never returned.
   that fails stores nothing, so its retry runs again.
 
 ### Rate limits
-Response headers `RateLimit-Limit`, `RateLimit-Remaining`, `RateLimit-Reset`.
-See the architecture doc §6 for the limits.
+Response headers `RateLimit-Limit`, `RateLimit-Remaining`, `RateLimit-Reset`
+(seconds until the window ends) on every response that counted against a
+limit; when several did, the headers describe the one closest to its limit.
+Over a limit: `429 rate_limited`, a `detail` that says how long to wait,
+`retry_after` (seconds) in the body and a `Retry-After` header.
+
+Built in L.2 (2026-10-21). Fixed-window counters in Redis (window starts at
+the first request), limits in settings `RATE_LIMITS`:
+
+| Rule | Limit | Counted per |
+|---|---|---|
+| `POST /auth/login` | 20 / min · 5 / min | client IP · email |
+| `POST /auth/mfa/verify` | 20 / min | client IP |
+| `POST /auth/signup` | 10 / hour | client IP |
+| `POST /auth/password/forgot` | 20 / hour · 3 / hour | client IP · email |
+| `POST /auth/password/reset` | 20 / hour | client IP |
+| `POST /auth/verify-email/resend` | 3 / hour | user |
+| Every request with a valid access token | 600 / min | user |
+
+Emails are hashed before they become Redis keys. The client IP is the
+connection's address, or with `TRUSTED_PROXY_COUNT = n` the address the
+outermost of n trusted proxies added to `X-Forwarded-For`. If Redis is
+unreachable, requests are allowed and a warning is logged (the database
+lockout still guards passwords).
 
 ---
 

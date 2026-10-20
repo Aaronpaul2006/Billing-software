@@ -121,7 +121,11 @@ def test_wrong_password_and_unknown_email_look_identical(
     assert wrong.json()["code"] == "invalid_credentials"
 
 
-def test_repeated_failures_lock_the_account(api: APIClient, make_account: MakeAccount) -> None:
+def test_repeated_failures_lock_the_account(
+    api: APIClient, make_account: MakeAccount, settings: Any
+) -> None:
+    # The database lockout on its own, without the Redis per-email limit in front.
+    settings.RATE_LIMITS = {**settings.RATE_LIMITS, "login_email": (100, 60)}
     account = make_account()
     for _ in range(settings.LOGIN_LOCKOUT_THRESHOLD):
         assert _login(api, account.email, "wrong password!!").status_code == 401

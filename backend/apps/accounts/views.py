@@ -10,6 +10,7 @@ from rest_framework.request import Request
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
+from apps.core import ratelimit
 from apps.core.api import principal_of
 from apps.core.permissions import MFA_REQUIRED_ROLES
 from apps.core.tenancy import Principal, user_context
@@ -48,7 +49,7 @@ LOGIN_RESULT = PolymorphicProxySerializer(
 def _client(request: Request, data: dict[str, Any] | None = None) -> ClientInfo:
     meta = request.META
     return ClientInfo(
-        ip=meta.get("REMOTE_ADDR") or None,
+        ip=ratelimit.client_ip(request) or None,
         user_agent=meta.get("HTTP_USER_AGENT") or None,
         device_label=(data or {}).get("device_label") or None,
     )
@@ -98,6 +99,7 @@ class PublicAuthView(APIView):
 class SignupView(PublicAuthView):
     @extend_schema(request=SignupSerializer, responses={201: TokensSerializer}, tags=["auth"])
     def post(self, request: Request) -> Response:
+        ratelimit.enforce(request, "signup_ip", ratelimit.client_ip(request))
         data = SignupSerializer(data=request.data)
         data.is_valid(raise_exception=True)
         v = data.validated_data
@@ -114,9 +116,11 @@ class SignupView(PublicAuthView):
 class LoginView(PublicAuthView):
     @extend_schema(request=LoginSerializer, responses={200: LOGIN_RESULT}, tags=["auth"])
     def post(self, request: Request) -> Response:
+        ratelimit.enforce(request, "login_ip", ratelimit.client_ip(request))
         data = LoginSerializer(data=request.data)
         data.is_valid(raise_exception=True)
         v = data.validated_data
+        ratelimit.enforce(request, "login_email", ratelimit.email_key(v["email"]))
         result = services.login(
             email=v["email"],
             password=v["password"],
@@ -131,6 +135,7 @@ class LoginView(PublicAuthView):
 class MfaVerifyView(PublicAuthView):
     @extend_schema(request=MfaVerifySerializer, responses={200: TokensSerializer}, tags=["auth"])
     def post(self, request: Request) -> Response:
+        ratelimit.enforce(request, "mfa_ip", ratelimit.client_ip(request))
         data = MfaVerifySerializer(data=request.data)
         data.is_valid(raise_exception=True)
         v = data.validated_data
@@ -172,22 +177,28 @@ class ResendVerificationView(APIView):
 
     @extend_schema(request=None, responses={204: None}, tags=["auth"])
     def post(self, request: Request) -> Response:
-        services.resend_verification(principal_of(request))
+        principal = principal_of(request)
+        ratelimit.enforce(request, "verify_resend_user", str(principal.user_id))
+        services.resend_verification(principal)
         return Response(status=204)
 
 
 class PasswordForgotView(PublicAuthView):
     @extend_schema(request=PasswordForgotSerializer, responses={204: None}, tags=["auth"])
     def post(self, request: Request) -> Response:
+        ratelimit.enforce(request, "password_forgot_ip", ratelimit.client_ip(request))
         data = PasswordForgotSerializer(data=request.data)
         data.is_valid(raise_exception=True)
-        services.forgot_password(data.validated_data["email"])
+        email = data.validated_data["email"]
+        ratelimit.enforce(request, "password_forgot_email", ratelimit.email_key(email))
+        services.forgot_password(email)
         return Response(status=204)  # the same whether or not the account exists
 
 
 class PasswordResetView(PublicAuthView):
     @extend_schema(request=PasswordResetSerializer, responses={204: None}, tags=["auth"])
     def post(self, request: Request) -> Response:
+        ratelimit.enforce(request, "password_reset_ip", ratelimit.client_ip(request))
         data = PasswordResetSerializer(data=request.data)
         data.is_valid(raise_exception=True)
         v = data.validated_data

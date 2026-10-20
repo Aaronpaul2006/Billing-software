@@ -4,7 +4,7 @@ Last updated: 2026-10-21
 
 ## Current phase
 
-**Launch gaps** (owner decision 2026-10-21, after the web app W.1–W.7): L.1 email (verification, password reset) done; next L.2 rate limits. Backend Phases 0–3 and web W.1–W.7 complete.
+**Launch gaps** (owner decision 2026-10-21, after the web app W.1–W.7): L.1 email and L.2 rate limits done; next L.3 user uploads. Backend Phases 0–3 and web W.1–W.7 complete.
 
 ## Done
 
@@ -50,9 +50,11 @@ Last updated: 2026-10-21
 
 - [x] Launch gap L.1: email — sending through SMTP from settings (`EMAIL_*`, `DEFAULT_FROM_EMAIL`, `APP_BASE_URL` for links; Mailpit in dev) by a Celery task queued after commit (`apps/accounts/tasks.py`, retried while the mail server is down; a broker outage is logged, never fails the request; `CELERY_TASK_ALWAYS_EAGER=true` runs it without a worker in dev). Schema: `users.email_verified_at` (schema.sql + migration `accounts/0003`, sync test passes). Signed, expiring link tokens instead of a table (`apps/accounts/emails.py`): verification 7 days, bound to the address; reset 1 hour, bound to a keyed fingerprint of the password hash, so it works once; the worker makes the token, so none sits in the queue. Endpoints `POST /auth/verify-email`, `/auth/verify-email/resend`, `/auth/password/forgot` (same `204` for unknown emails), `/auth/password/reset` (clears a lockout, confirms the email, signs out every session, sends a "password changed" notice; MFA still applies); bad links `422 link_expired` / `link_invalid`; `/me` has `email_verified`; issuing needs a verified email (`403 email_not_verified`; test factories make verified users). Web: sign-up page (there was none), forgot / reset password, verify-email page (works signed in or out), "Forgot password?" and "Create an account" links on sign-in, a banner with "Send a new link" until the address is confirmed (rechecks when the tab regains focus), plain message when issuing is refused. Tests found a signed token with a malformed user id gave a 500 (now `link_invalid`). Smoke-tested through the proxy with real emails in Mailpit: signup → email → verify; forgot → email → reset → old session signed out → link refused the second time → "password changed" email → login asks for MFA. Web 107 tests; backend 488.
 
+- [x] Launch gap L.2: rate limits — `apps/core/ratelimit.py`: fixed-window counters in Redis (one Lua script: increment + expiry, exact under concurrency), limits in settings `RATE_LIMITS`: login 20/min per IP and 5/min per email, MFA verify 20/min per IP, signup 10/hour per IP, forgot password 3/hour per email and 20/hour per IP, reset 20/hour per IP, verification resend 3/hour per user, and `RateLimitMiddleware` 600/min per signed-in user (runs before the tenant transaction). `429 rate_limited` with the wait in words, `retry_after`, `Retry-After`; `RateLimit-Limit / -Remaining / -Reset` on counted responses. Emails hashed in keys. Client IP from `REMOTE_ADDR`, or `X-Forwarded-For` behind `TRUSTED_PROXY_COUNT` trusted proxies (forged entries ignored, invalid ones fall back); session records use the same IP. Redis down → requests allowed, warning logged (test with a dead Redis). Tests run on real Redis with a fresh key prefix per test; the lockout test raises the per-email limit to keep testing the database lockout alone. Web: the 429 detail is shown as is (sign-in test). Smoke-tested through the Vite proxy (headers pass through). Web 108 tests; backend 496.
+
 ## In progress
 
-- Nothing. Next: L.2 rate limits.
+- Nothing. Next: L.3 user uploads.
 
 ## Next
 
@@ -104,7 +106,7 @@ Web app (core billing loop first):
 Launch gaps (owner decision 2026-10-21):
 
 1. ~~Email: verification and password reset (backend + screens)~~ (done)
-2. Rate limits in Redis (login per IP and per account, forgot-password / resend per address, API per user, `RateLimit-*` headers)
+2. ~~Rate limits in Redis~~ (done)
 3. User uploads (attachments API, presigned PUT, size / type checks)
 4. Housekeeping: re-render the PDF on cancel, Celery beat (purge expired idempotency keys)
 
@@ -124,7 +126,7 @@ Full roadmap: `docs/01-architecture.md` §9.
 - Two DB aliases: `default` = `billing_app_login` (all queries, RLS applies), `owner` = `billing_owner` (migrations only). `manage.py migrate` without `--database=owner` fails with "permission denied for table django_migrations" by design.
 - Tests: `default` mirrors `owner`; `tests/conftest.py` overrides `django_db_setup` so the owner alias always gets a `test_` database (pytest-django alone would leave the mirror pointing at the real dev database).
 - Tests needing real COMMITs use the `committed_db` fixture (no TRUNCATE flush; fresh tenant ids per test; the test DB is dropped at session end).
-- **Auth items deferred** (need Redis or a schema decision): `PATCH /me` (change name or email; an email change must re-verify), Redis rate limits (L.2; until then `password/forgot` and `verify-email/resend` can send an address many emails) (login per IP, API per user, `RateLimit-*` headers), `Idempotency-Key` on signup (`idempotency_keys` requires a tenant and user, which do not exist yet at signup), HaveIBeenPwned check (Django's common-password list is used for now), sliding vs absolute session lifetime (sliding 30 days now).
+- **Auth items deferred** (need a schema decision): `PATCH /me` (change name or email; an email change must re-verify), per-tenant / plan quotas (only per-user and per-IP rate limits exist), `Idempotency-Key` on signup (`idempotency_keys` requires a tenant and user, which do not exist yet at signup), HaveIBeenPwned check (Django's common-password list is used for now), sliding vs absolute session lifetime (sliding 30 days now).
 - Invitations work only for people who already have an account (`422 no_account` otherwise, which tells an OWNER/ADMIN whether an email is registered). Email invitation links for new people are now possible (email sending exists) but not built.
 - Signup reveals whether an email is registered (`422 email_taken`); login and reset do not. Revisit with email verification (send a "you already have an account" email instead).
 - Email: plain-text messages only; production needs a transactional SMTP provider (`EMAIL_HOST`, `EMAIL_HOST_USER`, `EMAIL_HOST_PASSWORD`, `EMAIL_USE_TLS`) with SPF / DKIM on the sending domain, and `APP_BASE_URL` set to the web app. Accounts created before migration `accounts/0003` are unverified and cannot issue until they confirm (use "Send a new link"). Without a running worker (and without `CELERY_TASK_ALWAYS_EAGER=true`) emails wait in Redis.

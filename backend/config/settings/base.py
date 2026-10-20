@@ -52,6 +52,8 @@ MIDDLEWARE = [
     "django.middleware.clickjacking.XFrameOptionsMiddleware",
     # Verifies the access token and sets request.principal ...
     "apps.accounts.middleware.JWTAuthenticationMiddleware",
+    # Per-user request limit and RateLimit-* headers (before any transaction).
+    "apps.core.ratelimit.RateLimitMiddleware",
     # ... which this one turns into the request's tenant context.
     "apps.core.middleware.TenantContextMiddleware",
 ]
@@ -104,6 +106,25 @@ DATABASE_ROUTERS = ["apps.core.db_router.MigrationsAsOwnerRouter"]
 DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
 
 REDIS_URL: str = env("REDIS_URL")
+
+# --- Rate limits (Redis counters; docs/01-architecture.md §6) ------------------------
+# name: (requests, window in seconds). Keys: client IP, email (hashed) or user id.
+RATE_LIMITS: dict[str, tuple[int, int]] = {
+    "login_ip": (20, 60),
+    "login_email": (5, 60),
+    "mfa_ip": (20, 60),
+    "signup_ip": (10, 3600),
+    "password_forgot_email": (3, 3600),
+    "password_forgot_ip": (20, 3600),
+    "password_reset_ip": (20, 3600),
+    "verify_resend_user": (3, 3600),
+    "api_user": (600, 60),  # every signed-in request
+}
+RATE_LIMIT_PREFIX = "rl:"
+RATE_LIMIT_ENABLED: bool = env.bool("RATE_LIMIT_ENABLED", default=True)
+# Proxies in front of the app that append to X-Forwarded-For (1 behind one load
+# balancer). 0: use the connection's address; a client could forge the header.
+TRUSTED_PROXY_COUNT: int = env.int("TRUSTED_PROXY_COUNT", default=0)
 
 # --- Background work (Celery) ------------------------------------------------------
 CELERY_BROKER_URL = REDIS_URL
