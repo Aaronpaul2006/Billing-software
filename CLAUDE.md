@@ -117,6 +117,19 @@ docker compose --profile app up -d --build
 docker compose --profile app run --rm api pytest       # runs the PDF rendering tests too
 ```
 
+```bash
+# Web app (run inside web/; Node 22+)
+npm ci
+npm run dev                  # http://localhost:5173, proxies /api to 127.0.0.1:8000
+npm run format:check && npm run lint && npm run typecheck && npm test && npm run build
+npm run gen:api              # after regenerating backend/openapi.yaml (see README)
+```
+
+Web rules: money stays a string from API to screen (format with `src/lib/money.ts`,
+never `parseFloat` / `Number()`); the access token lives in memory only; refreshes
+go through `refreshSession()` (single flight); mutations send one Idempotency-Key per
+user action.
+
 On Windows the real-PDF test skips (no Pango); run it in the container before pushing
 PDF changes. CI installs the libraries and runs it.
 

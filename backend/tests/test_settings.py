@@ -104,3 +104,13 @@ def test_openapi_schema_generates_without_warnings(tmp_path: Path) -> None:
         check=False,
     )
     assert result.returncode == 0, result.stderr[-3000:]
+    # The web app generates its API types from the committed copy.
+    committed = BACKEND_DIR / "openapi.yaml"
+    assert committed.read_text(encoding="utf-8") == (tmp_path / "schema.yaml").read_text(
+        encoding="utf-8"
+    ), (
+        "backend/openapi.yaml is out of date. Regenerate it with\n"
+        "  DJANGO_SETTINGS_MODULE=config.settings.test uv run python manage.py"
+        " spectacular --file openapi.yaml\n"
+        "then run `npm run gen:api` in web/."
+    )

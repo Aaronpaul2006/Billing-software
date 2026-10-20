@@ -4,7 +4,8 @@ Multi-tenant cloud billing and business management for construction companies
 and contractors in India: quotations, GST invoices, RA bills, retention, TDS,
 payments, expenses, and a consolidated owner dashboard on web and mobile.
 
-**Status:** design complete, backend scaffolding next. See [PROGRESS.md](PROGRESS.md).
+**Status:** backend through Phase 3 (billing, payments, reports, RA bills, retention, TDS);
+web app in progress. See [PROGRESS.md](PROGRESS.md).
 
 ## Documentation
 
@@ -15,6 +16,7 @@ payments, expenses, and a consolidated owner dashboard on web and mobile.
 ## Stack
 
 Python · Django + Django REST Framework · PostgreSQL · Celery + Redis · S3-compatible storage
+· Web: React + TypeScript (Vite), Tailwind + shadcn/ui, TanStack Query
 
 ## Local services
 
@@ -33,6 +35,20 @@ uv run python manage.py migrate --database=owner
 uv run pytest
 uv run python manage.py runserver   # http://127.0.0.1:8000/healthz, /api/v1/docs/
 ```
+
+## Web app
+
+```bash
+cd web
+npm ci
+npm run dev        # http://localhost:5173 ; /api is proxied to the backend on 127.0.0.1:8000
+npm test           # Vitest + Testing Library, API mocked with MSW
+npm run lint && npm run typecheck && npm run build
+```
+
+After an API change: regenerate `backend/openapi.yaml`
+(`DJANGO_SETTINGS_MODULE=config.settings.test uv run python manage.py spectacular --file openapi.yaml`
+in `backend/`), then `npm run gen:api` in `web/`. CI fails if either is stale.
 
 ## Running the whole backend in Docker
 
