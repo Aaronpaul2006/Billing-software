@@ -12,13 +12,18 @@ from rest_framework.response import Response
 from apps.core.api import ActionAPIView, detail_response, list_response, versioned_action
 from apps.core.idempotency import idempotent
 
-from . import services
-from .models import Payment
+from . import retention, services
+from .models import Payment, RetentionRelease
 from .serializers import (
     AllocateSerializer,
+    CancelReleaseSerializer,
     DocumentAllocationsSerializer,
     PaymentCreateSerializer,
     PaymentSerializer,
+    ProjectRetentionSerializer,
+    ReleaseCreateSerializer,
+    RetentionReleaseDetailSerializer,
+    RetentionReleaseSerializer,
     VoidSerializer,
 )
 
@@ -145,3 +150,98 @@ class DocumentAllocationsView(ActionAPIView):
         data.is_valid(raise_exception=True)
         services.apply_credit_note(self.principal, document_id, data.validated_data["allocations"])
         return Response(DocumentAllocationsSerializer(self._body(document_id)).data)
+
+
+# --- retention releases (Phase 3.3) ------------------------------------------------------
+
+ISSUE = "documents.issue"
+
+
+class ReleaseFilter(django_filters.FilterSet):
+    project_id = django_filters.UUIDFilter(field_name="project_id")
+    party_id = django_filters.UUIDFilter(field_name="party_id")
+    release_date_from = django_filters.DateFilter(field_name="release_date", lookup_expr="gte")
+    release_date_to = django_filters.DateFilter(field_name="release_date", lookup_expr="lte")
+
+    class Meta:
+        model = RetentionRelease
+        fields = ("status", "book")
+
+
+class RetentionReleaseListView(ActionAPIView):
+    write_action = ISSUE
+    serializer_class = RetentionReleaseSerializer
+    filterset_class = ReleaseFilter
+    ordering_fields = ("release_date", "amount")
+
+    def get_queryset(self) -> Any:
+        return RetentionRelease.objects.all()
+
+    @extend_schema(responses={200: RetentionReleaseSerializer(many=True)}, tags=["payments"])
+    def get(self, request: Request) -> Response:
+        return list_response(self, self.get_queryset(), RetentionReleaseSerializer)
+
+    @extend_schema(
+        request=ReleaseCreateSerializer,
+        responses={201: RetentionReleaseDetailSerializer},
+        tags=["payments"],
+    )
+    @idempotent
+    def post(self, request: Request) -> Response:
+        data = ReleaseCreateSerializer(data=request.data)
+        data.is_valid(raise_exception=True)
+        row = retention.release(self.principal, dict(data.validated_data))
+        return detail_response(row, RetentionReleaseDetailSerializer, status=201)
+
+
+class RetentionReleaseDetailView(ActionAPIView):
+    write_action = ISSUE
+
+    @extend_schema(responses={200: RetentionReleaseDetailSerializer}, tags=["payments"])
+    def get(self, request: Request, release_id: uuid.UUID) -> Response:
+        row = retention.get_release(self.principal, release_id)
+        return detail_response(row, RetentionReleaseDetailSerializer)
+
+
+class RetentionReleaseCancelView(ActionAPIView):
+    read_action = ISSUE
+    write_action = ISSUE
+
+    @extend_schema(
+        request=CancelReleaseSerializer,
+        responses={200: RetentionReleaseDetailSerializer},
+        tags=["payments"],
+    )
+    @idempotent
+    def post(self, request: Request, release_id: uuid.UUID) -> Response:
+        data = CancelReleaseSerializer(data=request.data)
+        data.is_valid(raise_exception=True)
+        return versioned_action(
+            request,
+            load=lambda: retention.get_release(self.principal, release_id),
+            run=lambda v: retention.cancel_release(
+                self.principal, release_id, v, data.validated_data["reason"]
+            ),
+            output_serializer=RetentionReleaseDetailSerializer,
+        )
+
+
+class ProjectRetentionView(ActionAPIView):
+    @extend_schema(responses={200: ProjectRetentionSerializer}, tags=["payments"])
+    def get(self, request: Request, project_id: uuid.UUID) -> Response:
+        held = retention.project_retention(self.principal, project_id)
+        return Response(
+            ProjectRetentionSerializer(
+                {
+                    "project_id": project_id,
+                    **{
+                        book: {
+                            "deducted": p.deducted,
+                            "released": p.released,
+                            "available": p.available,
+                        }
+                        for book, p in held.items()
+                    },
+                }
+            ).data
+        )

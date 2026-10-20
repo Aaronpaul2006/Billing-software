@@ -26,7 +26,7 @@ from apps.documents.models import Document
 from apps.parties.models import Party
 from apps.projects.models import Project
 
-from .models import Allocation, Payment
+from .models import Allocation, Payment, RetentionRelease
 
 SETTLEABLE = frozenset({"TAX_INVOICE", "BILL_OF_SUPPLY", "DEBIT_NOTE"})
 ZERO = Decimal("0.00")
@@ -79,18 +79,22 @@ def _db_error_to_problem(exc: DatabaseError, field: str, source: Source | None =
     """Rules the database enforced (a race the pre-checks could not see)."""
     text = str(exc)
     label = source.label if source else "payment"
-    if isinstance(exc, IntegrityError) and (
-        "allocations_payment_uq" in text or "allocations_cn_uq" in text
+    if isinstance(exc, IntegrityError) and any(
+        uq in text
+        for uq in ("allocations_payment_uq", "allocations_cn_uq", "allocations_release_uq")
     ):
-        return Conflict(
-            f"This {label} is already allocated to that document.", code="already_allocated"
-        )
-    if "documents_amount_settled_check" in text:
+        return Conflict(f"This {label} is already allocated to that.", code="already_allocated")
+    if (
+        "documents_amount_settled_check" in text
+        or "retention_releases_amount_settled_check" in text
+    ):
         return Invalid(
             field,
-            "More than the document's outstanding amount.",
+            "More than the outstanding amount.",
             code="allocation_exceeds_outstanding",
         )
+    if "only open retention releases" in text:
+        return Invalid(field, "This retention release is cancelled.", code="release_cancelled")
     if "exceeds the unallocated amount" in text:
         return Invalid(
             field,
@@ -108,32 +112,56 @@ def _db_error_to_problem(exc: DatabaseError, field: str, source: Source | None =
     return exc
 
 
+@dataclass(frozen=True)
+class Target:
+    """What an allocation settles: a document or a retention release."""
+
+    document_id: uuid.UUID | None
+    retention_release_id: uuid.UUID | None
+    party_id: uuid.UUID
+    outstanding: Decimal
+    field: str  # where errors about the target point
+
+
+def _target(item: dict[str, Any], field: str, source: Source) -> Target:
+    if item.get("retention_release_id"):
+        id_field = f"{field}.retention_release_id"
+        if source.payment_id is None:
+            raise Invalid(id_field, "Only payments settle retention releases.", code="not_allowed")
+        rel = get_or_invalid(
+            RetentionRelease, item["retention_release_id"], id_field, label="retention release"
+        )
+        if rel.status != "RELEASED":
+            raise Invalid(
+                id_field, "This retention release is cancelled.", code="release_cancelled"
+            )
+        return Target(None, rel.pk, rel.party_id, rel.amount - rel.amount_settled, id_field)
+    id_field = f"{field}.document_id"
+    doc = get_or_invalid(Document, item["document_id"], id_field, label="document")
+    if doc.status != "ISSUED" or doc.doc_type not in SETTLEABLE:
+        raise Invalid(
+            id_field,
+            "Only issued invoices, bills of supply and debit notes are settled.",
+            code="document_not_settleable",
+        )
+    return Target(doc.pk, None, doc.party_id, doc.net_receivable - doc.amount_settled, id_field)
+
+
 def _allocate(principal: Principal, source: Source, items: list[dict[str, Any]]) -> None:
     """Allocate `items` from a source whose row the caller has locked."""
-    seen: set[uuid.UUID] = set()
+    seen: set[tuple[uuid.UUID | None, uuid.UUID | None]] = set()
     available = source.total - allocated_from(source)
     for i, item in enumerate(items):
         field = f"allocations[{i}]"
-        doc = get_or_invalid(
-            Document, item["document_id"], f"{field}.document_id", label="document"
-        )
-        if doc.pk in seen:
-            raise Invalid(f"{field}.document_id", "Listed twice.", code="duplicate")
-        seen.add(doc.pk)
-        if doc.status != "ISSUED" or doc.doc_type not in SETTLEABLE:
-            raise Invalid(
-                f"{field}.document_id",
-                "Only issued invoices, bills of supply and debit notes are settled.",
-                code="document_not_settleable",
-            )
-        if doc.party_id != source.party_id:
-            raise Invalid(
-                f"{field}.document_id",
-                "The document belongs to another party.",
-                code="party_mismatch",
-            )
+        target = _target(item, field, source)
+        key = (target.document_id, target.retention_release_id)
+        if key in seen:
+            raise Invalid(target.field, "Listed twice.", code="duplicate")
+        seen.add(key)
+        if target.party_id != source.party_id:
+            raise Invalid(target.field, "It belongs to another party.", code="party_mismatch")
         amount: Decimal = item["amount"]
-        outstanding = doc.net_receivable - doc.amount_settled
+        outstanding = target.outstanding
         if amount > outstanding:
             raise Invalid(
                 f"{field}.amount",
@@ -150,7 +178,8 @@ def _allocate(principal: Principal, source: Source, items: list[dict[str, Any]])
         try:
             with transaction.atomic():
                 Allocation(
-                    document_id=doc.pk,
+                    document_id=target.document_id,
+                    retention_release_id=target.retention_release_id,
                     payment_id=source.payment_id,
                     credit_note_id=source.credit_note_id,
                     amount=amount,

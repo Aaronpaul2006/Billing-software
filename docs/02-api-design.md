@@ -351,7 +351,7 @@ issue, cancel, accept and decline need `If-Match`.
 |---|---|
 | `GET/POST /payments` | Record a receipt, optionally allocating it in the same request |
 | `GET /payments/{id}` | With allocations |
-| `POST /payments/{id}/allocations` · `DELETE /allocations/{id}` | Allocate leftover amount / unwind |
+| `POST /payments/{id}/allocations` · `DELETE /allocations/{id}` | Allocate leftover amount / unwind; an item settles a `document_id` or a `retention_release_id` |
 | `POST /payments/{id}/void` | `{reason}`, removes its allocations (audited) |
 | `GET/POST /documents/{id}/allocations` | GET: what settled a document, or what a credit note was applied to (`applied` / `unapplied`). POST (issued credit notes only, idempotent): apply it to issued invoices / debit notes of the same party (`409 not_an_issued_credit_note`, `422 allocation_exceeds_credit`, `allocation_exceeds_outstanding`) |
 | `GET/POST /expenses` · `GET/PATCH /expenses/{id}` · `POST /expenses/{id}/void` | Site/office expenses with bill attachment. Built in Phase 2.3: the server computes `total_amount` (taxable + GST) and `balance`; `amount_paid` ≤ total (`exceeds_total`) with a `payment_mode` once paid; vendor must be a vendor (`not_a_vendor`); ITC needs GST (`no_gst`); filters `category=A,B`, project, vendor, dates, `payment_state`; voided expenses are read-only (`409 expense_voided`); never deleted |
@@ -379,6 +379,40 @@ bills of supply, debit notes), `party_mismatch`, `duplicate`; `409
 already_allocated`, `payment_voided`. Payment responses carry `allocated`,
 `unallocated` and `allocations` (with `doc_number`). Void needs `If-Match`
 and a reason; it unwinds the allocations first. Payments are never deleted.
+
+### Retention releases (Phase 3.3)
+
+Retention is deducted from what the client pays on each bill (GST was charged
+on the full value then). When the client releases it, record a **retention
+release**: money now due, not a tax document and not new billing. It is
+collected like an invoice, by allocating payments to it.
+
+| Method & path | Purpose | Permission |
+|---|---|---|
+| `GET /projects/{id}/retention` | Per book (`GST` = tax invoices, `NON_GST` = bills of supply): `deducted`, `released`, `available` | read |
+| `GET/POST /retention-releases` | List (`project_id`, `party_id`, `status`, `book`, `release_date_from/to`); create (idempotent) | read / issue |
+| `GET /retention-releases/{id}` | With `amount_settled`, `outstanding`, `allocations` | read |
+| `POST /retention-releases/{id}/cancel` | `{reason}`, `If-Match`; only with nothing allocated (`409 release_settled`) | issue |
+
+```json
+POST /api/v1/retention-releases
+{ "project_id": "0192f5c4-...", "release_date": "2026-11-05", "due_date": "2026-11-20",
+  "amount": "20000.00", "reference": "SKY/RET/12" }
+```
+- The party is the project's client. `book` defaults to GST while any GST
+  retention is held. At most `available` can be released (`422
+  exceeds_retention_held`, `nothing_to_release`); releasing locks the project
+  row, so parallel releases cannot over-release.
+- Settle with a payment: an allocation item takes `retention_release_id`
+  instead of `document_id` (exactly one: `422 one_target`). Credit notes do
+  not settle releases (`not_allowed`); a cancelled release cannot be settled
+  (`release_cancelled`). The database keeps `amount_settled` and refuses
+  over-settlement, as for invoices.
+- A bill whose retention has been released cannot be cancelled until the
+  release is (`409 retention_released`).
+- Unsettled releases appear in receivables, outstanding and the project
+  report (`retention_held` = deducted − released, `retention_released`);
+  payments allocated to them count as collected in their book.
 
 ---
 

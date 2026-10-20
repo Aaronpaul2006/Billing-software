@@ -786,3 +786,72 @@ def test_boq_progress_and_ra_bills_reject_other_tenant(
 
 
 OBJECT_ROUTES["project-boq-progress"] = lambda w: None  # same test
+
+
+# --- Phase 3.3 retention releases ------------------------------------------------------
+
+
+def test_retention_routes_reject_other_tenant(world: World, masters: dict[str, str]) -> None:
+    from apps.payments.models import Payment, RetentionRelease
+
+    a = world.a
+    with tenant_context(a.tenant_id, a.user_id):
+        release = RetentionRelease.objects.create(
+            project_id=masters["project"],
+            party_id=masters["party"],
+            book="GST",
+            release_date="2026-11-05",
+            amount=1000,
+            created_by_id=a.user_id,
+        )
+    api, b = world.api, world.as_b()
+    url = f"/api/v1/retention-releases/{release.pk}"
+    assert api.get(url, **b).status_code == 404
+    cancel = api.post(
+        f"{url}/cancel",
+        {"reason": "hijack"},
+        format="json",
+        HTTP_IF_MATCH='"v1"',
+        HTTP_IDEMPOTENCY_KEY=str(uuid.uuid4()),
+        **b,
+    )
+    assert cancel.status_code == 404
+    assert api.get("/api/v1/retention-releases", **b).json()["results"] == []
+    assert api.get(f"/api/v1/projects/{masters['project']}/retention", **b).status_code == 404
+    smuggled = api.post(
+        "/api/v1/retention-releases",
+        {"project_id": masters["project"], "release_date": "2026-11-05", "amount": "1.00"},
+        format="json",
+        HTTP_IDEMPOTENCY_KEY=str(uuid.uuid4()),
+        **b,
+    )
+    assert (smuggled.status_code, smuggled.json()["errors"][0]["code"]) == (422, "not_found")
+    with tenant_context(world.b.tenant_id, world.b.user_id):
+        from apps.parties.models import Party
+
+        b_party = Party.objects.create(
+            display_name="B client", gst_treatment="UNREGISTERED", created_by_id=world.b.user_id
+        )
+        b_payment = Payment.objects.create(
+            party=b_party,
+            payment_date="2026-11-06",
+            amount=100,
+            mode="UPI",
+            created_by_id=world.b.user_id,
+        )
+    r = api.post(
+        f"/api/v1/payments/{b_payment.pk}/allocations",
+        {"allocations": [{"retention_release_id": str(release.pk), "amount": "1.00"}]},
+        format="json",
+        HTTP_IDEMPOTENCY_KEY=str(uuid.uuid4()),
+        **b,
+    )
+    assert (r.status_code, r.json()["errors"][0]["code"]) == (422, "not_found")
+    with tenant_context(a.tenant_id, a.user_id):
+        r_a = RetentionRelease.objects.get(pk=release.pk)
+        assert (r_a.status, r_a.amount_settled, r_a.version) == ("RELEASED", 0, 1)
+
+
+for _name in ("retention-release-detail", "retention-release-cancel", "project-retention"):
+    OBJECT_ROUTES[_name] = lambda w: None  # test_retention_routes_reject_other_tenant
+COLLECTION_ROUTES["retention-releases"] = lambda w: None  # same test

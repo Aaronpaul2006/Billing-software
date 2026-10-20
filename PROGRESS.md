@@ -4,7 +4,7 @@ Last updated: 2026-10-20
 
 ## Current phase
 
-**Phase 3 — Construction** (in progress): steps 3.1–3.2 of 4 done. Phases 0, 1 and 2 complete.
+**Phase 3 — Construction** (in progress): steps 3.1–3.3 of 4 done. Phases 0, 1 and 2 complete.
 
 ## Done
 
@@ -38,10 +38,11 @@ Last updated: 2026-10-20
 - [x] Phase 2.4: reports — `GET /reports/summary` (period vs previous period, books, outstanding now), `/reports/billing-by-month`, `/reports/receivables` (ageing buckets by party + totals), `/reports/projects` and `/reports/projects/{id}` (billing, deductions, outstanding, cost with non-claimable GST, margin), `/reports/gst-summary?period=YYYY-MM` (B2B/B2C by rate). SQL over the security_invoker views with an explicit tenant filter as well; one scenario with hand-computed numbers for every report, ageing tests relative to today, roles, cross-tenant test (A's data visible to A, invisible to B, A's project 404 for B). 402 tests
 - [x] Phase 3.1: BOQ import — `POST /projects/{id}/boq-items:import` (multipart CSV / XLSX, `dry_run` preview, all or nothing). Header found below title rows, columns matched by name with aliases, heading / subtotal rows skipped, `₹` / `%` / Indian grouping commas accepted, each row validated like a single item, codes unique in the file and new to the project (no overwrite), errors as `rows[<spreadsheet row>].<field>`. File type from content; 5 MB / 5,000 rows; XLSX through defusedxml with an uncompressed-size check (zip bombs). Idempotency now hashes uploaded files by content. New dependencies: openpyxl, defusedxml. 418 tests
 - [x] Phase 3.2: RA bills — `is_ra_bill` on invoices / bills of supply / proformas of a project; every line bills a BOQ item once; `ra_sequence` per project and type given at draft creation under a project row lock (one open RA draft, cancelled latest number reused); lines store this-bill quantity + `prev_cumulative_qty` snapshot (retaken at issue), API adds `up_to_date_qty`; BOQ cap for all billing documents unless the item is a variation, re-checked at issue with BOQ rows locked (parallel-issue test, mutation-checked: without the lock it fails 3/3); RA proforma → RA invoice on convert, notes never RA; contract quantity cannot drop below billed; `GET /projects/{id}/boq-progress`; PDF "RA Bill No. N" with previous / this bill / up to date columns; `is_ra_bill` list filter. No schema change (columns existed). 435 tests
+- [x] Phase 3.3: retention release (owner decision 2026-10-20: option A, a release record collected by payments, no new tax document) — schema: table `retention_releases` (RLS, composite FKs, audit, settlement only via the allocations trigger, cancel-only grants), `allocations` settles a document or a release (payments only), trigger and `v_receivables` / `v_project_billing` updated (schema.sql + migration `payments/0002`, sync test passes, migration reversible); `GET /projects/{id}/retention`, `GET/POST /retention-releases`, `GET /retention-releases/{id}`, `POST .../cancel`; at most the retention held per project and book, under a project row lock (parallel test, mutation-checked 3/3); bills whose retention was released cannot be cancelled; receivables, outstanding, project report and book collections include releases. 451 tests
 
 ## In progress
 
-- Nothing. Next up: Phase 3.3, retention release.
+- Nothing. Next up: Phase 3.4, TDS certificate reconciliation.
 
 ## Next
 
@@ -77,7 +78,7 @@ retention / TDS / GST-TDS / advance-recovery deductions on bills, project report
 
 1. ~~BOQ import (CSV/XLSX)~~ (done)
 2. ~~RA bills~~ (done)
-3. Retention release
+3. ~~Retention release~~ (done)
 4. TDS certificate reconciliation
 
 Full roadmap: `docs/01-architecture.md` §9.
@@ -113,6 +114,7 @@ Full roadmap: `docs/01-architecture.md` §9.
 
 - Payables (vendor bills, payments to subcontractors) are deferred; expenses track their own payment for now.
 - RA bills: credit notes do not reduce the billed quantity (a note may correct a rate rather than a quantity), so over-billing corrected by a credit note still counts against the BOQ; revisit with a quantity flag on note lines. The real-PDF render of the new RA columns is checked only as HTML on Windows (the WeasyPrint test runs in CI / Docker).
+- Retention releases have no PDF / letter yet and no email; a release is not linked to particular bills (retention is pooled per project and book).
 - BOQ import only adds items; updating existing items from a file (e.g. revised rates) is not supported. In a dry run, previewed items have null `id` / timestamps although the schema marks them as strings.
 - Report exports (`POST /exports`: CSV / XLSX / GSTR-1 JSON) are not built yet (Phase 5 for GSTR-1).
 - Reports run live SQL per request; fine at current scale, revisit (materialised summaries or caching) if dashboards get slow.

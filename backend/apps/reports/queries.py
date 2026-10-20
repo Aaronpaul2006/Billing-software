@@ -52,12 +52,18 @@ def totals(tenant: uuid.UUID, start: date, end: date, book: str) -> dict[str, De
                   AND p.payment_date BETWEEN %s AND %s""",
             [tenant, start, end],
         )
-    else:  # what reached this book's documents
+    else:  # what reached this book's documents and retention releases
         collected = _one(
             f"""SELECT coalesce(sum(a.amount), 0) AS collected
                   FROM allocations a
                   JOIN payments p ON p.tenant_id = a.tenant_id AND p.id = a.payment_id
-                  JOIN documents d ON d.tenant_id = a.tenant_id AND d.id = a.document_id
+                  LEFT JOIN documents dd
+                    ON dd.tenant_id = a.tenant_id AND dd.id = a.document_id
+                  LEFT JOIN retention_releases r
+                    ON r.tenant_id = a.tenant_id AND r.id = a.retention_release_id
+                  CROSS JOIN LATERAL (
+                    SELECT coalesce(dd.is_gst_document, r.book = 'GST') AS is_gst_document
+                  ) d
                  WHERE a.tenant_id = %s AND p.status = 'RECORDED'
                    AND p.payment_date BETWEEN %s AND %s AND {b}""",  # noqa: S608
             [tenant, start, end],
@@ -121,7 +127,8 @@ def projects(tenant: uuid.UUID, project: uuid.UUID | None = None) -> list[dict[s
     params: list[Any] = [tenant] + ([project] if project else [])
     return _rows(
         f"""SELECT v.project_id, v.code, v.name, v.contract_value, v.billed_taxable,
-                   v.retention_held, v.tds_deducted, v.advance_recovered, v.outstanding,
+                   v.retention_held, v.retention_released, v.tds_deducted,
+                   v.advance_recovered, v.outstanding,
                    coalesce(e.cost, 0) AS cost,
                    v.billed_taxable - coalesce(e.cost, 0) AS margin
               FROM v_project_billing v

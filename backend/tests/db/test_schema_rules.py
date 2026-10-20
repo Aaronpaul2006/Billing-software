@@ -9,6 +9,7 @@ import re
 import uuid
 from collections.abc import Callable
 from decimal import Decimal
+from functools import partial
 
 import pytest
 from django.db import DatabaseError, connections, transaction
@@ -386,3 +387,112 @@ def test_even_the_owner_cannot_rewrite_audit_rows() -> None:
 def test_payments_cannot_be_hard_deleted(a: Seeded, paid: uuid.UUID) -> None:
     with tenant_context(a.tenant, a.user):
         fails("permission denied", lambda: sql("DELETE FROM payments WHERE id = %s", [paid]))
+
+
+# --- 4. Retention releases (Phase 3.3) -------------------------------------------------
+
+
+@pytest.fixture
+def released(a: Seeded, paid: uuid.UUID) -> uuid.UUID:
+    """A retention release of 1000 on A's project; 400 of the payment settles it."""
+    release = uuid.uuid7()
+    with tenant_context(a.tenant, a.user):
+        sql(
+            "INSERT INTO retention_releases (id, tenant_id, project_id, party_id, book,"
+            " release_date, amount, created_by)"
+            " VALUES (%s, %s, %s, %s, 'GST', '2026-11-05', 1000, %s)",
+            [release, a.tenant, a.project, a.party, a.user],
+        )
+        sql(
+            "INSERT INTO allocations (tenant_id, retention_release_id, payment_id, amount,"
+            " created_by) VALUES (%s, %s, %s, 400, %s)",
+            [a.tenant, release, paid, a.user],
+        )
+    return release
+
+
+def test_release_allocations_update_amount_settled(a: Seeded, released: uuid.UUID) -> None:
+    with tenant_context(a.tenant, a.user):
+        settled = "SELECT amount_settled FROM retention_releases WHERE id = %s"
+        assert sql(settled, [released]) == [(Decimal("400.00"),)]
+        assert rowcount("DELETE FROM allocations WHERE retention_release_id = %s", [released]) == 1
+        assert sql(settled, [released]) == [(Decimal("0.00"),)]
+
+
+def test_release_cannot_be_over_settled(a: Seeded, b: Seeded, released: uuid.UUID) -> None:
+    payment = uuid.uuid7()
+    with tenant_context(a.tenant, a.user):
+        sql(
+            "INSERT INTO payments (id, tenant_id, party_id, payment_date, amount, mode, created_by)"
+            " VALUES (%s, %s, %s, '2026-11-06', 5000, 'UPI', %s)",
+            [payment, a.tenant, a.party, a.user],
+        )
+        fails(
+            "retention_releases_amount_settled_check|check constraint",
+            lambda: sql(
+                "INSERT INTO allocations (tenant_id, retention_release_id, payment_id, amount,"
+                " created_by) VALUES (%s, %s, %s, 600.01, %s)",
+                [a.tenant, released, payment, a.user],
+            ),
+        )
+
+
+def test_allocation_targets_and_sources_for_releases(a: Seeded, released: uuid.UUID) -> None:
+    with tenant_context(a.tenant, a.user):
+        fails(  # a document and a release at once
+            "check constraint",
+            lambda: sql(
+                "INSERT INTO allocations (tenant_id, document_id, retention_release_id,"
+                " payment_id, amount, created_by)"
+                " SELECT %s, %s, %s, payment_id, 1, %s FROM allocations LIMIT 1",
+                [a.tenant, a.doc, released, a.user],
+            ),
+        )
+        fails(  # a credit note never settles a release (trigger or CHECK, whichever first)
+            "check constraint|allocation source must be",
+            lambda: sql(
+                "INSERT INTO allocations (tenant_id, retention_release_id, credit_note_id,"
+                " amount, created_by) VALUES (%s, %s, %s, 1, %s)",
+                [a.tenant, released, a.doc, a.user],
+            ),
+        )
+
+
+def test_app_cannot_edit_releases_or_their_settlement(a: Seeded, released: uuid.UUID) -> None:
+    with tenant_context(a.tenant, a.user):
+        for statement in (
+            "UPDATE retention_releases SET amount_settled = 0 WHERE id = %s",
+            "UPDATE retention_releases SET amount = 1 WHERE id = %s",
+            "DELETE FROM retention_releases WHERE id = %s",
+        ):
+            fails("permission denied", partial(sql, statement, [released]))
+
+
+def test_cancelled_release_cannot_be_settled_and_rls_hides_it(
+    a: Seeded, b: Seeded, released: uuid.UUID
+) -> None:
+    with tenant_context(a.tenant, a.user):
+        fails(
+            "check constraint",  # still settled: cancel needs amount_settled = 0
+            lambda: sql(
+                "UPDATE retention_releases SET status = 'CANCELLED', cancelled_at = now(),"
+                " cancel_reason = 'x' WHERE id = %s",
+                [released],
+            ),
+        )
+        sql("DELETE FROM allocations WHERE retention_release_id = %s", [released])
+        sql(
+            "UPDATE retention_releases SET status = 'CANCELLED', cancelled_at = now(),"
+            " cancel_reason = 'x' WHERE id = %s",
+            [released],
+        )
+        fails(
+            "only open retention releases",
+            lambda: sql(
+                "INSERT INTO allocations (tenant_id, retention_release_id, payment_id, amount,"
+                " created_by) SELECT %s, %s, id, 1, %s FROM payments LIMIT 1",
+                [a.tenant, released, a.user],
+            ),
+        )
+    with tenant_context(b.tenant, b.user):
+        assert sql("SELECT count(*) FROM retention_releases") == [(0,)]

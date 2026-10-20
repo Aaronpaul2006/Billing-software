@@ -479,24 +479,65 @@ CREATE TABLE payments (
 CREATE INDEX payments_party_idx ON payments (tenant_id, party_id, payment_date DESC);
 CREATE INDEX payments_date_idx  ON payments (tenant_id, payment_date DESC);
 
--- Settles a document from either a payment or an issued credit note.
-CREATE TABLE allocations (
+-- Retention money the client now releases. The retention was part of the
+-- invoices' value (GST was charged then), so a release is not a new supply
+-- and not a tax document: only money now due, collected through allocations
+-- like an invoice. At most the retention still held per project and book
+-- (issued tax invoices = GST, bills of supply = NON_GST) can be released.
+CREATE TABLE retention_releases (
   id              uuid PRIMARY KEY DEFAULT gen_random_uuid(),
   tenant_id       uuid NOT NULL REFERENCES tenants (id),
-  document_id     uuid NOT NULL,                     -- the invoice / debit note being settled
-  payment_id      uuid,
-  credit_note_id  uuid,
+  project_id      uuid NOT NULL,
+  party_id        uuid NOT NULL,                     -- the project's client
+  book            text NOT NULL CHECK (book IN ('GST', 'NON_GST')),
+  release_date    date NOT NULL,
+  due_date        date,
   amount          numeric(14,2) NOT NULL CHECK (amount > 0),
+  -- Maintained only by the allocations trigger, like documents.amount_settled.
+  amount_settled  numeric(14,2) NOT NULL DEFAULT 0,
+  reference       text CHECK (char_length(reference) <= 50),
+  notes           text CHECK (char_length(notes) <= 2000),
+  status          text NOT NULL DEFAULT 'RELEASED' CHECK (status IN ('RELEASED', 'CANCELLED')),
+  cancelled_at    timestamptz,
+  cancelled_by    uuid REFERENCES users (id),
+  cancel_reason   text,
+  version         integer NOT NULL DEFAULT 1,
   created_by      uuid NOT NULL REFERENCES users (id),
   created_at      timestamptz NOT NULL DEFAULT now(),
+  updated_at      timestamptz NOT NULL DEFAULT now(),
   UNIQUE (tenant_id, id),
-  FOREIGN KEY (tenant_id, document_id)    REFERENCES documents (tenant_id, id),
-  FOREIGN KEY (tenant_id, payment_id)     REFERENCES payments (tenant_id, id),
-  FOREIGN KEY (tenant_id, credit_note_id) REFERENCES documents (tenant_id, id),
-  CHECK (num_nonnulls(payment_id, credit_note_id) = 1)
+  FOREIGN KEY (tenant_id, project_id) REFERENCES projects (tenant_id, id),
+  FOREIGN KEY (tenant_id, party_id)   REFERENCES parties (tenant_id, id),
+  CHECK (amount_settled >= 0 AND amount_settled <= amount),
+  CHECK (status <> 'CANCELLED' OR (cancelled_at IS NOT NULL AND cancel_reason IS NOT NULL AND amount_settled = 0)),
+  CHECK (due_date IS NULL OR due_date >= release_date)
+);
+CREATE INDEX retention_releases_project_idx ON retention_releases (tenant_id, project_id, release_date DESC);
+
+-- Settles a document from either a payment or an issued credit note, or a
+-- retention release from a payment.
+CREATE TABLE allocations (
+  id                    uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+  tenant_id             uuid NOT NULL REFERENCES tenants (id),
+  document_id           uuid,                      -- the invoice / debit note being settled
+  retention_release_id  uuid,                      -- or the retention release
+  payment_id            uuid,
+  credit_note_id        uuid,
+  amount                numeric(14,2) NOT NULL CHECK (amount > 0),
+  created_by            uuid NOT NULL REFERENCES users (id),
+  created_at            timestamptz NOT NULL DEFAULT now(),
+  UNIQUE (tenant_id, id),
+  FOREIGN KEY (tenant_id, document_id)          REFERENCES documents (tenant_id, id),
+  FOREIGN KEY (tenant_id, retention_release_id) REFERENCES retention_releases (tenant_id, id),
+  FOREIGN KEY (tenant_id, payment_id)           REFERENCES payments (tenant_id, id),
+  FOREIGN KEY (tenant_id, credit_note_id)       REFERENCES documents (tenant_id, id),
+  CHECK (num_nonnulls(payment_id, credit_note_id) = 1),
+  CHECK (num_nonnulls(document_id, retention_release_id) = 1),
+  CHECK (retention_release_id IS NULL OR payment_id IS NOT NULL)   -- releases: payments only
 );
 CREATE UNIQUE INDEX allocations_payment_uq ON allocations (document_id, payment_id)     WHERE payment_id IS NOT NULL;
 CREATE UNIQUE INDEX allocations_cn_uq      ON allocations (document_id, credit_note_id) WHERE credit_note_id IS NOT NULL;
+CREATE UNIQUE INDEX allocations_release_uq ON allocations (retention_release_id, payment_id) WHERE retention_release_id IS NOT NULL;
 CREATE INDEX allocations_payment_idx ON allocations (tenant_id, payment_id);
 
 CREATE TABLE expenses (
@@ -698,7 +739,12 @@ DECLARE
   src_used    numeric;
 BEGIN
   IF TG_OP = 'DELETE' THEN
-    UPDATE documents SET amount_settled = amount_settled - OLD.amount WHERE id = OLD.document_id;
+    IF OLD.document_id IS NOT NULL THEN
+      UPDATE documents SET amount_settled = amount_settled - OLD.amount WHERE id = OLD.document_id;
+    ELSE
+      UPDATE retention_releases SET amount_settled = amount_settled - OLD.amount
+       WHERE id = OLD.retention_release_id;
+    END IF;
     RETURN OLD;
   END IF;
 
@@ -706,10 +752,17 @@ BEGIN
     RAISE EXCEPTION 'allocations are immutable; delete and re-create' USING ERRCODE = 'check_violation';
   END IF;
 
-  SELECT doc_type, status, party_id INTO target FROM documents WHERE id = NEW.document_id;
-  IF target.status <> 'ISSUED' OR target.doc_type NOT IN ('TAX_INVOICE', 'BILL_OF_SUPPLY', 'DEBIT_NOTE') THEN
-    RAISE EXCEPTION 'only issued invoices, bills of supply and debit notes can be settled'
-      USING ERRCODE = 'check_violation';
+  IF NEW.document_id IS NOT NULL THEN
+    SELECT doc_type, status, party_id INTO target FROM documents WHERE id = NEW.document_id;
+    IF target.status <> 'ISSUED' OR target.doc_type NOT IN ('TAX_INVOICE', 'BILL_OF_SUPPLY', 'DEBIT_NOTE') THEN
+      RAISE EXCEPTION 'only issued invoices, bills of supply and debit notes can be settled'
+        USING ERRCODE = 'check_violation';
+    END IF;
+  ELSE
+    SELECT status, party_id INTO target FROM retention_releases WHERE id = NEW.retention_release_id;
+    IF target.status IS DISTINCT FROM 'RELEASED' THEN
+      RAISE EXCEPTION 'only open retention releases can be settled' USING ERRCODE = 'check_violation';
+    END IF;
   END IF;
 
   IF NEW.payment_id IS NOT NULL THEN
@@ -733,7 +786,12 @@ BEGIN
     RAISE EXCEPTION 'allocation exceeds the unallocated amount of its source' USING ERRCODE = 'check_violation';
   END IF;
 
-  UPDATE documents SET amount_settled = amount_settled + NEW.amount WHERE id = NEW.document_id;
+  IF NEW.document_id IS NOT NULL THEN
+    UPDATE documents SET amount_settled = amount_settled + NEW.amount WHERE id = NEW.document_id;
+  ELSE
+    UPDATE retention_releases SET amount_settled = amount_settled + NEW.amount
+     WHERE id = NEW.retention_release_id;
+  END IF;
   RETURN NEW;
 END $$;
 
@@ -781,7 +839,7 @@ BEGIN
   FOREACH t IN ARRAY ARRAY[
     'tenants', 'memberships', 'gst_registrations', 'parties', 'projects', 'boq_items',
     'catalog_items', 'attachments', 'document_series', 'documents', 'document_lines',
-    'payments', 'allocations', 'expenses']
+    'payments', 'allocations', 'expenses', 'retention_releases']
   LOOP
     EXECUTE format(
       'CREATE TRIGGER audit AFTER INSERT OR UPDATE OR DELETE ON %I FOR EACH ROW EXECUTE FUNCTION audit_row_change()', t);
@@ -800,7 +858,7 @@ BEGIN
   FOREACH t IN ARRAY ARRAY[
     'gst_registrations', 'parties', 'projects', 'boq_items', 'catalog_items', 'attachments',
     'document_series', 'documents', 'document_lines', 'payments', 'allocations', 'expenses',
-    'idempotency_keys']
+    'retention_releases', 'idempotency_keys']
   LOOP
     EXECUTE format('ALTER TABLE %I ENABLE ROW LEVEL SECURITY', t);
     EXECUTE format('ALTER TABLE %I FORCE ROW LEVEL SECURITY', t);
@@ -890,9 +948,12 @@ FROM documents d
 WHERE d.is_revenue AND d.status = 'ISSUED'
 GROUP BY 1, 2, 3, 4;
 
+-- Money owed now: unsettled invoices, bills of supply, debit notes and
+-- retention releases (document_id or retention_release_id is set).
 CREATE VIEW v_receivables WITH (security_invoker = true) AS
 SELECT
-  d.tenant_id, d.id AS document_id, d.doc_type, d.doc_number, d.doc_date, d.due_date,
+  d.tenant_id, d.id AS document_id, NULL::uuid AS retention_release_id,
+  d.doc_type, d.doc_number, d.doc_date, d.due_date,
   d.party_id, d.project_id, d.is_gst_document,
   d.net_receivable, d.amount_settled,
   d.net_receivable - d.amount_settled AS outstanding,
@@ -906,21 +967,53 @@ SELECT
 FROM documents d
 WHERE d.status = 'ISSUED'
   AND d.doc_type IN ('TAX_INVOICE', 'BILL_OF_SUPPLY', 'DEBIT_NOTE')
-  AND d.amount_settled < d.net_receivable;
+  AND d.amount_settled < d.net_receivable
+UNION ALL
+SELECT
+  r.tenant_id, NULL::uuid, r.id,
+  'RETENTION_RELEASE', r.reference, r.release_date, r.due_date,
+  r.party_id, r.project_id, r.book = 'GST',
+  r.amount, r.amount_settled,
+  r.amount - r.amount_settled,
+  CASE
+    WHEN current_date - coalesce(r.due_date, r.release_date) <= 0  THEN 'NOT_DUE'
+    WHEN current_date - coalesce(r.due_date, r.release_date) <= 30 THEN '1_30'
+    WHEN current_date - coalesce(r.due_date, r.release_date) <= 60 THEN '31_60'
+    WHEN current_date - coalesce(r.due_date, r.release_date) <= 90 THEN '61_90'
+    ELSE '90_PLUS'
+  END
+FROM retention_releases r
+WHERE r.status = 'RELEASED' AND r.amount_settled < r.amount;
 
--- Retention money held by clients, per project (released later by payment).
+-- Per project. Retention held = deducted on issued bills - released; the
+-- outstanding includes unsettled retention releases.
 CREATE VIEW v_project_billing WITH (security_invoker = true) AS
 SELECT
   p.tenant_id, p.id AS project_id, p.code, p.name, p.contract_value,
-  coalesce(sum(CASE WHEN d.doc_type = 'CREDIT_NOTE' THEN -d.subtotal ELSE d.subtotal END), 0) AS billed_taxable,
-  coalesce(sum(d.retention_amount), 0)                       AS retention_held,
-  coalesce(sum(d.income_tax_tds_amount + d.gst_tds_amount), 0) AS tds_deducted,
-  coalesce(sum(d.advance_recovery_amount), 0)                AS advance_recovered,
-  coalesce(sum(d.net_receivable - d.amount_settled) FILTER (WHERE d.doc_type <> 'CREDIT_NOTE'), 0) AS outstanding
+  coalesce(d.billed_taxable, 0)                                  AS billed_taxable,
+  coalesce(d.retention_deducted, 0) - coalesce(r.released, 0)    AS retention_held,
+  coalesce(r.released, 0)                                        AS retention_released,
+  coalesce(d.tds_deducted, 0)                                    AS tds_deducted,
+  coalesce(d.advance_recovered, 0)                               AS advance_recovered,
+  coalesce(d.outstanding, 0) + coalesce(r.outstanding, 0)        AS outstanding
 FROM projects p
-LEFT JOIN documents d
-  ON d.tenant_id = p.tenant_id AND d.project_id = p.id AND d.status = 'ISSUED' AND d.is_revenue
-GROUP BY p.tenant_id, p.id, p.code, p.name, p.contract_value;
+LEFT JOIN (
+  SELECT tenant_id, project_id,
+         sum(CASE WHEN doc_type = 'CREDIT_NOTE' THEN -subtotal ELSE subtotal END) AS billed_taxable,
+         sum(retention_amount)                                    AS retention_deducted,
+         sum(income_tax_tds_amount + gst_tds_amount)              AS tds_deducted,
+         sum(advance_recovery_amount)                             AS advance_recovered,
+         sum(net_receivable - amount_settled) FILTER (WHERE doc_type <> 'CREDIT_NOTE') AS outstanding
+    FROM documents
+   WHERE status = 'ISSUED' AND is_revenue AND project_id IS NOT NULL
+   GROUP BY tenant_id, project_id
+) d ON d.tenant_id = p.tenant_id AND d.project_id = p.id
+LEFT JOIN (
+  SELECT tenant_id, project_id, sum(amount) AS released, sum(amount - amount_settled) AS outstanding
+    FROM retention_releases
+   WHERE status = 'RELEASED'
+   GROUP BY tenant_id, project_id
+) r ON r.tenant_id = p.tenant_id AND r.project_id = p.id;
 
 -- =============================================================================
 -- 10. Privileges for the application role
@@ -948,5 +1041,10 @@ GRANT UPDATE (status, doc_type, gst_registration_id, series_id, doc_number, doc_
               notes, terms, pdf_attachment_id, issued_at, issued_by, cancelled_at, cancelled_by, cancel_reason,
               version, updated_at)
   ON documents TO billing_app;
+-- Retention releases: settlement owned by the allocations trigger; otherwise
+-- only cancelled, never edited or deleted.
+REVOKE UPDATE ON retention_releases FROM billing_app;
+GRANT UPDATE (status, cancelled_at, cancelled_by, cancel_reason, version, updated_at)
+  ON retention_releases TO billing_app;
 
 COMMIT;

@@ -23,6 +23,7 @@ from apps.core.queries import get_or_404
 from apps.core.tenancy import Principal
 from apps.core.versioning import update_versioned
 from apps.parties.models import Party
+from apps.payments import retention
 from apps.payments.models import Allocation
 from apps.tenants.models import DocumentSeries, GstRegistration, Tenant
 
@@ -176,6 +177,7 @@ def cancel(principal: Principal, doc_id: uuid.UUID, expected: int, reason: str) 
                 "This credit note is allocated to invoices; unwind that first.",
                 code="credit_note_allocated",
             )
+        retention.check_bill_cancellable(doc)
         update_versioned(
             Document.objects,
             doc.pk,

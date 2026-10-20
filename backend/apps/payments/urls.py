@@ -21,4 +21,24 @@ urlpatterns = [
         views.DocumentAllocationsView.as_view(),
         name="document-allocations",
     ),
+    path(
+        "retention-releases",
+        views.RetentionReleaseListView.as_view(),
+        name="retention-releases",
+    ),
+    path(
+        "retention-releases/<uuid:release_id>",
+        views.RetentionReleaseDetailView.as_view(),
+        name="retention-release-detail",
+    ),
+    path(
+        "retention-releases/<uuid:release_id>/cancel",
+        views.RetentionReleaseCancelView.as_view(),
+        name="retention-release-cancel",
+    ),
+    path(
+        "projects/<uuid:project_id>/retention",
+        views.ProjectRetentionView.as_view(),
+        name="project-retention",
+    ),
 ]

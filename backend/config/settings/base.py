@@ -210,6 +210,8 @@ SPECTACULAR_SETTINGS = {
         # payments and expenses share RECORDED / VOIDED
         "RecordStatusEnum": "apps.payments.models.PaymentStatus",
         "PaymentModeEnum": "apps.payments.models.PaymentMode",
+        "RetentionReleaseStatusEnum": "apps.payments.models.RetentionReleaseStatus",
+        "RetentionBookEnum": "apps.payments.models.RetentionBook",
     },
     # The schema is public only in dev (see dev.py).
     "SERVE_PERMISSIONS": ["rest_framework.permissions.IsAuthenticated"],
