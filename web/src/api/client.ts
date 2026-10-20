@@ -54,6 +54,8 @@ export const api = createClient<paths>({
   baseUrl: window.location.origin, // same origin as the app (Vite proxies /api in dev)
   credentials: "same-origin",
   headers: { Accept: "application/json" },
+  // django-filter "in" lookups read one comma-separated value: doc_type=A,B
+  querySerializer: { array: { style: "form", explode: false } },
   fetch: authFetch,
 });
 

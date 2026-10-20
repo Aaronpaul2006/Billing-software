@@ -203,6 +203,12 @@ def test_pdf_endpoint(w: World, s3: Any, monkeypatch: pytest.MonkeyPatch) -> Non
     assert "X-Amz-Signature" in params
     assert params["X-Amz-Expires"] == ["300"]
 
+    # Browsers cannot read a cross-origin redirect: as=link answers with the URL.
+    as_link = APIClient().get(f"{url}?as=link", **w.h())
+    assert as_link.status_code == 200
+    assert as_link.json()["expires_in"] == 300
+    assert "X-Amz-Signature" in parse_qs(urlparse(as_link.json()["url"]).query)
+
 
 def test_draft_pdf_is_rendered_on_demand(w: World, monkeypatch: pytest.MonkeyPatch) -> None:
     from apps.documents import views
@@ -214,6 +220,8 @@ def test_draft_pdf_is_rendered_on_demand(w: World, monkeypatch: pytest.MonkeyPat
     assert response["Content-Type"] == "application/pdf"
     assert response.content == FAKE_PDF
     assert load(w, draft["id"]).pdf_attachment_id is None  # never stored
+    as_link = APIClient().get(f"/api/v1/documents/{draft['id']}/pdf?as=link", **w.h())
+    assert (as_link.status_code, as_link.json()["errors"][0]["code"]) == (422, "draft")
 
 
 @override_settings(RENDER_PDF_ON_ISSUE=True)

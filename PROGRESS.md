@@ -4,7 +4,7 @@ Last updated: 2026-10-20
 
 ## Current phase
 
-**Web app** (in progress, owner decision 2026-10-20: React + Vite SPA, shadcn/ui + Tailwind, core billing loop first): steps W.1–W.3 done. Backend Phases 0–3 complete. Phases 0, 1 and 2 complete.
+**Web app** (in progress, owner decision 2026-10-20: React + Vite SPA, shadcn/ui + Tailwind, core billing loop first): steps W.1–W.4 done. Backend Phases 0–3 complete. Phases 0, 1 and 2 complete.
 
 ## Done
 
@@ -43,10 +43,11 @@ Last updated: 2026-10-20
 - [x] Web W.1: foundation and sign-in — `web/`: React 19 + TypeScript (strict) on Vite 8, Tailwind 4 + shadcn/ui (new-york, components in the repo), React Router 8, TanStack Query 5, react-hook-form + zod 4; exact versions in package-lock. API types generated from the committed `backend/openapi.json` (backend test fails when it is stale; CI fails when the TS types are). Auth: access token in memory only, refresh via the HttpOnly cookie, single-flight refresh (one promise per tab, Web Lock across tabs), retry once on `token_expired` (POST bodies intact), other 401s not retried, network errors keep the session; screens: login, MFA code / recovery code, mandatory MFA enrolment for OWNER/ADMIN (QR, recovery codes), app shell with company switcher and sign-out. Money formatted from strings with Indian grouping, never floats (lint bans parseFloat). 34 tests (Vitest + Testing Library + MSW); CI job `web` (types up to date, prettier, eslint strict-type-checked, tsc, tests, build, npm audit). Smoke-tested through the Vite proxy against the real API (signup, cookie refresh, /me, logout).
 - [x] Web W.2: dashboard and parties — dashboard: period (this / last month, this / last FY) and book selectors, cards for billed, collected, outstanding, expenses with the previous period, receivables by party with ageing buckets and totals, plain message for roles without reports. Parties: search, customer / vendor filter, archived toggle, cursor "load more"; one form for create and edit (GST status drives GSTIN vs PAN / state, overseas addresses), client checks, the server's field errors on the fields, If-Match with a clear 412 + reload, archive / restore. API fixes found on the way: four report endpoints documented bare arrays (now `{results, totals}` envelopes, plus a test that no endpoint documents a bare array); the committed spec is now `backend/openapi.json` (YAML made "08"/"09" numbers in the TS types); state choices carry names; TS types no longer mark defaulted request fields required; master-data creates honour an Idempotency-Key when sent (`idempotent_if_keyed`; a smoke test had shown a retried create made a duplicate). Web 51 tests; backend 474.
 - [x] Web W.3: projects and BOQ — projects list (search, status), project page with tabs: details (one form for create / edit: client picker searching customers, bill-from registration, site state and address, contract value, retention / TDS / GST TDS / advance recovery, status, dates; If-Match), BOQ (items with add / edit / delete, billed items explained; import from CSV / XLSX: check file first with a preview or row-by-row errors, then import), progress (billed vs contract per item with bars, totals, retention held per book). Settings → GST registrations (list, add; the project form links there when none exists: a new company has none). Backend: project responses carry `client_name` (one joined query). Fixed in the API client: copying Headers dropped Idempotency-Key and other headers in the test environment (now the token is set on the request itself; a test that compared two missing keys had hidden it). Smoke-tested through the proxy, incl. a real multipart BOQ upload. Web 66 tests; backend 475.
+- [x] Web W.4: invoices and quotes — documents list (type, status, paid / unpaid, number search; party, project, total, outstanding); editor for new and draft documents: type, client picker, the client's projects, dates, RA bill and round-off switches, lines from the BOQ, the catalog or free text (picking an item fills description, unit, HSN, rate, GST), live totals from `documents:preview-totals` (400 ms after typing stops; server errors shown under the line they are about), save draft (Idempotency-Key / If-Match); notes keep type, party and project. Document page: header, lines (RA: previous / this bill / up to date), totals with deductions and what is outstanding; issue (If-Match + key; a missing number series links to Settings), PDF (drafts on demand; issued through `?as=link`, or "being prepared"), cancel with reason, accept / decline, convert, credit / debit note (open the new draft). Settings → number series (list, add with a live sample number). Lazy routes: the first download fell from 697 kB to 334 kB (107 kB gzipped). Backend: documents carry `party_name` / `project_name` (one joined query), `pdf?as=link`, typed document and preview lines in the schema; the client sends list filters as one comma-separated value (django-filter `in`). Smoke-tested through the proxy: series, preview, draft, issue, credit note, cancel, quotation accept and convert. Web 76 tests; backend 476.
 
 ## In progress
 
-- Nothing. Next up: Web W.4, invoices and quotes.
+- Nothing. Next up: Web W.5, payments and allocations.
 
 ## Next
 
@@ -90,7 +91,7 @@ Web app (core billing loop first):
 1. ~~Foundation and sign-in~~ (done)
 2. ~~Dashboard and parties~~ (done)
 3. ~~Projects and BOQ~~ (done)
-4. Invoices and quotes: list, editor with live totals, issue, PDF, cancel, convert, notes
+4. ~~Invoices and quotes~~ (done)
 5. Payments and allocations
 6. Then: RA bills, retention, TDS, expenses, reports, settings (company, GST registrations, series, members)
 
@@ -127,7 +128,7 @@ Full roadmap: `docs/01-architecture.md` §9.
 
 - Payables (vendor bills, payments to subcontractors) are deferred; expenses track their own payment for now.
 - RA bills: credit notes do not reduce the billed quantity (a note may correct a rate rather than a quantity), so over-billing corrected by a credit note still counts against the BOQ; revisit with a quantity flag on note lines. The real-PDF render of the new RA columns is checked only as HTML on Windows (the WeasyPrint test runs in CI / Docker).
-- Web: the JS bundle is ~700 kB (216 kB gzipped); split per route (lazy routes) next. GST registrations can be added but not yet edited or deactivated in the UI; document series have no screen yet (needed before issuing in W.4). Sign-up, password reset and email verification screens wait for the backend endpoints. The refresh cookie is `Secure` only outside dev settings.
+- Web: GST registrations and number series can be added but not yet edited or deactivated in the UI. On Windows dev the PDF preview fails (no Pango; run the stack in Docker for PDFs). Editor: the BOQ / catalog item lists are plain selects (fine for hundreds of items; a search box would suit very large BOQs); allocations to a document are not shown yet (W.5). Sign-up, password reset and email verification screens wait for the backend endpoints. The refresh cookie is `Secure` only outside dev settings.
 - TDS: only income-tax TDS (s.194C) is reconciled; GST TDS (s.51, deducted at payment) is not yet. No import of Form 26AS / TRACES files: certificates are typed in. Expected TDS counts by bill date (credit) and ignores credit notes.
 - Retention releases have no PDF / letter yet and no email; a release is not linked to particular bills (retention is pooled per project and book).
 - BOQ import only adds items; updating existing items from a file (e.g. revised rates) is not supported. In a dry run, previewed items have null `id` / timestamps although the schema marks them as strings.

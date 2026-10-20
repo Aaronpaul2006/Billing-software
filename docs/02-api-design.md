@@ -220,9 +220,11 @@ and `dry_run` (`true` validates and previews, saves nothing). Needs
 | `POST /documents/{id}/accept` · `/decline` | Quotations only | issue |
 | `POST /documents/{id}/convert` | `{to: "TAX_INVOICE"}` → new draft copied from a quotation/proforma | drafts |
 | `POST /documents/{id}/credit-notes` · `/debit-notes` | New draft note referencing this invoice | drafts |
-| `GET /documents/{id}/pdf` | 302 to a 5-minute presigned URL (rendered by the Celery worker after issue; `202` + `Retry-After` while it is being made; drafts are rendered on demand with a "DRAFT" watermark and never stored) | read |
+| `GET /documents/{id}/pdf` | 302 to a 5-minute presigned URL (rendered by the Celery worker after issue; `202` + `Retry-After` while it is being made; drafts are rendered on demand with a "DRAFT" watermark and never stored). `?as=link` answers `200 {url, expires_in}` instead of the 302, for browsers (a cross-origin redirect cannot be read) | read |
 | `POST /documents/{id}/send` | Email the PDF to the party (queued) | issue |
 | `POST /documents:preview-totals` | Run the tax engine on an unsaved payload (live totals while typing) | drafts |
+
+Document responses carry `party_name` (frozen at issue, the current name on drafts) and `project_name`.
 
 ### List filters
 `doc_type`, `status`, `book=GST|NON_GST|ALL` (maps to `is_gst_document`),

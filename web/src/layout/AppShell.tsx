@@ -3,6 +3,7 @@ import {
   ChevronsUpDown,
   FileText,
   FolderKanban,
+  Hash,
   IndianRupee,
   LayoutDashboard,
   LogOut,
@@ -34,6 +35,7 @@ const NAV = [
   { to: "/projects", label: "Projects", icon: FolderKanban },
   { to: "/expenses", label: "Expenses", icon: Receipt },
   { to: "/settings/gst-registrations", label: "GST registrations", icon: Settings },
+  { to: "/settings/series", label: "Number series", icon: Hash },
 ] as const;
 
 function TenantSwitcher() {

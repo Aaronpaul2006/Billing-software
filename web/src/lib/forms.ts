@@ -2,6 +2,16 @@ import type { FieldValues, Path, UseFormSetError } from "react-hook-form";
 
 import { ApiError } from "@/api/problem";
 
+/** "lines[0].rate" (API) -> "lines.0.rate" (form path). */
+export function formPath(field: string): string {
+  return field.replace(/\[(\d+)\]/g, ".$1");
+}
+
+function known(path: string, fields: readonly string[]): boolean {
+  // "lines.*" covers every "lines.<n>.<field>"
+  return fields.some((f) => (f.endsWith(".*") ? path.startsWith(f.slice(0, -1)) : f === path));
+}
+
 /**
  * Put a 422's field errors on the form fields they name ("billing_address.pincode"
  * is a form path too). Returns a message for everything else (other fields,
@@ -15,8 +25,9 @@ export function applyServerErrors<T extends FieldValues>(
   if (!(error instanceof ApiError)) return "Could not reach the server. Check your connection.";
   const leftovers: string[] = [];
   for (const e of error.problem.errors ?? []) {
-    if (e.field && fields.includes(e.field)) {
-      setError(e.field as Path<T>, { type: e.code, message: e.message });
+    const path = e.field ? formPath(e.field) : null;
+    if (path && known(path, fields)) {
+      setError(path as Path<T>, { type: e.code, message: e.message });
     } else {
       leftovers.push(e.field ? `${e.field}: ${e.message}` : e.message);
     }

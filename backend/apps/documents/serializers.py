@@ -1,6 +1,7 @@
 from decimal import Decimal
 from typing import Any
 
+from drf_spectacular.utils import extend_schema_field
 from rest_framework import serializers
 
 from apps.core.fields import MoneyField, PercentField, QuantityField
@@ -140,7 +141,11 @@ class TotalsSerializer(serializers.Serializer[Any]):
 class DocumentListSerializer(serializers.ModelSerializer[Document]):
     gst_registration_id = serializers.UUIDField()
     party_id = serializers.UUIDField()
+    party_name = serializers.SerializerMethodField(
+        help_text="As frozen at issue; the party's current name on drafts."
+    )
     project_id = serializers.UUIDField(allow_null=True)
+    project_name = serializers.CharField(source="project.name", allow_null=True, read_only=True)
     totals = TotalsSerializer(source="*")
 
     class Meta:
@@ -157,7 +162,9 @@ class DocumentListSerializer(serializers.ModelSerializer[Document]):
             "valid_until",
             "gst_registration_id",
             "party_id",
+            "party_name",
             "project_id",
+            "project_name",
             "place_of_supply",
             "supply_type",
             "is_gst_document",
@@ -171,6 +178,11 @@ class DocumentListSerializer(serializers.ModelSerializer[Document]):
         )
         read_only_fields: tuple[str, ...] = fields
 
+    def get_party_name(self, obj: Document) -> str:
+        snapshot = obj.party_snapshot or {}
+        name = snapshot.get("display_name")
+        return str(name) if name else obj.party.display_name
+
 
 class DocumentSerializer(DocumentListSerializer):
     lines = serializers.SerializerMethodField()
@@ -179,16 +191,28 @@ class DocumentSerializer(DocumentListSerializer):
         fields = (*DocumentListSerializer.Meta.fields, "notes", "terms", "lines")
         read_only_fields = fields
 
+    @extend_schema_field(LineOutSerializer(many=True))
     def get_lines(self, obj: Document) -> list[dict[str, Any]]:
         lines = DocumentLine.objects.filter(document_id=obj.pk).order_by("line_no")
         return list(LineOutSerializer(lines, many=True).data)
+
+
+class PreviewLineSerializer(serializers.Serializer[Any]):
+    line_no = serializers.IntegerField()
+    taxable_value = MoneyField()
+    cgst_amount = MoneyField()
+    sgst_amount = MoneyField()
+    igst_amount = MoneyField()
+    cess_amount = MoneyField()
+    line_total = MoneyField()
+    prev_cumulative_qty = QuantityField(required=False, help_text="RA bill lines only.")
 
 
 class PreviewSerializer(serializers.Serializer[Any]):
     place_of_supply = serializers.CharField()
     supply_type = serializers.CharField()
     totals = TotalsSerializer()
-    lines = serializers.ListField(child=serializers.DictField())
+    lines = PreviewLineSerializer(many=True)
 
 
 class CancelSerializer(serializers.Serializer[Any]):
@@ -210,3 +234,8 @@ class NoteSerializer(serializers.Serializer[Any]):
     lines = LineInSerializer(
         many=True, required=False, help_text="Without lines, the invoice's lines are copied."
     )
+
+
+class PdfLinkSerializer(serializers.Serializer[Any]):
+    url = serializers.URLField(help_text="Short-lived link to the stored PDF.")
+    expires_in = serializers.IntegerField(help_text="Seconds the link stays valid.")

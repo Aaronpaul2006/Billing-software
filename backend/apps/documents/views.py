@@ -7,7 +7,7 @@ import django_filters
 from django.db.models import F, Q, QuerySet
 from django.http import HttpResponse, HttpResponseRedirect
 from django.http.response import HttpResponseBase
-from drf_spectacular.utils import extend_schema
+from drf_spectacular.utils import OpenApiParameter, extend_schema
 from rest_framework.request import Request
 from rest_framework.response import Response
 
@@ -18,6 +18,7 @@ from apps.core.api import (
     versioned_action,
     versioned_patch,
 )
+from apps.core.errors import Invalid
 from apps.core.idempotency import idempotent
 from apps.files import storage
 from apps.files.models import Attachment
@@ -31,6 +32,7 @@ from .serializers import (
     DocumentSerializer,
     DocumentWriteSerializer,
     NoteSerializer,
+    PdfLinkSerializer,
     PreviewSerializer,
     TotalsSerializer,
 )
@@ -85,7 +87,7 @@ class DocumentListView(ActionAPIView):
     ordering_fields = ("doc_date", "doc_number", "created_at")
 
     def get_queryset(self) -> Any:
-        return Document.objects.all()
+        return Document.objects.select_related("party", "project")  # names, one query
 
     @extend_schema(responses={200: DocumentListSerializer(many=True)}, tags=["documents"])
     def get(self, request: Request) -> Response:
@@ -272,8 +274,18 @@ class DocumentPdfView(ActionAPIView):
     write_action = DRAFT
 
     @extend_schema(
+        parameters=[
+            OpenApiParameter(
+                "as",
+                str,
+                enum=["link"],
+                description="`link`: answer 200 {url, expires_in} instead of a 302, for"
+                " clients that cannot read a cross-origin redirect (browsers). Issued only.",
+            )
+        ],
         responses={
             (200, "application/pdf"): bytes,
+            (200, "application/json"): PdfLinkSerializer,
             302: None,
             202: {"type": "object", "properties": {"status": {"type": "string"}}},
         },
@@ -281,6 +293,9 @@ class DocumentPdfView(ActionAPIView):
     )
     def get(self, request: Request, document_id: uuid.UUID) -> HttpResponseBase:
         doc = drafts.get_document(self.principal, document_id)
+        as_link = request.query_params.get("as") == "link"
+        if doc.status == "DRAFT" and as_link:
+            raise Invalid("as", "Drafts are rendered on demand: ask without as=link.", code="draft")
         if doc.status == "DRAFT":
             return HttpResponse(
                 render_pdf(doc),
@@ -296,4 +311,6 @@ class DocumentPdfView(ActionAPIView):
             pdfs.enqueue_pdf(self.principal.tenant_id, self.principal.user_id, doc.pk)
             return Response({"status": "rendering"}, status=202, headers={"Retry-After": "3"})
         url = storage.download_url(attachment.storage_key, attachment.original_filename)
+        if as_link:
+            return Response({"url": url, "expires_in": storage.DOWNLOAD_URL_TTL})
         return HttpResponseRedirect(url)

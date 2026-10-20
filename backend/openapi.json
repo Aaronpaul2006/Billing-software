@@ -1592,6 +1592,17 @@
                 "description": "Issued: 302 to a short-lived link (202 while it is being made).\nDraft: rendered on demand with a DRAFT watermark, never stored.",
                 "parameters": [
                     {
+                        "in": "query",
+                        "name": "as",
+                        "schema": {
+                            "type": "string",
+                            "enum": [
+                                "link"
+                            ]
+                        },
+                        "description": "`link`: answer 200 {url, expires_in} instead of a 302, for clients that cannot read a cross-origin redirect (browsers). Issued only."
+                    },
+                    {
                         "in": "path",
                         "name": "document_id",
                         "schema": {
@@ -1616,6 +1627,11 @@
                                 "schema": {
                                     "type": "string",
                                     "format": "binary"
+                                }
+                            },
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/PdfLink"
                                 }
                             }
                         },
@@ -4916,12 +4932,24 @@
                         "type": "string",
                         "format": "uuid"
                     },
+                    "party_name": {
+                        "type": "string",
+                        "readOnly": true,
+                        "description": "As frozen at issue; the party's current name on drafts."
+                    },
                     "project_id": {
                         "type": [
                             "string",
                             "null"
                         ],
                         "format": "uuid"
+                    },
+                    "project_name": {
+                        "type": [
+                            "string",
+                            "null"
+                        ],
+                        "readOnly": true
                     },
                     "place_of_supply": {
                         "type": "string",
@@ -4992,8 +5020,7 @@
                     "lines": {
                         "type": "array",
                         "items": {
-                            "type": "object",
-                            "additionalProperties": {}
+                            "$ref": "#/components/schemas/LineOut"
                         },
                         "readOnly": true
                     }
@@ -5013,8 +5040,10 @@
                     "lines",
                     "notes",
                     "party_id",
+                    "party_name",
                     "place_of_supply",
                     "project_id",
+                    "project_name",
                     "ra_sequence",
                     "round_to_rupee",
                     "status",
@@ -5137,12 +5166,24 @@
                         "type": "string",
                         "format": "uuid"
                     },
+                    "party_name": {
+                        "type": "string",
+                        "readOnly": true,
+                        "description": "As frozen at issue; the party's current name on drafts."
+                    },
                     "project_id": {
                         "type": [
                             "string",
                             "null"
                         ],
                         "format": "uuid"
+                    },
+                    "project_name": {
+                        "type": [
+                            "string",
+                            "null"
+                        ],
+                        "readOnly": true
                     },
                     "place_of_supply": {
                         "type": "string",
@@ -5210,8 +5251,10 @@
                     "is_ra_bill",
                     "issued_at",
                     "party_id",
+                    "party_name",
                     "place_of_supply",
                     "project_id",
+                    "project_name",
                     "ra_sequence",
                     "round_to_rupee",
                     "status",
@@ -6086,6 +6129,135 @@
                 },
                 "required": [
                     "quantity"
+                ]
+            },
+            "LineOut": {
+                "type": "object",
+                "properties": {
+                    "line_no": {
+                        "type": "integer",
+                        "readOnly": true
+                    },
+                    "catalog_item_id": {
+                        "type": [
+                            "string",
+                            "null"
+                        ],
+                        "format": "uuid"
+                    },
+                    "boq_item_id": {
+                        "type": [
+                            "string",
+                            "null"
+                        ],
+                        "format": "uuid"
+                    },
+                    "description": {
+                        "type": "string",
+                        "readOnly": true
+                    },
+                    "sac_hsn": {
+                        "type": [
+                            "string",
+                            "null"
+                        ],
+                        "readOnly": true
+                    },
+                    "unit": {
+                        "type": [
+                            "string",
+                            "null"
+                        ],
+                        "readOnly": true
+                    },
+                    "quantity": {
+                        "type": "string",
+                        "format": "decimal",
+                        "pattern": "^-?\\d{0,11}(?:\\.\\d{0,3})?$",
+                        "description": "RA bill: the quantity in this bill."
+                    },
+                    "prev_cumulative_qty": {
+                        "type": [
+                            "string",
+                            "null"
+                        ],
+                        "format": "decimal",
+                        "pattern": "^-?\\d{0,11}(?:\\.\\d{0,3})?$",
+                        "description": "RA bill: billed before this bill (snapshot at issue)."
+                    },
+                    "up_to_date_qty": {
+                        "type": [
+                            "string",
+                            "null"
+                        ],
+                        "readOnly": true,
+                        "description": "RA bill: previous + this bill."
+                    },
+                    "rate": {
+                        "type": "string",
+                        "format": "decimal",
+                        "pattern": "^-?\\d{0,12}(?:\\.\\d{0,2})?$"
+                    },
+                    "discount_amount": {
+                        "type": "string",
+                        "format": "decimal",
+                        "pattern": "^-?\\d{0,12}(?:\\.\\d{0,2})?$"
+                    },
+                    "taxable_value": {
+                        "type": "string",
+                        "format": "decimal",
+                        "pattern": "^-?\\d{0,12}(?:\\.\\d{0,2})?$"
+                    },
+                    "gst_rate": {
+                        "type": "string",
+                        "format": "decimal",
+                        "pattern": "^-?\\d{0,3}(?:\\.\\d{0,2})?$"
+                    },
+                    "cgst_amount": {
+                        "type": "string",
+                        "format": "decimal",
+                        "pattern": "^-?\\d{0,12}(?:\\.\\d{0,2})?$"
+                    },
+                    "sgst_amount": {
+                        "type": "string",
+                        "format": "decimal",
+                        "pattern": "^-?\\d{0,12}(?:\\.\\d{0,2})?$"
+                    },
+                    "igst_amount": {
+                        "type": "string",
+                        "format": "decimal",
+                        "pattern": "^-?\\d{0,12}(?:\\.\\d{0,2})?$"
+                    },
+                    "cess_amount": {
+                        "type": "string",
+                        "format": "decimal",
+                        "pattern": "^-?\\d{0,12}(?:\\.\\d{0,2})?$"
+                    },
+                    "line_total": {
+                        "type": "string",
+                        "format": "decimal",
+                        "pattern": "^-?\\d{0,12}(?:\\.\\d{0,2})?$"
+                    }
+                },
+                "required": [
+                    "boq_item_id",
+                    "catalog_item_id",
+                    "cess_amount",
+                    "cgst_amount",
+                    "description",
+                    "discount_amount",
+                    "gst_rate",
+                    "igst_amount",
+                    "line_no",
+                    "line_total",
+                    "prev_cumulative_qty",
+                    "quantity",
+                    "rate",
+                    "sac_hsn",
+                    "sgst_amount",
+                    "taxable_value",
+                    "unit",
+                    "up_to_date_qty"
                 ]
             },
             "Login": {
@@ -7809,6 +7981,24 @@
                 "type": "string",
                 "description": "* `BANK_TRANSFER` - Bank Transfer\n* `UPI` - Upi\n* `CHEQUE` - Cheque\n* `CASH` - Cash\n* `CARD` - Card\n* `OTHER` - Other"
             },
+            "PdfLink": {
+                "type": "object",
+                "properties": {
+                    "url": {
+                        "type": "string",
+                        "format": "uri",
+                        "description": "Short-lived link to the stored PDF."
+                    },
+                    "expires_in": {
+                        "type": "integer",
+                        "description": "Seconds the link stays valid."
+                    }
+                },
+                "required": [
+                    "expires_in",
+                    "url"
+                ]
+            },
             "Preview": {
                 "type": "object",
                 "properties": {
@@ -7824,8 +8014,7 @@
                     "lines": {
                         "type": "array",
                         "items": {
-                            "type": "object",
-                            "additionalProperties": {}
+                            "$ref": "#/components/schemas/PreviewLine"
                         }
                     }
                 },
@@ -7834,6 +8023,59 @@
                     "place_of_supply",
                     "supply_type",
                     "totals"
+                ]
+            },
+            "PreviewLine": {
+                "type": "object",
+                "properties": {
+                    "line_no": {
+                        "type": "integer"
+                    },
+                    "taxable_value": {
+                        "type": "string",
+                        "format": "decimal",
+                        "pattern": "^-?\\d{0,12}(?:\\.\\d{0,2})?$"
+                    },
+                    "cgst_amount": {
+                        "type": "string",
+                        "format": "decimal",
+                        "pattern": "^-?\\d{0,12}(?:\\.\\d{0,2})?$"
+                    },
+                    "sgst_amount": {
+                        "type": "string",
+                        "format": "decimal",
+                        "pattern": "^-?\\d{0,12}(?:\\.\\d{0,2})?$"
+                    },
+                    "igst_amount": {
+                        "type": "string",
+                        "format": "decimal",
+                        "pattern": "^-?\\d{0,12}(?:\\.\\d{0,2})?$"
+                    },
+                    "cess_amount": {
+                        "type": "string",
+                        "format": "decimal",
+                        "pattern": "^-?\\d{0,12}(?:\\.\\d{0,2})?$"
+                    },
+                    "line_total": {
+                        "type": "string",
+                        "format": "decimal",
+                        "pattern": "^-?\\d{0,12}(?:\\.\\d{0,2})?$"
+                    },
+                    "prev_cumulative_qty": {
+                        "type": "string",
+                        "format": "decimal",
+                        "pattern": "^-?\\d{0,11}(?:\\.\\d{0,3})?$",
+                        "description": "RA bill lines only."
+                    }
+                },
+                "required": [
+                    "cess_amount",
+                    "cgst_amount",
+                    "igst_amount",
+                    "line_no",
+                    "line_total",
+                    "sgst_amount",
+                    "taxable_value"
                 ]
             },
             "Project": {

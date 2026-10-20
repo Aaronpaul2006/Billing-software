@@ -374,3 +374,13 @@ def test_list_filters(w: World) -> None:
     assert types(book="NON_GST") == ["PROFORMA", "QUOTATION"]
     assert types(payment_state="UNPAID", status="DRAFT") == ["PROFORMA", "QUOTATION", "TAX_INVOICE"]
     assert types(doc_date_from="2026-10-20") == []
+
+
+def test_documents_carry_party_and_project_names(w: World) -> None:
+    w.create()
+    [row] = APIClient().get("/api/v1/documents", **w.h()).json()["results"]
+    assert (row["party_name"], row["project_name"]) == ("Skyline Developers", "VILLA-1")
+    with tenant_context(w.t.tenant_id, w.t.user_id):
+        Party.objects.filter(pk=w.client.pk).update(display_name="Skyline Renamed")
+    [row] = APIClient().get("/api/v1/documents", **w.h()).json()["results"]
+    assert row["party_name"] == "Skyline Renamed"  # a draft shows the current name

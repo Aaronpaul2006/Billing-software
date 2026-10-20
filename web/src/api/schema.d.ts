@@ -1664,8 +1664,11 @@ export interface components {
             gst_registration_id: string;
             /** Format: uuid */
             party_id: string;
+            /** @description As frozen at issue; the party's current name on drafts. */
+            readonly party_name: string;
             /** Format: uuid */
             project_id: string | null;
+            readonly project_name: string | null;
             readonly place_of_supply: string;
             readonly supply_type: components["schemas"]["SupplyTypeEnum"];
             readonly is_gst_document: boolean;
@@ -1681,9 +1684,7 @@ export interface components {
             readonly updated_at: string;
             readonly notes: string | null;
             readonly terms: string | null;
-            readonly lines: {
-                [key: string]: unknown;
-            }[];
+            readonly lines: components["schemas"]["LineOut"][];
         };
         DocumentAllocations: {
             /** Format: uuid */
@@ -1719,8 +1720,11 @@ export interface components {
             gst_registration_id: string;
             /** Format: uuid */
             party_id: string;
+            /** @description As frozen at issue; the party's current name on drafts. */
+            readonly party_name: string;
             /** Format: uuid */
             project_id: string | null;
+            readonly project_name: string | null;
             readonly place_of_supply: string;
             readonly supply_type: components["schemas"]["SupplyTypeEnum"];
             readonly is_gst_document: boolean;
@@ -2013,6 +2017,46 @@ export interface components {
             discount_amount?: string;
             /** Format: decimal */
             gst_rate?: string;
+        };
+        LineOut: {
+            readonly line_no: number;
+            /** Format: uuid */
+            catalog_item_id: string | null;
+            /** Format: uuid */
+            boq_item_id: string | null;
+            readonly description: string;
+            readonly sac_hsn: string | null;
+            readonly unit: string | null;
+            /**
+             * Format: decimal
+             * @description RA bill: the quantity in this bill.
+             */
+            quantity: string;
+            /**
+             * Format: decimal
+             * @description RA bill: billed before this bill (snapshot at issue).
+             */
+            prev_cumulative_qty: string | null;
+            /** @description RA bill: previous + this bill. */
+            readonly up_to_date_qty: string | null;
+            /** Format: decimal */
+            rate: string;
+            /** Format: decimal */
+            discount_amount: string;
+            /** Format: decimal */
+            taxable_value: string;
+            /** Format: decimal */
+            gst_rate: string;
+            /** Format: decimal */
+            cgst_amount: string;
+            /** Format: decimal */
+            sgst_amount: string;
+            /** Format: decimal */
+            igst_amount: string;
+            /** Format: decimal */
+            cess_amount: string;
+            /** Format: decimal */
+            line_total: string;
         };
         Login: {
             /** @default mobile */
@@ -2554,13 +2598,40 @@ export interface components {
          * @enum {string}
          */
         PaymentModeEnum: "BANK_TRANSFER" | "UPI" | "CHEQUE" | "CASH" | "CARD" | "OTHER";
+        PdfLink: {
+            /**
+             * Format: uri
+             * @description Short-lived link to the stored PDF.
+             */
+            url: string;
+            /** @description Seconds the link stays valid. */
+            expires_in: number;
+        };
         Preview: {
             place_of_supply: string;
             supply_type: string;
             totals: components["schemas"]["Totals"];
-            lines: {
-                [key: string]: unknown;
-            }[];
+            lines: components["schemas"]["PreviewLine"][];
+        };
+        PreviewLine: {
+            line_no: number;
+            /** Format: decimal */
+            taxable_value: string;
+            /** Format: decimal */
+            cgst_amount: string;
+            /** Format: decimal */
+            sgst_amount: string;
+            /** Format: decimal */
+            igst_amount: string;
+            /** Format: decimal */
+            cess_amount: string;
+            /** Format: decimal */
+            line_total: string;
+            /**
+             * Format: decimal
+             * @description RA bill lines only.
+             */
+            prev_cumulative_qty?: string;
         };
         Project: {
             /** Format: uuid */
@@ -4705,7 +4776,10 @@ export interface operations {
     };
     documents_pdf_retrieve: {
         parameters: {
-            query?: never;
+            query?: {
+                /** @description `link`: answer 200 {url, expires_in} instead of a 302, for clients that cannot read a cross-origin redirect (browsers). Issued only. */
+                as?: "link";
+            };
             header?: never;
             path: {
                 document_id: string;
@@ -4720,6 +4794,7 @@ export interface operations {
                 };
                 content: {
                     "application/pdf": string;
+                    "application/json": components["schemas"]["PdfLink"];
                 };
             };
             202: {

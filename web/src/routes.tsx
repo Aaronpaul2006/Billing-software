@@ -1,28 +1,37 @@
+import type { ComponentType } from "react";
 import type { RouteObject } from "react-router";
 
 import { RequireAuth } from "@/auth/RequireAuth";
-import { DashboardPage } from "@/features/dashboard/DashboardPage";
-import { PartiesPage } from "@/features/parties/PartiesPage";
-import { PartyFormPage } from "@/features/parties/PartyFormPage";
-import { BoqTab } from "@/features/projects/BoqTab";
-import {
-  NewProjectPage,
-  ProjectDetailsTab,
-  ProjectLayout,
-} from "@/features/projects/ProjectLayout";
-import { ProjectsPage } from "@/features/projects/ProjectsPage";
-import { ProgressTab } from "@/features/projects/ProgressTab";
-import { GstRegistrationsPage } from "@/features/settings/GstRegistrationsPage";
 import { AppShell } from "@/layout/AppShell";
-import { LoginPage } from "@/pages/LoginPage";
-import { MfaSetupPage } from "@/pages/MfaSetupPage";
 import { NotFoundPage, PlaceholderPage } from "@/pages/PlaceholderPage";
 
+/** Load a page's code when it is first opened (keeps the first download small). */
+function lazyPage<M>(load: () => Promise<M>, pick: (module: M) => ComponentType) {
+  return async () => ({ Component: pick(await load()) });
+}
+
+const projects = () => import("@/features/projects/ProjectLayout");
+const documents = () => import("@/features/documents/DocumentPage");
+
 export const routes: RouteObject[] = [
-  { path: "/login", element: <LoginPage /> },
+  {
+    path: "/login",
+    lazy: lazyPage(
+      () => import("@/pages/LoginPage"),
+      (m) => m.LoginPage,
+    ),
+  },
   {
     element: <RequireAuth enrolment />,
-    children: [{ path: "/mfa/setup", element: <MfaSetupPage /> }],
+    children: [
+      {
+        path: "/mfa/setup",
+        lazy: lazyPage(
+          () => import("@/pages/MfaSetupPage"),
+          (m) => m.MfaSetupPage,
+        ),
+      },
+    ],
   },
   {
     element: <RequireAuth />,
@@ -30,25 +39,101 @@ export const routes: RouteObject[] = [
       {
         element: <AppShell />,
         children: [
-          { index: true, element: <DashboardPage /> },
-          { path: "documents", element: <PlaceholderPage title="Invoices & quotes" /> },
+          {
+            index: true,
+            lazy: lazyPage(
+              () => import("@/features/dashboard/DashboardPage"),
+              (m) => m.DashboardPage,
+            ),
+          },
+          {
+            path: "documents",
+            lazy: lazyPage(
+              () => import("@/features/documents/DocumentsPage"),
+              (m) => m.DocumentsPage,
+            ),
+          },
+          {
+            path: "documents/new",
+            lazy: lazyPage(
+              () => import("@/features/documents/DocumentEditor"),
+              (m) => m.NewDocumentPage,
+            ),
+          },
+          { path: "documents/:documentId", lazy: lazyPage(documents, (m) => m.DocumentPage) },
+          {
+            path: "documents/:documentId/edit",
+            lazy: lazyPage(
+              () => import("@/features/documents/DocumentEditor"),
+              (m) => m.EditDocumentPage,
+            ),
+          },
           { path: "payments", element: <PlaceholderPage title="Payments" /> },
-          { path: "parties", element: <PartiesPage /> },
-          { path: "parties/new", element: <PartyFormPage /> },
-          { path: "parties/:partyId", element: <PartyFormPage /> },
-          { path: "projects", element: <ProjectsPage /> },
-          { path: "projects/new", element: <NewProjectPage /> },
+          {
+            path: "parties",
+            lazy: lazyPage(
+              () => import("@/features/parties/PartiesPage"),
+              (m) => m.PartiesPage,
+            ),
+          },
+          {
+            path: "parties/new",
+            lazy: lazyPage(
+              () => import("@/features/parties/PartyFormPage"),
+              (m) => m.PartyFormPage,
+            ),
+          },
+          {
+            path: "parties/:partyId",
+            lazy: lazyPage(
+              () => import("@/features/parties/PartyFormPage"),
+              (m) => m.PartyFormPage,
+            ),
+          },
+          {
+            path: "projects",
+            lazy: lazyPage(
+              () => import("@/features/projects/ProjectsPage"),
+              (m) => m.ProjectsPage,
+            ),
+          },
+          { path: "projects/new", lazy: lazyPage(projects, (m) => m.NewProjectPage) },
           {
             path: "projects/:projectId",
-            element: <ProjectLayout />,
+            lazy: lazyPage(projects, (m) => m.ProjectLayout),
             children: [
-              { index: true, element: <ProjectDetailsTab /> },
-              { path: "boq", element: <BoqTab /> },
-              { path: "progress", element: <ProgressTab /> },
+              { index: true, lazy: lazyPage(projects, (m) => m.ProjectDetailsTab) },
+              {
+                path: "boq",
+                lazy: lazyPage(
+                  () => import("@/features/projects/BoqTab"),
+                  (m) => m.BoqTab,
+                ),
+              },
+              {
+                path: "progress",
+                lazy: lazyPage(
+                  () => import("@/features/projects/ProgressTab"),
+                  (m) => m.ProgressTab,
+                ),
+              },
             ],
           },
           { path: "expenses", element: <PlaceholderPage title="Expenses" /> },
-          { path: "settings/gst-registrations", element: <GstRegistrationsPage /> },
+          {
+            path: "settings/gst-registrations",
+            lazy: lazyPage(
+              () => import("@/features/settings/GstRegistrationsPage"),
+              (m) => m.GstRegistrationsPage,
+            ),
+          },
+          {
+            path: "settings/series",
+            lazy: lazyPage(
+              () => import("@/features/settings/SeriesPage"),
+              (m) => m.SeriesPage,
+            ),
+          },
           { path: "*", element: <NotFoundPage /> },
         ],
       },
