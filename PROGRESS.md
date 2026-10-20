@@ -137,7 +137,7 @@ Full roadmap: `docs/01-architecture.md` §9.
 - Documents: cess is not exposed on lines yet (no stored cess rate); a document with a project must bill the project's client.
 - Tax engine: reverse-charge documents and real invoices checked by a CA are still to do; the GST-TDS ₹2.5 lakh contract threshold is left to the caller (project flag).
 - Expenses have no void reason column; the audit trail records who voided and when.
-- Uploads: only expenses take a file in the web app so far (documents, projects and payments could link files later; one file per expense). PENDING uploads never completed are purged after a day (L.4). Images are not resized or stripped of EXIF location data.
+- Uploads: only expenses take a file in the web app so far (documents, projects and payments could link files later; one file per expense). PENDING uploads never completed are purged after a day (L.4). The virus scan is tested against a fake clamd that speaks the real INSTREAM protocol; a run against real ClamAV is still to do (on 2026-10-21 Docker Desktop's image pull for `clamav/clamav:1.4.6` stalled: `docker compose --profile scan up -d clamav`, set `CLAMD_HOST=127.0.0.1`, upload a PDF containing the EICAR test string → QUARANTINED). Images are not resized or stripped of EXIF location data.
 - `auth_sessions` has a `tenant_id` column but no RLS, by design (global table, read only by id / token hash).
 - The app role has no privileges on `django_migrations`. `TransactionTestCase`-style flushes (TRUNCATE) will not work as the app role; concurrency tests in step 7 need their own setup/cleanup.
 - Until JWT lands (step 5), unauthenticated API calls get 403 `permission_denied`; step 5 makes them 401.
