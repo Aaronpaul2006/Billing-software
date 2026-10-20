@@ -1,4 +1,16 @@
-import { cleanMoneyInput, formatInr, formatQty, groupIndian, MONEY_INPUT } from "./money";
+import {
+  cleanMoneyInput,
+  compareMoney,
+  fillInOrder,
+  formatInr,
+  formatQty,
+  fromPaise,
+  groupIndian,
+  MONEY_INPUT,
+  subtractMoney,
+  sumMoney,
+  toPaise,
+} from "./money";
 
 describe("groupIndian", () => {
   it.each([
@@ -61,5 +73,41 @@ describe("money input", () => {
     expect(MONEY_INPUT.test("123456.50")).toBe(true);
     expect(MONEY_INPUT.test("1.505")).toBe(false);
     expect(MONEY_INPUT.test("-5")).toBe(false);
+  });
+});
+
+describe("exact paise arithmetic", () => {
+  it("parses and prints amounts exactly", () => {
+    expect(toPaise("1234.5")).toBe(123450n);
+    expect(toPaise("₹ 3,23,680.00")).toBe(32368000n);
+    expect(toPaise("0.1")).toBe(10n);
+    expect(toPaise("1.005")).toBeNull(); // no third decimal for money
+    expect(toPaise("abc")).toBeNull();
+    expect(fromPaise(32368000n)).toBe("323680.00");
+    expect(fromPaise(-5n)).toBe("-0.05");
+  });
+
+  it("adds without float errors", () => {
+    expect(sumMoney(["0.10", "0.20"])).toBe("0.30"); // 0.1 + 0.2 = 0.30000000000000004 in floats
+    expect(sumMoney(["99999999999.99", "0.01"])).toBe("100000000000.00");
+    expect(sumMoney(["", "5"])).toBe("5.00");
+    expect(sumMoney(["5", "x"])).toBeNull();
+    expect(subtractMoney("300000", "323680.00")).toBe("-23680.00");
+    expect(compareMoney("10.00", "9.99")).toBe(1);
+    expect(compareMoney("10", "10.00")).toBe(0);
+  });
+
+  it("fills the oldest first", () => {
+    expect(fillInOrder("400000", ["323680.00", "10600.00", "8024.00"])).toEqual([
+      "323680.00",
+      "10600.00",
+      "8024.00",
+    ]);
+    expect(fillInOrder("330000", ["323680.00", "10600.00", "8024.00"])).toEqual([
+      "323680.00",
+      "6320.00",
+      "",
+    ]);
+    expect(fillInOrder("0", ["5.00"])).toEqual([""]);
   });
 });

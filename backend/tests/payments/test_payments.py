@@ -304,3 +304,23 @@ def test_duplicate_allocation_race_maps_to_conflict() -> None:
     )
     assert isinstance(mapped, Conflict)
     assert mapped.code == "already_allocated"
+
+
+def test_payments_carry_names_and_open_documents_filter(m: Money) -> None:
+    paid = m.invoice()
+    m.invoice()
+    m.pay(
+        "323680.00",
+        [{"document_id": paid["id"], "amount": "323680.00"}],
+        project_id=str(m.project.pk),
+    )
+    [row] = APIClient().get("/api/v1/payments", **m.h()).json()["results"]
+    assert (row["party_name"], row["project_name"]) == ("Skyline Developers", "VILLA-1")
+    assert row["allocations"][0]["doc_number"] == paid["doc_number"]
+    open_docs = (
+        APIClient()
+        .get("/api/v1/documents", {"payment_state": "OPEN", "status": "ISSUED"}, **m.h())
+        .json()["results"]
+    )
+    assert len(open_docs) == 1  # the other invoice, still owed
+    assert paid["id"] not in {d["id"] for d in open_docs}

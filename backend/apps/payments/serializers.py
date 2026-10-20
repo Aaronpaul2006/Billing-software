@@ -1,6 +1,7 @@
 from decimal import Decimal
 from typing import Any
 
+from drf_spectacular.utils import extend_schema_field
 from rest_framework import serializers
 
 from apps.core.fields import MoneyField
@@ -81,7 +82,9 @@ class AllocationOutSerializer(serializers.ModelSerializer[Allocation]):
 
 class PaymentSerializer(serializers.ModelSerializer[Payment]):
     party_id = serializers.UUIDField()
+    party_name = serializers.CharField(source="party.display_name", read_only=True)
     project_id = serializers.UUIDField(allow_null=True)
+    project_name = serializers.CharField(source="project.name", allow_null=True, read_only=True)
     amount = MoneyField()
     allocated = serializers.SerializerMethodField()
     unallocated = serializers.SerializerMethodField()
@@ -93,7 +96,9 @@ class PaymentSerializer(serializers.ModelSerializer[Payment]):
             "id",
             "version",
             "party_id",
+            "party_name",
             "project_id",
+            "project_name",
             "payment_date",
             "amount",
             "mode",
@@ -118,6 +123,7 @@ class PaymentSerializer(serializers.ModelSerializer[Payment]):
             return "0.00"
         return f"{obj.amount - allocated_total(obj.pk):.2f}"
 
+    @extend_schema_field(AllocationOutSerializer(many=True))
     def get_allocations(self, obj: Payment) -> list[dict[str, Any]]:
         rows = Allocation.objects.filter(payment_id=obj.pk).order_by("created_at")
         return list(AllocationOutSerializer(rows, many=True).data)
@@ -205,6 +211,7 @@ class RetentionReleaseDetailSerializer(RetentionReleaseSerializer):
         fields = (*RetentionReleaseSerializer.Meta.fields, "allocations")
         read_only_fields = fields
 
+    @extend_schema_field(AllocationOutSerializer(many=True))
     def get_allocations(self, obj: RetentionRelease) -> list[dict[str, Any]]:
         rows = Allocation.objects.filter(retention_release_id=obj.pk).order_by("created_at")
         return list(AllocationOutSerializer(rows, many=True).data)

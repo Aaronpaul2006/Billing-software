@@ -50,3 +50,68 @@ export const MONEY_INPUT = /^\d{1,12}(\.\d{1,2})?$/;
 export function cleanMoneyInput(raw: string): string {
   return raw.replace(/[₹,\s]/g, "");
 }
+
+/*
+ * Exact arithmetic for the few sums the screen must show before the server
+ * answers (what is left to allocate). Amounts become whole paise as BigInt:
+ * no floats anywhere. The server still checks everything.
+ */
+
+const MONEY_STRICT = /^(-)?(\d+)(?:\.(\d{1,2}))?$/;
+
+/** "1234.5" -> 123450n paise; null for anything that is not an amount. */
+export function toPaise(amount: string): bigint | null {
+  const m = MONEY_STRICT.exec(cleanMoneyInput(amount));
+  if (!m) return null;
+  const [, sign, rupees = "0", paise = ""] = m;
+  const value = BigInt(rupees) * 100n + BigInt(paise.padEnd(2, "0"));
+  return sign ? -value : value;
+}
+
+/** 123450n -> "1234.50". */
+export function fromPaise(paise: bigint): string {
+  const sign = paise < 0n ? "-" : "";
+  const abs = paise < 0n ? -paise : paise;
+  return `${sign}${String(abs / 100n)}.${String(abs % 100n).padStart(2, "0")}`;
+}
+
+/** The sum of amounts; blanks count as zero, anything unreadable makes it null. */
+export function sumMoney(amounts: readonly string[]): string | null {
+  let total = 0n;
+  for (const a of amounts) {
+    if (a.trim() === "") continue;
+    const p = toPaise(a);
+    if (p === null) return null;
+    total += p;
+  }
+  return fromPaise(total);
+}
+
+/** a - b, or null if either is not an amount. */
+export function subtractMoney(a: string, b: string): string | null {
+  const x = toPaise(a);
+  const y = toPaise(b);
+  return x === null || y === null ? null : fromPaise(x - y);
+}
+
+/** Compare two amounts: -1, 0, 1 (null if either is not an amount). */
+export function compareMoney(a: string, b: string): -1 | 0 | 1 | null {
+  const x = toPaise(a);
+  const y = toPaise(b);
+  if (x === null || y === null) return null;
+  return x < y ? -1 : x > y ? 1 : 0;
+}
+
+/**
+ * Spread `available` over `owed` in order (oldest first): each gets
+ * min(owed, what is left). Returns the amounts as strings ("" for none).
+ */
+export function fillInOrder(available: string, owed: readonly string[]): string[] {
+  let left = toPaise(available) ?? 0n;
+  return owed.map((o) => {
+    const due = toPaise(o) ?? 0n;
+    const take = left <= 0n ? 0n : due < left ? due : left;
+    left -= take;
+    return take > 0n ? fromPaise(take) : "";
+  });
+}

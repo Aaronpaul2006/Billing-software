@@ -1004,12 +1004,13 @@
                         "schema": {
                             "type": "string",
                             "enum": [
+                                "OPEN",
                                 "PAID",
                                 "PARTIAL",
                                 "UNPAID"
                             ]
                         },
-                        "description": "* `UNPAID` - UNPAID\n* `PARTIAL` - PARTIAL\n* `PAID` - PAID"
+                        "description": "* `UNPAID` - UNPAID\n* `PARTIAL` - PARTIAL\n* `PAID` - PAID\n* `OPEN` - OPEN"
                     },
                     {
                         "in": "query",
@@ -7805,12 +7806,23 @@
                         "type": "string",
                         "format": "uuid"
                     },
+                    "party_name": {
+                        "type": "string",
+                        "readOnly": true
+                    },
                     "project_id": {
                         "type": [
                             "string",
                             "null"
                         ],
                         "format": "uuid"
+                    },
+                    "project_name": {
+                        "type": [
+                            "string",
+                            "null"
+                        ],
+                        "readOnly": true
                     },
                     "payment_date": {
                         "type": "string",
@@ -7863,8 +7875,7 @@
                     "allocations": {
                         "type": "array",
                         "items": {
-                            "type": "object",
-                            "additionalProperties": {}
+                            "$ref": "#/components/schemas/AllocationOut"
                         },
                         "readOnly": true
                     },
@@ -7903,8 +7914,10 @@
                     "mode",
                     "notes",
                     "party_id",
+                    "party_name",
                     "payment_date",
                     "project_id",
+                    "project_name",
                     "reference",
                     "status",
                     "unallocated",
@@ -8914,8 +8927,7 @@
                     "allocations": {
                         "type": "array",
                         "items": {
-                            "type": "object",
-                            "additionalProperties": {}
+                            "$ref": "#/components/schemas/AllocationOut"
                         },
                         "readOnly": true
                     }

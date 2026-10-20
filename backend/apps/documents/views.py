@@ -58,7 +58,7 @@ class DocumentFilter(django_filters.FilterSet):
     doc_date_to = django_filters.DateFilter(field_name="doc_date", lookup_expr="lte")
     due_date_to = django_filters.DateFilter(field_name="due_date", lookup_expr="lte")
     payment_state = django_filters.ChoiceFilter(
-        choices=[("UNPAID", "UNPAID"), ("PARTIAL", "PARTIAL"), ("PAID", "PAID")],
+        choices=[("UNPAID", "UNPAID"), ("PARTIAL", "PARTIAL"), ("PAID", "PAID"), ("OPEN", "OPEN")],
         method="filter_payment_state",
     )
     q = django_filters.CharFilter(field_name="doc_number", lookup_expr="icontains")
@@ -77,6 +77,8 @@ class DocumentFilter(django_filters.FilterSet):
             return qs.filter(amount_settled=0)
         if value == "PAID":
             return qs.filter(amount_settled__gte=F("net_receivable"), net_receivable__gt=0)
+        if value == "OPEN":  # anything still owed: unpaid or part paid
+            return qs.filter(amount_settled__lt=F("net_receivable"))
         return qs.filter(Q(amount_settled__gt=0) & Q(amount_settled__lt=F("net_receivable")))
 
 

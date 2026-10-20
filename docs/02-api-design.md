@@ -229,7 +229,9 @@ Document responses carry `party_name` (frozen at issue, the current name on draf
 ### List filters
 `doc_type`, `status`, `book=GST|NON_GST|ALL` (maps to `is_gst_document`),
 `party_id`, `project_id`, `is_ra_bill`, `doc_date_from/to`, `due_date_to`,
-`payment_state=UNPAID|PARTIAL|PAID`, `q`.
+`payment_state=UNPAID|PARTIAL|PAID|OPEN` (`OPEN`: anything still owed), `q`.
+List values are comma-separated (`doc_type=TAX_INVOICE,BILL_OF_SUPPLY`); `ordering`
+takes several fields (`doc_date,doc_number`).
 
 ### Create a draft
 ```http

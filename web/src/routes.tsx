@@ -68,7 +68,27 @@ export const routes: RouteObject[] = [
               (m) => m.EditDocumentPage,
             ),
           },
-          { path: "payments", element: <PlaceholderPage title="Payments" /> },
+          {
+            path: "payments",
+            lazy: lazyPage(
+              () => import("@/features/payments/PaymentsPage"),
+              (m) => m.PaymentsPage,
+            ),
+          },
+          {
+            path: "payments/new",
+            lazy: lazyPage(
+              () => import("@/features/payments/NewPaymentPage"),
+              (m) => m.NewPaymentPage,
+            ),
+          },
+          {
+            path: "payments/:paymentId",
+            lazy: lazyPage(
+              () => import("@/features/payments/PaymentPage"),
+              (m) => m.PaymentPage,
+            ),
+          },
           {
             path: "parties",
             lazy: lazyPage(

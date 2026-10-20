@@ -48,7 +48,7 @@ class PaymentListView(ActionAPIView):
     ordering_fields = ("payment_date", "amount")
 
     def get_queryset(self) -> Any:
-        return Payment.objects.all()
+        return Payment.objects.select_related("party", "project")  # names, one query
 
     @extend_schema(responses={200: PaymentSerializer(many=True)}, tags=["payments"])
     def get(self, request: Request) -> Response:

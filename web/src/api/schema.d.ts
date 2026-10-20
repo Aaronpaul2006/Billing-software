@@ -2550,8 +2550,10 @@ export interface components {
             readonly version: number;
             /** Format: uuid */
             party_id: string;
+            readonly party_name: string;
             /** Format: uuid */
             project_id: string | null;
+            readonly project_name: string | null;
             /** Format: date */
             readonly payment_date: string;
             /** Format: decimal */
@@ -2562,9 +2564,7 @@ export interface components {
             readonly status: components["schemas"]["RecordStatusEnum"];
             readonly allocated: string;
             readonly unallocated: string;
-            readonly allocations: {
-                [key: string]: unknown;
-            }[];
+            readonly allocations: components["schemas"]["AllocationOut"][];
             /** Format: date-time */
             readonly voided_at: string | null;
             readonly void_reason: string | null;
@@ -2960,9 +2960,7 @@ export interface components {
             readonly created_at: string;
             /** Format: date-time */
             readonly updated_at: string;
-            readonly allocations: {
-                [key: string]: unknown;
-            }[];
+            readonly allocations: components["schemas"]["AllocationOut"][];
         };
         /**
          * @description * `RELEASED` - Released
@@ -4453,8 +4451,9 @@ export interface operations {
                  * @description * `UNPAID` - UNPAID
                  *     * `PARTIAL` - PARTIAL
                  *     * `PAID` - PAID
+                 *     * `OPEN` - OPEN
                  */
-                payment_state?: "PAID" | "PARTIAL" | "UNPAID";
+                payment_state?: "OPEN" | "PAID" | "PARTIAL" | "UNPAID";
                 project_id?: string;
                 q?: string;
                 /** @description Multiple values may be separated by commas. */
