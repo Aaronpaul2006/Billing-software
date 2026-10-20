@@ -35,63 +35,6 @@ function ProgressBar({ pct }: { pct: string | null }) {
   );
 }
 
-function Retention({ projectId }: { projectId: string }) {
-  const retention = useQuery({
-    queryKey: ["retention", projectId],
-    queryFn: async () =>
-      unwrap(
-        await api.GET("/api/v1/projects/{project_id}/retention", {
-          params: { path: { project_id: projectId } },
-        }),
-      ),
-  });
-  if (retention.error) return <ErrorState error={retention.error} />;
-  const books = retention.data
-    ? ([
-        ["GST", retention.data.GST],
-        ["Non-GST", retention.data.NON_GST],
-      ] as const)
-    : [];
-  return (
-    <Card>
-      <CardHeader>
-        <CardTitle>
-          <h2>Retention</h2>
-        </CardTitle>
-        <CardDescription>Held back from your bills until the client releases it.</CardDescription>
-      </CardHeader>
-      <CardContent>
-        {!retention.data ? (
-          <Skeleton className="h-16 w-full" />
-        ) : (
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead>Book</TableHead>
-                <TableHead className="text-right">Deducted</TableHead>
-                <TableHead className="text-right">Released</TableHead>
-                <TableHead className="text-right">Still held</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {books.map(([label, b]) => (
-                <TableRow key={label}>
-                  <TableCell>{label}</TableCell>
-                  <TableCell className="text-right tabular-nums">{formatInr(b.deducted)}</TableCell>
-                  <TableCell className="text-right tabular-nums">{formatInr(b.released)}</TableCell>
-                  <TableCell className="text-right font-medium tabular-nums">
-                    {formatInr(b.available)}
-                  </TableCell>
-                </TableRow>
-              ))}
-            </TableBody>
-          </Table>
-        )}
-      </CardContent>
-    </Card>
-  );
-}
-
 export function ProgressTab() {
   const { project } = useProjectOutlet();
   const progress = useQuery({
@@ -180,7 +123,6 @@ export function ProgressTab() {
           )}
         </CardContent>
       </Card>
-      <Retention projectId={project.id} />
     </div>
   );
 }

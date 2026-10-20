@@ -22,7 +22,7 @@ class TdsCertificateListView(ActionAPIView):
     ordering_fields = ("fy_start_year", "quarter", "certificate_date")
 
     def get_queryset(self) -> Any:
-        return TdsCertificate.objects.all()
+        return TdsCertificate.objects.select_related("party")  # names, one query
 
     @extend_schema(responses={200: TdsCertificateSerializer(many=True)}, tags=["tds"])
     def get(self, request: Request) -> Response:

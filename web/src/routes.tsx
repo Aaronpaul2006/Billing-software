@@ -137,6 +137,13 @@ export const routes: RouteObject[] = [
                   (m) => m.ProgressTab,
                 ),
               },
+              {
+                path: "retention",
+                lazy: lazyPage(
+                  () => import("@/features/projects/RetentionTab"),
+                  (m) => m.RetentionTab,
+                ),
+              },
             ],
           },
           {
@@ -172,6 +179,27 @@ export const routes: RouteObject[] = [
             lazy: lazyPage(
               () => import("@/features/settings/GstRegistrationsPage"),
               (m) => m.GstRegistrationsPage,
+            ),
+          },
+          {
+            path: "settings/company",
+            lazy: lazyPage(
+              () => import("@/features/settings/CompanyPage"),
+              (m) => m.CompanyPage,
+            ),
+          },
+          {
+            path: "settings/members",
+            lazy: lazyPage(
+              () => import("@/features/settings/MembersPage"),
+              (m) => m.MembersPage,
+            ),
+          },
+          {
+            path: "tds-certificates",
+            lazy: lazyPage(
+              () => import("@/features/tds/TdsCertificatesPage"),
+              (m) => m.TdsCertificatesPage,
             ),
           },
           {

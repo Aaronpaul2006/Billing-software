@@ -41,6 +41,7 @@ class TdsCertificateWriteSerializer(serializers.Serializer[Any]):
 
 class TdsCertificateSerializer(serializers.ModelSerializer[TdsCertificate]):
     party_id = serializers.UUIDField()
+    party_name = serializers.CharField(source="party.display_name", read_only=True)
     amount_credited = MoneyField(allow_null=True)
     tds_amount = MoneyField()
 
@@ -50,6 +51,7 @@ class TdsCertificateSerializer(serializers.ModelSerializer[TdsCertificate]):
             "id",
             "version",
             "party_id",
+            "party_name",
             "deductor_tan",
             "section",
             "fy_start_year",

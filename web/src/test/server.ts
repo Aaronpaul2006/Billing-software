@@ -54,9 +54,10 @@ export function problem(status: number, code: string, detail = code) {
   );
 }
 
-/** Default: nobody is signed in (no refresh cookie). */
+/** Defaults: nobody is signed in (no refresh cookie); no pending invitations. */
 export const server = setupServer(
   http.post(`${API}/auth/token/refresh`, () => problem(401, "invalid_refresh_token")),
+  http.get(`${API}/invitations`, () => HttpResponse.json({ results: [] })),
 );
 
 export { http, HttpResponse };

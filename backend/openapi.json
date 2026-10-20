@@ -9236,6 +9236,10 @@
                         "type": "string",
                         "format": "uuid"
                     },
+                    "party_name": {
+                        "type": "string",
+                        "readOnly": true
+                    },
                     "deductor_tan": {
                         "type": "string",
                         "readOnly": true
@@ -9305,6 +9309,7 @@
                     "id",
                     "notes",
                     "party_id",
+                    "party_name",
                     "quarter",
                     "section",
                     "tds_amount",

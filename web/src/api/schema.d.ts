@@ -3085,6 +3085,7 @@ export interface components {
             readonly version: number;
             /** Format: uuid */
             party_id: string;
+            readonly party_name: string;
             readonly deductor_tan: string;
             readonly section: string;
             readonly fy_start_year: number;

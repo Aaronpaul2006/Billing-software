@@ -59,6 +59,7 @@ def test_record_correct_and_delete_a_certificate(t: Tds) -> None:
     r = t.certificate()
     assert r.status_code == 201, r.content
     cert = r.json()
+    assert cert["party_name"] == "Skyline Developers"
     assert (cert["deductor_tan"], cert["section"], cert["tds_amount"], r["ETag"]) == (
         TAN,
         "194C",

@@ -6,6 +6,7 @@ import { useForm, useWatch } from "react-hook-form";
 import { z } from "zod";
 
 import { api, newIdempotencyKey, unwrap } from "@/api/client";
+import { ApiError } from "@/api/problem";
 import type { components } from "@/api/schema";
 import { ErrorState } from "@/components/ErrorState";
 import { Field, TextField } from "@/components/FormField";
@@ -13,6 +14,7 @@ import { PageHeader } from "@/components/PageHeader";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
 import { NativeSelect } from "@/components/ui/native-select";
 import { Skeleton } from "@/components/ui/skeleton";
 import {
@@ -23,7 +25,7 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { applyServerErrors, blankToNull } from "@/lib/forms";
+import { applyServerErrors, blankToNull, ifMatch } from "@/lib/forms";
 import { GSTIN_PATTERN, STATE_OPTIONS, STATES } from "@/lib/india";
 
 type Create = components["schemas"]["GstRegistrationCreate"];
@@ -237,7 +239,121 @@ function AddRegistration({ first, onDone }: { first: boolean; onDone: () => void
   );
 }
 
+type Registration = components["schemas"]["GstRegistration"];
+
+/** GSTIN, type and state are fixed (register again to change them); the rest may change. */
+function EditRegistration({
+  registration,
+  onDone,
+}: {
+  registration: Registration;
+  onDone: () => void;
+}) {
+  const queryClient = useQueryClient();
+  const a = registration.address as Partial<Record<string, string>>;
+  const [legalName, setLegalName] = useState(registration.legal_name);
+  const [tradeName, setTradeName] = useState(registration.trade_name ?? "");
+  const [line1, setLine1] = useState(a.line1 ?? "");
+  const [city, setCity] = useState(a.city ?? "");
+  const [pincode, setPincode] = useState(a.pincode ?? "");
+  const [isDefault, setIsDefault] = useState(registration.is_default);
+  const [isActive, setIsActive] = useState(registration.is_active);
+  const [error, setError] = useState<string | null>(null);
+  const save = useMutation({
+    mutationFn: async () =>
+      unwrap(
+        await api.PATCH("/api/v1/gst-registrations/{registration_id}", {
+          params: { path: { registration_id: registration.id } },
+          body: {
+            legal_name: legalName.trim(),
+            trade_name: blankToNull(tradeName),
+            address: {
+              line1: line1.trim(),
+              city: city.trim(),
+              pincode: pincode.trim(),
+              state_code: registration.state_code as StateCode,
+            },
+            is_default: isDefault,
+            is_active: isActive,
+          },
+          headers: { "If-Match": ifMatch(registration.version) },
+        }),
+      ),
+    onSuccess: () => {
+      void queryClient.invalidateQueries({ queryKey: ["gst-registrations"] });
+      onDone();
+    },
+    onError: (e) => {
+      setError(
+        e instanceof ApiError && e.problem.errors?.length
+          ? e.problem.errors.map((x) => x.message).join(" ")
+          : e.message,
+      );
+    },
+  });
+  const text = (id: string, label: string, value: string, set: (v: string) => void) => (
+    <Field id={id} label={label}>
+      <Input
+        id={id}
+        value={value}
+        onChange={(e) => {
+          set(e.target.value);
+        }}
+      />
+    </Field>
+  );
+  return (
+    <form
+      aria-label={`Edit ${registration.gstin ?? registration.legal_name}`}
+      className="grid gap-3 sm:grid-cols-3"
+      onSubmit={(e) => {
+        e.preventDefault();
+        setError(null);
+        save.mutate();
+      }}
+    >
+      {text(`reg-${registration.id}-legal`, "Legal name", legalName, setLegalName)}
+      {text(`reg-${registration.id}-trade`, "Trade name", tradeName, setTradeName)}
+      {text(`reg-${registration.id}-line1`, "Address", line1, setLine1)}
+      {text(`reg-${registration.id}-city`, "City", city, setCity)}
+      {text(`reg-${registration.id}-pin`, "PIN code", pincode, setPincode)}
+      <div className="grid content-end gap-1 text-sm">
+        <label className="flex items-center gap-2">
+          <input
+            type="checkbox"
+            checked={isDefault}
+            onChange={(e) => {
+              setIsDefault(e.target.checked);
+            }}
+          />
+          Default
+        </label>
+        <label className="flex items-center gap-2">
+          <input
+            type="checkbox"
+            checked={isActive}
+            onChange={(e) => {
+              setIsActive(e.target.checked);
+            }}
+          />
+          Active
+        </label>
+      </div>
+      {error && <p className="text-destructive text-sm sm:col-span-3">{error}</p>}
+      <div className="flex gap-2 sm:col-span-3">
+        <Button type="submit" size="sm" disabled={save.isPending}>
+          Save
+        </Button>
+        <Button type="button" size="sm" variant="ghost" onClick={onDone}>
+          Cancel
+        </Button>
+      </div>
+    </form>
+  );
+}
+
 export function GstRegistrationsPage() {
+  const [editing, setEditing] = useState<string | null>(null);
   const [adding, setAdding] = useState(false);
   const registrations = useQuery({
     queryKey: ["gst-registrations", "all"],
@@ -291,26 +407,53 @@ export function GstRegistrationsPage() {
               <TableHead>
                 <span className="sr-only">Status</span>
               </TableHead>
+              <TableHead>
+                <span className="sr-only">Actions</span>
+              </TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
-            {rows.map((r) => (
-              <TableRow key={r.id}>
-                <TableCell className="font-mono">{r.gstin ?? "–"}</TableCell>
-                <TableCell>
-                  {r.legal_name}
-                  {r.trade_name && (
-                    <div className="text-muted-foreground text-xs">{r.trade_name}</div>
-                  )}
-                </TableCell>
-                <TableCell>{STATES[r.state_code] ?? r.state_code}</TableCell>
-                <TableCell>{TYPES.find((t) => t.value === r.registration_type)?.label}</TableCell>
-                <TableCell className="flex gap-1">
-                  {r.is_default && <Badge>Default</Badge>}
-                  {!r.is_active && <Badge variant="secondary">Inactive</Badge>}
-                </TableCell>
-              </TableRow>
-            ))}
+            {rows.map((r) =>
+              editing === r.id ? (
+                <TableRow key={r.id}>
+                  <TableCell colSpan={6}>
+                    <EditRegistration
+                      registration={r}
+                      onDone={() => {
+                        setEditing(null);
+                      }}
+                    />
+                  </TableCell>
+                </TableRow>
+              ) : (
+                <TableRow key={r.id}>
+                  <TableCell className="font-mono">{r.gstin ?? "–"}</TableCell>
+                  <TableCell>
+                    {r.legal_name}
+                    {r.trade_name && (
+                      <div className="text-muted-foreground text-xs">{r.trade_name}</div>
+                    )}
+                  </TableCell>
+                  <TableCell>{STATES[r.state_code] ?? r.state_code}</TableCell>
+                  <TableCell>{TYPES.find((t) => t.value === r.registration_type)?.label}</TableCell>
+                  <TableCell className="flex gap-1">
+                    {r.is_default && <Badge>Default</Badge>}
+                    {!r.is_active && <Badge variant="secondary">Inactive</Badge>}
+                  </TableCell>
+                  <TableCell className="text-right">
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => {
+                        setEditing(r.id);
+                      }}
+                    >
+                      Edit
+                    </Button>
+                  </TableCell>
+                </TableRow>
+              ),
+            )}
           </TableBody>
         </Table>
       )}

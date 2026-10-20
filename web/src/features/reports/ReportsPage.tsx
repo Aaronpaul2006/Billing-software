@@ -7,6 +7,7 @@ import type { components } from "@/api/schema";
 import { ErrorState } from "@/components/ErrorState";
 import { PageHeader } from "@/components/PageHeader";
 import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { NativeSelect } from "@/components/ui/native-select";
@@ -213,6 +214,11 @@ function TdsReconciliation() {
         certificates recorded. Overdue: the certificate was due 15 days after the client&apos;s
         quarterly return.
       </p>
+      <div>
+        <Button variant="outline" size="sm" asChild>
+          <Link to="/tds-certificates">Record or view certificates</Link>
+        </Button>
+      </div>
       {report.error ? (
         <ErrorState error={report.error} />
       ) : !report.data ? (

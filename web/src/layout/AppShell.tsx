@@ -6,12 +6,15 @@ import {
   FolderKanban,
   Hash,
   IndianRupee,
+  Landmark,
   LayoutDashboard,
   LogOut,
   Receipt,
   Settings,
+  UserCog,
   Users,
 } from "lucide-react";
+import type { LucideIcon } from "lucide-react";
 import { NavLink, Outlet } from "react-router";
 
 import { useMe } from "@/api/me";
@@ -28,6 +31,8 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { cn } from "@/lib/utils";
 
+import { InvitationsBanner } from "./InvitationsBanner";
+
 const NAV = [
   { to: "/", label: "Dashboard", icon: LayoutDashboard, end: true },
   { to: "/documents", label: "Invoices & quotes", icon: FileText },
@@ -36,9 +41,43 @@ const NAV = [
   { to: "/projects", label: "Projects", icon: FolderKanban },
   { to: "/expenses", label: "Expenses", icon: Receipt },
   { to: "/reports", label: "Reports", icon: BarChart3 },
-  { to: "/settings/gst-registrations", label: "GST registrations", icon: Settings },
+] as const;
+
+/** Business settings: OWNER and ADMIN only (the API refuses the others anyway). */
+const SETTINGS_NAV = [
+  { to: "/settings/company", label: "Company", icon: Settings },
+  { to: "/settings/members", label: "Members", icon: UserCog },
+  { to: "/settings/gst-registrations", label: "GST registrations", icon: Landmark },
   { to: "/settings/series", label: "Number series", icon: Hash },
 ] as const;
+
+function NavItem({
+  to,
+  label,
+  icon: Icon,
+  end,
+}: {
+  to: string;
+  label: string;
+  icon: LucideIcon;
+  end?: boolean;
+}) {
+  return (
+    <NavLink
+      to={to}
+      end={end}
+      className={({ isActive }) =>
+        cn(
+          "hover:bg-sidebar-accent flex items-center gap-2 rounded-md px-2 py-1.5 text-sm",
+          isActive && "bg-sidebar-accent text-sidebar-accent-foreground font-medium",
+        )
+      }
+    >
+      <Icon className="size-4" aria-hidden />
+      {label}
+    </NavLink>
+  );
+}
 
 function TenantSwitcher() {
   const session = useSession();
@@ -104,28 +143,25 @@ function UserMenu() {
 }
 
 export function AppShell() {
+  const session = useSession();
+  const manages = session.role === "OWNER" || session.role === "ADMIN";
   return (
     <div className="flex min-h-svh">
       <aside className="bg-sidebar text-sidebar-foreground border-sidebar-border hidden w-60 shrink-0 flex-col border-r p-3 md:flex">
         <TenantSwitcher />
         <nav className="mt-4 grid gap-1" aria-label="Main">
-          {NAV.map(({ to, label, icon: Icon, ...rest }) => (
-            <NavLink
-              key={to}
-              to={to}
-              end={"end" in rest}
-              className={({ isActive }) =>
-                cn(
-                  "hover:bg-sidebar-accent flex items-center gap-2 rounded-md px-2 py-1.5 text-sm",
-                  isActive && "bg-sidebar-accent text-sidebar-accent-foreground font-medium",
-                )
-              }
-            >
-              <Icon className="size-4" aria-hidden />
-              {label}
-            </NavLink>
+          {NAV.map((item) => (
+            <NavItem key={item.to} {...item} />
           ))}
         </nav>
+        {manages && (
+          <nav className="mt-6 grid gap-1" aria-label="Settings">
+            <p className="text-muted-foreground px-2 text-xs font-medium">Settings</p>
+            {SETTINGS_NAV.map((item) => (
+              <NavItem key={item.to} {...item} />
+            ))}
+          </nav>
+        )}
         <div className="mt-auto">
           <UserMenu />
         </div>
@@ -134,6 +170,7 @@ export function AppShell() {
         <header className="flex items-center gap-2 border-b p-2 md:hidden">
           <TenantSwitcher />
         </header>
+        <InvitationsBanner />
         <main className="flex-1 p-4 md:p-6">
           <Outlet />
         </main>

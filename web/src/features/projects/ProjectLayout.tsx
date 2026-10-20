@@ -15,6 +15,7 @@ const TABS = [
   { to: "", label: "Details", end: true },
   { to: "boq", label: "BOQ", end: false },
   { to: "progress", label: "Progress", end: false },
+  { to: "retention", label: "Retention", end: false },
 ] as const;
 
 export function ProjectLayout() {

@@ -6,12 +6,15 @@ import { useForm, useWatch } from "react-hook-form";
 import { z } from "zod";
 
 import { api, newIdempotencyKey, unwrap } from "@/api/client";
+import { ApiError } from "@/api/problem";
+import type { components } from "@/api/schema";
 import { ErrorState } from "@/components/ErrorState";
 import { Field, TextField } from "@/components/FormField";
 import { PageHeader } from "@/components/PageHeader";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
 import { NativeSelect } from "@/components/ui/native-select";
 import { Skeleton } from "@/components/ui/skeleton";
 import {
@@ -26,7 +29,7 @@ import { fyStartYear } from "@/features/dashboard/periods";
 import { DOC_TYPE_LABELS } from "@/features/documents/api";
 import type { DocType } from "@/features/documents/api";
 import { useRegistrations } from "@/features/projects/api";
-import { applyServerErrors } from "@/lib/forms";
+import { applyServerErrors, ifMatch } from "@/lib/forms";
 
 const PREFIX_SUGGESTIONS: Record<DocType, string> = {
   TAX_INVOICE: "INV/",
@@ -215,7 +218,110 @@ function AddSeries({ onDone }: { onDone: () => void }) {
   );
 }
 
+type Series = components["schemas"]["DocumentSeries"];
+
+function EditSeries({ series, onDone }: { series: Series; onDone: () => void }) {
+  const queryClient = useQueryClient();
+  const [prefix, setPrefix] = useState(series.prefix);
+  const [next, setNext] = useState(String(series.next_number));
+  const [pad, setPad] = useState(String(series.pad_width));
+  const [active, setActive] = useState(series.is_active);
+  const [error, setError] = useState<string | null>(null);
+  const save = useMutation({
+    mutationFn: async () =>
+      unwrap(
+        await api.PATCH("/api/v1/document-series/{series_id}", {
+          params: { path: { series_id: series.id } },
+          body: { prefix, next_number: Number(next), pad_width: Number(pad), is_active: active },
+          headers: { "If-Match": ifMatch(series.version) },
+        }),
+      ),
+    onSuccess: () => {
+      void queryClient.invalidateQueries({ queryKey: ["document-series"] });
+      onDone();
+    },
+    onError: (e) => {
+      setError(
+        e instanceof ApiError && e.problem.errors?.length
+          ? e.problem.errors.map((x) => x.message).join(" ")
+          : e.message,
+      );
+    },
+  });
+  return (
+    <form
+      aria-label={`Edit series ${series.next_doc_number}`}
+      className="grid gap-3 sm:grid-cols-4"
+      onSubmit={(e) => {
+        e.preventDefault();
+        setError(null);
+        if (!/^[1-9]\d{0,7}$/.test(next) || !/^[1-8]$/.test(pad)) {
+          setError("Next number from 1; digits 1 to 8.");
+          return;
+        }
+        save.mutate();
+      }}
+    >
+      <Field id={`series-${series.id}-prefix`} label="Prefix">
+        <Input
+          id={`series-${series.id}-prefix`}
+          className="font-mono"
+          value={prefix}
+          onChange={(e) => {
+            setPrefix(e.target.value);
+          }}
+        />
+      </Field>
+      <Field id={`series-${series.id}-next`} label="Next number">
+        <Input
+          id={`series-${series.id}-next`}
+          inputMode="numeric"
+          value={next}
+          onChange={(e) => {
+            setNext(e.target.value);
+          }}
+        />
+      </Field>
+      <Field id={`series-${series.id}-pad`} label="Digits">
+        <Input
+          id={`series-${series.id}-pad`}
+          inputMode="numeric"
+          maxLength={1}
+          value={pad}
+          onChange={(e) => {
+            setPad(e.target.value);
+          }}
+        />
+      </Field>
+      <label className="flex items-end gap-2 pb-2 text-sm">
+        <input
+          type="checkbox"
+          checked={active}
+          onChange={(e) => {
+            setActive(e.target.checked);
+          }}
+        />
+        Active
+      </label>
+      <p className="text-sm sm:col-span-4">
+        Next: <strong className="font-mono">{sampleNumber(prefix, next, pad)}</strong>. Prefix and
+        digits lock once a document has used the series.
+      </p>
+      {error && <p className="text-destructive text-sm sm:col-span-4">{error}</p>}
+      <div className="flex gap-2 sm:col-span-4">
+        <Button type="submit" size="sm" disabled={save.isPending}>
+          Save
+        </Button>
+        <Button type="button" size="sm" variant="ghost" onClick={onDone}>
+          Cancel
+        </Button>
+      </div>
+    </form>
+  );
+}
+
 export function SeriesPage() {
+  const [editing, setEditing] = useState<string | null>(null);
   const [adding, setAdding] = useState(false);
   const registrations = useRegistrations();
   const series = useQuery({
@@ -276,19 +382,43 @@ export function SeriesPage() {
             </TableRow>
           </TableHeader>
           <TableBody>
-            {rows.map((s) => (
-              <TableRow key={s.id}>
-                <TableCell>{DOC_TYPE_LABELS[s.doc_type]}</TableCell>
-                <TableCell className="font-mono text-xs">
-                  {regName(s.gst_registration_id)}
-                </TableCell>
-                <TableCell>
-                  {s.fy_start_year}–{String(s.fy_start_year + 1).slice(2)}
-                </TableCell>
-                <TableCell className="font-mono">{s.next_doc_number}</TableCell>
-                <TableCell>{!s.is_active && <Badge variant="secondary">Inactive</Badge>}</TableCell>
-              </TableRow>
-            ))}
+            {rows.map((s) =>
+              editing === s.id ? (
+                <TableRow key={s.id}>
+                  <TableCell colSpan={5}>
+                    <EditSeries
+                      series={s}
+                      onDone={() => {
+                        setEditing(null);
+                      }}
+                    />
+                  </TableCell>
+                </TableRow>
+              ) : (
+                <TableRow key={s.id}>
+                  <TableCell>{DOC_TYPE_LABELS[s.doc_type]}</TableCell>
+                  <TableCell className="font-mono text-xs">
+                    {regName(s.gst_registration_id)}
+                  </TableCell>
+                  <TableCell>
+                    {s.fy_start_year}–{String(s.fy_start_year + 1).slice(2)}
+                  </TableCell>
+                  <TableCell className="font-mono">{s.next_doc_number}</TableCell>
+                  <TableCell className="text-right">
+                    {!s.is_active && <Badge variant="secondary">Inactive</Badge>}
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => {
+                        setEditing(s.id);
+                      }}
+                    >
+                      Edit
+                    </Button>
+                  </TableCell>
+                </TableRow>
+              ),
+            )}
           </TableBody>
         </Table>
       )}

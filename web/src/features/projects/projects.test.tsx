@@ -315,7 +315,7 @@ describe("project page", () => {
     expect(calls[2]?.key).not.toBe(calls[1]?.key); // checking and importing are different actions
   });
 
-  it("shows progress against the BOQ and the retention held", async () => {
+  it("shows progress against the BOQ", async () => {
     common();
     server.use(
       http.get(`${API}/projects/${PID}/boq-progress`, () =>
@@ -339,17 +339,81 @@ describe("project page", () => {
           totals: { contract_value: "680000.00", billed_value: "289000.00", progress_pct: "42.50" },
         }),
       ),
-      http.get(`${API}/projects/${PID}/retention`, () =>
-        HttpResponse.json({
-          project_id: PID,
-          GST: { deducted: "14450.00", released: "0.00", available: "14450.00" },
-          NON_GST: { deducted: "0.00", released: "0.00", available: "0.00" },
-        }),
-      ),
     );
     renderSignedIn(`/projects/${PID}/progress`);
     expect(await screen.findByText("57.5")).toBeInTheDocument();
     expect(screen.getAllByText("42.5 %")).toHaveLength(2);
-    expect(screen.getAllByText("₹14,450.00")).toHaveLength(2);
+  });
+
+  it("retention: what is held, recording a release and cancelling one", async () => {
+    common();
+    let releases = [
+      {
+        id: "rel1",
+        version: 1,
+        project_id: PID,
+        party_id: CLIENT,
+        book: "GST",
+        release_date: "2026-11-05",
+        due_date: null,
+        amount: "5000.00",
+        amount_settled: "0.00",
+        outstanding: "5000.00",
+        reference: "SKY/RET/1",
+        notes: null,
+        status: "RELEASED",
+        cancelled_at: null,
+        cancel_reason: null,
+        created_at: "",
+        updated_at: "",
+      },
+    ];
+    const calls: string[] = [];
+    server.use(
+      http.get(`${API}/projects/${PID}/retention`, () =>
+        HttpResponse.json({
+          project_id: PID,
+          GST: { deducted: "28900.00", released: "5000.00", available: "23900.00" },
+          NON_GST: { deducted: "0.00", released: "0.00", available: "0.00" },
+        }),
+      ),
+      http.get(`${API}/retention-releases`, () =>
+        HttpResponse.json({ results: releases, next_cursor: null }),
+      ),
+      http.post(`${API}/retention-releases`, async ({ request }) => {
+        calls.push(`create ${JSON.stringify(await request.json())}`);
+        return HttpResponse.json({}, { status: 201 });
+      }),
+      http.post(`${API}/retention-releases/rel1/cancel`, async ({ request }) => {
+        calls.push(
+          `cancel ${request.headers.get("If-Match") ?? ""} ${JSON.stringify(await request.json())}`,
+        );
+        releases = releases.map((r) => ({ ...r, status: "CANCELLED", outstanding: "0.00" }));
+        return HttpResponse.json(releases[0]);
+      }),
+    );
+    const user = userEvent.setup();
+    renderSignedIn(`/projects/${PID}/retention`);
+    expect(await screen.findByText("₹23,900.00")).toBeInTheDocument(); // still held
+    expect(screen.getByText("SKY/RET/1")).toBeInTheDocument();
+
+    await user.click(screen.getByRole("button", { name: "Record release" }));
+    const form = screen.getByRole("form", { name: "New retention release" });
+    await user.type(within(form).getByLabelText("Amount released (₹)"), "10,000");
+    await user.type(within(form).getByLabelText("Reference"), "SKY/RET/2");
+    await user.click(within(form).getByRole("button", { name: "Record release" }));
+    await waitFor(() => {
+      expect(calls[0]).toContain('"amount":"10000"');
+    });
+    expect(calls[0]).toContain('"book":"GST"');
+    expect(calls[0]).toContain('"reference":"SKY/RET/2"');
+
+    await user.click(screen.getByRole("button", { name: "Cancel…" }));
+    await user.type(screen.getByLabelText("Reason"), "Client withdrew");
+    await user.click(screen.getByRole("button", { name: "Cancel release" }));
+    await waitFor(() => {
+      expect(calls[1]).toBe('cancel "v1" {"reason":"Client withdrew"}');
+    });
+    expect(await screen.findByText("Cancelled")).toBeInTheDocument();
   });
 });
