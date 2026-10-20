@@ -571,6 +571,32 @@ CREATE TABLE expenses (
 CREATE INDEX expenses_project_idx ON expenses (tenant_id, project_id, expense_date DESC);
 CREATE INDEX expenses_date_idx    ON expenses (tenant_id, expense_date DESC);
 
+-- Income-tax TDS certificates (Form 16A) received from clients, to reconcile
+-- with the TDS deducted on our bills. A record of the client's paper, not a
+-- posting of ours: it may be corrected or deleted (audited).
+CREATE TABLE tds_certificates (
+  id                  uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+  tenant_id           uuid NOT NULL REFERENCES tenants (id),
+  party_id            uuid NOT NULL,                       -- the deductor (our client)
+  deductor_tan        text NOT NULL CHECK (deductor_tan ~ '^[A-Z]{4}[0-9]{5}[A-Z]$'),
+  section             text NOT NULL DEFAULT '194C' CHECK (section ~ '^19[0-9]{1,2}[A-Z]{0,3}$'),
+  fy_start_year       smallint NOT NULL CHECK (fy_start_year BETWEEN 2000 AND 2100),
+  quarter             smallint NOT NULL CHECK (quarter BETWEEN 1 AND 4),
+  certificate_number  text NOT NULL CHECK (certificate_number ~ '^[A-Za-z0-9/-]{1,20}$'),
+  certificate_date    date,
+  amount_credited     numeric(14,2) CHECK (amount_credited >= 0),   -- as the certificate states
+  tds_amount          numeric(14,2) NOT NULL CHECK (tds_amount >= 0),
+  notes               text CHECK (char_length(notes) <= 2000),
+  version             integer NOT NULL DEFAULT 1,
+  created_by          uuid NOT NULL REFERENCES users (id),
+  created_at          timestamptz NOT NULL DEFAULT now(),
+  updated_at          timestamptz NOT NULL DEFAULT now(),
+  UNIQUE (tenant_id, id),
+  UNIQUE (tenant_id, deductor_tan, certificate_number),
+  FOREIGN KEY (tenant_id, party_id) REFERENCES parties (tenant_id, id)
+);
+CREATE INDEX tds_certificates_party_idx ON tds_certificates (tenant_id, party_id, fy_start_year, quarter);
+
 -- =============================================================================
 -- 6. Infrastructure tables
 -- =============================================================================
@@ -839,7 +865,7 @@ BEGIN
   FOREACH t IN ARRAY ARRAY[
     'tenants', 'memberships', 'gst_registrations', 'parties', 'projects', 'boq_items',
     'catalog_items', 'attachments', 'document_series', 'documents', 'document_lines',
-    'payments', 'allocations', 'expenses', 'retention_releases']
+    'payments', 'allocations', 'expenses', 'retention_releases', 'tds_certificates']
   LOOP
     EXECUTE format(
       'CREATE TRIGGER audit AFTER INSERT OR UPDATE OR DELETE ON %I FOR EACH ROW EXECUTE FUNCTION audit_row_change()', t);
@@ -858,7 +884,7 @@ BEGIN
   FOREACH t IN ARRAY ARRAY[
     'gst_registrations', 'parties', 'projects', 'boq_items', 'catalog_items', 'attachments',
     'document_series', 'documents', 'document_lines', 'payments', 'allocations', 'expenses',
-    'retention_releases', 'idempotency_keys']
+    'retention_releases', 'tds_certificates', 'idempotency_keys']
   LOOP
     EXECUTE format('ALTER TABLE %I ENABLE ROW LEVEL SECURITY', t);
     EXECUTE format('ALTER TABLE %I FORCE ROW LEVEL SECURITY', t);
@@ -1026,7 +1052,7 @@ GRANT SELECT, INSERT, UPDATE ON ALL TABLES IN SCHEMA public TO billing_app;
 -- Hard deletes only where they are part of the design (drafts, unwinding
 -- allocations, editable masters, housekeeping). Everything else is
 -- cancelled / voided / archived instead.
-GRANT DELETE ON documents, document_lines, allocations, boq_items, catalog_items,
+GRANT DELETE ON documents, document_lines, allocations, boq_items, catalog_items, tds_certificates,
                 idempotency_keys, auth_sessions TO billing_app;
 -- Audit rows are written only by the trigger.
 REVOKE INSERT, UPDATE, DELETE ON audit_log FROM billing_app;

@@ -17,4 +17,9 @@ urlpatterns = [
         name="report-project",
     ),
     path("reports/gst-summary", views.GstSummaryView.as_view(), name="report-gst-summary"),
+    path(
+        "reports/tds-reconciliation",
+        views.TdsReconciliationView.as_view(),
+        name="report-tds-reconciliation",
+    ),
 ]

@@ -414,6 +414,26 @@ POST /api/v1/retention-releases
   report (`retention_held` = deducted − released, `retention_released`);
   payments allocated to them count as collected in their book.
 
+### TDS certificates (Phase 3.4)
+
+Income-tax TDS (s.194C) deducted by clients is certified quarterly on Form
+16A. Record each certificate and reconcile it against the TDS on our bills
+(`GET /reports/tds-reconciliation`, §8).
+
+| Method & path | Purpose | Permission |
+|---|---|---|
+| `GET/POST /tds-certificates` | List (`party_id`, `fy_start_year`, `quarter`, `deductor_tan`); record (idempotent) | read / record payments |
+| `GET/PATCH/DELETE /tds-certificates/{id}` | Correct (`If-Match`) or delete a wrong entry (audited) | read / record payments |
+
+Fields: `party_id` (the client, a customer), `deductor_tan` (upper-cased,
+`422 invalid_tan`), `section` (default `194C`), `fy_start_year` (2026 = FY
+2026-27), `quarter` (1 = Apr-Jun ... 4 = Jan-Mar), `certificate_number`
+(unique per TAN: `409 certificate_exists`), `certificate_date`,
+`amount_credited`, `tds_amount`, `notes`. A certificate records the client's
+paper, not a posting of ours, so unlike documents it may be edited or
+deleted. GST TDS (s.51) is not reconciled yet: it is deducted at payment, not
+at billing.
+
 ---
 
 ## 7. Files
@@ -440,6 +460,7 @@ VIEWER; site engineers get 403). Period reports accept `from`, `to`
 | `GET /reports/billing-by-month` | Series for charts, split by book |
 | `GET /reports/receivables` | Outstanding by party with ageing buckets (not due / 1–30 / 31–60 / 61–90 / 90+ days past due), plus `totals`; `book` only |
 | `GET /reports/projects` · `GET /reports/projects/{id}` | Contract value vs billed, retention held, TDS deducted, advance recovered, outstanding, cost → margin |
+| `GET /reports/tds-reconciliation?fy=2026` | Per client and quarter: income-tax TDS on issued tax invoices / bills of supply (by bill date) vs Form 16A certificates recorded; `difference`, `status` (`MATCHED`, `SHORT`, `EXCESS`, `NOT_RECEIVED`), `certificate_due` (15 Aug / 15 Nov / 15 Feb / 15 Jun) and `overdue`; optional `party_id`; `fy` defaults to this FY |
 | `GET /reports/gst-summary?period=2026-10` | GST documents' outward supplies by B2B/B2C and rate, CGST/SGST/IGST/cess, plus `totals` (basis for GSTR-1/3B) |
 | `POST /exports` · `GET /exports/{id}` | Async CSV/XLSX/GSTR-1 JSON export; download via presigned URL *(not built yet)* |
 

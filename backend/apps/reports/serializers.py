@@ -128,3 +128,44 @@ class GstRowSerializer(serializers.Serializer[Any]):
     sgst = MoneyField()
     igst = MoneyField()
     cess = MoneyField()
+
+
+# --- TDS reconciliation (Phase 3.4) ------------------------------------------------------
+
+
+class TdsParamsSerializer(serializers.Serializer[Any]):
+    fy = serializers.IntegerField(
+        min_value=2000,
+        max_value=2100,
+        required=False,
+        help_text="2026 = FY 2026-27; default: this FY.",
+    )
+    party_id = serializers.UUIDField(required=False)
+
+
+class TdsRowSerializer(serializers.Serializer[Any]):
+    party_id = serializers.UUIDField()
+    display_name = serializers.CharField()
+    quarter = serializers.IntegerField()
+    deductor_tans = serializers.CharField(allow_null=True)
+    bill_count = serializers.IntegerField()
+    taxable_value = MoneyField(help_text="Of the bills with TDS in the quarter.")
+    expected = MoneyField(help_text="TDS deducted on our issued bills.")
+    certificate_count = serializers.IntegerField()
+    certified = MoneyField(help_text="TDS as the Form 16A certificates state.")
+    difference = MoneyField(help_text="certified - expected")
+    status = serializers.ChoiceField(choices=["MATCHED", "SHORT", "EXCESS", "NOT_RECEIVED"])
+    certificate_due = serializers.DateField(help_text="Form 16A is due 15 days after the return.")
+    overdue = serializers.BooleanField()
+
+
+class TdsTotalsSerializer(serializers.Serializer[Any]):
+    expected = MoneyField()
+    certified = MoneyField()
+    difference = MoneyField()
+
+
+class TdsReconciliationSerializer(serializers.Serializer[Any]):
+    fy_start_year = serializers.IntegerField()
+    results = TdsRowSerializer(many=True)
+    totals = TdsTotalsSerializer()

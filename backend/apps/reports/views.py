@@ -5,9 +5,11 @@ strings. The mobile app uses the same endpoints and permissions.
 """
 
 import uuid
+from datetime import date
 from decimal import Decimal
 from typing import Any
 
+from django.utils import timezone
 from drf_spectacular.utils import OpenApiParameter, extend_schema
 from rest_framework.request import Request
 from rest_framework.response import Response
@@ -26,6 +28,9 @@ from .serializers import (
     ReceivableSerializer,
     ReportTotalsSerializer,
     SummarySerializer,
+    TdsParamsSerializer,
+    TdsReconciliationSerializer,
+    fy_start,
     previous_period,
 )
 
@@ -148,4 +153,49 @@ class GstSummaryView(ReportView):
                 "results": GstRowSerializer(rows, many=True).data,
                 "totals": {k: f"{v:.2f}" for k, v in totals.items()},
             }
+        )
+
+
+# Form 16A: 15 days after the quarterly TDS return is due (31 Jul, 31 Oct, 31 Jan, 31 May).
+CERTIFICATE_DUE = {1: (0, 8, 15), 2: (0, 11, 15), 3: (1, 2, 15), 4: (1, 6, 15)}
+
+
+def tds_status(difference: Decimal, certified: Decimal) -> str:
+    if difference == 0:
+        return "MATCHED"
+    if certified == 0:
+        return "NOT_RECEIVED"
+    return "SHORT" if difference < 0 else "EXCESS"
+
+
+class TdsReconciliationView(ReportView):
+    @extend_schema(
+        parameters=[TdsParamsSerializer],
+        responses={200: TdsReconciliationSerializer},
+        tags=["reports"],
+    )
+    def get(self, request: Request) -> Response:
+        params = TdsParamsSerializer(data=request.query_params)
+        params.is_valid(raise_exception=True)
+        today = timezone.localdate()
+        fy = params.validated_data.get("fy") or fy_start(today).year
+        rows = queries.tds_reconciliation(
+            self.principal.tenant_id, fy, params.validated_data.get("party_id")
+        )
+        for row in rows:
+            row["difference"] = row["certified"] - row["expected"]
+            row["status"] = tds_status(row["difference"], row["certified"])
+            years, month, day = CERTIFICATE_DUE[row["quarter"]]
+            row["certificate_due"] = date(fy + years, month, day)
+            row["overdue"] = (
+                row["status"] in ("SHORT", "NOT_RECEIVED") and today > row["certificate_due"]
+            )
+        totals = {
+            k: sum((r[k] for r in rows), Decimal("0.00"))
+            for k in ("expected", "certified", "difference")
+        }
+        return Response(
+            TdsReconciliationSerializer(
+                {"fy_start_year": fy, "results": rows, "totals": totals}
+            ).data
         )

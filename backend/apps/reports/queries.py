@@ -164,3 +164,57 @@ def gst_summary(tenant: uuid.UUID, start: date, end: date) -> list[dict[str, Any
              GROUP BY 1, 2 ORDER BY 1, 2""",  # noqa: S608
         [tenant, start, end],
     )
+
+
+# Indian financial-year quarter of a date: Apr-Jun 1, Jul-Sep 2, Oct-Dec 3, Jan-Mar 4.
+FY_QUARTER_SQL = (
+    "((extract(month FROM d.doc_date)::int + 8) %% 12) / 3 + 1"  # %% : placeholder escape
+)
+
+
+def tds_reconciliation(
+    tenant: uuid.UUID, fy_start_year: int, party: uuid.UUID | None = None
+) -> list[dict[str, Any]]:
+    """Per client and quarter: income-tax TDS expected from our issued bills
+    (by bill date: s.194C deducts when the client books the bill) against
+    the TDS certificates (Form 16A) recorded."""
+    party_sql = "AND d.party_id = %s" if party else ""
+    cert_party_sql = "AND c.party_id = %s" if party else ""
+    params: list[Any] = [tenant, fy_start_year, *([party] if party else [])]
+    params += [tenant, fy_start_year, *([party] if party else []), tenant]
+    return _rows(
+        f"""WITH expected AS (
+              SELECT d.party_id, {FY_QUARTER_SQL} AS quarter,
+                     count(*)::int AS bill_count,
+                     sum(d.subtotal) AS taxable_value,
+                     sum(d.income_tax_tds_amount) AS expected
+                FROM documents d
+               WHERE d.tenant_id = %s AND d.status = 'ISSUED'
+                 AND d.doc_type IN ('TAX_INVOICE', 'BILL_OF_SUPPLY')
+                 AND d.income_tax_tds_amount > 0
+                 AND d.fy_start_year = %s {party_sql}
+               GROUP BY 1, 2
+            ), certified AS (
+              SELECT c.party_id, c.quarter::int AS quarter,
+                     count(*)::int AS certificate_count,
+                     sum(c.tds_amount) AS certified,
+                     string_agg(DISTINCT c.deductor_tan, ', ') AS deductor_tans
+                FROM tds_certificates c
+               WHERE c.tenant_id = %s AND c.fy_start_year = %s {cert_party_sql}
+               GROUP BY 1, 2
+            )
+            SELECT coalesce(e.party_id, c.party_id) AS party_id, p.display_name,
+                   coalesce(e.quarter, c.quarter) AS quarter,
+                   coalesce(e.bill_count, 0) AS bill_count,
+                   coalesce(e.taxable_value, 0) AS taxable_value,
+                   coalesce(e.expected, 0) AS expected,
+                   coalesce(c.certificate_count, 0) AS certificate_count,
+                   coalesce(c.certified, 0) AS certified,
+                   c.deductor_tans
+              FROM expected e
+              FULL JOIN certified c ON c.party_id = e.party_id AND c.quarter = e.quarter
+              JOIN parties p
+                ON p.tenant_id = %s AND p.id = coalesce(e.party_id, c.party_id)
+             ORDER BY 3, p.display_name""",  # noqa: S608 - fixed fragments
+        params,
+    )

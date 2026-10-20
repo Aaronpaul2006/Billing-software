@@ -855,3 +855,57 @@ def test_retention_routes_reject_other_tenant(world: World, masters: dict[str, s
 for _name in ("retention-release-detail", "retention-release-cancel", "project-retention"):
     OBJECT_ROUTES[_name] = lambda w: None  # test_retention_routes_reject_other_tenant
 COLLECTION_ROUTES["retention-releases"] = lambda w: None  # same test
+
+
+# --- Phase 3.4 TDS certificates --------------------------------------------------------
+
+
+def test_tds_routes_reject_other_tenant(world: World, masters: dict[str, str]) -> None:
+    from apps.tds.models import TdsCertificate
+
+    a = world.a
+    with tenant_context(a.tenant_id, a.user_id):
+        cert = TdsCertificate.objects.create(
+            party_id=masters["party"],
+            deductor_tan="BLRS12345E",
+            fy_start_year=2026,
+            quarter=3,
+            certificate_number="QWERTYU",
+            tds_amount=100,
+            created_by_id=a.user_id,
+        )
+    api, b = world.api, world.as_b()
+    url = f"/api/v1/tds-certificates/{cert.pk}"
+    assert api.get(url, **b).status_code == 404
+    assert (
+        api.patch(url, {"tds_amount": "1.00"}, format="json", HTTP_IF_MATCH='"v1"', **b).status_code
+        == 404
+    )
+    assert api.delete(url, **b).status_code == 404
+    assert api.get("/api/v1/tds-certificates", **b).json()["results"] == []
+    report = "/api/v1/reports/tds-reconciliation?fy=2026"
+    as_a: dict[str, Any] = {"HTTP_AUTHORIZATION": f"Bearer {world.a_owner.access_token}"}
+    assert [r["certified"] for r in api.get(report, **as_a).json()["results"]] == ["100.00"]
+    assert api.get(report, **b).json()["results"] == []
+    smuggled = api.post(
+        "/api/v1/tds-certificates",
+        {
+            "party_id": masters["party"],
+            "deductor_tan": "BLRS12345E",
+            "fy_start_year": 2026,
+            "quarter": 3,
+            "certificate_number": "OTHER01",
+            "tds_amount": "1.00",
+        },
+        format="json",
+        HTTP_IDEMPOTENCY_KEY=str(uuid.uuid4()),
+        **b,
+    )
+    assert (smuggled.status_code, smuggled.json()["errors"][0]["code"]) == (422, "not_found")
+    with tenant_context(a.tenant_id, a.user_id):
+        assert TdsCertificate.objects.get(pk=cert.pk).tds_amount == 100
+
+
+OBJECT_ROUTES["tds-certificate-detail"] = lambda w: None  # test_tds_routes_reject_other_tenant
+COLLECTION_ROUTES["tds-certificates"] = lambda w: None  # same test
+COLLECTION_ROUTES["report-tds-reconciliation"] = lambda w: None  # same test
