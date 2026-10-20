@@ -602,3 +602,23 @@ def test_payments_list_and_create_hide_other_tenant(
 for _name in ("payment-detail", "payment-allocations", "payment-void", "allocation-detail"):
     OBJECT_ROUTES[_name] = lambda w: None  # test_payment_routes_reject_other_tenant
 COLLECTION_ROUTES["payments"] = lambda w: None  # test_payments_list_and_create_hide_other_tenant
+
+
+def test_document_allocations_reject_other_tenant(world: World, a_payment: dict[str, str]) -> None:
+    url = f"/api/v1/documents/{a_payment['invoice']}/allocations"
+    before = _a_state(world, a_payment)
+    assert world.api.get(url, **world.as_b()).status_code == 404
+    applied = world.api.post(
+        url,
+        {"allocations": [{"document_id": a_payment["invoice"], "amount": "1.00"}]},
+        format="json",
+        HTTP_IDEMPOTENCY_KEY=str(uuid.uuid4()),
+        **world.as_b(),
+    )
+    assert applied.status_code == 404
+    assert _a_state(world, a_payment) == before
+
+
+OBJECT_ROUTES["document-allocations"] = lambda w: (
+    None
+)  # test_document_allocations_reject_other_tenant

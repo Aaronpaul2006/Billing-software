@@ -300,6 +300,7 @@ issue, cancel, accept and decline need `If-Match`.
 | `GET /payments/{id}` | With allocations |
 | `POST /payments/{id}/allocations` · `DELETE /allocations/{id}` | Allocate leftover amount / unwind |
 | `POST /payments/{id}/void` | `{reason}`, removes its allocations (audited) |
+| `GET/POST /documents/{id}/allocations` | GET: what settled a document, or what a credit note was applied to (`applied` / `unapplied`). POST (issued credit notes only, idempotent): apply it to issued invoices / debit notes of the same party (`409 not_an_issued_credit_note`, `422 allocation_exceeds_credit`, `allocation_exceeds_outstanding`) |
 | `GET/POST /expenses` · `GET/PATCH /expenses/{id}` · `POST /expenses/{id}/void` | Site/office expenses with bill attachment |
 
 ```json

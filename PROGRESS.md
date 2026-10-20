@@ -4,7 +4,7 @@ Last updated: 2026-10-19
 
 ## Current phase
 
-**Phase 2 — Money** (in progress): step 2.1 of 4 done. Phases 0 and 1 complete. Phase 0 (Foundations) complete.
+**Phase 2 — Money** (in progress): steps 2.1–2.2 of 4 done. Phases 0 and 1 complete. Phase 0 (Foundations) complete.
 
 ## Done
 
@@ -33,10 +33,11 @@ Last updated: 2026-10-19
 - [x] Phase 1.6: document lifecycle — `issue` (recompute, series row lock, gapless number, snapshots; idempotent + If-Match), `cancel`, `accept` / `decline`, `convert` (with `source_document_id`), `credit-notes` / `debit-notes` (copied lines, can't change type, credit total ≤ invoice). Tests incl. 4 parallel issues → INV/0001–0004 (mutation: without the series lock it fails 3/3), retries don't consume numbers, failed issues leave no gap, snapshots frozen; all 7 routes in the cross-tenant registry. 326 tests
 - [x] Phase 1.7: PDFs and storage (owner decisions: WeasyPrint, worker in Docker) — HTML template with the CGST Rule 46 particulars, Indian digit grouping and amount in words (lakh/crore), auto-escaped; Celery task `render_document_pdf` queued on commit after issue, idempotent, stores to S3 (`apps/files/storage.py`; SeaweedFS locally) with an `attachments` row (size, SHA-256); `GET /documents/{id}/pdf` (302 to a 5-minute link / 202 while rendering / drafts on demand with DRAFT watermark). Backend `Dockerfile` (Python 3.14.8 slim, Pango, DejaVu fonts with ₹), compose profile `app` with `api` + `worker`; CI installs Pango and builds the image. Storage tests use moto. 352 tests
 - [x] Phase 2.1: payments and allocations — `GET/POST /payments` (idempotent, optional allocations in the same request), `GET /payments/{id}` (allocated / unallocated), `POST /payments/{id}/allocations`, `DELETE /allocations/{id}`, `POST /payments/{id}/void` (If-Match, unwinds allocations). Service pre-checks give per-field codes; database rejections in races map to the same codes (threaded race test: one wins, the loser gets `allocation_exceeds_outstanding`). 369 tests
+- [x] Phase 2.2: credit-note application — `GET/POST /documents/{id}/allocations` (an issued credit note settles invoices / debit notes of the same party, capped by its unapplied amount and their outstanding; unwind via `DELETE /allocations/{id}`); allocation code generalised to payment or credit-note sources with the same checks and race-safe error mapping. 376 tests
 
 ## In progress
 
-- Phase 2.2: applying issued credit notes to invoices.
+- Phase 2.3: expenses (site / office costs, payment status, void).
 
 ## Next
 
@@ -63,7 +64,7 @@ Phase 1 — core billing:
 Phase 2 — money:
 
 1. ~~Payments and allocations~~ (done)
-2. Credit-note allocation (apply an issued credit note to invoices)
+2. ~~Credit-note allocation~~ (done)
 3. Expenses (site / office costs, payment status, void)
 4. Reports: summary, billing by month, receivables ageing, projects, GST summary
 

@@ -107,3 +107,11 @@ class PaymentSerializer(serializers.ModelSerializer[Payment]):
     def get_allocations(self, obj: Payment) -> list[dict[str, Any]]:
         rows = Allocation.objects.filter(payment_id=obj.pk).order_by("created_at")
         return list(AllocationOutSerializer(rows, many=True).data)
+
+
+class DocumentAllocationsSerializer(serializers.Serializer[Any]):
+    document_id = serializers.UUIDField()
+    doc_type = serializers.CharField()
+    applied = MoneyField(allow_null=True, help_text="Credit notes: total applied to invoices.")
+    unapplied = MoneyField(allow_null=True, help_text="Credit notes: still available.")
+    allocations = AllocationOutSerializer(many=True)

@@ -9,11 +9,12 @@ in a race are mapped to the same codes.
 """
 
 import uuid
+from dataclasses import dataclass
 from decimal import Decimal
 from typing import Any
 
 from django.db import DatabaseError, IntegrityError, transaction
-from django.db.models import Sum
+from django.db.models import Q, Sum
 from django.utils import timezone
 
 from apps.core.errors import Conflict, Invalid
@@ -31,6 +32,39 @@ SETTLEABLE = frozenset({"TAX_INVOICE", "BILL_OF_SUPPLY", "DEBIT_NOTE"})
 ZERO = Decimal("0.00")
 
 
+@dataclass(frozen=True)
+class Source:
+    """Where settlement money comes from: a payment or an issued credit note."""
+
+    payment_id: uuid.UUID | None
+    credit_note_id: uuid.UUID | None
+    party_id: uuid.UUID
+    total: Decimal
+    label: str  # "payment" / "credit note", for messages
+    exceeds_code: str
+
+
+def payment_source(payment: Payment) -> Source:
+    return Source(
+        payment.pk, None, payment.party_id, payment.amount, "payment", "allocation_exceeds_payment"
+    )
+
+
+def credit_note_source(note: Document) -> Source:
+    return Source(
+        None, note.pk, note.party_id, note.grand_total, "credit note", "allocation_exceeds_credit"
+    )
+
+
+def allocated_from(source: Source) -> Decimal:
+    rows = (
+        Allocation.objects.filter(payment_id=source.payment_id)
+        if source.payment_id
+        else Allocation.objects.filter(credit_note_id=source.credit_note_id)
+    )
+    return rows.aggregate(t=Sum("amount"))["t"] or ZERO
+
+
 def allocated_total(payment_id: uuid.UUID) -> Decimal:
     total = Allocation.objects.filter(payment_id=payment_id).aggregate(t=Sum("amount"))["t"]
     return total or ZERO
@@ -41,12 +75,15 @@ def get_payment(principal: Principal, payment_id: uuid.UUID) -> Payment:
     return get_or_404(Payment, payment_id)
 
 
-def _db_error_to_problem(exc: DatabaseError, field: str) -> Exception:
+def _db_error_to_problem(exc: DatabaseError, field: str, source: Source | None = None) -> Exception:
     """Rules the database enforced (a race the pre-checks could not see)."""
     text = str(exc)
-    if isinstance(exc, IntegrityError) and "allocations_payment_uq" in text:
+    label = source.label if source else "payment"
+    if isinstance(exc, IntegrityError) and (
+        "allocations_payment_uq" in text or "allocations_cn_uq" in text
+    ):
         return Conflict(
-            "This payment is already allocated to that document.", code="already_allocated"
+            f"This {label} is already allocated to that document.", code="already_allocated"
         )
     if "documents_amount_settled_check" in text:
         return Invalid(
@@ -56,7 +93,9 @@ def _db_error_to_problem(exc: DatabaseError, field: str) -> Exception:
         )
     if "exceeds the unallocated amount" in text:
         return Invalid(
-            field, "More than the payment's unallocated amount.", code="allocation_exceeds_payment"
+            field,
+            f"More than the {label}'s unallocated amount.",
+            code=source.exceeds_code if source else "allocation_exceeds_payment",
         )
     if "can be settled" in text:
         return Invalid(
@@ -69,12 +108,10 @@ def _db_error_to_problem(exc: DatabaseError, field: str) -> Exception:
     return exc
 
 
-def _allocate(principal: Principal, payment: Payment, items: list[dict[str, Any]]) -> None:
-    """Allocate `items` from a payment locked by the caller."""
-    if payment.status != "RECORDED":
-        raise Conflict("This payment is voided.", code="payment_voided")
+def _allocate(principal: Principal, source: Source, items: list[dict[str, Any]]) -> None:
+    """Allocate `items` from a source whose row the caller has locked."""
     seen: set[uuid.UUID] = set()
-    available = payment.amount - allocated_total(payment.pk)
+    available = source.total - allocated_from(source)
     for i, item in enumerate(items):
         field = f"allocations[{i}]"
         doc = get_or_invalid(
@@ -89,36 +126,44 @@ def _allocate(principal: Principal, payment: Payment, items: list[dict[str, Any]
                 "Only issued invoices, bills of supply and debit notes are settled.",
                 code="document_not_settleable",
             )
-        if doc.party_id != payment.party_id:
+        if doc.party_id != source.party_id:
             raise Invalid(
                 f"{field}.document_id",
                 "The document belongs to another party.",
                 code="party_mismatch",
             )
         amount: Decimal = item["amount"]
-        if amount > doc.net_receivable - doc.amount_settled:
+        outstanding = doc.net_receivable - doc.amount_settled
+        if amount > outstanding:
             raise Invalid(
                 f"{field}.amount",
-                f"More than the outstanding {doc.net_receivable - doc.amount_settled}.",
+                f"More than the outstanding {outstanding}.",
                 code="allocation_exceeds_outstanding",
             )
         if amount > available:
             raise Invalid(
                 f"{field}.amount",
-                f"More than the unallocated {available}.",
-                code="allocation_exceeds_payment",
+                f"More than the {source.label}'s unallocated {available}.",
+                code=source.exceeds_code,
             )
         available -= amount
         try:
             with transaction.atomic():
                 Allocation(
                     document_id=doc.pk,
-                    payment_id=payment.pk,
+                    payment_id=source.payment_id,
+                    credit_note_id=source.credit_note_id,
                     amount=amount,
                     created_by_id=principal.user_id,
                 ).save()
         except DatabaseError as exc:
-            raise _db_error_to_problem(exc, f"{field}.amount") from exc
+            raise _db_error_to_problem(exc, f"{field}.amount", source) from exc
+
+
+def _allocate_payment(principal: Principal, payment: Payment, items: list[dict[str, Any]]) -> None:
+    if payment.status != "RECORDED":
+        raise Conflict("This payment is voided.", code="payment_voided")
+    _allocate(principal, payment_source(payment), items)
 
 
 def record_payment(principal: Principal, data: dict[str, Any]) -> Payment:
@@ -137,7 +182,7 @@ def record_payment(principal: Principal, data: dict[str, Any]) -> Payment:
         payment = Payment(**data, created_by_id=principal.user_id)
         payment.save()
         payment = Payment.objects.select_for_update().get(pk=payment.pk)
-        _allocate(principal, payment, allocations)
+        _allocate_payment(principal, payment, allocations)
     return get_or_404(Payment, payment.pk)
 
 
@@ -145,7 +190,7 @@ def allocate(principal: Principal, payment_id: uuid.UUID, items: list[dict[str, 
     require(principal, "payments.record")
     with transaction.atomic():
         payment = get_or_404(Payment, payment_id, for_update=True)
-        _allocate(principal, payment, items)
+        _allocate_payment(principal, payment, items)
     return get_or_404(Payment, payment_id)
 
 
@@ -177,3 +222,31 @@ def void_payment(
             void_reason=reason,
         )
     return get_or_404(Payment, payment_id)
+
+
+# --- credit notes ----------------------------------------------------------------------
+
+
+def apply_credit_note(
+    principal: Principal, note_id: uuid.UUID, items: list[dict[str, Any]]
+) -> Document:
+    """Settle invoices / debit notes of the same party with an issued credit note."""
+    require(principal, "payments.record")
+    with transaction.atomic():
+        note = get_or_404(Document, note_id, for_update=True)
+        if note.doc_type != "CREDIT_NOTE" or note.status != "ISSUED":
+            raise Conflict(
+                "Only an issued credit note can be applied.", code="not_an_issued_credit_note"
+            )
+        _allocate(principal, credit_note_source(note), items)
+    return get_or_404(Document, note_id)
+
+
+def document_allocations(
+    principal: Principal, doc_id: uuid.UUID
+) -> tuple[Document, list[Allocation]]:
+    """Allocations settling a document, or (for a credit note) made from it."""
+    require(principal, "tenant.read")
+    doc = get_or_404(Document, doc_id)
+    rows = Allocation.objects.filter(Q(document_id=doc.pk) | Q(credit_note_id=doc.pk))
+    return doc, list(rows.order_by("created_at"))

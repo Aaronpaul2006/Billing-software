@@ -1,6 +1,7 @@
 """Payment endpoints (docs/02-api-design.md §6)."""
 
 import uuid
+from decimal import Decimal
 from typing import Any
 
 import django_filters
@@ -15,6 +16,7 @@ from . import services
 from .models import Payment
 from .serializers import (
     AllocateSerializer,
+    DocumentAllocationsSerializer,
     PaymentCreateSerializer,
     PaymentSerializer,
     VoidSerializer,
@@ -107,3 +109,39 @@ class AllocationDetailView(ActionAPIView):
     def delete(self, request: Request, allocation_id: uuid.UUID) -> Response:
         services.unwind(self.principal, allocation_id)
         return Response(status=204)
+
+
+class DocumentAllocationsView(ActionAPIView):
+    """GET: what settled a document (payments, credit notes) or, for a credit
+    note, what it was applied to. POST: apply an issued credit note."""
+
+    write_action = RECORD
+
+    def _body(self, document_id: uuid.UUID) -> dict[str, Any]:
+        doc, rows = services.document_allocations(self.principal, document_id)
+        applied = None
+        if doc.doc_type == "CREDIT_NOTE":
+            applied = sum((a.amount for a in rows if a.credit_note_id == doc.pk), Decimal("0.00"))
+        return {
+            "document_id": doc.pk,
+            "doc_type": doc.doc_type,
+            "applied": applied,
+            "unapplied": doc.grand_total - applied if applied is not None else None,
+            "allocations": rows,
+        }
+
+    @extend_schema(responses={200: DocumentAllocationsSerializer}, tags=["payments"])
+    def get(self, request: Request, document_id: uuid.UUID) -> Response:
+        return Response(DocumentAllocationsSerializer(self._body(document_id)).data)
+
+    @extend_schema(
+        request=AllocateSerializer,
+        responses={200: DocumentAllocationsSerializer},
+        tags=["payments"],
+    )
+    @idempotent
+    def post(self, request: Request, document_id: uuid.UUID) -> Response:
+        data = AllocateSerializer(data=request.data)
+        data.is_valid(raise_exception=True)
+        services.apply_credit_note(self.principal, document_id, data.validated_data["allocations"])
+        return Response(DocumentAllocationsSerializer(self._body(document_id)).data)

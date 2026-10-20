@@ -16,4 +16,9 @@ urlpatterns = [
         views.AllocationDetailView.as_view(),
         name="allocation-detail",
     ),
+    path(
+        "documents/<uuid:document_id>/allocations",
+        views.DocumentAllocationsView.as_view(),
+        name="document-allocations",
+    ),
 ]
