@@ -25,7 +25,9 @@ from collections.abc import Callable
 from functools import wraps
 from typing import Any, cast
 
+from django.core.files.uploadedfile import UploadedFile
 from django.db import IntegrityError, transaction
+from django.http import QueryDict
 from django.utils import timezone
 from rest_framework.request import Request
 from rest_framework.response import Response
@@ -41,8 +43,28 @@ REPLAYED_HEADER = "Idempotent-Replayed"
 Handler = Callable[..., Response]
 
 
+def _file_digest(upload: UploadedFile) -> str:
+    h = hashlib.sha256()
+    for chunk in upload.chunks():
+        h.update(chunk)
+    upload.seek(0)
+    return f"sha256:{h.hexdigest()}"
+
+
+def _canonical(data: Any) -> Any:
+    """JSON bodies as they are; multipart forms with each file as its digest."""
+    if isinstance(data, QueryDict):
+        return {
+            key: [_file_digest(v) if isinstance(v, UploadedFile) else v for v in values]
+            for key, values in data.lists()
+        }
+    return data
+
+
 def _request_hash(request: Request) -> bytes:
-    body = json.dumps(request.data, sort_keys=True, separators=(",", ":"), cls=JSONEncoder)
+    body = json.dumps(
+        _canonical(request.data), sort_keys=True, separators=(",", ":"), cls=JSONEncoder
+    )
     raw = f"{request.method}\n{request.path}\n{body}".encode()
     return hashlib.sha256(raw).digest()
 

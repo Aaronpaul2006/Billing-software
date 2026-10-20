@@ -126,3 +126,22 @@ class BoqItemWriteSerializer(serializers.Serializer[Any]):
     gst_rate = PercentField(default=Decimal("18"), max_value=FIFTY)
     is_variation = serializers.BooleanField(default=False)
     sort_order = serializers.IntegerField(default=0)
+
+
+class BoqImportRequestSerializer(serializers.Serializer[Any]):
+    file = serializers.FileField(help_text="CSV (UTF-8) or .xlsx, at most 5 MB and 5,000 rows.")
+    dry_run = serializers.BooleanField(
+        default=False, help_text="Validate and preview; save nothing."
+    )
+
+
+class BoqImportResultSerializer(serializers.Serializer[Any]):
+    dry_run = serializers.BooleanField()
+    count = serializers.IntegerField()
+    skipped_rows = serializers.ListField(
+        child=serializers.IntegerField(), help_text="Heading / subtotal rows (no unit, qty, rate)."
+    )
+    ignored_columns = serializers.ListField(child=serializers.CharField())
+    items = BoqItemSerializer(
+        many=True, help_text="In a dry run, a preview: id, created_at and updated_at are null."
+    )

@@ -171,6 +171,31 @@ Implemented (Phase 0.5) as of 2026-10-19:
 | `GET/POST /projects/{id}/boq-items` · `PATCH/DELETE /boq-items/{id}` | Bulk import: `POST /projects/{id}/boq-items:import` (CSV/XLSX, validated, all-or-nothing). Delete only if never billed. |
 | `GET/POST /catalog-items` · `PATCH/DELETE /catalog-items/{id}` | Reusable items and rates |
 
+### BOQ import
+
+`POST /projects/{id}/boq-items:import`, `multipart/form-data`: `file` (CSV in
+UTF-8 or `.xlsx`; type detected from the content; at most 5 MB and 5,000 rows)
+and `dry_run` (`true` validates and previews, saves nothing). Needs
+`Idempotency-Key`; a replay must send the same file. Permission `boq.edit`.
+
+- The header row may sit below title rows (first 20 rows searched). Columns are
+  matched by name, case and punctuation ignored: `item_code` (Item No., Code),
+  `description` (Particulars), `unit` (UOM), `contract_qty` (Qty, Quantity),
+  `rate` (Unit Rate) are required; `gst_rate` (GST, GST %; default 18),
+  `sac_hsn` (HSN/SAC), `is_variation` and `sort_order` are optional. Other
+  columns (e.g. Amount) are ignored and listed in `ignored_columns`.
+- Rows with no unit, quantity and rate are headings or subtotals: skipped and
+  listed in `skipped_rows`. Numbers may carry `₹`, `%` and Indian grouping
+  commas.
+- All or nothing. Each row has the same rules as a single item; codes must be
+  unique in the file and new to the project (`item_code_taken`,
+  `duplicate_item_code`; no overwrite, since items may already be billed).
+  Errors name spreadsheet rows: `{"field": "rows[7].rate", "code": "min_value"}`
+  (first 100 rows with errors). File-level codes on `file`: `missing_columns`,
+  `no_rows`, `not_utf8`, `unsupported_file`, `file_too_large`, `too_many_rows`.
+- `201 {dry_run, count, skipped_rows, ignored_columns, items}` (dry run: `200`).
+  Without `sort_order`, items are appended after the project's existing ones.
+
 ---
 
 ## 5. Billing documents

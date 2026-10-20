@@ -93,11 +93,13 @@ dependencies = [
     { name = "boto3" },
     { name = "celery" },
     { name = "cryptography" },
+    { name = "defusedxml" },
     { name = "django", extra = ["argon2"] },
     { name = "django-environ" },
     { name = "django-filter" },
     { name = "djangorestframework" },
     { name = "drf-spectacular" },
+    { name = "openpyxl" },
     { name = "psycopg", extra = ["binary"] },
     { name = "pyjwt" },
     { name = "pyotp" },
@@ -116,7 +118,9 @@ dev = [
     { name = "pytest" },
     { name = "pytest-django" },
     { name = "ruff" },
+    { name = "types-defusedxml" },
     { name = "types-django-filter" },
+    { name = "types-openpyxl" },
 ]
 
 [package.metadata]
@@ -124,11 +128,13 @@ requires-dist = [
     { name = "boto3", specifier = ">=1.40" },
     { name = "celery", specifier = ">=5.5" },
     { name = "cryptography", specifier = ">=46" },
+    { name = "defusedxml", specifier = ">=0.7" },
     { name = "django", extras = ["argon2"], specifier = ">=5.2.18,<5.3" },
     { name = "django-environ", specifier = ">=0.14" },
     { name = "django-filter", specifier = ">=26.2" },
     { name = "djangorestframework", specifier = ">=3.18" },
     { name = "drf-spectacular", specifier = ">=0.30" },
+    { name = "openpyxl", specifier = ">=3.1" },
     { name = "psycopg", extras = ["binary"], specifier = ">=3.3" },
     { name = "pyjwt", specifier = ">=2.15" },
     { name = "pyotp", specifier = ">=2.10" },
@@ -147,7 +153,9 @@ dev = [
     { name = "pytest", specifier = ">=9.1" },
     { name = "pytest-django", specifier = ">=4.14" },
     { name = "ruff", specifier = ">=0.17" },
+    { name = "types-defusedxml", specifier = ">=0.7.0.20260504" },
     { name = "types-django-filter", specifier = ">=26.1.0.20260713" },
+    { name = "types-openpyxl", specifier = ">=3.1.5.20261017" },
 ]
 
 [[package]]
@@ -676,6 +684,15 @@ wheels = [
 ]
 
 [[package]]
+name = "et-xmlfile"
+version = "2.0.0"
+source = { registry = "https://pypi.org/simple" }
+sdist = { url = "https://files.pythonhosted.org/packages/d3/38/af70d7ab1ae9d4da450eeec1fa3918940a5fafb9055e934af8d6eb0c2313/et_xmlfile-2.0.0.tar.gz", hash = "sha256:dab3f4764309081ce75662649be815c4c9081e88f0837825f90fd28317d4da54", size = 17234, upload-time = "2024-10-25T17:25:40.039Z" }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/c1/8b/5fe2cc11fee489817272089c4203e679c63b570a5aaeb18d852ae3cbba6a/et_xmlfile-2.0.0-py3-none-any.whl", hash = "sha256:7a91720bc756843502c3b7504c77b8fe44217c85c537d85037f0f536151b2caa", size = 18059, upload-time = "2024-10-25T17:25:39.051Z" },
+]
+
+[[package]]
 name = "filelock"
 version = "4.2.4"
 source = { registry = "https://pypi.org/simple" }
@@ -1063,6 +1080,18 @@ source = { registry = "https://pypi.org/simple" }
 sdist = { url = "https://files.pythonhosted.org/packages/a2/6e/371856a3fb9d31ca8dac321cda606860fa4548858c0cc45d9d1d4ca2628b/mypy_extensions-1.1.0.tar.gz", hash = "sha256:52e68efc3284861e772bbcd66823fde5ae21fd2fdb51c62a211403730b916558", size = 6343, upload-time = "2025-04-22T14:54:24.164Z" }
 wheels = [
     { url = "https://files.pythonhosted.org/packages/79/7b/2c79738432f5c924bef5071f933bcc9efd0473bac3b4aa584a6f7c1c8df8/mypy_extensions-1.1.0-py3-none-any.whl", hash = "sha256:1be4cccdb0f2482337c4743e60421de3a356cd97508abadd57d47403e94f5505", size = 4963, upload-time = "2025-04-22T14:54:22.983Z" },
+]
+
+[[package]]
+name = "openpyxl"
+version = "3.1.5"
+source = { registry = "https://pypi.org/simple" }
+dependencies = [
+    { name = "et-xmlfile" },
+]
+sdist = { url = "https://files.pythonhosted.org/packages/3d/f9/88d94a75de065ea32619465d2f77b29a0469500e99012523b91cc4141cd1/openpyxl-3.1.5.tar.gz", hash = "sha256:cf0e3cf56142039133628b5acffe8ef0c12bc902d2aadd3e0fe5878dc08d1050", size = 186464, upload-time = "2024-06-28T14:03:44.161Z" }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/c0/da/977ded879c29cbd04de313843e76868e6e13408a94ed6b987245dc7c8506/openpyxl-3.1.5-py2.py3-none-any.whl", hash = "sha256:5282c12b107bffeef825f4617dc029afaf41d0ea60823bbb665ef3079dc79de2", size = 250910, upload-time = "2024-06-28T14:03:41.161Z" },
 ]
 
 [[package]]
@@ -1617,6 +1646,15 @@ wheels = [
 ]
 
 [[package]]
+name = "types-defusedxml"
+version = "0.7.0.20260504"
+source = { registry = "https://pypi.org/simple" }
+sdist = { url = "https://files.pythonhosted.org/packages/da/d2/4553c8fa9cdebfe1e84b950cf790a4d2376a97fa016e43f7c65323fa6c7d/types_defusedxml-0.7.0.20260504.tar.gz", hash = "sha256:2ab2828a3f97111ba1c16cee273ad4124a831fc9198c41bf8368ff6ea48ad300", size = 10729, upload-time = "2026-05-04T05:22:50.192Z" }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/bf/2d/8a4b5ba1d732b8bc691f0efbb1c6f77cb5f6f473b2afe181d83d910773c5/types_defusedxml-0.7.0.20260504-py3-none-any.whl", hash = "sha256:a959e3a0a43b93e464bd625d91ec9193a2703ddc10443bdd627792485fae0b10", size = 13467, upload-time = "2026-05-04T05:22:49.319Z" },
+]
+
+[[package]]
 name = "types-django-filter"
 version = "26.1.0.20260713"
 source = { registry = "https://pypi.org/simple" }
@@ -1626,6 +1664,15 @@ dependencies = [
 sdist = { url = "https://files.pythonhosted.org/packages/fb/e0/33494d52df6f2d92da2aa41f82863baa5e2b4d284a8322002c89d11f1224/types_django_filter-26.1.0.20260713.tar.gz", hash = "sha256:f295ab0aea679fa8d183a832a4c02748f06f074a43b26ca25d167f7e775a3e26", size = 15887, upload-time = "2026-07-13T05:22:28.574Z" }
 wheels = [
     { url = "https://files.pythonhosted.org/packages/fd/2b/383104be3c85aafe8695f3637b832e12509424f9bee199ea2609a0d82000/types_django_filter-26.1.0.20260713-py3-none-any.whl", hash = "sha256:a32e6f84685ca67ea7f7ce64e9d74d13d712857d4702e8d218e6570ab34d418a", size = 19332, upload-time = "2026-07-13T05:22:27.679Z" },
+]
+
+[[package]]
+name = "types-openpyxl"
+version = "3.1.5.20261017"
+source = { registry = "https://pypi.org/simple" }
+sdist = { url = "https://files.pythonhosted.org/packages/af/13/ce0b36e7e29ee31ec75d6718d48d28d2d48ad319ddf4665f81c8f3a8fc95/types_openpyxl-3.1.5.20261017.tar.gz", hash = "sha256:3deb3b6279b65ab379c126df0ee1fd27500c9628edb8d9667d73f637462917dc", size = 102026, upload-time = "2026-10-17T06:20:01.431Z" }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/2b/17/a091e90fde3e90eff9168354269626e210a4c3c688910d8c9176b8a08cb4/types_openpyxl-3.1.5.20261017-py3-none-any.whl", hash = "sha256:3315cfebad290cc7ade1fccaf3a46ee820b3a8e7df726ff4f18d30ab7f383d68", size = 165886, upload-time = "2026-10-17T06:19:59.944Z" },
 ]
 
 [[package]]

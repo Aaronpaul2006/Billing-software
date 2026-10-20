@@ -729,3 +729,28 @@ def test_reports_hide_other_tenant(
 for _name in ("report-summary", *REPORT_LISTS):
     COLLECTION_ROUTES[_name] = lambda w: None  # test_reports_hide_other_tenant
 OBJECT_ROUTES["report-project"] = lambda w: None  # same test
+
+
+# --- Phase 3.1 BOQ import ------------------------------------------------------------
+
+
+def test_boq_import_rejects_other_tenant(world: World, masters: dict[str, str]) -> None:
+    from django.core.files.uploadedfile import SimpleUploadedFile
+
+    from apps.projects.models import BoqItem
+
+    csv = b"item_code,description,unit,contract_qty,rate\n9,Smuggled,nos,1,1\n"
+    for dry_run in ("true", "false"):
+        r = world.api.post(
+            f"/api/v1/projects/{masters['project']}/boq-items:import",
+            {"file": SimpleUploadedFile("b.csv", csv), "dry_run": dry_run},
+            format="multipart",
+            HTTP_IDEMPOTENCY_KEY=str(uuid.uuid4()),
+            **world.as_b(),
+        )
+        assert r.status_code == 404, r.content
+    with tenant_context(world.a.tenant_id, world.a.user_id):
+        assert not BoqItem.objects.filter(item_code="9").exists()
+
+
+OBJECT_ROUTES["project-boq-import"] = lambda w: None  # test_boq_import_rejects_other_tenant

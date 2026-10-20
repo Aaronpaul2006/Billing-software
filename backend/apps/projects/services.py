@@ -1,9 +1,12 @@
 """Projects and their Bill of Quantities (docs/02-api-design.md §4)."""
 
 import uuid
-from typing import Any
+from dataclasses import dataclass
+from typing import Any, cast
 
 from django.db import IntegrityError, transaction
+from django.db.models import Max
+from rest_framework.exceptions import ErrorDetail, ValidationError
 
 from apps.core.errors import Conflict, Invalid
 from apps.core.permissions import require
@@ -14,6 +17,7 @@ from apps.documents.models import Document, DocumentLine
 from apps.parties.models import Party
 from apps.tenants.models import GstRegistration
 
+from . import boq_import
 from .models import BoqItem, Project
 
 # Once a document refers to the project these decide its tax treatment.
@@ -127,3 +131,75 @@ def delete_boq_item(principal: Principal, item_id: uuid.UUID) -> None:
                 "This item has been billed and cannot be deleted.", code="boq_item_billed"
             )
         item.delete()
+
+
+@dataclass
+class BoqImport:
+    dry_run: bool
+    items: list[BoqItem]
+    skipped_rows: list[int]
+    ignored_columns: list[str]
+
+    @property
+    def count(self) -> int:
+        return len(self.items)
+
+
+MAX_ROW_ERRORS = 100
+
+
+def import_boq_items(
+    principal: Principal, project_id: uuid.UUID, data: bytes, *, dry_run: bool
+) -> BoqImport:
+    """Add BOQ items from a spreadsheet, all or nothing. Each row passes the
+    same validation as a single item; codes must be new to the project and
+    unique in the file. Errors name spreadsheet rows: `rows[7].rate`."""
+    from .serializers import BoqItemWriteSerializer
+
+    require(principal, "boq.edit")
+    project = get_or_404(Project, project_id)
+    sheet = boq_import.read(data)
+    existing = set(BoqItem.objects.filter(project=project).values_list("item_code", flat=True))
+    next_order = BoqItem.objects.filter(project=project).aggregate(m=Max("sort_order"))["m"] or 0
+    errors: dict[int, Any] = {}
+    seen: dict[str, int] = {}
+    items: list[BoqItem] = []
+    for position, (row, values) in enumerate(sheet.rows, start=1):
+        if len(errors) >= MAX_ROW_ERRORS:
+            break
+        s = BoqItemWriteSerializer(data=values)
+        if not s.is_valid():
+            errors[row] = s.errors
+            continue
+        fields = dict(s.validated_data)
+        code = fields["item_code"]
+        if code in existing:
+            errors[row] = {
+                "item_code": [
+                    ErrorDetail(
+                        "This project already has an item with this code.", code="item_code_taken"
+                    )
+                ]
+            }
+        elif code in seen:
+            errors[row] = {
+                "item_code": [ErrorDetail(f"Also on row {seen[code]}.", code="duplicate_item_code")]
+            }
+        seen.setdefault(code, row)
+        if "sort_order" not in values:
+            fields["sort_order"] = next_order + position
+        items.append(BoqItem(**fields, project=project, tenant_id=principal.tenant_id))
+    if errors:
+        raise ValidationError(cast(Any, {"rows": errors}))  # {row number: errors}, as many=True
+    if not items:
+        raise Invalid("file", "No item rows found.", code="no_rows")
+    if dry_run:
+        for item in items:  # a preview: nothing was saved, so no id or timestamps
+            item.id = item.created_at = item.updated_at = None
+    else:
+        try:
+            with transaction.atomic():
+                BoqItem.objects.bulk_create(items)
+        except IntegrityError as exc:  # someone added the same code meanwhile
+            raise _item_code_taken() from exc
+    return BoqImport(dry_run, items, sheet.skipped_rows, sheet.ignored_columns)

@@ -6,14 +6,19 @@ from typing import Any
 import django_filters
 from django.db.models import Q, QuerySet
 from drf_spectacular.utils import extend_schema
+from rest_framework.parsers import MultiPartParser
 from rest_framework.request import Request
 from rest_framework.response import Response
 
 from apps.core.api import ActionAPIView, detail_response, list_response, versioned_patch
+from apps.core.errors import Invalid
+from apps.core.idempotency import idempotent
 
-from . import services
+from . import boq_import, services
 from .models import BoqItem, Project
 from .serializers import (
+    BoqImportRequestSerializer,
+    BoqImportResultSerializer,
     BoqItemSerializer,
     BoqItemWriteSerializer,
     ProjectSerializer,
@@ -127,3 +132,27 @@ class BoqItemDetailView(ActionAPIView):
     def delete(self, request: Request, item_id: uuid.UUID) -> Response:
         services.delete_boq_item(self.principal, item_id)
         return Response(status=204)
+
+
+class BoqImportView(ActionAPIView):
+    """Bulk-add BOQ items from a CSV / XLSX file, all or nothing."""
+
+    write_action = "boq.edit"
+    parser_classes = (MultiPartParser,)
+
+    @extend_schema(
+        request={"multipart/form-data": BoqImportRequestSerializer},
+        responses={200: BoqImportResultSerializer, 201: BoqImportResultSerializer},
+        tags=["projects"],
+    )
+    @idempotent
+    def post(self, request: Request, project_id: uuid.UUID) -> Response:
+        params = BoqImportRequestSerializer(data=request.data)
+        params.is_valid(raise_exception=True)
+        upload, dry_run = params.validated_data["file"], params.validated_data["dry_run"]
+        if upload.size > boq_import.MAX_BYTES:
+            raise Invalid("file", "At most 5 MB per import.", code="file_too_large")
+        result = services.import_boq_items(
+            self.principal, project_id, upload.read(), dry_run=dry_run
+        )
+        return Response(BoqImportResultSerializer(result).data, status=200 if dry_run else 201)
