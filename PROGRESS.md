@@ -4,7 +4,7 @@ Last updated: 2026-10-19
 
 ## Current phase
 
-**Phase 2 — Money** (in progress): steps 2.1–2.2 of 4 done. Phases 0 and 1 complete. Phase 0 (Foundations) complete.
+**Phase 2 — Money** (in progress): steps 2.1–2.3 of 4 done. Phases 0 and 1 complete. Phase 0 (Foundations) complete.
 
 ## Done
 
@@ -34,10 +34,11 @@ Last updated: 2026-10-19
 - [x] Phase 1.7: PDFs and storage (owner decisions: WeasyPrint, worker in Docker) — HTML template with the CGST Rule 46 particulars, Indian digit grouping and amount in words (lakh/crore), auto-escaped; Celery task `render_document_pdf` queued on commit after issue, idempotent, stores to S3 (`apps/files/storage.py`; SeaweedFS locally) with an `attachments` row (size, SHA-256); `GET /documents/{id}/pdf` (302 to a 5-minute link / 202 while rendering / drafts on demand with DRAFT watermark). Backend `Dockerfile` (Python 3.14.8 slim, Pango, DejaVu fonts with ₹), compose profile `app` with `api` + `worker`; CI installs Pango and builds the image. Storage tests use moto. 352 tests
 - [x] Phase 2.1: payments and allocations — `GET/POST /payments` (idempotent, optional allocations in the same request), `GET /payments/{id}` (allocated / unallocated), `POST /payments/{id}/allocations`, `DELETE /allocations/{id}`, `POST /payments/{id}/void` (If-Match, unwinds allocations). Service pre-checks give per-field codes; database rejections in races map to the same codes (threaded race test: one wins, the loser gets `allocation_exceeds_outstanding`). 369 tests
 - [x] Phase 2.2: credit-note application — `GET/POST /documents/{id}/allocations` (an issued credit note settles invoices / debit notes of the same party, capped by its unapplied amount and their outstanding; unwind via `DELETE /allocations/{id}`); allocation code generalised to payment or credit-note sources with the same checks and race-safe error mapping. 376 tests
+- [x] Phase 2.3: expenses — `GET/POST /expenses` (idempotent), `GET/PATCH /expenses/{id}` (If-Match, merged validation), `POST /expenses/{id}/void`; server-computed total and balance, payment status, vendor/project/attachment checks, filters incl. `payment_state`; site engineers record, viewers read. 388 tests
 
 ## In progress
 
-- Phase 2.3: expenses (site / office costs, payment status, void).
+- Phase 2.4: reports (summary, billing by month, receivables ageing, projects, GST summary).
 
 ## Next
 
@@ -65,7 +66,7 @@ Phase 2 — money:
 
 1. ~~Payments and allocations~~ (done)
 2. ~~Credit-note allocation~~ (done)
-3. Expenses (site / office costs, payment status, void)
+3. ~~Expenses~~ (done)
 4. Reports: summary, billing by month, receivables ageing, projects, GST summary
 
 Full roadmap: `docs/01-architecture.md` §9.
@@ -92,6 +93,7 @@ Full roadmap: `docs/01-architecture.md` §9.
 - Tax engine: reverse-charge documents and real invoices checked by a CA are still to do; the GST-TDS ₹2.5 lakh contract threshold is left to the caller (project flag).
 - Expired idempotency keys are reused on demand; a periodic purge needs Celery beat (not set up yet).
 - A PDF rendered before a document is cancelled still shows it as issued; re-render on cancel is not done yet.
+- Expenses have no void reason column; the audit trail records who voided and when.
 - Uploads by users (attachments API, presigned PUT, malware scan) are not built yet; only system-generated PDFs.
 - `auth_sessions` has a `tenant_id` column but no RLS, by design (global table, read only by id / token hash).
 - The app role has no privileges on `django_migrations`. `TransactionTestCase`-style flushes (TRUNCATE) will not work as the app role; concurrency tests in step 7 need their own setup/cleanup.

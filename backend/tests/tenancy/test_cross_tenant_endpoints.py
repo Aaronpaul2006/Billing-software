@@ -622,3 +622,56 @@ def test_document_allocations_reject_other_tenant(world: World, a_payment: dict[
 OBJECT_ROUTES["document-allocations"] = lambda w: (
     None
 )  # test_document_allocations_reject_other_tenant
+
+
+# --- Phase 2.3 expenses --------------------------------------------------------------
+
+
+def test_expense_routes_reject_other_tenant(world: World, masters: dict[str, str]) -> None:
+    from apps.expenses.models import Expense
+
+    a = world.a
+    with tenant_context(a.tenant_id, a.user_id):
+        expense = Expense.objects.create(
+            category="MATERIAL",
+            expense_date="2026-10-20",
+            description="A's cement",
+            taxable_value=100,
+            total_amount=100,
+            created_by_id=a.user_id,
+        )
+    api, b = world.api, world.as_b()
+    url = f"/api/v1/expenses/{expense.pk}"
+    assert api.get(url, **b).status_code == 404
+    assert (
+        api.patch(
+            url, {"description": "hijacked"}, format="json", HTTP_IF_MATCH='"v1"', **b
+        ).status_code
+        == 404
+    )
+    assert api.post(f"{url}/void", {}, format="json", HTTP_IF_MATCH='"v1"', **b).status_code == 404
+    assert str(expense.pk) not in {
+        e["id"] for e in api.get("/api/v1/expenses", **b).json()["results"]
+    }
+    smuggled = api.post(
+        "/api/v1/expenses",
+        {
+            "project_id": masters["project"],
+            "category": "MATERIAL",
+            "expense_date": "2026-10-20",
+            "description": "x",
+            "taxable_value": "1.00",
+        },
+        format="json",
+        HTTP_IDEMPOTENCY_KEY=str(uuid.uuid4()),
+        **b,
+    )
+    assert smuggled.status_code == 422
+    with tenant_context(a.tenant_id, a.user_id):
+        e = Expense.objects.get(pk=expense.pk)
+        assert (e.description, e.status, e.version) == ("A's cement", "RECORDED", 1)
+
+
+for _name in ("expense-detail", "expense-void"):
+    OBJECT_ROUTES[_name] = lambda w: None  # test_expense_routes_reject_other_tenant
+COLLECTION_ROUTES["expenses"] = lambda w: None  # same test

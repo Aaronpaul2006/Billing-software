@@ -22,7 +22,7 @@ class PaymentCreateSerializer(serializers.Serializer[Any]):
     project_id = serializers.UUIDField(required=False, allow_null=True)
     payment_date = serializers.DateField()
     amount = MoneyField(min_value=PAISA)
-    mode = serializers.ChoiceField(choices=PaymentMode.values)
+    mode = serializers.ChoiceField(choices=PaymentMode.choices)
     reference = serializers.CharField(
         max_length=100, required=False, allow_null=True, help_text="UTR / cheque number"
     )

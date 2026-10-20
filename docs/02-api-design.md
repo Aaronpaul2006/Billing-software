@@ -301,7 +301,7 @@ issue, cancel, accept and decline need `If-Match`.
 | `POST /payments/{id}/allocations` · `DELETE /allocations/{id}` | Allocate leftover amount / unwind |
 | `POST /payments/{id}/void` | `{reason}`, removes its allocations (audited) |
 | `GET/POST /documents/{id}/allocations` | GET: what settled a document, or what a credit note was applied to (`applied` / `unapplied`). POST (issued credit notes only, idempotent): apply it to issued invoices / debit notes of the same party (`409 not_an_issued_credit_note`, `422 allocation_exceeds_credit`, `allocation_exceeds_outstanding`) |
-| `GET/POST /expenses` · `GET/PATCH /expenses/{id}` · `POST /expenses/{id}/void` | Site/office expenses with bill attachment |
+| `GET/POST /expenses` · `GET/PATCH /expenses/{id}` · `POST /expenses/{id}/void` | Site/office expenses with bill attachment. Built in Phase 2.3: the server computes `total_amount` (taxable + GST) and `balance`; `amount_paid` ≤ total (`exceeds_total`) with a `payment_mode` once paid; vendor must be a vendor (`not_a_vendor`); ITC needs GST (`no_gst`); filters `category=A,B`, project, vendor, dates, `payment_state`; voided expenses are read-only (`409 expense_voided`); never deleted |
 
 ```json
 POST /api/v1/payments
