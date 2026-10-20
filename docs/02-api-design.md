@@ -341,16 +341,35 @@ and a reason; it unwinds the allocations first. Payments are never deleted.
 
 ## 8. Reports (web dashboard and owner mobile app)
 
-All amounts are strings; every report accepts `from`, `to` and `book=GST|NON_GST|ALL`.
+All amounts are strings. Permission `reports.view` (OWNER, ADMIN, ACCOUNTANT,
+VIEWER; site engineers get 403). Period reports accept `from`, `to`
+(`YYYY-MM-DD`; default 1 April of the current financial year to today, at most
+5 years, `422 invalid_dates` / `range_too_long`) and `book=GST|NON_GST|ALL`
+(default `ALL`).
 
 | Method & path | Returns |
 |---|---|
-| `GET /reports/summary` | Billed, tax, collected, outstanding, expenses, for the period and the previous one (trend) |
+| `GET /reports/summary` | Billed, taxable, tax, collected, expenses for the period and the previous one (trend), plus outstanding now |
 | `GET /reports/billing-by-month` | Series for charts, split by book |
-| `GET /reports/receivables` | Outstanding by party with ageing buckets (not due / 1–30 / 31–60 / 61–90 / 90+) |
-| `GET /reports/projects` · `GET /reports/projects/{id}` | Contract value vs billed, retention held, TDS deducted, advance recovered, outstanding, expenses → margin |
-| `GET /reports/gst-summary?period=2026-10` | Outward supplies by rate, B2B/B2C, CGST/SGST/IGST totals (basis for GSTR-1/3B) |
-| `POST /exports` · `GET /exports/{id}` | Async CSV/XLSX/GSTR-1 JSON export; download via presigned URL |
+| `GET /reports/receivables` | Outstanding by party with ageing buckets (not due / 1–30 / 31–60 / 61–90 / 90+ days past due), plus `totals`; `book` only |
+| `GET /reports/projects` · `GET /reports/projects/{id}` | Contract value vs billed, retention held, TDS deducted, advance recovered, outstanding, cost → margin |
+| `GET /reports/gst-summary?period=2026-10` | GST documents' outward supplies by B2B/B2C and rate, CGST/SGST/IGST/cess, plus `totals` (basis for GSTR-1/3B) |
+| `POST /exports` · `GET /exports/{id}` | Async CSV/XLSX/GSTR-1 JSON export; download via presigned URL *(not built yet)* |
+
+Rules behind the numbers:
+
+- Only issued documents count; cancelled ones count nowhere, quotations are
+  not revenue, credit notes count negative (by document date).
+- *Previous period*: the same number of calendar months before when the
+  period is whole months (October → September, a quarter → the quarter
+  before), otherwise the same number of days.
+- *Collected*: with `book=ALL`, every recorded payment in the period (including
+  advances not yet allocated); with a book, what was allocated to that book's
+  documents.
+- *Outstanding* and receivables are as of today, whatever the period.
+- *Project cost*: recorded expenses on the project; their GST counts as cost
+  unless input tax credit can be claimed (`itc_eligible`). Margin =
+  billed taxable value − cost.
 
 The mobile app needs only `/auth/*`, `/me`, `/reports/*`, read-only
 `/documents`, `/parties`, `/projects`, `/payments`, and `/documents/{id}/pdf`.

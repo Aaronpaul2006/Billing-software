@@ -1,10 +1,10 @@
 # Progress
 
-Last updated: 2026-10-19
+Last updated: 2026-10-20
 
 ## Current phase
 
-**Phase 2 — Money** (in progress): steps 2.1–2.3 of 4 done. Phases 0 and 1 complete. Phase 0 (Foundations) complete.
+**Phase 2 — Money** complete. Phases 0, 1 and 2 complete. Next: Phase 3 (construction), to be planned before starting.
 
 ## Done
 
@@ -35,10 +35,11 @@ Last updated: 2026-10-19
 - [x] Phase 2.1: payments and allocations — `GET/POST /payments` (idempotent, optional allocations in the same request), `GET /payments/{id}` (allocated / unallocated), `POST /payments/{id}/allocations`, `DELETE /allocations/{id}`, `POST /payments/{id}/void` (If-Match, unwinds allocations). Service pre-checks give per-field codes; database rejections in races map to the same codes (threaded race test: one wins, the loser gets `allocation_exceeds_outstanding`). 369 tests
 - [x] Phase 2.2: credit-note application — `GET/POST /documents/{id}/allocations` (an issued credit note settles invoices / debit notes of the same party, capped by its unapplied amount and their outstanding; unwind via `DELETE /allocations/{id}`); allocation code generalised to payment or credit-note sources with the same checks and race-safe error mapping. 376 tests
 - [x] Phase 2.3: expenses — `GET/POST /expenses` (idempotent), `GET/PATCH /expenses/{id}` (If-Match, merged validation), `POST /expenses/{id}/void`; server-computed total and balance, payment status, vendor/project/attachment checks, filters incl. `payment_state`; site engineers record, viewers read. 388 tests
+- [x] Phase 2.4: reports — `GET /reports/summary` (period vs previous period, books, outstanding now), `/reports/billing-by-month`, `/reports/receivables` (ageing buckets by party + totals), `/reports/projects` and `/reports/projects/{id}` (billing, deductions, outstanding, cost with non-claimable GST, margin), `/reports/gst-summary?period=YYYY-MM` (B2B/B2C by rate). SQL over the security_invoker views with an explicit tenant filter as well; one scenario with hand-computed numbers for every report, ageing tests relative to today, roles, cross-tenant test (A's data visible to A, invisible to B, A's project 404 for B). 402 tests
 
 ## In progress
 
-- Phase 2.4: reports (summary, billing by month, receivables ageing, projects, GST summary).
+- Nothing. Waiting for the go-ahead on Phase 3.
 
 ## Next
 
@@ -67,7 +68,12 @@ Phase 2 — money:
 1. ~~Payments and allocations~~ (done)
 2. ~~Credit-note allocation~~ (done)
 3. ~~Expenses~~ (done)
-4. Reports: summary, billing by month, receivables ageing, projects, GST summary
+4. ~~Reports~~ (done)
+
+Phase 3 — construction (architecture §9; detailed plan to be agreed first). Already in place from
+Phases 1–2: BOQ items, retention / TDS / GST-TDS / advance-recovery deductions on bills, project report.
+Candidates: BOQ import (CSV/XLSX), RA bills with previous / this / cumulative quantities against the BOQ,
+retention release, TDS certificate reconciliation.
 
 Full roadmap: `docs/01-architecture.md` §9.
 
@@ -101,3 +107,5 @@ Full roadmap: `docs/01-architecture.md` §9.
 - Compose publishes Postgres on host port **5433** and Redis on **6380**, because native PostgreSQL 17 and Redis Windows services already use 5432 / 6379 on the dev machine.
 
 - Payables (vendor bills, payments to subcontractors) are deferred; expenses track their own payment for now.
+- Report exports (`POST /exports`: CSV / XLSX / GSTR-1 JSON) are not built yet (Phase 5 for GSTR-1).
+- Reports run live SQL per request; fine at current scale, revisit (materialised summaries or caching) if dashboards get slow.

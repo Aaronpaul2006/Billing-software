@@ -675,3 +675,57 @@ def test_expense_routes_reject_other_tenant(world: World, masters: dict[str, str
 for _name in ("expense-detail", "expense-void"):
     OBJECT_ROUTES[_name] = lambda w: None  # test_expense_routes_reject_other_tenant
 COLLECTION_ROUTES["expenses"] = lambda w: None  # same test
+
+
+# --- Phase 2.4 reports ---------------------------------------------------------------
+
+REPORT_LISTS = {
+    "report-billing-by-month": "/api/v1/reports/billing-by-month",
+    "report-receivables": "/api/v1/reports/receivables",
+    "report-projects": "/api/v1/reports/projects",
+    "report-gst-summary": "/api/v1/reports/gst-summary?period=2026-10",
+}
+PERIOD = "from=2026-10-01&to=2026-10-31"
+
+
+def test_reports_hide_other_tenant(
+    world: World, masters: dict[str, str], a_payment: dict[str, str]
+) -> None:
+    from apps.expenses.models import Expense
+
+    a = world.a
+    with tenant_context(a.tenant_id, a.user_id):
+        Expense.objects.create(
+            category="MATERIAL",
+            expense_date="2026-10-20",
+            description="A's cement",
+            taxable_value=100,
+            total_amount=100,
+            created_by_id=a.user_id,
+        )
+    api, b = world.api, world.as_b()
+    as_a: dict[str, Any] = {"HTTP_AUTHORIZATION": f"Bearer {world.a_owner.access_token}"}
+
+    def get(url: str, headers: dict[str, Any]) -> Any:
+        sep = "&" if "?" in url else "?"
+        r = api.get(f"{url}{sep}{PERIOD}" if "gst" not in url else url, **headers)
+        assert r.status_code == 200, r.content
+        return r.json()
+
+    seen_by_a = get("/api/v1/reports/summary", as_a)["current"]
+    assert (seen_by_a["billed"], seen_by_a["collected"], seen_by_a["expenses"]) == (
+        "100.00",
+        "50.00",
+        "100.00",
+    )
+    assert set(get("/api/v1/reports/summary", b)["current"].values()) == {"0.00"}
+    for name, url in REPORT_LISTS.items():
+        assert get(url, as_a)["results"], name  # A's data is there...
+        assert get(url, b)["results"] == [], name  # ...and B sees none of it
+    assert api.get(f"/api/v1/reports/projects/{masters['project']}", **as_a).status_code == 200
+    assert api.get(f"/api/v1/reports/projects/{masters['project']}", **b).status_code == 404
+
+
+for _name in ("report-summary", *REPORT_LISTS):
+    COLLECTION_ROUTES[_name] = lambda w: None  # test_reports_hide_other_tenant
+OBJECT_ROUTES["report-project"] = lambda w: None  # same test
