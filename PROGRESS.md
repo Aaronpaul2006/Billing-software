@@ -1,10 +1,10 @@
 # Progress
 
-Last updated: 2026-10-20
+Last updated: 2026-10-21
 
 ## Current phase
 
-**Web app** (in progress, owner decision 2026-10-20: React + Vite SPA, shadcn/ui + Tailwind, core billing loop first): steps W.1–W.7 done: every backend feature has its screens. Backend Phases 0–3 complete. Phases 0, 1 and 2 complete.
+**Launch gaps** (owner decision 2026-10-21, after the web app W.1–W.7): L.1 email (verification, password reset) done; next L.2 rate limits. Backend Phases 0–3 and web W.1–W.7 complete.
 
 ## Done
 
@@ -48,9 +48,11 @@ Last updated: 2026-10-20
 - [x] Web W.6: expenses and reports — expenses list (category, paid / unpaid, voided; vendor, project, total, ITC, left to pay); one form for new and edit (category, date, description, vendor picker, vendor bill number, project or office, amount before GST, GST, ITC claimable, paid so far and mode, the mode only when something is paid; total shown while typing, exact paise), If-Match, void. Reports page: GST summary for a month (B2B / B2C by rate, totals), project margins (negative in red), TDS reconciliation by financial year (matched / short / excess / not received, overdue), billing by month with bars (widths from BigInt paise ratios: no amount becomes a float). Backend: expenses carry `vendor_name` / `project_name`. Every placeholder page is gone. Smoke-tested through the proxy. Web 90 tests; backend 478.
 - [x] Web W.7: retention, TDS certificates, settings — project Retention tab (deducted / released / still held per book, releases with what is still owed, record a release, cancel with a reason and If-Match; the retention card moved here from Progress); TDS certificates page (by financial year: list, add with TAN / quarter / number / amounts, delete; a duplicate number is explained), linked from the TDS report; settings for OWNER / ADMIN only in the sidebar: company (legal name, trade name, PAN; If-Match), members (invite by email and role, change role, remove / withdraw an invitation; yourself and, for admins, owners are read-only), GST registrations and number series now editable (If-Match; deactivate); an invitations banner (accept / decline) for invitations to other companies. Backend: TDS certificates carry `party_name`. Smoke test through the proxy with two accounts (invite → accept → role change → remove) found the page expecting `no_account` as a top-level code while the API reports it on the email field; fixed and the test now mocks the real shape. Web 98 tests; backend 478.
 
+- [x] Launch gap L.1: email — sending through SMTP from settings (`EMAIL_*`, `DEFAULT_FROM_EMAIL`, `APP_BASE_URL` for links; Mailpit in dev) by a Celery task queued after commit (`apps/accounts/tasks.py`, retried while the mail server is down; a broker outage is logged, never fails the request; `CELERY_TASK_ALWAYS_EAGER=true` runs it without a worker in dev). Schema: `users.email_verified_at` (schema.sql + migration `accounts/0003`, sync test passes). Signed, expiring link tokens instead of a table (`apps/accounts/emails.py`): verification 7 days, bound to the address; reset 1 hour, bound to a keyed fingerprint of the password hash, so it works once; the worker makes the token, so none sits in the queue. Endpoints `POST /auth/verify-email`, `/auth/verify-email/resend`, `/auth/password/forgot` (same `204` for unknown emails), `/auth/password/reset` (clears a lockout, confirms the email, signs out every session, sends a "password changed" notice; MFA still applies); bad links `422 link_expired` / `link_invalid`; `/me` has `email_verified`; issuing needs a verified email (`403 email_not_verified`; test factories make verified users). Web: sign-up page (there was none), forgot / reset password, verify-email page (works signed in or out), "Forgot password?" and "Create an account" links on sign-in, a banner with "Send a new link" until the address is confirmed (rechecks when the tab regains focus), plain message when issuing is refused. Tests found a signed token with a malformed user id gave a 500 (now `link_invalid`). Smoke-tested through the proxy with real emails in Mailpit: signup → email → verify; forgot → email → reset → old session signed out → link refused the second time → "password changed" email → login asks for MFA. Web 107 tests; backend 488.
+
 ## In progress
 
-- Nothing. Next to be chosen by the owner (see the options in the last report).
+- Nothing. Next: L.2 rate limits.
 
 ## Next
 
@@ -99,6 +101,13 @@ Web app (core billing loop first):
 6. ~~Expenses and reports~~ (done)
 7. ~~Retention, TDS certificates, settings~~ (done)
 
+Launch gaps (owner decision 2026-10-21):
+
+1. ~~Email: verification and password reset (backend + screens)~~ (done)
+2. Rate limits in Redis (login per IP and per account, forgot-password / resend per address, API per user, `RateLimit-*` headers)
+3. User uploads (attachments API, presigned PUT, size / type checks)
+4. Housekeeping: re-render the PDF on cancel, Celery beat (purge expired idempotency keys)
+
 Full roadmap: `docs/01-architecture.md` §9.
 
 ## Open questions (for the owner)
@@ -115,10 +124,10 @@ Full roadmap: `docs/01-architecture.md` §9.
 - Two DB aliases: `default` = `billing_app_login` (all queries, RLS applies), `owner` = `billing_owner` (migrations only). `manage.py migrate` without `--database=owner` fails with "permission denied for table django_migrations" by design.
 - Tests: `default` mirrors `owner`; `tests/conftest.py` overrides `django_db_setup` so the owner alias always gets a `test_` database (pytest-django alone would leave the mirror pointing at the real dev database).
 - Tests needing real COMMITs use the `committed_db` fixture (no TRUNCATE flush; fresh tenant ids per test; the test DB is dropped at session end).
-- **Auth items deferred** (need email sending, Redis or a schema decision): email verification (`verify-email`; architecture says it gates issuing documents), password forgot/reset, `PATCH /me`, Redis rate limits (login per IP, API per user, `RateLimit-*` headers), `Idempotency-Key` on signup (`idempotency_keys` requires a tenant and user, which do not exist yet at signup), HaveIBeenPwned check (Django's common-password list is used for now), sliding vs absolute session lifetime (sliding 30 days now).
-- Invitations work only for people who already have an account (`422 no_account` otherwise, which tells an OWNER/ADMIN whether an email is registered). Email invitation links for new people come with email sending.
+- **Auth items deferred** (need Redis or a schema decision): `PATCH /me` (change name or email; an email change must re-verify), Redis rate limits (L.2; until then `password/forgot` and `verify-email/resend` can send an address many emails) (login per IP, API per user, `RateLimit-*` headers), `Idempotency-Key` on signup (`idempotency_keys` requires a tenant and user, which do not exist yet at signup), HaveIBeenPwned check (Django's common-password list is used for now), sliding vs absolute session lifetime (sliding 30 days now).
+- Invitations work only for people who already have an account (`422 no_account` otherwise, which tells an OWNER/ADMIN whether an email is registered). Email invitation links for new people are now possible (email sending exists) but not built.
 - Signup reveals whether an email is registered (`422 email_taken`); login and reset do not. Revisit with email verification (send a "you already have an account" email instead).
-- Issuing does not yet require a verified email (architecture §2 / API §2): comes with email sending.
+- Email: plain-text messages only; production needs a transactional SMTP provider (`EMAIL_HOST`, `EMAIL_HOST_USER`, `EMAIL_HOST_PASSWORD`, `EMAIL_USE_TLS`) with SPF / DKIM on the sending domain, and `APP_BASE_URL` set to the web app. Accounts created before migration `accounts/0003` are unverified and cannot issue until they confirm (use "Send a new link"). Without a running worker (and without `CELERY_TASK_ALWAYS_EAGER=true`) emails wait in Redis.
 - Documents: cess is not exposed on lines yet (no stored cess rate); a document with a project must bill the project's client.
 - Tax engine: reverse-charge documents and real invoices checked by a CA are still to do; the GST-TDS ₹2.5 lakh contract threshold is left to the caller (project flag).
 - Expired idempotency keys are reused on demand; a periodic purge needs Celery beat (not set up yet).
@@ -132,7 +141,7 @@ Full roadmap: `docs/01-architecture.md` §9.
 
 - Payables (vendor bills, payments to subcontractors) are deferred; expenses track their own payment for now.
 - RA bills: credit notes do not reduce the billed quantity (a note may correct a rate rather than a quantity), so over-billing corrected by a credit note still counts against the BOQ; revisit with a quantity flag on note lines. The real-PDF render of the new RA columns is checked only as HTML on Windows (the WeasyPrint test runs in CI / Docker).
-- Web: TDS certificates can be added and deleted but not edited (delete and add again); the company time zone is shown, not editable; a registration's second address line is not editable; there is no screen for your own sessions (`/auth/sessions`) or for disabling MFA. On Windows dev the PDF preview fails (no Pango; run the stack in Docker for PDFs). Editor: the BOQ / catalog item lists are plain selects (fine for hundreds of items; a search box would suit very large BOQs); retention releases and TDS certificates have API endpoints but no screens yet. Sign-up, password reset and email verification screens wait for the backend endpoints. The refresh cookie is `Secure` only outside dev settings.
+- Web: TDS certificates can be added and deleted but not edited (delete and add again); the company time zone is shown, not editable; a registration's second address line is not editable; there is no screen for your own sessions (`/auth/sessions`) or for disabling MFA. On Windows dev the PDF preview fails (no Pango; run the stack in Docker for PDFs). Editor: the BOQ / catalog item lists are plain selects (fine for hundreds of items; a search box would suit very large BOQs); the refresh cookie is `Secure` only outside dev settings.
 - TDS: only income-tax TDS (s.194C) is reconciled; GST TDS (s.51, deducted at payment) is not yet. No import of Form 26AS / TRACES files: certificates are typed in. Expected TDS counts by bill date (credit) and ignores credit notes.
 - Retention releases have no PDF / letter yet and no email; a release is not linked to particular bills (retention is pooled per project and book).
 - BOQ import only adds items; updating existing items from a file (e.g. revised rates) is not supported. In a dry run, previewed items have null `id` / timestamps although the schema marks them as strings.

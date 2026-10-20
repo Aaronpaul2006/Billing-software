@@ -3,6 +3,8 @@
 import uuid
 from dataclasses import dataclass
 
+from django.utils import timezone
+
 from apps.accounts.models import Membership, Role, User
 from apps.core.tenancy import tenant_context
 from apps.parties.models import Party
@@ -23,6 +25,7 @@ def make_user(name: str = "Test User") -> User:
     return User.objects.create(
         id=uid,
         email=f"{uid.hex}@example.com",
+        email_verified_at=timezone.now(),  # verified: most tests issue documents
         password_hash=UNUSABLE_PASSWORD,
         full_name=name,
     )

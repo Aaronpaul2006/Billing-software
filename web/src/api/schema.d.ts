@@ -129,6 +129,46 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/auth/password/forgot": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * @description Sign-in endpoints: no access token needed, and any sent is ignored
+         *     (JWTAuthenticationMiddleware checks `ignores_access_token`).
+         */
+        post: operations["auth_password_forgot_create"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/auth/password/reset": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * @description Sign-in endpoints: no access token needed, and any sent is ignored
+         *     (JWTAuthenticationMiddleware checks `ignores_access_token`).
+         */
+        post: operations["auth_password_reset_create"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/auth/sessions": {
         parameters: {
             query?: never;
@@ -211,6 +251,42 @@ export interface paths {
          *     (JWTAuthenticationMiddleware checks `ignores_access_token`).
          */
         post: operations["auth_token_refresh_create"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/auth/verify-email": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * @description Sign-in endpoints: no access token needed, and any sent is ignored
+         *     (JWTAuthenticationMiddleware checks `ignores_access_token`).
+         */
+        post: operations["auth_verify_email_create"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/auth/verify-email/resend": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["auth_verify_email_resend_create"];
         delete?: never;
         options?: never;
         head?: never;
@@ -2076,6 +2152,7 @@ export interface components {
             id: string;
             /** Format: email */
             email: string;
+            email_verified: boolean;
             full_name: string;
             phone: string | null;
             mfa_enabled: boolean;
@@ -2312,6 +2389,14 @@ export interface components {
          * @enum {string}
          */
         PartyWriteGstTreatmentEnum: "REGISTERED" | "COMPOSITION" | "UNREGISTERED" | "CONSUMER" | "SEZ" | "OVERSEAS";
+        PasswordForgot: {
+            /** Format: email */
+            email: string;
+        };
+        PasswordReset: {
+            token: string;
+            password: string;
+        };
         PatchedBoqItemWrite: {
             /** @description e.g. "2.1.3" */
             item_code?: string;
@@ -3873,6 +3958,9 @@ export interface components {
             amount_settled?: string;
             readonly outstanding: string;
         };
+        VerifyEmail: {
+            token: string;
+        };
         Void: {
             reason: string;
         };
@@ -4037,6 +4125,50 @@ export interface operations {
             };
         };
     };
+    auth_password_forgot_create: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["PasswordForgot"];
+            };
+        };
+        responses: {
+            /** @description No response body */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    auth_password_reset_create: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["PasswordReset"];
+            };
+        };
+        responses: {
+            /** @description No response body */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
     auth_sessions_retrieve: {
         parameters: {
             query?: never;
@@ -4142,6 +4274,46 @@ export interface operations {
                 content: {
                     "application/json": components["schemas"]["Tokens"];
                 };
+            };
+        };
+    };
+    auth_verify_email_create: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["VerifyEmail"];
+            };
+        };
+        responses: {
+            /** @description No response body */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    auth_verify_email_resend_create: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description No response body */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
             };
         };
     };

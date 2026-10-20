@@ -111,14 +111,16 @@ See the architecture doc §6 for the limits.
 | Method & path | Purpose |
 |---|---|
 | `POST /auth/signup` | Create user + first tenant (the user becomes OWNER). Email verification required before issuing documents. |
-| `POST /auth/verify-email` | Confirm email with a one-time token. |
+| `POST /auth/verify-email` | `{token}` from the emailed link → `204`. No sign-in needed. |
+| `POST /auth/verify-email/resend` | Signed in: email a new link (no-op once verified) → `204` |
 | `POST /auth/login` | `{email, password}` → either `{mfa_required: true, mfa_token}` or `{tenants: [...], ...tokens}` |
 | `POST /auth/mfa/verify` | `{mfa_token, code}` → tokens |
 | `POST /auth/token/refresh` | Rotates the refresh token (cookie for web, body for mobile) → new access + refresh |
 | `POST /auth/switch-tenant` | `{tenant_id}` → new tokens scoped to that tenant (membership checked) |
 | `POST /auth/logout` | Revoke the current session |
 | `GET /auth/sessions` · `DELETE /auth/sessions/{id}` | List / revoke your devices |
-| `POST /auth/password/forgot` · `POST /auth/password/reset` | Reset flow; always returns 202 (no account enumeration) |
+| `POST /auth/password/forgot` | `{email}` → always `204` (no account enumeration) |
+| `POST /auth/password/reset` | `{token, password}` → `204`; signs out every session |
 | `POST /auth/mfa/setup` · `POST /auth/mfa/enable` · `POST /auth/mfa/disable` | TOTP enrolment (disable requires password + code) |
 | `GET /me` · `PATCH /me` | Profile, memberships |
 
@@ -149,8 +151,20 @@ Implemented (Phase 0.5) as of 2026-10-19:
   `invalid_refresh_token`, `refresh_token_reused`, `token_expired`,
   `invalid_token`, `session_revoked`; `403 no_active_membership`;
   `422 weak_password` / `email_taken` (field errors).
-* Not yet built: `verify-email`, `password/forgot|reset`, `PATCH /me`, rate
-  limit headers, `Idempotency-Key` on signup (see PROGRESS.md).
+* **Email verification & password reset** (L.1, 2026-10-21): signup emails a
+  verification link; `GET /me` has `email_verified`; issuing a document needs
+  a verified address (`403 email_not_verified`). Links point at the web app
+  (`APP_BASE_URL/verify-email?token=…`, `/reset-password?token=…`) and carry
+  signed, expiring tokens, not database rows: verification lasts 7 days and
+  names the address it confirms; a reset link lasts 1 hour and holds a keyed
+  fingerprint of the current password hash, so it works once. A reset clears
+  a failed-login lock, confirms the email, signs out every session and sends a
+  "password changed" notice; MFA still applies at the next login. A bad link
+  is `422` with field `token`: `link_expired` or `link_invalid`. Emails are
+  sent by a Celery task after commit (Mailpit in dev); the task builds the
+  token, so tokens never sit in the queue.
+* Not yet built: `PATCH /me` (change name or email), rate limit headers,
+  `Idempotency-Key` on signup (see PROGRESS.md).
 
 ---
 
@@ -337,7 +351,8 @@ Idempotency-Key: 9b0e...
 ```
 → `200` with the issued document (`doc_number: "INV/0042"`) ·
 `409 document_not_draft` · `409 series_missing` (no active series for this
-FY) · `422 no_lines` · `412` stale version.
+FY) · `422 no_lines` · `412` stale version · `403 email_not_verified` (the
+issuer has not confirmed their email address).
 
 Built in Phase 1.6. Issuing recomputes the totals first (current project
 settings and advance outstanding), then takes the number under a row lock on

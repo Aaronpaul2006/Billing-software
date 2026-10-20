@@ -28,7 +28,9 @@ from apps.core.errors import Conflict, Forbidden, Invalid, NotFound, Unauthentic
 from apps.core.tenancy import Principal, tenant_context, user_context
 from apps.tenants.models import Tenant, TenantStatus
 
+from . import emails
 from .crypto import decrypt_secret, encrypt_secret
+from .emails import Kind
 from .models import AuthSession, Membership, MembershipStatus, Role, User, UserStatus
 from .tokens import (
     InvalidToken,
@@ -195,6 +197,22 @@ def active_memberships(user_id: uuid.UUID) -> list[tuple[Membership, Tenant]]:
     return [(m, tenants[m.tenant_id]) for m in memberships if m.tenant_id in tenants]
 
 
+def _check_new_password(password: str, *, email: str, full_name: str) -> None:
+    try:
+        # The validators only read attributes (email, full_name) of `user`.
+        validate_password(password, user=User(email=email, full_name=full_name))  # type: ignore[arg-type]
+    except DjangoValidationError as exc:
+        raise Invalid("password", " ".join(exc.messages), code="weak_password") from exc
+
+
+def _email_after_commit(kind: Kind, user_id: uuid.UUID) -> None:
+    """Queue an account email once the transaction commits. A broker outage is
+    logged, not raised: the account change stands and the email can be resent."""
+    from .tasks import send_account_email
+
+    transaction.on_commit(lambda: send_account_email.delay(kind.value, str(user_id)), robust=True)
+
+
 def revoke_family(family_id: uuid.UUID) -> int:
     return AuthSession.objects.filter(family_id=family_id, revoked_at__isnull=True).update(
         revoked_at=timezone.now()
@@ -230,11 +248,7 @@ def signup(
 ) -> SessionTokens:
     """Create a user, their first tenant and the OWNER membership."""
     email = normalise_email(email)
-    try:
-        # The validators only read attributes (email, full_name) of `user`.
-        validate_password(password, user=User(email=email, full_name=full_name))  # type: ignore[arg-type]
-    except DjangoValidationError as exc:
-        raise Invalid("password", " ".join(exc.messages), code="weak_password") from exc
+    _check_new_password(password, email=email, full_name=full_name)
 
     tenant_id = uuid.uuid7()
     try:
@@ -254,6 +268,7 @@ def signup(
                 amr=frozenset({"pwd"}),
                 client=client,
             )
+            _email_after_commit(Kind.VERIFY_EMAIL, user.id)
     except IntegrityError as exc:
         if User.objects.filter(email=email).exists():
             raise Invalid(
@@ -262,6 +277,82 @@ def signup(
         raise
     security_log.info("signup user=%s tenant=%s", user.id, tenant_id)
     return _with_tenants(tokens, [TenantSummary(tenant_id, business_name, Role.OWNER)])
+
+
+# --- email verification & password reset ------------------------------------------
+
+
+def verify_email(token: str) -> None:
+    """Confirm the address named in a verification link. Needs no sign-in:
+    the link may be opened on another device."""
+    user_id, email = emails.read_verify_token(token)
+    updated = User.objects.filter(
+        pk=user_id, email=email, status=UserStatus.ACTIVE, email_verified_at__isnull=True
+    ).update(email_verified_at=timezone.now(), updated_at=timezone.now())
+    if updated:
+        security_log.info("email_verified user=%s", user_id)
+    elif not User.objects.filter(pk=user_id, email=email, status=UserStatus.ACTIVE).exists():
+        raise emails.link_invalid()
+    # Already confirmed: opening the link again is fine.
+
+
+def resend_verification(principal: Principal) -> None:
+    user = User.objects.get(pk=principal.user_id)
+    if user.email_verified_at is None:
+        _email_after_commit(Kind.VERIFY_EMAIL, user.pk)
+
+
+def require_verified_email(user_id: uuid.UUID) -> None:
+    if not User.objects.filter(pk=user_id, email_verified_at__isnull=False).exists():
+        raise Forbidden(
+            "Confirm your email address before issuing documents.", code="email_not_verified"
+        )
+
+
+def forgot_password(email: str) -> None:
+    """Email a reset link if an active account has this address. The response
+    is the same either way, so it reveals nothing about which emails exist."""
+    user = User.objects.filter(email=normalise_email(email), status=UserStatus.ACTIVE).first()
+    if user is None:
+        security_log.info("password_reset_requested unknown_email")
+        return
+    _email_after_commit(Kind.PASSWORD_RESET, user.pk)
+    security_log.info("password_reset_requested user=%s", user.pk)
+
+
+def reset_password(token: str, password: str) -> None:
+    """Set a new password from a reset link, then sign out every session.
+
+    Also clears a failed-login lock, and confirms the email address: the link
+    could only have been read from that inbox.
+    """
+    user_id, fingerprint = emails.read_reset_token(token)
+    with transaction.atomic():
+        user = User.objects.select_for_update().filter(pk=user_id).first()
+        if (
+            user is None
+            or user.status != UserStatus.ACTIVE
+            or not emails.fingerprint_matches(user, fingerprint)
+        ):
+            raise emails.link_invalid()
+        _check_new_password(password, email=user.email, full_name=user.full_name)
+        now = timezone.now()
+        user.password_hash = make_password(password)
+        user.failed_login_count = 0
+        user.locked_until = None
+        user.email_verified_at = user.email_verified_at or now
+        user.save(
+            update_fields=[
+                "password_hash",
+                "failed_login_count",
+                "locked_until",
+                "email_verified_at",
+                "updated_at",
+            ]
+        )
+        _revoke_all_sessions(user.pk)
+        _email_after_commit(Kind.PASSWORD_CHANGED, user.pk)
+    security_log.warning("password_reset user=%s", user.pk)
 
 
 def login(

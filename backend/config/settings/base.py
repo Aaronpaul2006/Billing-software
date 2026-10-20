@@ -111,7 +111,23 @@ CELERY_TASK_SERIALIZER = "json"
 CELERY_RESULT_BACKEND = None
 CELERY_TASK_ACKS_LATE = True
 CELERY_WORKER_PREFETCH_MULTIPLIER = 1
+# Run tasks in the calling process (no worker): handy for local development only.
+CELERY_TASK_ALWAYS_EAGER: bool = env.bool("CELERY_TASK_ALWAYS_EAGER", default=False)
 RENDER_PDF_ON_ISSUE = True
+
+# --- Email (SMTP; Mailpit locally, a transactional provider in production) ----------
+EMAIL_BACKEND = "django.core.mail.backends.smtp.EmailBackend"
+EMAIL_HOST: str = env("EMAIL_HOST", default="127.0.0.1")
+EMAIL_PORT: int = env.int("EMAIL_PORT", default=1025)
+EMAIL_HOST_USER: str = env("EMAIL_HOST_USER", default="")
+EMAIL_HOST_PASSWORD: str = env("EMAIL_HOST_PASSWORD", default="")
+EMAIL_USE_TLS: bool = env.bool("EMAIL_USE_TLS", default=False)
+EMAIL_TIMEOUT = 10
+DEFAULT_FROM_EMAIL: str = env("DEFAULT_FROM_EMAIL", default="Billing <no-reply@localhost>")
+# Where the links in emails point: the web app.
+APP_BASE_URL: str = env("APP_BASE_URL", default="http://localhost:5173")
+VERIFY_EMAIL_MAX_AGE = 7 * 24 * 3600  # seconds
+PASSWORD_RESET_MAX_AGE = 3600
 
 # --- Object storage (S3 API) -------------------------------------------------------
 S3_ENDPOINT_URL: str | None = env("S3_ENDPOINT_URL", default=None)  # None: AWS S3

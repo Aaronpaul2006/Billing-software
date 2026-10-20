@@ -67,6 +67,7 @@ $$;
 CREATE TABLE users (
   id                 uuid PRIMARY KEY DEFAULT gen_random_uuid(),
   email              citext NOT NULL UNIQUE,
+  email_verified_at  timestamptz,                         -- NULL until the address is confirmed
   password_hash      text NOT NULL,                       -- argon2id encoded string
   full_name          text NOT NULL CHECK (char_length(full_name) BETWEEN 1 AND 200),
   phone              text CHECK (phone ~ '^\+?[0-9]{10,15}$'),

@@ -12,6 +12,20 @@ urlpatterns = [
     path("auth/login", public(views.LoginView.as_view()), name="auth-login"),
     path("auth/mfa/verify", public(views.MfaVerifyView.as_view()), name="auth-mfa-verify"),
     path("auth/token/refresh", public(views.RefreshView.as_view()), name="auth-refresh"),
+    path("auth/verify-email", public(views.VerifyEmailView.as_view()), name="auth-verify-email"),
+    path(
+        "auth/verify-email/resend",
+        views.ResendVerificationView.as_view(),
+        name="auth-verify-email-resend",
+    ),
+    path(
+        "auth/password/forgot",
+        public(views.PasswordForgotView.as_view()),
+        name="auth-password-forgot",
+    ),
+    path(
+        "auth/password/reset", public(views.PasswordResetView.as_view()), name="auth-password-reset"
+    ),
     path("auth/logout", views.LogoutView.as_view(), name="auth-logout"),
     path("auth/switch-tenant", views.SwitchTenantView.as_view(), name="auth-switch-tenant"),
     path("auth/sessions", views.SessionListView.as_view(), name="auth-sessions"),

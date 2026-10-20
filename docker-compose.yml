@@ -123,6 +123,8 @@ services:
       REDIS_URL: redis://:${REDIS_PASSWORD}@redis:6379/0
       S3_ENDPOINT_URL: http://seaweedfs:8333
       S3_PUBLIC_ENDPOINT_URL: http://127.0.0.1:${S3_PORT:-8333}  # links opened in your browser
+      EMAIL_HOST: mailpit
+      EMAIL_PORT: "1025"
     volumes:
       - ./backend:/app  # code changes reload without a rebuild
       - ./db:/db:ro  # db/schema.sql, for the schema sync test
@@ -132,8 +134,9 @@ services:
       postgres: {condition: service_healthy}
       redis: {condition: service_healthy}
       seaweedfs: {condition: service_healthy}
+      mailpit: {condition: service_healthy}
 
-  # Celery worker: PDFs now; email, exports, e-invoicing later.
+  # Celery worker: PDFs and emails now; exports, e-invoicing later.
   worker:
     <<: *backend
     command: ["celery", "-A", "config", "worker", "--loglevel=info", "--concurrency=2"]

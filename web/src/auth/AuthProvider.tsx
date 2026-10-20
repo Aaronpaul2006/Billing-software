@@ -8,7 +8,7 @@ import type { components } from "@/api/schema";
 import { getSession, refreshSession, setSession, subscribe } from "./session";
 import type { Tokens } from "./session";
 import { AuthContext } from "./context";
-import type { AuthState, LoginOutcome } from "./context";
+import type { AuthState, LoginOutcome, SignupInput } from "./context";
 
 type LoginResult = components["schemas"]["LoginResult"];
 
@@ -56,6 +56,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     [adopt],
   );
 
+  const signup = useCallback(
+    async (input: SignupInput) => {
+      adopt(unwrap(await api.POST("/api/v1/auth/signup", { body: { ...input, client: "web" } })));
+    },
+    [adopt],
+  );
+
   const verifyMfa = useCallback(
     async (mfaToken: string, code: { code?: string; recovery_code?: string }) => {
       adopt(
@@ -92,8 +99,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }, [queryClient]);
 
   const value = useMemo(
-    () => ({ state, login, verifyMfa, switchTenant, logout, adopt }),
-    [state, login, verifyMfa, switchTenant, logout, adopt],
+    () => ({ state, login, signup, verifyMfa, switchTenant, logout, adopt }),
+    [state, login, signup, verifyMfa, switchTenant, logout, adopt],
   );
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
 }

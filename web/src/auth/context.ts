@@ -7,9 +7,18 @@ export type AuthState =
 
 export type LoginOutcome = { kind: "signed_in" } | { kind: "mfa"; mfaToken: string };
 
+export interface SignupInput {
+  full_name: string;
+  business_name: string;
+  email: string;
+  password: string;
+}
+
 export interface AuthApi {
   state: AuthState;
   login: (email: string, password: string) => Promise<LoginOutcome>;
+  /** Create an account and its first company, then sign in. */
+  signup: (input: SignupInput) => Promise<void>;
   verifyMfa: (mfaToken: string, code: { code?: string; recovery_code?: string }) => Promise<void>;
   switchTenant: (tenantId: string) => Promise<void>;
   logout: () => Promise<void>;

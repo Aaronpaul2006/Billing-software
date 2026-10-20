@@ -120,9 +120,23 @@ class MembershipSummarySerializer(serializers.Serializer[Any]):
     role = serializers.CharField()
 
 
+class VerifyEmailSerializer(serializers.Serializer[Any]):
+    token = serializers.CharField(max_length=500)
+
+
+class PasswordForgotSerializer(serializers.Serializer[Any]):
+    email = serializers.EmailField(max_length=254)
+
+
+class PasswordResetSerializer(serializers.Serializer[Any]):
+    token = serializers.CharField(max_length=500)
+    password = serializers.CharField(max_length=128, write_only=True, trim_whitespace=False)
+
+
 class MeSerializer(serializers.Serializer[Any]):
     id = serializers.UUIDField()
     email = serializers.EmailField()
+    email_verified = serializers.BooleanField()
     full_name = serializers.CharField()
     phone = serializers.CharField(allow_null=True)
     mfa_enabled = serializers.BooleanField()

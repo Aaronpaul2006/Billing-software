@@ -22,6 +22,34 @@ export const routes: RouteObject[] = [
     ),
   },
   {
+    path: "/signup",
+    lazy: lazyPage(
+      () => import("@/pages/SignupPage"),
+      (m) => m.SignupPage,
+    ),
+  },
+  {
+    path: "/forgot-password",
+    lazy: lazyPage(
+      () => import("@/pages/ForgotPasswordPage"),
+      (m) => m.ForgotPasswordPage,
+    ),
+  },
+  {
+    path: "/reset-password",
+    lazy: lazyPage(
+      () => import("@/pages/ResetPasswordPage"),
+      (m) => m.ResetPasswordPage,
+    ),
+  },
+  {
+    path: "/verify-email",
+    lazy: lazyPage(
+      () => import("@/pages/VerifyEmailPage"),
+      (m) => m.VerifyEmailPage,
+    ),
+  },
+  {
     element: <RequireAuth enrolment />,
     children: [
       {

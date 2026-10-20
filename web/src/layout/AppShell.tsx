@@ -32,6 +32,7 @@ import {
 import { cn } from "@/lib/utils";
 
 import { InvitationsBanner } from "./InvitationsBanner";
+import { VerifyEmailBanner } from "./VerifyEmailBanner";
 
 const NAV = [
   { to: "/", label: "Dashboard", icon: LayoutDashboard, end: true },
@@ -170,6 +171,7 @@ export function AppShell() {
         <header className="flex items-center gap-2 border-b p-2 md:hidden">
           <TenantSwitcher />
         </header>
+        <VerifyEmailBanner />
         <InvitationsBanner />
         <main className="flex-1 p-4 md:p-6">
           <Outlet />

@@ -36,6 +36,7 @@ class User(models.Model):
     Status = UserStatus
     id = uuid7_pk()
     email = CITextField()
+    email_verified_at = models.DateTimeField(null=True)  # NULL: not confirmed yet
     password_hash = models.TextField()  # argon2id encoded string
     full_name = models.TextField()
     phone = models.TextField(null=True)  # noqa: DJ001 - mirrors schema (NULL = not given)

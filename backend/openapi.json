@@ -219,6 +219,60 @@
                 }
             }
         },
+        "/api/v1/auth/password/forgot": {
+            "post": {
+                "operationId": "auth_password_forgot_create",
+                "description": "Sign-in endpoints: no access token needed, and any sent is ignored\n(JWTAuthenticationMiddleware checks `ignores_access_token`).",
+                "tags": [
+                    "auth"
+                ],
+                "requestBody": {
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/PasswordForgot"
+                            }
+                        }
+                    },
+                    "required": true
+                },
+                "security": [
+                    {}
+                ],
+                "responses": {
+                    "204": {
+                        "description": "No response body"
+                    }
+                }
+            }
+        },
+        "/api/v1/auth/password/reset": {
+            "post": {
+                "operationId": "auth_password_reset_create",
+                "description": "Sign-in endpoints: no access token needed, and any sent is ignored\n(JWTAuthenticationMiddleware checks `ignores_access_token`).",
+                "tags": [
+                    "auth"
+                ],
+                "requestBody": {
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/PasswordReset"
+                            }
+                        }
+                    },
+                    "required": true
+                },
+                "security": [
+                    {}
+                ],
+                "responses": {
+                    "204": {
+                        "description": "No response body"
+                    }
+                }
+            }
+        },
         "/api/v1/auth/sessions": {
             "get": {
                 "operationId": "auth_sessions_retrieve",
@@ -371,6 +425,51 @@
                             }
                         },
                         "description": ""
+                    }
+                }
+            }
+        },
+        "/api/v1/auth/verify-email": {
+            "post": {
+                "operationId": "auth_verify_email_create",
+                "description": "Sign-in endpoints: no access token needed, and any sent is ignored\n(JWTAuthenticationMiddleware checks `ignores_access_token`).",
+                "tags": [
+                    "auth"
+                ],
+                "requestBody": {
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/VerifyEmail"
+                            }
+                        }
+                    },
+                    "required": true
+                },
+                "security": [
+                    {}
+                ],
+                "responses": {
+                    "204": {
+                        "description": "No response body"
+                    }
+                }
+            }
+        },
+        "/api/v1/auth/verify-email/resend": {
+            "post": {
+                "operationId": "auth_verify_email_resend_create",
+                "tags": [
+                    "auth"
+                ],
+                "security": [
+                    {
+                        "bearerAuth": []
+                    }
+                ],
+                "responses": {
+                    "204": {
+                        "description": "No response body"
                     }
                 }
             }
@@ -6333,6 +6432,9 @@
                         "type": "string",
                         "format": "email"
                     },
+                    "email_verified": {
+                        "type": "boolean"
+                    },
                     "full_name": {
                         "type": "string"
                     },
@@ -6364,6 +6466,7 @@
                 },
                 "required": [
                     "email",
+                    "email_verified",
                     "full_name",
                     "id",
                     "memberships",
@@ -7221,6 +7324,37 @@
                 ],
                 "type": "string",
                 "description": "* `REGISTERED` - REGISTERED\n* `COMPOSITION` - COMPOSITION\n* `UNREGISTERED` - UNREGISTERED\n* `CONSUMER` - CONSUMER\n* `SEZ` - SEZ\n* `OVERSEAS` - OVERSEAS"
+            },
+            "PasswordForgot": {
+                "type": "object",
+                "properties": {
+                    "email": {
+                        "type": "string",
+                        "format": "email",
+                        "maxLength": 254
+                    }
+                },
+                "required": [
+                    "email"
+                ]
+            },
+            "PasswordReset": {
+                "type": "object",
+                "properties": {
+                    "token": {
+                        "type": "string",
+                        "maxLength": 500
+                    },
+                    "password": {
+                        "type": "string",
+                        "writeOnly": true,
+                        "maxLength": 128
+                    }
+                },
+                "required": [
+                    "password",
+                    "token"
+                ]
             },
             "PatchedBoqItemWrite": {
                 "type": "object",
@@ -10381,6 +10515,18 @@
                     "round_off",
                     "sgst",
                     "subtotal"
+                ]
+            },
+            "VerifyEmail": {
+                "type": "object",
+                "properties": {
+                    "token": {
+                        "type": "string",
+                        "maxLength": 500
+                    }
+                },
+                "required": [
+                    "token"
                 ]
             },
             "Void": {

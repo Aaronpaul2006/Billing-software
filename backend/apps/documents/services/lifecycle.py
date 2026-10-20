@@ -17,6 +17,7 @@ from django.db import transaction
 from django.db.models import Sum
 from django.utils import timezone
 
+from apps.accounts.services import require_verified_email
 from apps.core.errors import Conflict, Invalid, PreconditionFailed
 from apps.core.permissions import require
 from apps.core.queries import get_or_404
@@ -97,6 +98,7 @@ def _check_note_limits(doc: Document, grand_total: Decimal) -> None:
 
 def issue(principal: Principal, doc_id: uuid.UUID, expected: int) -> Document:
     require(principal, "documents.issue")
+    require_verified_email(principal.user_id)
     with transaction.atomic():
         doc = _locked(doc_id, expected)
         if doc.status != "DRAFT":

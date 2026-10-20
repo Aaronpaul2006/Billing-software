@@ -20,10 +20,14 @@ export function renderApp(path: string) {
 }
 
 /** Render signed in (the refresh cookie answers with a session). */
-export function renderSignedIn(path: string, session: Partial<Tokens> = {}) {
+export function renderSignedIn(
+  path: string,
+  session: Partial<Tokens> = {},
+  user: Partial<Parameters<typeof me>[0]> = {},
+) {
   server.use(
     http.post(`${API}/auth/token/refresh`, () => HttpResponse.json(tokens(session))),
-    http.get(`${API}/me`, () => HttpResponse.json(me())),
+    http.get(`${API}/me`, () => HttpResponse.json(me(user))),
   );
   return renderApp(path);
 }

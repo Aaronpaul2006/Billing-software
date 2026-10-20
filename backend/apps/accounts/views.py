@@ -25,11 +25,14 @@ from .serializers import (
     MfaEnableSerializer,
     MfaSetupResponseSerializer,
     MfaVerifySerializer,
+    PasswordForgotSerializer,
+    PasswordResetSerializer,
     RefreshSerializer,
     SessionListSerializer,
     SignupSerializer,
     SwitchTenantSerializer,
     TokensSerializer,
+    VerifyEmailSerializer,
 )
 from .services import ClientInfo, MfaChallenge, SessionTokens
 
@@ -155,6 +158,43 @@ class RefreshView(PublicAuthView):
         return _tokens_response(tokens, "mobile" if body_token else "web")
 
 
+class VerifyEmailView(PublicAuthView):
+    @extend_schema(request=VerifyEmailSerializer, responses={204: None}, tags=["auth"])
+    def post(self, request: Request) -> Response:
+        data = VerifyEmailSerializer(data=request.data)
+        data.is_valid(raise_exception=True)
+        services.verify_email(data.validated_data["token"])
+        return Response(status=204)
+
+
+class ResendVerificationView(APIView):
+    permission_classes = ENROLMENT_ALLOWED
+
+    @extend_schema(request=None, responses={204: None}, tags=["auth"])
+    def post(self, request: Request) -> Response:
+        services.resend_verification(principal_of(request))
+        return Response(status=204)
+
+
+class PasswordForgotView(PublicAuthView):
+    @extend_schema(request=PasswordForgotSerializer, responses={204: None}, tags=["auth"])
+    def post(self, request: Request) -> Response:
+        data = PasswordForgotSerializer(data=request.data)
+        data.is_valid(raise_exception=True)
+        services.forgot_password(data.validated_data["email"])
+        return Response(status=204)  # the same whether or not the account exists
+
+
+class PasswordResetView(PublicAuthView):
+    @extend_schema(request=PasswordResetSerializer, responses={204: None}, tags=["auth"])
+    def post(self, request: Request) -> Response:
+        data = PasswordResetSerializer(data=request.data)
+        data.is_valid(raise_exception=True)
+        v = data.validated_data
+        services.reset_password(v["token"], v["password"])
+        return Response(status=204)
+
+
 class LogoutView(APIView):
     permission_classes = (AllowAny,)
 
@@ -267,6 +307,7 @@ class MeView(APIView):
             {
                 "id": str(user.pk),
                 "email": user.email,
+                "email_verified": user.email_verified_at is not None,
                 "full_name": user.full_name,
                 "phone": user.phone,
                 "mfa_enabled": user.mfa_enabled,

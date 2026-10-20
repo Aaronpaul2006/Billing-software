@@ -2,7 +2,7 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { AlertCircle } from "lucide-react";
 import { useState } from "react";
 import { useForm } from "react-hook-form";
-import { Navigate, useLocation, useNavigate } from "react-router";
+import { Link, Navigate, useLocation, useNavigate } from "react-router";
 import { z } from "zod";
 
 import { ApiError } from "@/api/problem";
@@ -156,7 +156,12 @@ export function LoginPage() {
                 )}
               </div>
               <div className="grid gap-2">
-                <Label htmlFor="password">Password</Label>
+                <div className="flex items-center justify-between">
+                  <Label htmlFor="password">Password</Label>
+                  <Link to="/forgot-password" className="text-muted-foreground text-sm underline">
+                    Forgot password?
+                  </Link>
+                </div>
                 <Input
                   id="password"
                   type="password"
@@ -173,6 +178,12 @@ export function LoginPage() {
               <Button type="submit" disabled={loginForm.formState.isSubmitting}>
                 Sign in
               </Button>
+              <p className="text-muted-foreground text-sm">
+                New here?{" "}
+                <Link to="/signup" className="text-foreground underline">
+                  Create an account
+                </Link>
+              </p>
             </form>
           )}
         </CardContent>

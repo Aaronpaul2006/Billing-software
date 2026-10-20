@@ -7,6 +7,7 @@ from typing import Any
 import pytest
 from rest_framework.test import APIClient
 
+from apps.accounts.models import User
 from apps.core.tenancy import tenant_context
 from apps.documents.models import Document
 from apps.parties.models import Party
@@ -102,6 +103,14 @@ def test_retry_with_the_same_key_does_not_consume_a_second_number(w: World) -> N
     assert retry["Idempotent-Replayed"] == "true"
     assert retry.json()["doc_number"] == first.json()["doc_number"] == "INV/0001"
     assert next_number(s, w) == 2
+
+
+def test_issuing_needs_a_verified_email(w: World) -> None:
+    s = series(w)
+    doc = w.create().json()
+    User.objects.filter(pk=w.t.user_id).update(email_verified_at=None)
+    assert problem(act(w, doc, "issue")) == (403, "email_not_verified")
+    assert next_number(s, w) == 1
 
 
 def test_failed_issues_leave_no_gap(w: World) -> None:

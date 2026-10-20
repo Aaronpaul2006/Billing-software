@@ -33,6 +33,7 @@ export function me(overrides: Partial<Me> = {}): Me {
   return {
     id: "0192f5c4-0000-7000-8000-000000000002",
     email: "asha@nairconstructions.in",
+    email_verified: true,
     full_name: "Asha Nair",
     phone: null,
     mfa_enabled: true,
