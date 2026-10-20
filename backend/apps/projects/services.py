@@ -2,10 +2,12 @@
 
 import uuid
 from dataclasses import dataclass
+from decimal import ROUND_HALF_UP, Decimal
 from typing import Any, cast
 
 from django.db import IntegrityError, transaction
-from django.db.models import Max
+from django.db.models import Max, OuterRef, Subquery, Sum, Value
+from django.db.models.functions import Coalesce
 from rest_framework.exceptions import ErrorDetail, ValidationError
 
 from apps.core.errors import Conflict, Invalid
@@ -14,6 +16,7 @@ from apps.core.queries import get_or_404, get_or_invalid
 from apps.core.tenancy import Principal
 from apps.core.versioning import update_versioned
 from apps.documents.models import Document, DocumentLine
+from apps.documents.services.ra_bills import BILLED_TYPES, billed_quantities
 from apps.parties.models import Party
 from apps.tenants.models import GstRegistration
 
@@ -117,9 +120,18 @@ def update_boq_item(
         with transaction.atomic():
             get_or_404(BoqItem, item_id, for_update=True)
             update_versioned(BoqItem.objects, item_id, expected, **changes)
+            item = get_or_404(BoqItem, item_id)
+            billed = billed_quantities([item.pk]).get(item.pk)
+            if billed is not None and not item.is_variation and billed > item.contract_qty:
+                raise Invalid(
+                    "contract_qty" if "contract_qty" in changes else "is_variation",
+                    f"{billed:f} {item.unit} is already billed, more than the contract"
+                    f" quantity {item.contract_qty:f}.",
+                    code="below_billed",
+                )
     except IntegrityError as exc:
         raise _item_code_taken() from exc
-    return get_or_404(BoqItem, item_id)
+    return item
 
 
 def delete_boq_item(principal: Principal, item_id: uuid.UUID) -> None:
@@ -203,3 +215,67 @@ def import_boq_items(
         except IntegrityError as exc:  # someone added the same code meanwhile
             raise _item_code_taken() from exc
     return BoqImport(dry_run, items, sheet.skipped_rows, sheet.ignored_columns)
+
+
+HUNDRED = Decimal("100")
+CENTS = Decimal("0.01")
+
+
+def boq_progress(principal: Principal, project_id: uuid.UUID) -> dict[str, Any]:
+    """Per BOQ item: contract vs billed (issued tax invoices and bills of
+    supply), for preparing the next RA bill. Variation items may go past
+    100 % (negative balance)."""
+    require(principal, "tenant.read")
+    project = get_or_404(Project, project_id)
+    billed_lines = DocumentLine.objects.filter(
+        boq_item_id=OuterRef("pk"),
+        document__status="ISSUED",
+        document__doc_type__in=BILLED_TYPES,
+    ).values("boq_item_id")
+    items = (
+        BoqItem.objects.filter(project=project)
+        .annotate(
+            billed_qty=Coalesce(
+                Subquery(billed_lines.annotate(t=Sum("quantity")).values("t")),
+                Value(Decimal("0.000")),
+            ),
+            billed_value=Coalesce(
+                Subquery(billed_lines.annotate(t=Sum("taxable_value")).values("t")),
+                Value(Decimal("0.00")),
+            ),
+        )
+        .order_by("sort_order", "item_code")
+    )
+    rows = []
+    for item in items:
+        contract_value = (item.contract_qty * item.rate).quantize(CENTS, ROUND_HALF_UP)
+        rows.append(
+            {
+                "boq_item_id": item.pk,
+                "item_code": item.item_code,
+                "description": item.description,
+                "unit": item.unit,
+                "rate": item.rate,
+                "is_variation": item.is_variation,
+                "contract_qty": item.contract_qty,
+                "billed_qty": item.billed_qty,
+                "balance_qty": item.contract_qty - item.billed_qty,
+                "contract_value": contract_value,
+                "billed_value": item.billed_value,
+                "progress_pct": _pct(item.billed_qty, item.contract_qty),
+            }
+        )
+    contract = sum((r["contract_value"] for r in rows), Decimal("0.00"))
+    billed = sum((r["billed_value"] for r in rows), Decimal("0.00"))
+    return {
+        "results": rows,
+        "totals": {
+            "contract_value": contract,
+            "billed_value": billed,
+            "progress_pct": _pct(billed, contract),
+        },
+    }
+
+
+def _pct(part: Decimal, whole: Decimal) -> Decimal | None:
+    return (part / whole * HUNDRED).quantize(CENTS, ROUND_HALF_UP) if whole else None

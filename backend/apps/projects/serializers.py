@@ -145,3 +145,29 @@ class BoqImportResultSerializer(serializers.Serializer[Any]):
     items = BoqItemSerializer(
         many=True, help_text="In a dry run, a preview: id, created_at and updated_at are null."
     )
+
+
+class BoqProgressRowSerializer(serializers.Serializer[Any]):
+    boq_item_id = serializers.UUIDField()
+    item_code = serializers.CharField()
+    description = serializers.CharField()
+    unit = serializers.CharField()
+    rate = MoneyField()
+    is_variation = serializers.BooleanField()
+    contract_qty = QuantityField()
+    billed_qty = QuantityField(help_text="In issued tax invoices and bills of supply.")
+    balance_qty = QuantityField(help_text="Negative when a variation item went past contract.")
+    contract_value = MoneyField()
+    billed_value = MoneyField(help_text="Taxable value billed.")
+    progress_pct = PercentField(allow_null=True, help_text="Billed / contract quantity.")
+
+
+class BoqProgressTotalsSerializer(serializers.Serializer[Any]):
+    contract_value = MoneyField()
+    billed_value = MoneyField()
+    progress_pct = PercentField(allow_null=True, help_text="Billed / contract value.")
+
+
+class BoqProgressSerializer(serializers.Serializer[Any]):
+    results = BoqProgressRowSerializer(many=True)
+    totals = BoqProgressTotalsSerializer()

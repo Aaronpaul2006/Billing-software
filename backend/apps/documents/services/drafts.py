@@ -31,6 +31,7 @@ from apps.tenants.models import GstRegistration
 from ..models import Document, DocumentLine
 from ..tax import Deductions, DocumentIn, DocumentOut, LineIn, LineOut, TaxError, compute
 from ..tax.engine import GST_DOC_TYPES
+from . import ra_bills
 
 DRAFTABLE_TYPES = ("QUOTATION", "PROFORMA", "TAX_INVOICE", "BILL_OF_SUPPLY")
 NOTE_TYPES = frozenset({"CREDIT_NOTE", "DEBIT_NOTE"})  # created via their own endpoints
@@ -172,7 +173,9 @@ def _deductions(doc_type: str, project: Project | None, doc_id: uuid.UUID | None
 
 def _compute(data: dict[str, Any], doc_id: uuid.UUID | None = None) -> Computed:
     resolved = _resolve(data)
+    ra_bills.check_header(data, resolved.project)
     lines = _line_inputs(data.get("lines", []), resolved.project)
+    ra_bills.check_lines(data, resolved.project, lines, doc_id)
     engine_in = DocumentIn(
         doc_type=data["doc_type"],
         registration_type=resolved.registration.registration_type,
@@ -263,6 +266,7 @@ def _write_lines(doc: Document, c: Computed) -> None:
             sac_hsn=ln.get("sac_hsn") or None,
             unit=ln.get("unit") or None,
             quantity=ln["quantity"],
+            prev_cumulative_qty=ln.get("prev_cumulative_qty"),
             rate=ln["rate"],
             discount_amount=ln["discount_amount"],
             gst_rate=ln["gst_rate"],
@@ -316,6 +320,7 @@ def current_state(doc: Document) -> dict[str, Any]:
         "notes": doc.notes,
         "terms": doc.terms,
         "round_to_rupee": doc.round_to_rupee,
+        "is_ra_bill": doc.is_ra_bill,
         "lines": _stored_lines(doc),
     }
 
@@ -342,7 +347,13 @@ def _create(principal: Principal, data: dict[str, Any], **links: uuid.UUID) -> D
     """Insert a draft; `links` sets source_document_id / original_document_id."""
     c = _compute(data)
     with transaction.atomic():
-        doc = Document(**_header(c, data), **links, status="DRAFT", created_by_id=principal.user_id)
+        doc = Document(
+            **_header(c, data),
+            **ra_bills.ra_fields(data, c.resolved.project),
+            **links,
+            status="DRAFT",
+            created_by_id=principal.user_id,
+        )
         doc.save()
         _write_lines(doc, c)
     return get_or_404(Document, doc.pk)
@@ -372,7 +383,13 @@ def update_draft(
         if merged.get("due_date") and merged["due_date"] < merged["doc_date"]:
             raise Invalid("due_date", "Due before the document date.", code="invalid_dates")
         c = _compute(merged, doc_id=doc.pk)
-        update_versioned(Document.objects, doc.pk, expected, **_header(c, merged))
+        update_versioned(
+            Document.objects,
+            doc.pk,
+            expected,
+            **_header(c, merged),
+            **ra_bills.ra_fields(merged, c.resolved.project, doc),
+        )
         DocumentLine.objects.filter(document_id=doc.pk).delete()
         _write_lines(doc, c)
     return get_or_404(Document, doc_id)

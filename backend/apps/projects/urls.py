@@ -15,5 +15,10 @@ urlpatterns = [
         views.BoqImportView.as_view(),
         name="project-boq-import",
     ),
+    path(
+        "projects/<uuid:project_id>/boq-progress",
+        views.BoqProgressView.as_view(),
+        name="project-boq-progress",
+    ),
     path("boq-items/<uuid:item_id>", views.BoqItemDetailView.as_view(), name="boq-item-detail"),
 ]

@@ -27,7 +27,7 @@ from apps.payments.models import Allocation
 from apps.tenants.models import DocumentSeries, GstRegistration, Tenant
 
 from ..models import Document, DocumentLine
-from . import drafts
+from . import drafts, ra_bills
 from .pdfs import enqueue_pdf
 
 CONVERSIONS: dict[str, frozenset[str]] = {
@@ -101,9 +101,13 @@ def issue(principal: Principal, doc_id: uuid.UUID, expected: int) -> Document:
         if doc.status != "DRAFT":
             raise Conflict("Only drafts can be issued.", code="document_not_draft")
 
-        # Recompute at the moment of issue: project settings and the advance
-        # still outstanding may have changed since the draft was saved.
-        computed = drafts._compute(drafts.current_state(doc), doc_id=doc.pk)
+        # Recompute at the moment of issue: project settings, the advance
+        # still outstanding and BOQ quantities billed may have changed since
+        # the draft was saved. The BOQ rows are locked first, so bills issued
+        # concurrently cannot together pass a contract quantity.
+        state = drafts.current_state(doc)
+        ra_bills.lock_boq_items(state["lines"])
+        computed = drafts._compute(state, doc_id=doc.pk)
         if not computed.lines:
             raise Invalid("lines", "Add at least one line before issuing.", code="no_lines")
         if doc.original_document_id:
@@ -246,6 +250,7 @@ def create_note(
         "due_date": None,
         "valid_until": None,
         "notes": notes,
+        "is_ra_bill": False,  # a note adjusts an RA bill; it is not one
         "lines": lines if lines is not None else drafts.current_state(original)["lines"],
     }
     return drafts._create(principal, data, original_document_id=original.pk)

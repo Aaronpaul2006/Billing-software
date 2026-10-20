@@ -21,6 +21,7 @@ from .serializers import (
     BoqImportResultSerializer,
     BoqItemSerializer,
     BoqItemWriteSerializer,
+    BoqProgressSerializer,
     ProjectSerializer,
     ProjectWriteSerializer,
 )
@@ -156,3 +157,14 @@ class BoqImportView(ActionAPIView):
             self.principal, project_id, upload.read(), dry_run=dry_run
         )
         return Response(BoqImportResultSerializer(result).data, status=200 if dry_run else 201)
+
+
+class BoqProgressView(ActionAPIView):
+    """Contract vs billed per BOQ item; all items, not paginated."""
+
+    pagination_class = None
+
+    @extend_schema(responses={200: BoqProgressSerializer}, tags=["projects"])
+    def get(self, request: Request, project_id: uuid.UUID) -> Response:
+        progress = services.boq_progress(self.principal, project_id)
+        return Response(BoqProgressSerializer(progress).data)

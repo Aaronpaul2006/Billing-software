@@ -38,6 +38,11 @@ class DocumentWriteSerializer(serializers.Serializer[Any]):
     due_date = serializers.DateField(required=False, allow_null=True)
     valid_until = serializers.DateField(required=False, allow_null=True)
     round_to_rupee = serializers.BooleanField(required=False)
+    is_ra_bill = serializers.BooleanField(
+        required=False,
+        help_text="RA (running account) bill against the project's BOQ: every line names a"
+        " BOQ item, once. Gets the project's next RA number.",
+    )
     notes = serializers.CharField(
         max_length=5000, required=False, allow_null=True, allow_blank=True
     )
@@ -66,7 +71,11 @@ class DocumentWriteSerializer(serializers.Serializer[Any]):
 class LineOutSerializer(serializers.ModelSerializer[DocumentLine]):
     catalog_item_id = serializers.UUIDField(allow_null=True)
     boq_item_id = serializers.UUIDField(allow_null=True)
-    quantity = QuantityField()
+    quantity = QuantityField(help_text="RA bill: the quantity in this bill.")
+    prev_cumulative_qty = QuantityField(
+        allow_null=True, help_text="RA bill: billed before this bill (snapshot at issue)."
+    )
+    up_to_date_qty = serializers.SerializerMethodField(help_text="RA bill: previous + this bill.")
     rate = MoneyField()
     discount_amount = MoneyField()
     taxable_value = MoneyField()
@@ -87,6 +96,8 @@ class LineOutSerializer(serializers.ModelSerializer[DocumentLine]):
             "sac_hsn",
             "unit",
             "quantity",
+            "prev_cumulative_qty",
+            "up_to_date_qty",
             "rate",
             "discount_amount",
             "taxable_value",
@@ -98,6 +109,11 @@ class LineOutSerializer(serializers.ModelSerializer[DocumentLine]):
             "line_total",
         )
         read_only_fields = fields
+
+    def get_up_to_date_qty(self, obj: DocumentLine) -> str | None:
+        if obj.prev_cumulative_qty is None:
+            return None
+        return f"{obj.prev_cumulative_qty + obj.quantity:.3f}"
 
 
 class TotalsSerializer(serializers.Serializer[Any]):
@@ -146,6 +162,8 @@ class DocumentListSerializer(serializers.ModelSerializer[Document]):
             "supply_type",
             "is_gst_document",
             "round_to_rupee",
+            "is_ra_bill",
+            "ra_sequence",
             "totals",
             "issued_at",
             "created_at",

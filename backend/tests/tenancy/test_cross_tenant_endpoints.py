@@ -754,3 +754,35 @@ def test_boq_import_rejects_other_tenant(world: World, masters: dict[str, str]) 
 
 
 OBJECT_ROUTES["project-boq-import"] = lambda w: None  # test_boq_import_rejects_other_tenant
+
+
+# --- Phase 3.2 RA bills ----------------------------------------------------------------
+
+
+def test_boq_progress_and_ra_bills_reject_other_tenant(
+    world: World, masters: dict[str, str]
+) -> None:
+    api, b = world.api, world.as_b()
+    url = f"/api/v1/projects/{masters['project']}/boq-progress"
+    as_a: dict[str, Any] = {"HTTP_AUTHORIZATION": f"Bearer {world.a_owner.access_token}"}
+    assert [r["item_code"] for r in api.get(url, **as_a).json()["results"]] == ["1"]
+    assert api.get(url, **b).status_code == 404
+    # B cannot bill A's BOQ item in an RA bill on A's project (both unknown to B)
+    r = api.post(
+        "/api/v1/documents",
+        {
+            "doc_type": "TAX_INVOICE",
+            "party_id": masters["party"],
+            "project_id": masters["project"],
+            "doc_date": "2026-10-19",
+            "is_ra_bill": True,
+            "lines": [{"boq_item_id": masters["boq"], "quantity": "1"}],
+        },
+        format="json",
+        HTTP_IDEMPOTENCY_KEY=str(uuid.uuid4()),
+        **b,
+    )
+    assert (r.status_code, r.json()["errors"][0]["code"]) == (422, "not_found")
+
+
+OBJECT_ROUTES["project-boq-progress"] = lambda w: None  # same test

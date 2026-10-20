@@ -51,6 +51,7 @@ class DocumentFilter(django_filters.FilterSet):
     )
     party_id = django_filters.UUIDFilter(field_name="party_id")
     project_id = django_filters.UUIDFilter(field_name="project_id")
+    is_ra_bill = django_filters.BooleanFilter(field_name="is_ra_bill")
     doc_date_from = django_filters.DateFilter(field_name="doc_date", lookup_expr="gte")
     doc_date_to = django_filters.DateFilter(field_name="doc_date", lookup_expr="lte")
     due_date_to = django_filters.DateFilter(field_name="due_date", lookup_expr="lte")
@@ -140,8 +141,16 @@ class PreviewTotalsView(ActionAPIView):
         data.is_valid(raise_exception=True)
         c = drafts.preview(self.principal, data.validated_data)
         lines = [
-            {**{k: str(v) for k, v in out.__dict__.items()}, "line_no": i}
-            for i, out in enumerate(c.out.lines, start=1)
+            {
+                **{k: str(v) for k, v in out.__dict__.items()},
+                "line_no": i,
+                **(
+                    {"prev_cumulative_qty": f"{ln['prev_cumulative_qty']:.3f}"}
+                    if ln.get("prev_cumulative_qty") is not None
+                    else {}
+                ),
+            }
+            for i, (ln, out) in enumerate(zip(c.lines, c.out.lines, strict=True), start=1)
         ]
         return Response(
             {

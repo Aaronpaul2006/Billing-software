@@ -168,7 +168,8 @@ Implemented (Phase 0.5) as of 2026-10-19:
 |---|---|
 | `GET/POST /parties` · `GET/PATCH /parties/{id}` | `?is_customer=true&q=...`. GSTIN validated (format + checksum). Archive with `PATCH {is_active: false}`; no delete. |
 | `GET/POST /projects` · `GET/PATCH /projects/{id}` | `?status=ACTIVE&client_party_id=...` |
-| `GET/POST /projects/{id}/boq-items` · `PATCH/DELETE /boq-items/{id}` | Bulk import: `POST /projects/{id}/boq-items:import` (CSV/XLSX, validated, all-or-nothing). Delete only if never billed. |
+| `GET/POST /projects/{id}/boq-items` · `PATCH/DELETE /boq-items/{id}` | Bulk import: `POST /projects/{id}/boq-items:import` (CSV/XLSX, validated, all-or-nothing). Delete only if never billed; `contract_qty` cannot go below the quantity billed, nor `is_variation` be turned off once billed past it (`422 below_billed`). |
+| `GET /projects/{id}/boq-progress` | Per BOQ item: contract vs billed quantity and value, balance, progress %; plus totals. All items, not paginated. |
 | `GET/POST /catalog-items` · `PATCH/DELETE /catalog-items/{id}` | Reusable items and rates |
 
 ### BOQ import
@@ -220,7 +221,7 @@ and `dry_run` (`true` validates and previews, saves nothing). Needs
 
 ### List filters
 `doc_type`, `status`, `book=GST|NON_GST|ALL` (maps to `is_gst_document`),
-`party_id`, `project_id`, `doc_date_from/to`, `due_date_to`,
+`party_id`, `project_id`, `is_ra_bill`, `doc_date_from/to`, `due_date_to`,
 `payment_state=UNPAID|PARTIAL|PAID`, `q`.
 
 ### Create a draft
@@ -263,7 +264,7 @@ client (`party_mismatch`) and a customer (`not_a_customer`); lines may name a
 rate and GST rate; `round_to_rupee` is stored with the draft; deductions come
 from the project (invoices, bills of supply, proformas). `POST /documents`
 accepts QUOTATION, PROFORMA, TAX_INVOICE and BILL_OF_SUPPLY; notes come from
-their own endpoints (Phase 1.6), RA bills in Phase 3. Example response:
+their own endpoints (Phase 1.6), RA bills below (Phase 3.2). Example response:
 
 ```json
 {
@@ -291,6 +292,33 @@ their own endpoints (Phase 1.6), RA bills in Phase 3. Example response:
   "lines": [ ... ]
 }
 ```
+
+### RA (running account) bills
+
+`is_ra_bill: true` on `POST /documents` (or `PATCH` of a draft) makes a tax
+invoice, bill of supply or proforma an RA bill against its project's BOQ
+(otherwise `422` on `is_ra_bill` / `project_id`).
+
+- Every line names a `boq_item_id`, once (`lines[i].boq_item_id`: `required`,
+  `duplicate_boq_item`); extra work goes into the BOQ as a variation item.
+  Lines may leave out description, unit, SAC/HSN, rate and GST rate (BOQ).
+- `ra_sequence` (RA bill 1, 2, 3 ...) runs per project and document type and is
+  given when the draft is created. One RA draft per project and type may be
+  open (`409 ra_draft_exists`). A cancelled RA bill keeps its number; if it was
+  the latest, its replacement reuses it.
+- Each line returns `quantity` (this bill), `prev_cumulative_qty` (billed
+  before it) and `up_to_date_qty`. *Billed* means lines of issued tax invoices
+  and bills of supply, RA or not; proformas, drafts, cancelled documents and
+  credit / debit notes do not count. The snapshot is retaken at issue.
+- BOQ cap, for every tax invoice / bill of supply naming BOQ items and every RA
+  bill: billed + this document must not pass the contract quantity unless the
+  item is a variation (`422 exceeds_boq_quantity` on `lines[i].quantity`).
+  Checked on every save and again at issue with the BOQ rows locked, so bills
+  issued concurrently cannot pass it together.
+- Converting an RA proforma gives an RA invoice with its own number; credit
+  and debit notes are never RA bills. List filter: `is_ra_bill=true`.
+- The PDF title reads "Tax Invoice · RA Bill No. 3" with Item / Previous qty /
+  This bill qty / Up to date qty columns.
 
 ### Issue
 ```http

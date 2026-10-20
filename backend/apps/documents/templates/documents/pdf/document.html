@@ -29,7 +29,7 @@
 
 <div class="row">
   <div style="flex: 2">
-    <h1>{{ title }}</h1>
+    <h1>{{ title }}{% if ra_sequence %} &middot; RA Bill No. {{ ra_sequence }}{% endif %}</h1>
     <div><strong>{{ supplier.legal_name }}</strong>{% if supplier.trade_name %} ({{ supplier.trade_name }}){% endif %}</div>
     {% with a=supplier.address %}<div class="muted">{{ a.line1 }}{% if a.line2 %}, {{ a.line2 }}{% endif %}{% if a.city %}, {{ a.city }}{% endif %}{% if a.pincode %} - {{ a.pincode }}{% endif %}</div>{% endwith %}
     {% if supplier.gstin %}<div>GSTIN: <strong>{{ supplier.gstin }}</strong></div>{% endif %}
@@ -67,16 +67,17 @@
 <table>
   <thead>
     <tr>
-      <th>#</th><th>Description</th><th>HSN/SAC</th><th class="num">Qty</th><th>Unit</th>
-      <th class="num">Rate</th><th class="num">Discount</th><th class="num">Taxable</th><th class="num">GST %</th><th class="num">Amount</th>
+      <th>#</th>{% if ra_sequence %}<th>Item</th>{% endif %}<th>Description</th><th>HSN/SAC</th><th>Unit</th>
+      {% if ra_sequence %}<th class="num">Previous qty</th><th class="num">This bill qty</th><th class="num">Up to date qty</th>{% else %}<th class="num">Qty</th>{% endif %}
+      <th class="num">Rate</th>{% if show_discount %}<th class="num">Discount</th>{% endif %}<th class="num">Taxable</th><th class="num">GST %</th><th class="num">Amount</th>
     </tr>
   </thead>
   <tbody>
   {% for ln in lines %}
     <tr>
-      <td>{{ ln.no }}</td><td>{{ ln.description }}</td><td>{{ ln.sac_hsn }}</td>
-      <td class="num">{{ ln.quantity }}</td><td>{{ ln.unit }}</td><td class="num">{{ ln.rate }}</td>
-      <td class="num">{{ ln.discount }}</td><td class="num">{{ ln.taxable }}</td>
+      <td>{{ ln.no }}</td>{% if ra_sequence %}<td>{{ ln.item_code }}</td>{% endif %}<td>{{ ln.description }}</td><td>{{ ln.sac_hsn }}</td><td>{{ ln.unit }}</td>
+      {% if ra_sequence %}<td class="num">{{ ln.previous }}</td><td class="num">{{ ln.quantity }}</td><td class="num">{{ ln.up_to_date }}</td>{% else %}<td class="num">{{ ln.quantity }}</td>{% endif %}
+      <td class="num">{{ ln.rate }}</td>{% if show_discount %}<td class="num">{{ ln.discount }}</td>{% endif %}<td class="num">{{ ln.taxable }}</td>
       <td class="num">{{ ln.gst_rate }}</td><td class="num">{{ ln.total }}</td>
     </tr>
   {% endfor %}

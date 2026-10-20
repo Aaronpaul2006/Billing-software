@@ -15,7 +15,7 @@ from django.template.loader import render_to_string
 
 from apps.core.india import STATE_CODES
 from apps.parties.models import Party
-from apps.projects.models import Project
+from apps.projects.models import BoqItem, Project
 from apps.tenants.models import GstRegistration
 
 from ..models import Document, DocumentLine
@@ -47,6 +47,10 @@ def inr(amount: Decimal | None) -> str:
             groups.insert(0, head)
         whole = ",".join([*groups, tail])
     return f"{sign}{whole}.{fraction}"
+
+
+def _qty(value: Decimal | None) -> str:
+    return "" if value is None else f"{value.normalize():f}"
 
 
 def _state(code: str | None) -> str:
@@ -83,6 +87,11 @@ def build_context(doc: Document) -> dict[str, Any]:
     if doc.original_document_id:
         original = Document.objects.filter(pk=doc.original_document_id).first()
     project = Project.objects.filter(pk=doc.project_id).first() if doc.project_id else None
+    boq_codes = dict(
+        BoqItem.objects.filter(
+            pk__in=[ln.boq_item_id for ln in lines if ln.boq_item_id]
+        ).values_list("id", "item_code")
+    )
 
     deductions = [
         (label, inr(value))
@@ -96,6 +105,8 @@ def build_context(doc: Document) -> dict[str, Any]:
     ]
     return {
         "title": TITLES.get(doc.doc_type, doc.doc_type),
+        "ra_sequence": doc.ra_sequence if doc.is_ra_bill else None,
+        "show_discount": any(ln.discount_amount for ln in lines),
         "is_draft": doc.status == "DRAFT",
         "is_cancelled": doc.status == "CANCELLED",
         "doc": doc,
@@ -112,7 +123,12 @@ def build_context(doc: Document) -> dict[str, Any]:
                 "no": ln.line_no,
                 "description": ln.description,
                 "sac_hsn": ln.sac_hsn or "",
-                "quantity": f"{ln.quantity.normalize():f}",
+                "item_code": boq_codes.get(ln.boq_item_id, ""),
+                "quantity": _qty(ln.quantity),
+                "previous": _qty(ln.prev_cumulative_qty),
+                "up_to_date": _qty(
+                    None if ln.prev_cumulative_qty is None else ln.prev_cumulative_qty + ln.quantity
+                ),
                 "unit": ln.unit or "",
                 "rate": inr(ln.rate),
                 "discount": inr(ln.discount_amount) if ln.discount_amount else "",

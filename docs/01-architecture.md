@@ -294,6 +294,15 @@ billed before it, so the PDF can print "previous / this bill / up to date"
 columns without recomputing history. Billing beyond the BOQ quantity is
 allowed only for items flagged as variations.
 
+Built in Phase 3.2 (`apps/documents/services/ra_bills.py`). "Billed" means lines
+of issued tax invoices and bills of supply, RA or not; the cap applies to all of
+them and is re-checked at issue with the BOQ rows locked in id order. The RA
+number (`ra_sequence`) is not a GST document number: it labels the bill within
+its project, is given when the draft is created (one open RA draft per project
+and type) and is computed as the highest non-cancelled number + 1 while the
+project row is locked, so the latest cancelled bill's number is reused. The
+tax-invoice number itself still comes from the locked series at issue.
+
 ---
 
 ## 6. Security baseline
