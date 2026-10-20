@@ -4,7 +4,7 @@ Last updated: 2026-10-21
 
 ## Current phase
 
-**Launch gaps** (owner decision 2026-10-21, after the web app W.1–W.7): L.1 email and L.2 rate limits done; next L.3 user uploads. Backend Phases 0–3 and web W.1–W.7 complete.
+**Launch gaps** (owner decision 2026-10-21, after the web app W.1–W.7): L.1 email, L.2 rate limits and L.3 user uploads done; next L.4 housekeeping. Backend Phases 0–3 and web W.1–W.7 complete.
 
 ## Done
 
@@ -52,9 +52,11 @@ Last updated: 2026-10-21
 
 - [x] Launch gap L.2: rate limits — `apps/core/ratelimit.py`: fixed-window counters in Redis (one Lua script: increment + expiry, exact under concurrency), limits in settings `RATE_LIMITS`: login 20/min per IP and 5/min per email, MFA verify 20/min per IP, signup 10/hour per IP, forgot password 3/hour per email and 20/hour per IP, reset 20/hour per IP, verification resend 3/hour per user, and `RateLimitMiddleware` 600/min per signed-in user (runs before the tenant transaction). `429 rate_limited` with the wait in words, `retry_after`, `Retry-After`; `RateLimit-Limit / -Remaining / -Reset` on counted responses. Emails hashed in keys. Client IP from `REMOTE_ADDR`, or `X-Forwarded-For` behind `TRUSTED_PROXY_COUNT` trusted proxies (forged entries ignored, invalid ones fall back); session records use the same IP. Redis down → requests allowed, warning logged (test with a dead Redis). Tests run on real Redis with a fresh key prefix per test; the lockout test raises the per-email limit to keep testing the database lockout alone. Web: the 429 detail is shown as is (sign-in test). Smoke-tested through the Vite proxy (headers pass through). Web 108 tests; backend 496.
 
+- [x] Launch gap L.3: user uploads — `POST /attachments` (PENDING row + presigned PUT that signs `Content-Type` and `Content-Length`: storage refuses another type or size, checked against SeaweedFS), `POST /attachments/{id}/complete` (uploader only: present, size, type and magic bytes, else `409 upload_missing` / `422 upload_mismatch` with the object deleted), `GET /attachments/{id}` (5-minute download link once AVAILABLE, header-safe `Content-Disposition`). Celery task `process_upload_task`: SHA-256 and ClamAV scan over clamd INSTREAM (`apps/files/scan.py`, no new dependency) → AVAILABLE or QUARANTINED (deleted); scanner down → retried, stays PENDING. Storage keys hold no client text; filenames lose paths and control characters. New action `files.upload` (all but VIEWER; architecture §3 table and matrix test updated). `manage.py setup_storage` (bucket + CORS for `S3_CORS_ORIGINS`; browsers PUT straight to storage). Settings `CLAMD_HOST` / `CLAMD_PORT`; production refuses to start without a scanner. Compose: `clamav` (1.4.6 LTS) in profile `scan`. No schema change (the `attachments` table had every column). Web: "Bill or receipt" on the expense form (photo or PDF, checked before sending, "Uploading…" / "Checking the file…", link to view, remove), `uploadFile()` helper. Tests: moto storage, a fake clamd speaking INSTREAM (EICAR found, chunking), scanner down, mismatches, roles, cross-tenant routes. Web 111 tests; backend 515.
+
 ## In progress
 
-- Nothing. Next: L.3 user uploads.
+- Nothing. Next: L.4 housekeeping.
 
 ## Next
 
@@ -107,7 +109,7 @@ Launch gaps (owner decision 2026-10-21):
 
 1. ~~Email: verification and password reset (backend + screens)~~ (done)
 2. ~~Rate limits in Redis~~ (done)
-3. User uploads (attachments API, presigned PUT, size / type checks)
+3. ~~User uploads~~ (done)
 4. Housekeeping: re-render the PDF on cancel, Celery beat (purge expired idempotency keys)
 
 Full roadmap: `docs/01-architecture.md` §9.
@@ -135,7 +137,7 @@ Full roadmap: `docs/01-architecture.md` §9.
 - Expired idempotency keys are reused on demand; a periodic purge needs Celery beat (not set up yet).
 - A PDF rendered before a document is cancelled still shows it as issued; re-render on cancel is not done yet.
 - Expenses have no void reason column; the audit trail records who voided and when.
-- Uploads by users (attachments API, presigned PUT, malware scan) are not built yet; only system-generated PDFs.
+- Uploads: only expenses take a file in the web app so far (documents, projects and payments could link files later; one file per expense). PENDING uploads that are never completed leave a row and maybe an object behind until housekeeping purges them (L.4). Images are not resized or stripped of EXIF location data.
 - `auth_sessions` has a `tenant_id` column but no RLS, by design (global table, read only by id / token hash).
 - The app role has no privileges on `django_migrations`. `TransactionTestCase`-style flushes (TRUNCATE) will not work as the app role; concurrency tests in step 7 need their own setup/cleanup.
 - Until JWT lands (step 5), unauthenticated API calls get 403 `permission_denied`; step 5 makes them 401.

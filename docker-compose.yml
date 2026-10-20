@@ -107,6 +107,18 @@ services:
       retries: 20
     restart: unless-stopped
 
+  # Virus scanner for uploads (profile "scan"): docker compose --profile scan up -d clamav
+  # and set CLAMD_HOST=127.0.0.1 in .env (the app containers reach it as "clamav").
+  # The first start downloads the signatures (a few minutes); it needs about 1.5 GB of RAM.
+  # Without it, uploads are not scanned (development only; production requires it).
+  clamav:
+    profiles: ["scan"]
+    image: clamav/clamav:1.4.6  # LTS line
+    ports:
+      - "127.0.0.1:${CLAMD_PORT:-3310}:3310"
+    volumes:
+      - clamav-data:/var/lib/clamav
+
   # --- the backend itself (profile "app"): docker compose --profile app up -d --build
   # Inside the network, services are reached by name on their container ports.
   api: &backend
@@ -143,6 +155,7 @@ services:
     ports: []
 
 volumes:
+  clamav-data:
   postgres-data:
   redis-data:
   seaweedfs-data:

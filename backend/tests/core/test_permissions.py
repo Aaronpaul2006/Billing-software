@@ -15,6 +15,7 @@ MATRIX = {
     "documents.issue": "✓✓✓··",
     "payments.record": "✓✓✓··",
     "expenses.record": "✓✓✓✓·",
+    "files.upload": "✓✓✓✓·",
     "reports.view": "✓✓✓·✓",
     "audit.view": "✓✓···",
     "tenant.ownership": "✓····",

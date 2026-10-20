@@ -913,3 +913,30 @@ def test_tds_routes_reject_other_tenant(world: World, masters: dict[str, str]) -
 OBJECT_ROUTES["tds-certificate-detail"] = lambda w: None  # test_tds_routes_reject_other_tenant
 COLLECTION_ROUTES["tds-certificates"] = lambda w: None  # same test
 COLLECTION_ROUTES["report-tds-reconciliation"] = lambda w: None  # same test
+
+
+# --- L.3 uploads -------------------------------------------------------------------------
+
+
+def test_attachment_routes_reject_other_tenant(world: World) -> None:
+    from apps.files.models import Attachment
+
+    a = world.a
+    with tenant_context(a.tenant_id, a.user_id):
+        attachment = Attachment.objects.create(
+            storage_key=f"tenants/{a.tenant_id}/uploads/x.pdf",
+            original_filename="a.pdf",
+            content_type="application/pdf",
+            size_bytes=10,
+            uploaded_by_id=a.user_id,
+        )
+    api, b = world.api, world.as_b()
+    assert api.get(f"/api/v1/attachments/{attachment.pk}", **b).status_code == 404
+    assert api.post(f"/api/v1/attachments/{attachment.pk}/complete", **b).status_code == 404
+    with tenant_context(a.tenant_id, a.user_id):
+        assert Attachment.objects.get(pk=attachment.pk).status == "PENDING"
+
+
+OBJECT_ROUTES["attachment-detail"] = lambda w: None  # test_attachment_routes_reject_other_tenant
+OBJECT_ROUTES["attachment-complete"] = lambda w: None  # same test
+NOT_TENANT_DATA["attachments"] = "creates an upload in the caller's own tenant"

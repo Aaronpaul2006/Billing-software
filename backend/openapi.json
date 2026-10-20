@@ -35,6 +35,116 @@
                 }
             }
         },
+        "/api/v1/attachments": {
+            "post": {
+                "operationId": "attachments_create",
+                "description": "Start an upload: a PENDING attachment and a presigned PUT (5 minutes) that\naccepts only the declared type and size. Then PUT the bytes and call complete.",
+                "tags": [
+                    "files"
+                ],
+                "requestBody": {
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/UploadStart"
+                            }
+                        }
+                    },
+                    "required": true
+                },
+                "security": [
+                    {
+                        "bearerAuth": []
+                    }
+                ],
+                "responses": {
+                    "201": {
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/UploadStarted"
+                                }
+                            }
+                        },
+                        "description": ""
+                    }
+                }
+            }
+        },
+        "/api/v1/attachments/{attachment_id}": {
+            "get": {
+                "operationId": "attachments_retrieve",
+                "description": "An attachment, with a 5-minute download link once it is AVAILABLE.",
+                "parameters": [
+                    {
+                        "in": "path",
+                        "name": "attachment_id",
+                        "schema": {
+                            "type": "string",
+                            "format": "uuid"
+                        },
+                        "required": true
+                    }
+                ],
+                "tags": [
+                    "files"
+                ],
+                "security": [
+                    {
+                        "bearerAuth": []
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/Attachment"
+                                }
+                            }
+                        },
+                        "description": ""
+                    }
+                }
+            }
+        },
+        "/api/v1/attachments/{attachment_id}/complete": {
+            "post": {
+                "operationId": "attachments_complete_create",
+                "description": "After the PUT (uploader only): checks size, type and magic bytes, then a\nbackground scan makes it AVAILABLE or QUARANTINED. Poll the attachment.",
+                "parameters": [
+                    {
+                        "in": "path",
+                        "name": "attachment_id",
+                        "schema": {
+                            "type": "string",
+                            "format": "uuid"
+                        },
+                        "required": true
+                    }
+                ],
+                "tags": [
+                    "files"
+                ],
+                "security": [
+                    {
+                        "bearerAuth": []
+                    }
+                ],
+                "responses": {
+                    "202": {
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/Attachment"
+                                }
+                            }
+                        },
+                        "description": ""
+                    }
+                }
+            }
+        },
         "/api/v1/auth/login": {
             "post": {
                 "operationId": "auth_login_create",
@@ -4444,6 +4554,62 @@
                     "retention_release_id"
                 ]
             },
+            "Attachment": {
+                "type": "object",
+                "properties": {
+                    "id": {
+                        "type": "string",
+                        "format": "uuid"
+                    },
+                    "filename": {
+                        "type": "string"
+                    },
+                    "content_type": {
+                        "type": "string"
+                    },
+                    "size_bytes": {
+                        "type": "integer"
+                    },
+                    "status": {
+                        "$ref": "#/components/schemas/AttachmentStatusEnum"
+                    },
+                    "uploaded_by": {
+                        "type": "string",
+                        "format": "uuid"
+                    },
+                    "created_at": {
+                        "type": "string",
+                        "format": "date-time"
+                    },
+                    "download_url": {
+                        "type": [
+                            "string",
+                            "null"
+                        ],
+                        "readOnly": true,
+                        "description": "A link for 5 minutes; only when the file is AVAILABLE."
+                    }
+                },
+                "required": [
+                    "content_type",
+                    "created_at",
+                    "download_url",
+                    "filename",
+                    "id",
+                    "size_bytes",
+                    "status",
+                    "uploaded_by"
+                ]
+            },
+            "AttachmentStatusEnum": {
+                "enum": [
+                    "PENDING",
+                    "AVAILABLE",
+                    "QUARANTINED"
+                ],
+                "type": "string",
+                "description": "* `PENDING` - Pending\n* `AVAILABLE` - Available\n* `QUARANTINED` - Quarantined"
+            },
             "BoqImportRequest": {
                 "type": "object",
                 "properties": {
@@ -4934,6 +5100,16 @@
                 ],
                 "type": "string",
                 "description": "* `web` - web\n* `mobile` - mobile"
+            },
+            "ContentTypeEnum": {
+                "enum": [
+                    "application/pdf",
+                    "image/jpeg",
+                    "image/png",
+                    "image/webp"
+                ],
+                "type": "string",
+                "description": "* `application/pdf` - application/pdf\n* `image/jpeg` - image/jpeg\n* `image/png` - image/png\n* `image/webp` - image/webp"
             },
             "Convert": {
                 "type": "object",
@@ -10515,6 +10691,57 @@
                     "round_off",
                     "sgst",
                     "subtotal"
+                ]
+            },
+            "UploadStart": {
+                "type": "object",
+                "properties": {
+                    "filename": {
+                        "type": "string",
+                        "maxLength": 255
+                    },
+                    "content_type": {
+                        "$ref": "#/components/schemas/ContentTypeEnum"
+                    },
+                    "size_bytes": {
+                        "type": "integer",
+                        "maximum": 20971520,
+                        "minimum": 1
+                    }
+                },
+                "required": [
+                    "content_type",
+                    "filename",
+                    "size_bytes"
+                ]
+            },
+            "UploadStarted": {
+                "type": "object",
+                "properties": {
+                    "attachment": {
+                        "$ref": "#/components/schemas/Attachment"
+                    },
+                    "upload_url": {
+                        "type": "string",
+                        "format": "uri",
+                        "description": "PUT the file's bytes here within 5 minutes."
+                    },
+                    "upload_headers": {
+                        "type": "object",
+                        "additionalProperties": {
+                            "type": "string"
+                        },
+                        "description": "Send exactly these headers with the PUT."
+                    },
+                    "expires_in": {
+                        "type": "integer"
+                    }
+                },
+                "required": [
+                    "attachment",
+                    "expires_in",
+                    "upload_headers",
+                    "upload_url"
                 ]
             },
             "VerifyEmail": {

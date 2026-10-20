@@ -21,6 +21,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { NativeSelect } from "@/components/ui/native-select";
 import { Skeleton } from "@/components/ui/skeleton";
 import { isoDate } from "@/features/dashboard/periods";
+import { AttachmentField } from "@/features/files/AttachmentField";
 import { MODE_LABELS } from "@/features/payments/modes";
 import { applyServerErrors, blankToNull, ifMatch } from "@/lib/forms";
 import { cleanMoneyInput, formatInr, sumMoney } from "@/lib/money";
@@ -55,6 +56,7 @@ const formSchema = z.object({
   itc_eligible: z.boolean(),
   amount_paid: money("An amount like 20000."),
   payment_mode: z.string(),
+  attachment_id: z.string(),
 });
 type FormValues = z.infer<typeof formSchema>;
 
@@ -70,6 +72,7 @@ const FIELDS = [
   "itc_eligible",
   "amount_paid",
   "payment_mode",
+  "attachment_id",
 ] as const;
 
 function toForm(x: Expense | undefined): FormValues {
@@ -85,6 +88,7 @@ function toForm(x: Expense | undefined): FormValues {
     itc_eligible: x?.itc_eligible ?? false,
     amount_paid: x && x.amount_paid !== "0.00" ? x.amount_paid : "",
     payment_mode: x?.payment_mode ?? "",
+    attachment_id: x?.attachment_id ?? "",
   };
 }
 
@@ -102,6 +106,7 @@ function toApi(v: FormValues): ExpenseWrite {
     itc_eligible: v.itc_eligible,
     amount_paid: paid || "0",
     payment_mode: paid && paid !== "0" ? ((v.payment_mode || null) as Mode | null) : null,
+    attachment_id: blankToNull(v.attachment_id),
   };
 }
 
@@ -312,6 +317,29 @@ function ExpenseForm({ expense }: { expense?: Expense }) {
                 ))}
               </NativeSelect>
             </Field>
+            <div className="sm:col-span-2">
+              <Field
+                id="attachment"
+                label="Bill or receipt"
+                error={errors.attachment_id?.message}
+                hint="A photo or PDF of the vendor's bill, up to 20 MB."
+              >
+                <Controller
+                  control={control}
+                  name="attachment_id"
+                  render={({ field }) => (
+                    <AttachmentField
+                      id="attachment"
+                      value={field.value || null}
+                      disabled={voided}
+                      onChange={(attachmentId) => {
+                        field.onChange(attachmentId ?? "");
+                      }}
+                    />
+                  )}
+                />
+              </Field>
+            </div>
           </fieldset>
         </CardContent>
       </Card>

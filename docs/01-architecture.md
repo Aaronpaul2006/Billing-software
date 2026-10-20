@@ -125,6 +125,7 @@ Roles are per membership (per tenant). Permission checks live in one module
 | **Issue / cancel** documents, credit & debit notes | ✓ | ✓ | ✓ | | |
 | Record / void payments | ✓ | ✓ | ✓ | | |
 | Record expenses | ✓ | ✓ | ✓ | ✓ | |
+| Upload files (bills, receipts, photos) | ✓ | ✓ | ✓ | ✓ | |
 | Dashboards & reports | ✓ | ✓ | ✓ | | ✓ |
 | Audit log | ✓ | ✓ | | | |
 | Transfer ownership / close tenant | ✓ | | | | |
@@ -351,6 +352,10 @@ tax-invoice number itself still comes from the locked series at issue.
   later verifies size, type (magic bytes) and SHA-256, then marks the file
   AVAILABLE. Buckets are private; downloads use short-lived presigned GET URLs
   after a permission check. Malware scan before AVAILABLE (ClamAV task).
+  Built in L.3: type and size are signed into the upload URL; `complete`
+  checks size, type and magic bytes; a Celery task stores the SHA-256 and
+  scans through clamd (QUARANTINED files are deleted). Production refuses to
+  start without `CLAMD_HOST`.
 
 **Data protection & privacy (DPDP Act 2023)**
 * Encryption in transit and at rest (RDS / S3 encryption). Application-level

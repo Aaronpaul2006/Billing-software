@@ -25,6 +25,63 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/attachments": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * @description Start an upload: a PENDING attachment and a presigned PUT (5 minutes) that
+         *     accepts only the declared type and size. Then PUT the bytes and call complete.
+         */
+        post: operations["attachments_create"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/attachments/{attachment_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** @description An attachment, with a 5-minute download link once it is AVAILABLE. */
+        get: operations["attachments_retrieve"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/attachments/{attachment_id}/complete": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * @description After the PUT (uploader only): checks size, type and magic bytes, then a
+         *     background scan makes it AVAILABLE or QUARANTINED. Poll the attachment.
+         */
+        post: operations["attachments_complete_create"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/auth/login": {
         parameters: {
             query?: never;
@@ -1545,6 +1602,27 @@ export interface components {
             /** Format: date-time */
             readonly created_at: string;
         };
+        Attachment: {
+            /** Format: uuid */
+            id: string;
+            filename: string;
+            content_type: string;
+            size_bytes: number;
+            status: components["schemas"]["AttachmentStatusEnum"];
+            /** Format: uuid */
+            uploaded_by: string;
+            /** Format: date-time */
+            created_at: string;
+            /** @description A link for 5 minutes; only when the file is AVAILABLE. */
+            readonly download_url: string | null;
+        };
+        /**
+         * @description * `PENDING` - Pending
+         *     * `AVAILABLE` - Available
+         *     * `QUARANTINED` - Quarantined
+         * @enum {string}
+         */
+        AttachmentStatusEnum: "PENDING" | "AVAILABLE" | "QUARANTINED";
         BoqImportRequest: {
             /**
              * Format: uri
@@ -1704,6 +1782,14 @@ export interface components {
          * @enum {string}
          */
         ClientEnum: "web" | "mobile";
+        /**
+         * @description * `application/pdf` - application/pdf
+         *     * `image/jpeg` - image/jpeg
+         *     * `image/png` - image/png
+         *     * `image/webp` - image/webp
+         * @enum {string}
+         */
+        ContentTypeEnum: "application/pdf" | "image/jpeg" | "image/png" | "image/webp";
         Convert: {
             to: components["schemas"]["ToEnum"];
             /**
@@ -3958,6 +4044,24 @@ export interface components {
             amount_settled?: string;
             readonly outstanding: string;
         };
+        UploadStart: {
+            filename: string;
+            content_type: components["schemas"]["ContentTypeEnum"];
+            size_bytes: number;
+        };
+        UploadStarted: {
+            attachment: components["schemas"]["Attachment"];
+            /**
+             * Format: uri
+             * @description PUT the file's bytes here within 5 minutes.
+             */
+            upload_url: string;
+            /** @description Send exactly these headers with the PUT. */
+            upload_headers: {
+                [key: string]: string;
+            };
+            expires_in: number;
+        };
         VerifyEmail: {
             token: string;
         };
@@ -3990,6 +4094,71 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content?: never;
+            };
+        };
+    };
+    attachments_create: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["UploadStart"];
+            };
+        };
+        responses: {
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["UploadStarted"];
+                };
+            };
+        };
+    };
+    attachments_retrieve: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                attachment_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Attachment"];
+                };
+            };
+        };
+    };
+    attachments_complete_create: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                attachment_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            202: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Attachment"];
+                };
             };
         };
     };

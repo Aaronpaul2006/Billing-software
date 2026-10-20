@@ -18,6 +18,7 @@ urlpatterns: list[URLPattern | URLResolver] = [
     path("api/v1/", include("apps.expenses.urls")),
     path("api/v1/", include("apps.reports.urls")),
     path("api/v1/", include("apps.tds.urls")),
+    path("api/v1/", include("apps.files.urls")),
 ]
 
 if settings.DEBUG:

@@ -15,6 +15,8 @@ if len(JWT_SIGNING_KEY) < 43 or "local-dev" in JWT_SIGNING_KEY:
 _mfa_key = base64.b64decode(MFA_ENCRYPTION_KEY)
 if len(_mfa_key) != 32 or b"local-dev" in _mfa_key:
     raise ImproperlyConfigured("MFA_ENCRYPTION_KEY must be 32 random bytes, base64-encoded")
+if not CLAMD_HOST:
+    raise ImproperlyConfigured("CLAMD_HOST must be set in production: uploads are virus-scanned")
 
 # TLS terminates at the load balancer, which sets X-Forwarded-Proto.
 SECURE_PROXY_SSL_HEADER = ("HTTP_X_FORWARDED_PROTO", "https")

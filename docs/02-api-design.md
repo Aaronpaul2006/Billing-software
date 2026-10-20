@@ -486,9 +486,35 @@ at billing.
 
 | Method & path | Purpose |
 |---|---|
-| `POST /attachments` | `{filename, content_type, size_bytes}` → `{id, upload_url, upload_headers}` (presigned PUT, 5-minute expiry) |
-| `POST /attachments/{id}/complete` | Server verifies the object (size, magic bytes, hash), queues a malware scan |
+| `POST /attachments` | `{filename, content_type, size_bytes}` → `201 {attachment, upload_url, upload_headers, expires_in}` (presigned PUT, 5-minute expiry) |
+| `POST /attachments/{id}/complete` | Server verifies the object (size, type, magic bytes) → `202`; a task hashes and virus-scans it |
 | `GET /attachments/{id}` | Metadata + short-lived download URL (only when AVAILABLE) |
+
+Built in L.3 (2026-10-21):
+
+* Types: PDF, JPEG, PNG, WebP; 1 byte to 20 MB (`422` on `content_type` /
+  `size_bytes`). Roles: everyone but VIEWER may upload (`files.upload`);
+  every member may read. `Idempotency-Key` honoured when sent.
+* The presigned PUT signs `Content-Type` and `Content-Length`, so storage
+  refuses any other type or size (`403 SignatureDoesNotMatch`). The client
+  sends `upload_headers` and no `Authorization` header. Storage keys are
+  `tenants/<tenant>/uploads/<uuid7>.<ext>`: no client text; the filename
+  (path and control characters removed) lives only in the row.
+* `complete` (the uploader only; others get 404): `409 upload_missing` if
+  nothing was uploaded; `422 upload_mismatch` (object deleted) if size, type
+  or the first bytes differ from what was announced; otherwise `202` and the
+  attachment stays `PENDING` until the task makes it `AVAILABLE` (SHA-256
+  stored) or `QUARANTINED` (malware or changed content; object deleted).
+  Clients poll `GET /attachments/{id}`. Completing again is harmless.
+* Virus scan through ClamAV (clamd `INSTREAM`, `CLAMD_HOST` / `CLAMD_PORT`);
+  scanner unreachable → the task retries with backoff and the file stays
+  `PENDING`. Without `CLAMD_HOST` files are not scanned (development; a
+  warning is logged); production settings refuse to start without it.
+* Only `AVAILABLE` files can be linked (an expense's `attachment_id`:
+  `422 not_available`) or downloaded. Download links last 5 minutes and carry
+  a header-safe `Content-Disposition: inline` with the original name.
+* Browsers upload straight to the bucket: `manage.py setup_storage` creates
+  it if needed and allows `PUT` / `GET` from `S3_CORS_ORIGINS`.
 
 ---
 

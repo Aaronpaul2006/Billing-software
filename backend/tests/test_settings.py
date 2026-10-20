@@ -35,6 +35,7 @@ def _import_prod_settings(**overrides: str) -> subprocess.CompletedProcess[str]:
         "DJANGO_SECRET_KEY": "x" * 64,
         "JWT_SIGNING_KEY": "j" * 64,
         "MFA_ENCRYPTION_KEY": base64.b64encode(b"k" * 32).decode(),
+        "CLAMD_HOST": "clamav.internal",
         **overrides,
     }
     return subprocess.run(
@@ -66,6 +67,12 @@ def test_prod_refuses_dev_jwt_and_mfa_keys() -> None:
         result = _import_prod_settings(**{name: value})
         assert result.returncode != 0
         assert name in result.stderr
+
+
+def test_prod_refuses_to_run_without_a_virus_scanner() -> None:
+    result = _import_prod_settings(CLAMD_HOST="")
+    assert result.returncode != 0
+    assert "CLAMD_HOST" in result.stderr
 
 
 def test_prod_refuses_missing_allowed_hosts() -> None:

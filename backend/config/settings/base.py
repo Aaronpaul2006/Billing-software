@@ -157,6 +157,15 @@ S3_REGION: str = env("S3_REGION", default="ap-south-1")
 S3_BUCKET: str = env("S3_BUCKET")
 S3_ACCESS_KEY: str = env("S3_ACCESS_KEY")
 S3_SECRET_KEY: str = env("S3_SECRET_KEY")
+# Origins whose pages upload straight to the bucket (CORS; manage.py setup_storage).
+S3_CORS_ORIGINS: list[str] = env.list("S3_CORS_ORIGINS", default=["http://localhost:5173"])
+UPLOAD_URL_TTL = 300  # seconds a presigned upload link works
+
+# Malware scan of uploads (ClamAV clamd). No host: files are not scanned (dev and
+# tests only; production refuses to start without it).
+CLAMD_HOST: str = env("CLAMD_HOST", default="")
+CLAMD_PORT: int = env.int("CLAMD_PORT", default=3310)
+CLAMD_TIMEOUT = 60
 
 # --- Passwords -----------------------------------------------------------------
 PASSWORD_HASHERS = [

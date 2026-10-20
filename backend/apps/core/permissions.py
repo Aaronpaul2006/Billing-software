@@ -44,6 +44,8 @@ ACTIONS: dict[str, frozenset[str]] = {
     "payments.record": frozenset({OWNER, ADMIN, ACCOUNTANT}),
     # record expenses
     "expenses.record": frozenset({OWNER, ADMIN, ACCOUNTANT, SITE_ENGINEER}),
+    # upload files (bills, receipts, site photos)
+    "files.upload": frozenset({OWNER, ADMIN, ACCOUNTANT, SITE_ENGINEER}),
     # dashboards & reports
     "reports.view": frozenset({OWNER, ADMIN, ACCOUNTANT, VIEWER}),
     # audit log
