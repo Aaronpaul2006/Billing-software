@@ -4,7 +4,7 @@ Last updated: 2026-10-22
 
 ## Current phase
 
-**Launch gaps** (owner decision 2026-10-21, after the web app W.1–W.7): L.1–L.4 done (email, rate limits, user uploads, housekeeping); Exports + GSTR-1 (E.1–E.2) done. Next to be chosen by the owner. Backend Phases 0–3 and web W.1–W.7 complete.
+**Launch gaps** (owner decision 2026-10-21, after the web app W.1–W.7): L.1–L.4 done (email, rate limits, user uploads, housekeeping); Exports + GSTR-1 (E.1–E.2) done. Now **production setup** (owner decision 2026-10-22): P.1 stack done; P.2 backups, P.3 deploys and runbook. Backend Phases 0–3 and web W.1–W.7 complete.
 
 ## Done
 
@@ -60,9 +60,11 @@ Last updated: 2026-10-22
 
 - [x] E.2: GSTR-1 JSON — `apps/exports/gstr1.py`: one regular registration and month from issued tax invoices / credit notes / debit notes; `b2b`, `b2cl`, `b2cs` (credit notes netted), `exp`, `cdnr`, `cdnur`, `nil`, `hsn_b2b` / `hsn_b2c`, `doc_issue` (cancelled counted); offline tool shape GST3.2.4 (researched: no official schema reachable, so the file says to check it in the offline tool first); amounts written from Decimal by a small JSON writer (never float); units mapped to GST UQC codes. Requests checked (regular registration, May 2025 onwards, not future, JSON only). Test: a hand-worked October with intra / inter-State B2B, B2C large and small, a cancelled invoice, two credit notes, a 0 % line, goods and services — every figure asserted, and the exact decimal text. Web: GSTR-1 on the Exports page (regular registrations only, month, note to check in the tool) and a link from Reports → GST summary. Also fixed flaky web tests: lazy pages could take over the 1 s default `findBy` wait when every test file runs in parallel (cold CI too); the shared setup now waits up to 5 s. Web 114 tests; backend 535.
 
+- [x] P.1: production stack (owner decision 2026-10-22: production setup, one server) — `deploy/docker-compose.prod.yml` (project `billing-prod`): Caddy 2.11.7 image with the built web app (`deploy/web.Dockerfile`, automatic HTTPS, HSTS / CSP / frame / referrer headers, SPA fallback, immutable assets, JSON access logs with one-time `token` query values removed), gunicorn API (`config/gunicorn_conf.py`), Celery worker and beat, Postgres 17 (data checksums), Redis (password, AOF), ClamAV; app containers read-only with `/tmp` tmpfs, all capabilities dropped, no-new-privileges, rotated logs; nothing but Caddy published. One-off `migrate` job: roles (`bootstrap_db.py --production`: owner without CREATEDB), migrations, bucket CORS. `deploy/.env.production.example` documents every value. Production logging: one JSON object per line with the request id (`apps/core/logging.py`, Celery too); Sentry when `SENTRY_DSN` is set (no request bodies, cookies, headers or IPs). Dependencies: gunicorn, sentry-sdk; certifi upgraded (pip-audit advisory). CI builds both images, validates the Caddyfile and the production compose file. Rehearsed on this PC under https://localhost:8443: headers, SPA routes, sign-up with a `Secure; HttpOnly; SameSite=Strict` refresh cookie, email verification link, MFA, registration / party / series, issue, PDF rendered by the worker (WeasyPrint on Linux), upload scanned by ClamAV, invoice register and GSTR-1 exports, token-free access log, JSON logs. Mistake caught on the way: the production file first used the project name `billing`, the same as the development stack, so starting it replaced the dev Postgres / Redis containers (same volumes; no data changed, verified); renamed to `billing-prod` and the dev stack restored. Backend 539.
+
 ## In progress
 
-- Nothing. Exports + GSTR-1 done; next to be chosen by the owner.
+- Production setup: P.2 backups and restore drill, P.3 deploy workflow and runbook.
 
 ## Next
 

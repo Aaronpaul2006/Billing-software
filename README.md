@@ -64,6 +64,11 @@ Running the API on the host instead (`manage.py runserver`): set
 `CELERY_TASK_ALWAYS_EAGER=true` in `.env` so emails, PDFs and upload checks run
 without a worker.
 
+## Production
+
+One server with Docker Compose: `deploy/docker-compose.prod.yml`, settings in
+`deploy/.env.production.example`. Full runbook: `docs/03-operations.md`.
+
 ## Running the schema checks
 
 ```bash

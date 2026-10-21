@@ -69,6 +69,35 @@ def test_prod_refuses_dev_jwt_and_mfa_keys() -> None:
         assert name in result.stderr
 
 
+def test_prod_settings_load_with_sentry_and_json_logs() -> None:
+    result = subprocess.run(
+        [
+            sys.executable,
+            "-c",
+            "import django; django.setup(); from django.conf import settings; "
+            "import sentry_sdk; "
+            "print(settings.LOGGING['formatters']['json']['()'], settings.TRUSTED_PROXY_COUNT, "
+            "sentry_sdk.get_client().is_active())",
+        ],
+        cwd=BACKEND_DIR,
+        env={
+            **os.environ,
+            "DJANGO_SETTINGS_MODULE": "config.settings.prod",
+            "DJANGO_ALLOWED_HOSTS": "api.example.com",
+            "DJANGO_SECRET_KEY": "x" * 64,
+            "JWT_SIGNING_KEY": "j" * 64,
+            "MFA_ENCRYPTION_KEY": base64.b64encode(b"k" * 32).decode(),
+            "CLAMD_HOST": "clamav.internal",
+            "SENTRY_DSN": "https://public@sentry.example.com/1",
+        },
+        capture_output=True,
+        text=True,
+        check=False,
+    )
+    assert result.returncode == 0, result.stderr
+    assert result.stdout.split() == ["apps.core.logging.JsonFormatter", "1", "True"]
+
+
 def test_prod_refuses_to_run_without_a_virus_scanner() -> None:
     result = _import_prod_settings(CLAMD_HOST="")
     assert result.returncode != 0

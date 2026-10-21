@@ -388,7 +388,11 @@ tax-invoice number itself still comes from the locked series at issue.
 ## 7. Operations
 
 * **Environments:** local (Compose) → staging → production, each with its own
-  database and secrets.
+  database and secrets. Launch setup (owner decision 2026-10-22): one server
+  in India running `deploy/docker-compose.prod.yml` (Caddy with automatic
+  HTTPS, gunicorn API, Celery worker and beat, Postgres 17, Redis, ClamAV),
+  object storage and email from outside providers; managed database and
+  more servers when load asks for it.
 * **CI:** lint (ruff), type-check (mypy), tests against real Postgres, security
   scans, migration check (`makemigrations --check`).
 * **Backups:** managed Postgres with point-in-time recovery (≥ 7 days) plus

@@ -1,0 +1,51 @@
+# Production edge: HTTPS (Let's Encrypt, renewed automatically), security
+# headers, the web app, and /api proxied to the backend.
+{
+	email {$ACME_EMAIL}
+}
+
+{$DOMAIN} {
+	encode zstd gzip
+
+	handle /api/* {
+		reverse_proxy api:8000
+	}
+	# For uptime monitors: liveness only, no details.
+	handle /healthz {
+		reverse_proxy api:8000
+	}
+
+	# The web app: built files, and index.html for every app route.
+	handle {
+		root * /srv
+		@assets path /assets/*
+		header @assets Cache-Control "public, max-age=31536000, immutable"
+		@pages not path /assets/*
+		header @pages Cache-Control "no-cache"
+		try_files {path} /index.html
+		file_server
+	}
+
+	header {
+		Strict-Transport-Security "max-age=31536000; includeSubDomains"
+		X-Content-Type-Options "nosniff"
+		X-Frame-Options "DENY"
+		Referrer-Policy "strict-origin-when-cross-origin"
+		Permissions-Policy "camera=(), microphone=(), geolocation=(), payment=()"
+		# Uploads go straight to object storage (presigned PUT): its origin is allowed to connect.
+		Content-Security-Policy "default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob:; font-src 'self'; connect-src 'self' {$STORAGE_ORIGIN}; frame-ancestors 'none'; base-uri 'self'; form-action 'self'; object-src 'none'"
+		-Server
+	}
+
+	log {
+		output stdout
+		# Email links carry one-time tokens in the query (/reset-password?token=…):
+		# never write them to the logs.
+		format filter {
+			request>uri query {
+				delete token
+			}
+			wrap json
+		}
+	}
+}

@@ -1,0 +1,156 @@
+# Production on one server (docs/03-operations.md). In /opt/billing on the server:
+#   docker compose -f docker-compose.prod.yml --env-file .env pull
+#   docker compose -f docker-compose.prod.yml --env-file .env run --rm migrate
+#   docker compose -f docker-compose.prod.yml --env-file .env up -d
+# Object storage (S3 / R2) and email (SMTP) are outside services, set in .env
+# (see .env.production.example). Only Caddy is reachable from the internet.
+name: billing-prod  # never "billing": that is the development stack (docker-compose.yml)
+
+x-logging: &logging
+  driver: json-file
+  options: {max-size: "10m", max-file: "5"}
+
+x-hardened: &hardened
+  restart: unless-stopped
+  logging: *logging
+  security_opt: ["no-new-privileges:true"]
+
+x-backend: &backend
+  <<: *hardened
+  image: ${BACKEND_IMAGE:-billing-backend:local}
+  build:
+    context: ../backend
+    args: {UV_SYNC_ARGS: --no-dev, RELEASE: "${RELEASE:-local}"}
+  read_only: true
+  tmpfs: ["/tmp"]
+  cap_drop: [ALL]
+  environment: &backend-env
+    DJANGO_SETTINGS_MODULE: config.settings.prod
+    DJANGO_SECRET_KEY: ${DJANGO_SECRET_KEY:?}
+    DJANGO_ALLOWED_HOSTS: ${DOMAIN:?},localhost
+    JWT_SIGNING_KEY: ${JWT_SIGNING_KEY:?}
+    MFA_ENCRYPTION_KEY: ${MFA_ENCRYPTION_KEY:?}
+    DATABASE_URL: postgres://billing_app_login:${APP_DB_PASSWORD:?}@postgres:5432/billing
+    DATABASE_OWNER_URL: postgres://billing_owner:${OWNER_DB_PASSWORD:?}@postgres:5432/billing
+    REDIS_URL: redis://:${REDIS_PASSWORD:?}@redis:6379/0
+    S3_ENDPOINT_URL: ${S3_ENDPOINT_URL:-}
+    S3_PUBLIC_ENDPOINT_URL: ${S3_PUBLIC_ENDPOINT_URL:-}
+    S3_REGION: ${S3_REGION:?}
+    S3_BUCKET: ${S3_BUCKET:?}
+    S3_ACCESS_KEY: ${S3_ACCESS_KEY:?}
+    S3_SECRET_KEY: ${S3_SECRET_KEY:?}
+    S3_CORS_ORIGINS: ${APP_URL:?}
+    APP_BASE_URL: ${APP_URL:?}
+    EMAIL_HOST: ${EMAIL_HOST:?}
+    EMAIL_PORT: ${EMAIL_PORT:-587}
+    EMAIL_HOST_USER: ${EMAIL_HOST_USER:-}
+    EMAIL_HOST_PASSWORD: ${EMAIL_HOST_PASSWORD:-}
+    EMAIL_USE_TLS: ${EMAIL_USE_TLS:-true}
+    DEFAULT_FROM_EMAIL: ${DEFAULT_FROM_EMAIL:?}
+    CLAMD_HOST: clamav
+    TRUSTED_PROXY_COUNT: "1"
+    SENTRY_DSN: ${SENTRY_DSN:-}
+    SENTRY_ENVIRONMENT: ${SENTRY_ENVIRONMENT:-production}
+    RELEASE: ${RELEASE:-local}
+    WEB_CONCURRENCY: ${WEB_CONCURRENCY:-3}
+  depends_on:
+    postgres: {condition: service_healthy}
+    redis: {condition: service_healthy}
+
+services:
+  caddy:
+    <<: *hardened
+    image: ${WEB_IMAGE:-billing-web:local}
+    build:
+      context: ..
+      dockerfile: deploy/web.Dockerfile
+    environment:
+      DOMAIN: ${DOMAIN:?}
+      ACME_EMAIL: ${ACME_EMAIL:?}
+      STORAGE_ORIGIN: ${STORAGE_ORIGIN:?}
+    ports:
+      - "${HTTP_PORT:-80}:80"
+      - "${HTTPS_PORT:-443}:443"
+      - "${HTTPS_PORT:-443}:443/udp"
+    volumes:
+      - caddy-data:/data  # certificates: keep across restarts (Let's Encrypt rate limits)
+      - caddy-config:/config
+    depends_on:
+      api: {condition: service_healthy}
+
+  api:
+    <<: *backend
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:8000/readyz', timeout=3)"]
+      interval: 15s
+      timeout: 5s
+      retries: 5
+      start_period: 20s
+
+  worker:
+    <<: *backend
+    command: ["celery", "-A", "config", "worker", "--loglevel=info", "--concurrency=2"]
+
+  beat:
+    <<: *backend
+    command: ["celery", "-A", "config", "beat", "--loglevel=info", "--schedule=/tmp/celerybeat-schedule"]
+
+  # One-off, before every start of a new version: database roles, migrations,
+  # bucket CORS. `docker compose ... run --rm migrate`
+  migrate:
+    <<: *backend
+    restart: "no"
+    profiles: ["migrate"]
+    environment:
+      <<: *backend-env
+      DATABASE_ADMIN_URL: postgres://postgres:${POSTGRES_PASSWORD:?}@postgres:5432/postgres
+    command:
+      - sh
+      - -c
+      - >-
+        python scripts/bootstrap_db.py --production &&
+        python manage.py migrate --database=owner --no-input &&
+        python manage.py setup_storage
+
+  postgres:
+    <<: *hardened
+    image: postgres:17.11-alpine
+    environment:
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?}
+      POSTGRES_INITDB_ARGS: "--data-checksums"
+    volumes:
+      - postgres-data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+    shm_size: 256mb
+
+  redis:
+    <<: *hardened
+    image: redis:8.10.2-alpine
+    environment:
+      REDIS_PASSWORD: ${REDIS_PASSWORD:?}
+    command: ["sh", "-c", "exec redis-server --requirepass \"$$REDIS_PASSWORD\" --appendonly yes"]
+    volumes:
+      - redis-data:/data
+    healthcheck:
+      test: ["CMD-SHELL", "redis-cli -a \"$$REDIS_PASSWORD\" --no-auth-warning ping | grep -q PONG"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+
+  # Virus scanner for uploads; needs about 1.5 GB of memory.
+  clamav:
+    <<: *hardened
+    image: clamav/clamav:1.4.6
+    volumes:
+      - clamav-data:/var/lib/clamav
+
+volumes:
+  caddy-data:
+  caddy-config:
+  postgres-data:
+  redis-data:
+  clamav-data:

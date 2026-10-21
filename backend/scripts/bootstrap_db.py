@@ -13,8 +13,8 @@ Roles (see db/schema.sql §0 and docs/01-architecture.md §2.4):
   <app login user>   LOGIN member of billing_app; what DATABASE_URL uses.
 
 Credentials come from DATABASE_OWNER_URL and DATABASE_URL, the superuser from
-DATABASE_ADMIN_URL. In production these roles are created by infrastructure
-code instead, without CREATEDB.
+DATABASE_ADMIN_URL. In production pass --production: the owner then gets no
+CREATEDB (nothing there creates test databases).
 """
 
 import os
@@ -57,9 +57,13 @@ def main() -> int:
     if app_database != database:
         sys.exit("DATABASE_URL and DATABASE_OWNER_URL must point at the same database")
 
+    createdb = "NOCREATEDB" if "--production" in sys.argv[1:] else "CREATEDB"
     with psycopg.connect(os.environ["DATABASE_ADMIN_URL"], autocommit=True) as conn:
         ensure_role(
-            conn, OWNER_ROLE, "LOGIN NOSUPERUSER NOBYPASSRLS NOCREATEROLE CREATEDB", owner_password
+            conn,
+            OWNER_ROLE,
+            f"LOGIN NOSUPERUSER NOBYPASSRLS NOCREATEROLE {createdb}",
+            owner_password,
         )
         ensure_role(
             conn, APP_GROUP, "NOLOGIN NOSUPERUSER NOBYPASSRLS NOCREATEROLE NOCREATEDB", None

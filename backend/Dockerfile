@@ -1,6 +1,6 @@
-# Backend image: the API (Django) and the Celery worker.
-#   docker compose --profile app up -d --build      (local)
-# Production builds pass --build-arg UV_SYNC_ARGS=--no-dev.
+# Backend image: the API (Django), the Celery worker and beat.
+#   docker compose --profile app up -d --build      (local: runs runserver instead)
+# Production builds pass --build-arg UV_SYNC_ARGS=--no-dev (deploy/docker-compose.prod.yml).
 FROM python:3.14.8-slim-trixie
 
 ARG UV_SYNC_ARGS=""
@@ -32,5 +32,7 @@ COPY . .
 RUN useradd --uid 10001 --no-create-home --shell /usr/sbin/nologin app
 USER app
 
+ARG RELEASE=dev
+ENV RELEASE=$RELEASE
 EXPOSE 8000
-CMD ["python", "manage.py", "runserver", "0.0.0.0:8000"]
+CMD ["gunicorn", "-c", "config/gunicorn_conf.py", "config.wsgi"]

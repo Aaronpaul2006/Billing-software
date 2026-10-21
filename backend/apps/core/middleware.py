@@ -3,6 +3,7 @@ from collections.abc import Callable
 
 from django.http import HttpRequest, HttpResponse
 
+from .logging import request_id_var
 from .tenancy import Principal, tenant_context
 
 REQUEST_ID_HEADER = "X-Request-ID"
@@ -21,7 +22,11 @@ class RequestIdMiddleware:
 
     def __call__(self, request: HttpRequest) -> HttpResponse:
         request.request_id = str(uuid.uuid7())  # type: ignore[attr-defined]
-        response = self.get_response(request)
+        token = request_id_var.set(request.request_id)  # type: ignore[attr-defined]
+        try:
+            response = self.get_response(request)
+        finally:
+            request_id_var.reset(token)
         response[REQUEST_ID_HEADER] = request.request_id  # type: ignore[attr-defined]
         return response
 
