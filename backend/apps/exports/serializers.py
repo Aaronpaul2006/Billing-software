@@ -1,24 +1,30 @@
+from datetime import date
 from typing import Any
 
+from django.utils import timezone
 from drf_spectacular.utils import extend_schema_field
 from rest_framework import serializers
 
 from apps.reports.serializers import BOOKS, PeriodSerializer
+from apps.tenants.models import GstRegistration
 
 from . import services
 from .models import Export, ExportFormat, ExportKind, ExportStatus
 
 DATED_KINDS = {"DOCUMENTS", "PAYMENTS", "EXPENSES"}
-SPREADSHEET_FORMATS = ["CSV", "XLSX"]
+FIRST_GSTR1_PERIOD = "2025-05"  # the HSN summary split into B2B / B2C from May 2025
 
 
 class ExportParamsSerializer(serializers.Serializer[Any]):
     """Invoice register, payments, expenses: `from` / `to` (default: this FY to
-    today); invoice register and receivables: `book`."""
+    today); invoice register and receivables: `book`; GSTR-1:
+    `gst_registration_id` and `period` (YYYY-MM)."""
 
     from_ = serializers.DateField(required=False)
     to = serializers.DateField(required=False)
     book = serializers.ChoiceField(choices=BOOKS, default="ALL")
+    gst_registration_id = serializers.UUIDField(required=False)
+    period = serializers.RegexField(r"^\d{4}-(0[1-9]|1[0-2])$", required=False)
 
     def get_fields(self) -> dict[str, Any]:
         fields = super().get_fields()
@@ -27,14 +33,23 @@ class ExportParamsSerializer(serializers.Serializer[Any]):
 
 
 class ExportRequestSerializer(serializers.Serializer[Any]):
-    kind = serializers.ChoiceField(choices=[k for k in ExportKind.values if k != "GSTR1"])
-    format = serializers.ChoiceField(choices=SPREADSHEET_FORMATS)
+    kind = serializers.ChoiceField(choices=ExportKind.values)
+    format = serializers.ChoiceField(
+        choices=ExportFormat.values, help_text="GSTR-1: JSON; everything else: CSV or XLSX."
+    )
     params = ExportParamsSerializer(required=False)
 
     def validate(self, attrs: dict[str, Any]) -> dict[str, Any]:
         """Stored params are complete (defaults filled in), so the file always
         says which period it covers."""
         given = attrs.get("params") or {"book": "ALL"}
+        if (attrs["kind"] == "GSTR1") != (attrs["format"] == "JSON"):
+            raise serializers.ValidationError(
+                {"format": "GSTR-1 is a JSON file; the registers are CSV or XLSX."},
+                code="invalid_format",
+            )
+        if attrs["kind"] == "GSTR1":
+            return {"kind": "GSTR1", "format": "JSON", "params": self._gstr1(given)}
         params: dict[str, Any] = {"book": given["book"]}
         if attrs["kind"] in DATED_KINDS:
             period = PeriodSerializer(data={k: v for k, v in given.items() if v is not None})
@@ -45,6 +60,31 @@ class ExportRequestSerializer(serializers.Serializer[Any]):
             if attrs["kind"] == "DOCUMENTS":
                 params["book"] = v["book"]
         return {"kind": attrs["kind"], "format": attrs["format"], "params": params}
+
+    def _gstr1(self, given: dict[str, Any]) -> dict[str, Any]:
+        errors: dict[str, str] = {}
+        registration = None
+        if not given.get("gst_registration_id"):
+            errors["params.gst_registration_id"] = "Choose the GST registration."
+        else:
+            registration = GstRegistration.objects.filter(pk=given["gst_registration_id"]).first()
+            if registration is None:
+                errors["params.gst_registration_id"] = "No such GST registration."
+            elif registration.registration_type != "REGULAR":
+                errors["params.gst_registration_id"] = (
+                    "Only regular registrations file GSTR-1 (composition files CMP-08)."
+                )
+        period = given.get("period")
+        this_month = timezone.localdate().replace(day=1)
+        if not period:
+            errors["params.period"] = "Choose the month (YYYY-MM)."
+        elif period < FIRST_GSTR1_PERIOD:
+            errors["params.period"] = "Months from May 2025 only."
+        elif date.fromisoformat(f"{period}-01") > this_month:
+            errors["params.period"] = "That month has not started yet."
+        if errors or registration is None:
+            raise serializers.ValidationError(errors, code="invalid")
+        return {"gst_registration_id": str(registration.pk), "period": period}
 
 
 class ExportSerializer(serializers.Serializer[Any]):

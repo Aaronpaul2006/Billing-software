@@ -65,7 +65,10 @@ function GstSummary() {
       </div>
       <p className="text-muted-foreground text-sm">
         Outward supplies on issued GST documents, by B2B (client has a GSTIN) / B2C and rate; credit
-        notes count negative. The basis for GSTR-1 and GSTR-3B.
+        notes count negative. The basis for GSTR-1 and GSTR-3B.{" "}
+        <Link to={`/exports?kind=GSTR1&period=${period}`} className="text-foreground underline">
+          Make the GSTR-1 file for this month
+        </Link>
       </p>
       {report.error ? (
         <ErrorState error={report.error} />

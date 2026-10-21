@@ -192,7 +192,8 @@ def test_defaults_and_validation(s3: Any, w: World) -> None:
     assert params["to"] == today.isoformat()
     assert params["from"].endswith("-04-01")  # this financial year
     for body, field in (
-        ({"kind": "GSTR1", "format": "CSV"}, "kind"),
+        ({"kind": "GSTR1", "format": "CSV"}, "format"),
+        ({"kind": "TAX_RETURN", "format": "CSV"}, "kind"),
         ({"kind": "PAYMENTS", "format": "PDF"}, "format"),
         (
             {

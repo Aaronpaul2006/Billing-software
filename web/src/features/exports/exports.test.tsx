@@ -124,4 +124,80 @@ describe("exports", () => {
     await user.click(screen.getByRole("button", { name: "Make the file" }));
     expect(await screen.findByText("After `to`.")).toBeInTheDocument();
   });
+
+  it("makes the GSTR-1 file for a regular registration and shows its warnings", async () => {
+    let sent: unknown = null;
+    const registration = (id: string, type: string, gstin: string) => ({
+      id,
+      registration_type: type,
+      gstin,
+      state_code: "32",
+      state_name: "Kerala",
+      legal_name: "Nair Constructions",
+      trade_name: null,
+      address: { line1: "MG Road", city: "Kochi", state_code: "32", pincode: "682016" },
+      is_default: true,
+      is_active: true,
+      version: 1,
+      created_at: "",
+      updated_at: "",
+    });
+    server.use(
+      http.get(`${API}/gst-registrations`, () =>
+        HttpResponse.json({
+          results: [
+            registration("r9", "COMPOSITION", "32AAACN9999A1Z5"),
+            registration("r1", "REGULAR", "32AAACN1234A1Z5"),
+          ],
+          next_cursor: null,
+        }),
+      ),
+      http.get(`${API}/exports`, () =>
+        HttpResponse.json({
+          results: sent
+            ? [
+                exported({
+                  kind: "GSTR1",
+                  format: "JSON",
+                  params: { gst_registration_id: "r1", period: "2026-09" },
+                  status: "READY",
+                  file_name: "gstr1_32AAACN1234A1Z5_092026.json",
+                  size_bytes: 900,
+                  row_count: 4,
+                  warnings: [
+                    "Import this file into the GST offline tool and check it before filing.",
+                  ],
+                }),
+              ]
+            : [],
+        }),
+      ),
+      http.post(`${API}/exports`, async ({ request }) => {
+        sent = await request.json();
+        return HttpResponse.json(exported({ kind: "GSTR1", format: "JSON" }), { status: 202 });
+      }),
+    );
+    const user = userEvent.setup();
+    renderSignedIn("/exports?kind=GSTR1&period=2026-09");
+    const form = await screen.findByRole("form", { name: "New export" });
+    const select = await within(form).findByLabelText("GST registration");
+    await waitFor(() => {
+      expect(
+        within(select)
+          .getAllByRole("option")
+          .map((o) => o.textContent),
+      ).toEqual(["32AAACN1234A1Z5 · Kerala"]);
+    });
+    expect(within(form).getByLabelText("Month")).toHaveValue("2026-09");
+    expect(within(form).queryByLabelText("File")).not.toBeInTheDocument();
+    await user.click(within(form).getByRole("button", { name: "Make the file" }));
+    expect(
+      await screen.findByText(/Import this file into the GST offline tool/),
+    ).toBeInTheDocument();
+    expect(sent).toEqual({
+      kind: "GSTR1",
+      format: "JSON",
+      params: { gst_registration_id: "r1", period: "2026-09" },
+    });
+  });
 });

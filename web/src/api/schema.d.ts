@@ -2152,13 +2152,17 @@ export interface components {
         };
         /**
          * @description Invoice register, payments, expenses: `from` / `to` (default: this FY to
-         *     today); invoice register and receivables: `book`.
+         *     today); invoice register and receivables: `book`; GSTR-1:
+         *     `gst_registration_id` and `period` (YYYY-MM).
          */
         ExportParams: {
             /** Format: date */
             to?: string;
             /** @default ALL */
             book?: components["schemas"]["ExportParamsBookEnum"];
+            /** Format: uuid */
+            gst_registration_id?: string;
+            period?: string;
             /** Format: date */
             from?: string;
         };
@@ -2171,23 +2175,32 @@ export interface components {
         ExportParamsBookEnum: "ALL" | "GST" | "NON_GST";
         ExportRequest: {
             kind: components["schemas"]["ExportRequestKindEnum"];
+            /**
+             * @description GSTR-1: JSON; everything else: CSV or XLSX.
+             *
+             *     * `CSV` - CSV
+             *     * `XLSX` - XLSX
+             *     * `JSON` - JSON
+             */
             format: components["schemas"]["ExportRequestFormatEnum"];
             params?: components["schemas"]["ExportParams"];
         };
         /**
          * @description * `CSV` - CSV
          *     * `XLSX` - XLSX
+         *     * `JSON` - JSON
          * @enum {string}
          */
-        ExportRequestFormatEnum: "CSV" | "XLSX";
+        ExportRequestFormatEnum: "CSV" | "XLSX" | "JSON";
         /**
          * @description * `DOCUMENTS` - DOCUMENTS
          *     * `PAYMENTS` - PAYMENTS
          *     * `EXPENSES` - EXPENSES
          *     * `RECEIVABLES` - RECEIVABLES
+         *     * `GSTR1` - GSTR1
          * @enum {string}
          */
-        ExportRequestKindEnum: "DOCUMENTS" | "PAYMENTS" | "EXPENSES" | "RECEIVABLES";
+        ExportRequestKindEnum: "DOCUMENTS" | "PAYMENTS" | "EXPENSES" | "RECEIVABLES" | "GSTR1";
         /**
          * @description * `PENDING` - Pending
          *     * `READY` - Ready

@@ -4,7 +4,7 @@ Last updated: 2026-10-22
 
 ## Current phase
 
-**Launch gaps** (owner decision 2026-10-21, after the web app W.1–W.7): L.1–L.4 done (email, rate limits, user uploads, housekeeping). Now **Exports + GSTR-1** (owner decision 2026-10-22). Backend Phases 0–3 and web W.1–W.7 complete.
+**Launch gaps** (owner decision 2026-10-21, after the web app W.1–W.7): L.1–L.4 done (email, rate limits, user uploads, housekeeping); Exports + GSTR-1 (E.1–E.2) done. Next to be chosen by the owner. Backend Phases 0–3 and web W.1–W.7 complete.
 
 ## Done
 
@@ -58,9 +58,11 @@ Last updated: 2026-10-22
 
 - [x] E.1: exports — new app `apps/exports` and table `exports` (schema.sql §6 + migration `exports/0001`: RLS forced, audited, composite keys, a READY row must have its file; sync test passes). `POST /exports` → 202, Celery task builds the file in the tenant's context and stores it (`tenants/<t>/exports/<uuid7>.<ext>`), `GET /exports/{id}` with a 5-minute `attachment` link, `GET /exports` (own, latest 20). Kinds: invoice register, payments, expenses, receivables; CSV (UTF-8 BOM) or XLSX (openpyxl write-only, real dates and numbers). Formula injection blocked (CSV apostrophe, XLSX string cells; smoke-tested with a vendor named `=cmd|' /C calc'!A0`). 100,000-row cap; failures recorded with a message; storage errors retried. Permission `reports.view`, own exports only, 20 per hour (`export_user`). Housekeeping: `purge_old_exports(limit)` + owner-only policy, hourly via beat (7 days). Web: Exports page (in the sidebar): kind, file type, dates, books; list polls while a file is being made; download asks for a fresh link. Also checked the L.3 scanner against real ClamAV 1.4.6 (raw EICAR found, clean files pass, full upload flow with the scanner on). Web 113 tests; backend 532.
 
+- [x] E.2: GSTR-1 JSON — `apps/exports/gstr1.py`: one regular registration and month from issued tax invoices / credit notes / debit notes; `b2b`, `b2cl`, `b2cs` (credit notes netted), `exp`, `cdnr`, `cdnur`, `nil`, `hsn_b2b` / `hsn_b2c`, `doc_issue` (cancelled counted); offline tool shape GST3.2.4 (researched: no official schema reachable, so the file says to check it in the offline tool first); amounts written from Decimal by a small JSON writer (never float); units mapped to GST UQC codes. Requests checked (regular registration, May 2025 onwards, not future, JSON only). Test: a hand-worked October with intra / inter-State B2B, B2C large and small, a cancelled invoice, two credit notes, a 0 % line, goods and services — every figure asserted, and the exact decimal text. Web: GSTR-1 on the Exports page (regular registrations only, month, note to check in the tool) and a link from Reports → GST summary. Also fixed flaky web tests: lazy pages could take over the 1 s default `findBy` wait when every test file runs in parallel (cold CI too); the shared setup now waits up to 5 s. Web 114 tests; backend 535.
+
 ## In progress
 
-- E.2: GSTR-1 JSON (offline-tool shape GST3.2.4).
+- Nothing. Exports + GSTR-1 done; next to be chosen by the owner.
 
 ## Next
 
@@ -152,4 +154,5 @@ Full roadmap: `docs/01-architecture.md` §9.
 - Retention releases have no PDF / letter yet and no email; a release is not linked to particular bills (retention is pooled per project and book).
 - BOQ import only adds items; updating existing items from a file (e.g. revised rates) is not supported. In a dry run, previewed items have null `id` / timestamps although the schema marks them as strings.
 - Exports: no export of BOQ / project reports / GST summary yet; dates in file names use the server's date (UTC), like the reports' "today".
+- GSTR-1: not yet checked by importing into the real GST offline tool / portal (do that with a CA on a real month before relying on it). Not covered: amendments (`b2ba`, `cdnra`…), advances (`at`, `atadj`), e-commerce operators, deemed exports, HSN descriptions; 0 % lines are all reported as nil-rated (the user re-labels exempt / non-GST in the tool); the B2CL limit is ₹1,00,000 for every period (correct from August 2024). The tax engine does not yet treat SEZ supplies (always IGST) or exports (IGST or LUT) specially: they are taxed by place of supply, so the file warns when they appear.
 - Reports run live SQL per request; fine at current scale, revisit (materialised summaries or caching) if dashboards get slow.

@@ -18,7 +18,7 @@ from apps.core.queries import get_or_404
 from apps.core.tenancy import Principal
 from apps.files import storage
 
-from . import builders, writers
+from . import builders, gstr1, writers
 from .models import Export, ExportStatus
 
 log = logging.getLogger(__name__)
@@ -58,6 +58,8 @@ def get_export(principal: Principal, export_id: uuid.UUID) -> Export:
 
 def build(export: Export) -> tuple[bytes, str, int, list[str]]:
     """(file bytes, file name, row count, warnings). Call inside tenant_context."""
+    if export.kind == "GSTR1":
+        return gstr1.build_gstr1(export.tenant_id, export.params)
     built = builders.BUILDERS[export.kind](export.tenant_id, export.params)
     body = writers.write(built.table, export.format)
     name = f"{built.stem}.{writers.EXTENSIONS[export.format]}"
@@ -73,7 +75,7 @@ def run_export(export_id: uuid.UUID) -> str | None:
         return str(export.status)
     try:
         body, name, count, warnings = build(export)
-    except builders.TooManyRows as exc:
+    except (builders.TooManyRows, gstr1.Gstr1Error) as exc:
         return _fail(export, str(exc))
     except Exception:
         log.exception("export %s failed", export.pk)

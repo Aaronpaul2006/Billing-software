@@ -6259,7 +6259,7 @@
             },
             "ExportParams": {
                 "type": "object",
-                "description": "Invoice register, payments, expenses: `from` / `to` (default: this FY to\ntoday); invoice register and receivables: `book`.",
+                "description": "Invoice register, payments, expenses: `from` / `to` (default: this FY to\ntoday); invoice register and receivables: `book`; GSTR-1:\n`gst_registration_id` and `period` (YYYY-MM).",
                 "properties": {
                     "to": {
                         "type": "string",
@@ -6272,6 +6272,14 @@
                             }
                         ],
                         "default": "ALL"
+                    },
+                    "gst_registration_id": {
+                        "type": "string",
+                        "format": "uuid"
+                    },
+                    "period": {
+                        "type": "string",
+                        "pattern": "^\\d{4}-(0[1-9]|1[0-2])$"
                     },
                     "from": {
                         "type": "string",
@@ -6295,7 +6303,12 @@
                         "$ref": "#/components/schemas/ExportRequestKindEnum"
                     },
                     "format": {
-                        "$ref": "#/components/schemas/ExportRequestFormatEnum"
+                        "allOf": [
+                            {
+                                "$ref": "#/components/schemas/ExportRequestFormatEnum"
+                            }
+                        ],
+                        "description": "GSTR-1: JSON; everything else: CSV or XLSX.\n\n* `CSV` - CSV\n* `XLSX` - XLSX\n* `JSON` - JSON"
                     },
                     "params": {
                         "$ref": "#/components/schemas/ExportParams"
@@ -6309,20 +6322,22 @@
             "ExportRequestFormatEnum": {
                 "enum": [
                     "CSV",
-                    "XLSX"
+                    "XLSX",
+                    "JSON"
                 ],
                 "type": "string",
-                "description": "* `CSV` - CSV\n* `XLSX` - XLSX"
+                "description": "* `CSV` - CSV\n* `XLSX` - XLSX\n* `JSON` - JSON"
             },
             "ExportRequestKindEnum": {
                 "enum": [
                     "DOCUMENTS",
                     "PAYMENTS",
                     "EXPENSES",
-                    "RECEIVABLES"
+                    "RECEIVABLES",
+                    "GSTR1"
                 ],
                 "type": "string",
-                "description": "* `DOCUMENTS` - DOCUMENTS\n* `PAYMENTS` - PAYMENTS\n* `EXPENSES` - EXPENSES\n* `RECEIVABLES` - RECEIVABLES"
+                "description": "* `DOCUMENTS` - DOCUMENTS\n* `PAYMENTS` - PAYMENTS\n* `EXPENSES` - EXPENSES\n* `RECEIVABLES` - RECEIVABLES\n* `GSTR1` - GSTR1"
             },
             "ExportStatusEnum": {
                 "enum": [
