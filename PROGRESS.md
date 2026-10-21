@@ -4,7 +4,7 @@ Last updated: 2026-10-22
 
 ## Current phase
 
-**Launch gaps** (owner decision 2026-10-21, after the web app W.1–W.7): L.1–L.4 done (email, rate limits, user uploads, housekeeping); Exports + GSTR-1 (E.1–E.2) done. Now **production setup** (owner decision 2026-10-22): P.1 stack done; P.2 backups, P.3 deploys and runbook. Backend Phases 0–3 and web W.1–W.7 complete.
+**Launch gaps** (owner decision 2026-10-21, after the web app W.1–W.7): L.1–L.4 done (email, rate limits, user uploads, housekeeping); Exports + GSTR-1 (E.1–E.2) done. Production setup (P.1–P.3) done (owner decision 2026-10-22): ready to go live once the server, domain, buckets and email exist (docs/03-operations.md). Backend Phases 0–3 and web W.1–W.7 complete.
 
 ## Done
 
@@ -64,9 +64,11 @@ Last updated: 2026-10-22
 
 - [x] P.2: backups — `deploy/backup` image (postgres 17.11-alpine + age + rclone): `backup.sh schedule` (compose service `backup`, daily at `BACKUP_HOUR` UTC) / `backup.sh once`: `pg_dump` (as the superuser: RLS is forced for everyone else) | `age -r <public key>` | `rclone rcat` straight into a separate backup bucket (never unencrypted on disk; the private key stays with the owner), app-bucket files copied (never deleted there; exports excluded: temporary by design), dumps older than `BACKUP_KEEP_DAYS` pruned (0 = never: for a no-delete key plus a lifecycle rule), optional dead-man ping (`BACKUP_PING_URL`). `restore-drill.sh`: restores the latest (or a named) backup with the private key into a throwaway Postgres inside the container and checks it (migrations, users, tenants, documents, audit rows, tables with RLS forced), production untouched. Rehearsed on the local production stack: backup written (file starts `age-encryption.org/v1`, no `PGDMP` visible), files copied without exports, drill OK (24 migrations, 18 RLS-forced tables), a wrong key fails the drill (exit 1), the scheduled mode runs once at its hour. CI builds the image and runs shellcheck.
 
+- [x] P.3: deploys, disaster recovery, runbook — `.github/workflows/deploy.yml`: by hand, or after green CI on `main` when `AUTO_DEPLOY` is `true`; builds and pushes `billing-backend` / `billing-web` / `billing-backup` to `ghcr.io/aaronpaul2006` tagged with the commit, then (environment `production`, approval possible) copies the compose file and `deploy/deploy.sh` to `/opt/billing` and runs it over SSH with a pinned host key; the server pulls with the run's short-lived token (no registry password stored there); secrets passed through env, never inlined (actionlint clean). `deploy.sh <sha>`: pull, migrate job, `up`, wait for `/healthz`, log to `deployed.log`; rollback = older sha. `deploy/backup/restore.sh`: real restore, refuses a non-empty database. `docs/03-operations.md`: what to buy (server, domain, buckets, email, alerts, with IAM policies), server hardening, keys kept off the server, settings, GitHub setup, first deploy, deploying / rolling back, backups and the quarterly drill, disaster recovery, security checklist. Rehearsed locally: `deploy.sh` from a server-like folder; disaster recovery end to end (database volume and a PDF deleted → roles → restore (a second restore refused) → files copied back → migrate → start → the same owner signed in with password and code and saw their data, the PDF back in the bucket).
+
 ## In progress
 
-- Production setup: P.3 deploy workflow and runbook.
+- Nothing. Production setup done: to go live, buy and set up what docs/03-operations.md §2–5 lists, then run the Deploy workflow.
 
 ## Next
 

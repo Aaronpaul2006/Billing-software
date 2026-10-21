@@ -1,0 +1,99 @@
+# Deploy: build the production images, push them to GitHub's registry, and
+# roll them out on the server over SSH (docs/03-operations.md, "Deploying").
+#
+# Runs by hand (Actions -> Deploy -> Run workflow), or after a green CI run on
+# main when the repository variable AUTO_DEPLOY is "true". The "production"
+# environment can require an approval before the deploy job starts.
+#
+# Secrets (environment "production"): DEPLOY_HOST, DEPLOY_USER,
+# DEPLOY_SSH_KEY (private key of a deploy-only key pair), DEPLOY_KNOWN_HOSTS
+# (the server's host key line, so the connection is never trusted blindly).
+name: Deploy
+
+on:
+  workflow_dispatch:
+  workflow_run:
+    workflows: [CI]
+    types: [completed]
+    branches: [main]
+
+permissions:
+  contents: read
+  packages: write
+
+concurrency:
+  group: deploy-production
+  cancel-in-progress: false  # never stop a deploy half way
+
+jobs:
+  images:
+    name: Build and push images
+    if: >-
+      github.event_name == 'workflow_dispatch' ||
+      (github.event.workflow_run.conclusion == 'success' && vars.AUTO_DEPLOY == 'true')
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    outputs:
+      tag: ${{ steps.tag.outputs.tag }}
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          ref: ${{ github.event.workflow_run.head_sha || github.sha }}
+      - id: tag
+        run: echo "tag=$(git rev-parse --short=12 HEAD)" >> "$GITHUB_OUTPUT"
+      - name: Log in to ghcr.io
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          ACTOR: ${{ github.actor }}
+        run: printf '%s' "$GH_TOKEN" | docker login ghcr.io -u "$ACTOR" --password-stdin
+      - name: Build and push
+        env:
+          TAG: ${{ steps.tag.outputs.tag }}
+          REGISTRY: ghcr.io/aaronpaul2006
+        run: |
+          docker build --build-arg UV_SYNC_ARGS=--no-dev --build-arg RELEASE="$TAG" \
+            -t "$REGISTRY/billing-backend:$TAG" backend
+          docker build -f deploy/web.Dockerfile -t "$REGISTRY/billing-web:$TAG" .
+          docker build -t "$REGISTRY/billing-backup:$TAG" deploy/backup
+          for image in billing-backend billing-web billing-backup; do
+            docker push "$REGISTRY/$image:$TAG"
+          done
+
+  deploy:
+    name: Deploy to production
+    needs: images
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    environment: production
+    permissions:
+      contents: read
+      packages: read
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          ref: ${{ github.event.workflow_run.head_sha || github.sha }}
+      - name: SSH key and pinned host key
+        env:
+          KEY: ${{ secrets.DEPLOY_SSH_KEY }}
+          KNOWN: ${{ secrets.DEPLOY_KNOWN_HOSTS }}
+        run: |
+          install -m 700 -d ~/.ssh
+          printf '%s\n' "$KEY" > ~/.ssh/id_deploy && chmod 600 ~/.ssh/id_deploy
+          printf '%s\n' "$KNOWN" > ~/.ssh/known_hosts
+      - name: Copy the compose file and deploy script
+        env:
+          TARGET: ${{ secrets.DEPLOY_USER }}@${{ secrets.DEPLOY_HOST }}
+        run: |
+          scp -i ~/.ssh/id_deploy -o StrictHostKeyChecking=yes \
+            deploy/docker-compose.prod.yml deploy/deploy.sh "$TARGET:/opt/billing/"
+      - name: Deploy
+        env:
+          TARGET: ${{ secrets.DEPLOY_USER }}@${{ secrets.DEPLOY_HOST }}
+          TAG: ${{ needs.images.outputs.tag }}
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          ACTOR: ${{ github.actor }}
+        run: |
+          # The server pulls with this run's short-lived token: no registry
+          # password is stored there.
+          printf '%s' "$GH_TOKEN" | ssh -i ~/.ssh/id_deploy -o StrictHostKeyChecking=yes "$TARGET" \
+            "docker login ghcr.io -u '$ACTOR' --password-stdin && chmod +x /opt/billing/deploy.sh && /opt/billing/deploy.sh '$TAG'; status=\$?; docker logout ghcr.io; exit \$status"
