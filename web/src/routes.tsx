@@ -224,6 +224,13 @@ export const routes: RouteObject[] = [
             ),
           },
           {
+            path: "exports",
+            lazy: lazyPage(
+              () => import("@/features/exports/ExportsPage"),
+              (m) => m.ExportsPage,
+            ),
+          },
+          {
             path: "tds-certificates",
             lazy: lazyPage(
               () => import("@/features/tds/TdsCertificatesPage"),

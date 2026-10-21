@@ -940,3 +940,26 @@ def test_attachment_routes_reject_other_tenant(world: World) -> None:
 OBJECT_ROUTES["attachment-detail"] = lambda w: None  # test_attachment_routes_reject_other_tenant
 OBJECT_ROUTES["attachment-complete"] = lambda w: None  # same test
 NOT_TENANT_DATA["attachments"] = "creates an upload in the caller's own tenant"
+
+
+# --- E.1 exports -------------------------------------------------------------------------
+
+
+def test_export_routes_reject_other_tenant(world: World) -> None:
+    from apps.exports.models import Export
+
+    a = world.a
+    with tenant_context(a.tenant_id, a.user_id):
+        export = Export.objects.create(
+            kind="PAYMENTS",
+            format="CSV",
+            params={"from": "2026-04-01", "to": "2026-10-21"},
+            requested_by_id=world.a_owner.user_id,
+        )
+    api, b = world.api, world.as_b()
+    assert api.get(f"/api/v1/exports/{export.pk}", **b).status_code == 404
+    assert api.get("/api/v1/exports", **b).json()["results"] == []
+
+
+OBJECT_ROUTES["export-detail"] = lambda w: None  # test_export_routes_reject_other_tenant
+COLLECTION_ROUTES["exports"] = lambda w: None  # same test

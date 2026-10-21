@@ -2181,6 +2181,103 @@
                 }
             }
         },
+        "/api/v1/exports": {
+            "get": {
+                "operationId": "exports_list",
+                "description": "Your latest exports (kept 7 days), or ask for a new one: it is made in the\nbackground (202); poll it until READY, then download within 5 minutes.",
+                "tags": [
+                    "exports"
+                ],
+                "security": [
+                    {
+                        "bearerAuth": []
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ExportList"
+                                }
+                            }
+                        },
+                        "description": ""
+                    }
+                }
+            },
+            "post": {
+                "operationId": "exports_create",
+                "description": "Your latest exports (kept 7 days), or ask for a new one: it is made in the\nbackground (202); poll it until READY, then download within 5 minutes.",
+                "tags": [
+                    "exports"
+                ],
+                "requestBody": {
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/ExportRequest"
+                            }
+                        }
+                    },
+                    "required": true
+                },
+                "security": [
+                    {
+                        "bearerAuth": []
+                    }
+                ],
+                "responses": {
+                    "202": {
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/Export"
+                                }
+                            }
+                        },
+                        "description": ""
+                    }
+                }
+            }
+        },
+        "/api/v1/exports/{export_id}": {
+            "get": {
+                "operationId": "exports_retrieve",
+                "description": "One of your exports, with a 5-minute download link once READY.",
+                "parameters": [
+                    {
+                        "in": "path",
+                        "name": "export_id",
+                        "schema": {
+                            "type": "string",
+                            "format": "uuid"
+                        },
+                        "required": true
+                    }
+                ],
+                "tags": [
+                    "exports"
+                ],
+                "security": [
+                    {
+                        "bearerAuth": []
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/Export"
+                                }
+                            }
+                        },
+                        "description": ""
+                    }
+                }
+            }
+        },
         "/api/v1/gst-registrations": {
             "get": {
                 "operationId": "gst_registrations_list",
@@ -6038,6 +6135,203 @@
                 ],
                 "type": "string",
                 "description": "* `MATERIAL` - MATERIAL\n* `LABOUR` - LABOUR\n* `SUBCONTRACT` - SUBCONTRACT\n* `EQUIPMENT` - EQUIPMENT\n* `TRANSPORT` - TRANSPORT\n* `SITE_OVERHEAD` - SITE_OVERHEAD\n* `OFFICE` - OFFICE\n* `OTHER` - OTHER"
+            },
+            "Export": {
+                "type": "object",
+                "properties": {
+                    "id": {
+                        "type": "string",
+                        "format": "uuid"
+                    },
+                    "kind": {
+                        "$ref": "#/components/schemas/ExportKindEnum"
+                    },
+                    "format": {
+                        "$ref": "#/components/schemas/ExportFormatEnum"
+                    },
+                    "params": {
+                        "type": "object",
+                        "additionalProperties": {}
+                    },
+                    "status": {
+                        "$ref": "#/components/schemas/ExportStatusEnum"
+                    },
+                    "file_name": {
+                        "type": [
+                            "string",
+                            "null"
+                        ]
+                    },
+                    "size_bytes": {
+                        "type": [
+                            "integer",
+                            "null"
+                        ]
+                    },
+                    "row_count": {
+                        "type": [
+                            "integer",
+                            "null"
+                        ]
+                    },
+                    "warnings": {
+                        "type": "array",
+                        "items": {
+                            "type": "string"
+                        }
+                    },
+                    "error": {
+                        "type": [
+                            "string",
+                            "null"
+                        ]
+                    },
+                    "created_at": {
+                        "type": "string",
+                        "format": "date-time"
+                    },
+                    "finished_at": {
+                        "type": [
+                            "string",
+                            "null"
+                        ],
+                        "format": "date-time"
+                    },
+                    "download_url": {
+                        "type": [
+                            "string",
+                            "null"
+                        ],
+                        "format": "uri",
+                        "readOnly": true,
+                        "description": "A link for 5 minutes; only when READY."
+                    }
+                },
+                "required": [
+                    "created_at",
+                    "download_url",
+                    "error",
+                    "file_name",
+                    "finished_at",
+                    "format",
+                    "id",
+                    "kind",
+                    "params",
+                    "row_count",
+                    "size_bytes",
+                    "status",
+                    "warnings"
+                ]
+            },
+            "ExportFormatEnum": {
+                "enum": [
+                    "CSV",
+                    "XLSX",
+                    "JSON"
+                ],
+                "type": "string",
+                "description": "* `CSV` - Csv\n* `XLSX` - Xlsx\n* `JSON` - Json"
+            },
+            "ExportKindEnum": {
+                "enum": [
+                    "DOCUMENTS",
+                    "PAYMENTS",
+                    "EXPENSES",
+                    "RECEIVABLES",
+                    "GSTR1"
+                ],
+                "type": "string",
+                "description": "* `DOCUMENTS` - Documents\n* `PAYMENTS` - Payments\n* `EXPENSES` - Expenses\n* `RECEIVABLES` - Receivables\n* `GSTR1` - Gstr1"
+            },
+            "ExportList": {
+                "type": "object",
+                "properties": {
+                    "results": {
+                        "type": "array",
+                        "items": {
+                            "$ref": "#/components/schemas/Export"
+                        }
+                    }
+                },
+                "required": [
+                    "results"
+                ]
+            },
+            "ExportParams": {
+                "type": "object",
+                "description": "Invoice register, payments, expenses: `from` / `to` (default: this FY to\ntoday); invoice register and receivables: `book`.",
+                "properties": {
+                    "to": {
+                        "type": "string",
+                        "format": "date"
+                    },
+                    "book": {
+                        "allOf": [
+                            {
+                                "$ref": "#/components/schemas/ExportParamsBookEnum"
+                            }
+                        ],
+                        "default": "ALL"
+                    },
+                    "from": {
+                        "type": "string",
+                        "format": "date"
+                    }
+                }
+            },
+            "ExportParamsBookEnum": {
+                "enum": [
+                    "ALL",
+                    "GST",
+                    "NON_GST"
+                ],
+                "type": "string",
+                "description": "* `ALL` - ALL\n* `GST` - GST\n* `NON_GST` - NON_GST"
+            },
+            "ExportRequest": {
+                "type": "object",
+                "properties": {
+                    "kind": {
+                        "$ref": "#/components/schemas/ExportRequestKindEnum"
+                    },
+                    "format": {
+                        "$ref": "#/components/schemas/ExportRequestFormatEnum"
+                    },
+                    "params": {
+                        "$ref": "#/components/schemas/ExportParams"
+                    }
+                },
+                "required": [
+                    "format",
+                    "kind"
+                ]
+            },
+            "ExportRequestFormatEnum": {
+                "enum": [
+                    "CSV",
+                    "XLSX"
+                ],
+                "type": "string",
+                "description": "* `CSV` - CSV\n* `XLSX` - XLSX"
+            },
+            "ExportRequestKindEnum": {
+                "enum": [
+                    "DOCUMENTS",
+                    "PAYMENTS",
+                    "EXPENSES",
+                    "RECEIVABLES"
+                ],
+                "type": "string",
+                "description": "* `DOCUMENTS` - DOCUMENTS\n* `PAYMENTS` - PAYMENTS\n* `EXPENSES` - EXPENSES\n* `RECEIVABLES` - RECEIVABLES"
+            },
+            "ExportStatusEnum": {
+                "enum": [
+                    "PENDING",
+                    "READY",
+                    "FAILED"
+                ],
+                "type": "string",
+                "description": "* `PENDING` - Pending\n* `READY` - Ready\n* `FAILED` - Failed"
             },
             "GstRegistration": {
                 "type": "object",

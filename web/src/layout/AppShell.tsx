@@ -2,6 +2,7 @@ import {
   BarChart3,
   Building2,
   ChevronsUpDown,
+  Download,
   FileText,
   FolderKanban,
   Hash,
@@ -42,6 +43,7 @@ const NAV = [
   { to: "/projects", label: "Projects", icon: FolderKanban },
   { to: "/expenses", label: "Expenses", icon: Receipt },
   { to: "/reports", label: "Reports", icon: BarChart3 },
+  { to: "/exports", label: "Exports", icon: Download },
 ] as const;
 
 /** Business settings: OWNER and ADMIN only (the API refuses the others anyway). */

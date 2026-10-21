@@ -43,6 +43,7 @@ INSTALLED_APPS = [
     "apps.expenses",
     "apps.reports",
     "apps.tds",
+    "apps.exports",
 ]
 
 MIDDLEWARE = [
@@ -119,6 +120,7 @@ RATE_LIMITS: dict[str, tuple[int, int]] = {
     "password_reset_ip": (20, 3600),
     "verify_resend_user": (3, 3600),
     "api_user": (600, 60),  # every signed-in request
+    "export_user": (20, 3600),
 }
 RATE_LIMIT_PREFIX = "rl:"
 RATE_LIMIT_ENABLED: bool = env.bool("RATE_LIMIT_ENABLED", default=True)
@@ -141,6 +143,7 @@ CELERY_BEAT_SCHEDULE = {
         "schedule": 3600.0,
     },
     "purge-stale-uploads": {"task": "apps.files.tasks.purge_stale_uploads", "schedule": 3600.0},
+    "purge-old-exports": {"task": "apps.exports.tasks.purge_old_exports", "schedule": 3600.0},
 }
 RENDER_PDF_ON_ISSUE = True
 

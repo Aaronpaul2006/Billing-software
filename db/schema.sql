@@ -620,6 +620,32 @@ CREATE TABLE idempotency_keys (
 );
 CREATE INDEX idempotency_keys_expiry_idx ON idempotency_keys (expires_at);
 
+-- Files exported for the user (CSV / XLSX registers, GSTR-1 JSON), written by
+-- a background job. The file lives in object storage; rows and files are
+-- purged after 7 days (they hold the business's figures).
+CREATE TABLE exports (
+  id            uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+  tenant_id     uuid NOT NULL REFERENCES tenants (id),
+  kind          text NOT NULL CHECK (kind IN ('DOCUMENTS', 'PAYMENTS', 'EXPENSES', 'RECEIVABLES', 'GSTR1')),
+  format        text NOT NULL CHECK (format IN ('CSV', 'XLSX', 'JSON')),
+  params        jsonb NOT NULL DEFAULT '{}',
+  status        text NOT NULL DEFAULT 'PENDING' CHECK (status IN ('PENDING', 'READY', 'FAILED')),
+  file_name     text CHECK (char_length(file_name) BETWEEN 1 AND 200),
+  storage_key   text UNIQUE,
+  size_bytes    bigint CHECK (size_bytes >= 0),
+  row_count     integer CHECK (row_count >= 0),
+  warnings      jsonb NOT NULL DEFAULT '[]',
+  error         text CHECK (char_length(error) <= 1000),
+  requested_by  uuid NOT NULL REFERENCES users (id),
+  created_at    timestamptz NOT NULL DEFAULT now(),
+  finished_at   timestamptz,
+  UNIQUE (tenant_id, id),
+  CHECK ((status = 'READY') = (storage_key IS NOT NULL AND file_name IS NOT NULL AND size_bytes IS NOT NULL)),
+  CHECK ((status = 'PENDING') = (finished_at IS NULL)),
+  CHECK ((format = 'JSON') = (kind = 'GSTR1'))
+);
+CREATE INDEX exports_requested_idx ON exports (tenant_id, requested_by, created_at DESC);
+
 -- Append-only audit trail, written by triggers (so it cannot be skipped by
 -- application code) and never updatable or deletable by the app.
 CREATE TABLE audit_log (
@@ -866,7 +892,7 @@ BEGIN
   FOREACH t IN ARRAY ARRAY[
     'tenants', 'memberships', 'gst_registrations', 'parties', 'projects', 'boq_items',
     'catalog_items', 'attachments', 'document_series', 'documents', 'document_lines',
-    'payments', 'allocations', 'expenses', 'retention_releases', 'tds_certificates']
+    'payments', 'allocations', 'expenses', 'retention_releases', 'tds_certificates', 'exports']
   LOOP
     EXECUTE format(
       'CREATE TRIGGER audit AFTER INSERT OR UPDATE OR DELETE ON %I FOR EACH ROW EXECUTE FUNCTION audit_row_change()', t);
@@ -885,7 +911,7 @@ BEGIN
   FOREACH t IN ARRAY ARRAY[
     'gst_registrations', 'parties', 'projects', 'boq_items', 'catalog_items', 'attachments',
     'document_series', 'documents', 'document_lines', 'payments', 'allocations', 'expenses',
-    'retention_releases', 'tds_certificates', 'idempotency_keys']
+    'retention_releases', 'tds_certificates', 'idempotency_keys', 'exports']
   LOOP
     EXECUTE format('ALTER TABLE %I ENABLE ROW LEVEL SECURITY', t);
     EXECUTE format('ALTER TABLE %I FORCE ROW LEVEL SECURITY', t);
@@ -996,6 +1022,32 @@ END $$;
 
 REVOKE ALL ON FUNCTION purge_expired_idempotency_keys(), purge_stale_uploads(integer) FROM PUBLIC;
 GRANT EXECUTE ON FUNCTION purge_expired_idempotency_keys(), purge_stale_uploads(integer) TO billing_app;
+
+CREATE POLICY housekeeping_purge ON exports
+  USING (created_at < now() - interval '7 days'
+         AND current_user = (SELECT pg_get_userbyid(relowner) FROM pg_class
+                              WHERE oid = 'exports'::regclass));
+
+-- Exports older than 7 days: deletes the rows and returns the storage keys of
+-- their files, so the caller deletes those in the same transaction.
+CREATE FUNCTION purge_old_exports(p_limit integer) RETURNS SETOF text
+LANGUAGE plpgsql SECURITY DEFINER SET search_path = public, pg_temp AS $$
+DECLARE r record;
+BEGIN
+  FOR r IN SELECT id, storage_key FROM exports
+            WHERE created_at < now() - interval '7 days'
+            ORDER BY created_at LIMIT p_limit
+            FOR UPDATE SKIP LOCKED
+  LOOP
+    DELETE FROM exports WHERE id = r.id;
+    IF r.storage_key IS NOT NULL THEN
+      RETURN NEXT r.storage_key;
+    END IF;
+  END LOOP;
+END $$;
+
+REVOKE ALL ON FUNCTION purge_old_exports(integer) FROM PUBLIC;
+GRANT EXECUTE ON FUNCTION purge_old_exports(integer) TO billing_app;
 
 -- =============================================================================
 -- 9. Reporting views

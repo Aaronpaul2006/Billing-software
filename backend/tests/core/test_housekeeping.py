@@ -162,5 +162,6 @@ def test_beat_runs_both_jobs_hourly(settings: Any) -> None:
     assert {entry["task"] for entry in schedule.values()} == {
         "apps.core.tasks.purge_idempotency_keys",
         "apps.files.tasks.purge_stale_uploads",
+        "apps.exports.tasks.purge_old_exports",
     }
     assert all(entry["schedule"] == 3600.0 for entry in schedule.values())

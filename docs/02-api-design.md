@@ -534,7 +534,7 @@ VIEWER; site engineers get 403). Period reports accept `from`, `to`
 | `GET /reports/projects` · `GET /reports/projects/{id}` | Contract value vs billed, retention held, TDS deducted, advance recovered, outstanding, cost → margin |
 | `GET /reports/tds-reconciliation?fy=2026` | Per client and quarter: income-tax TDS on issued tax invoices / bills of supply (by bill date) vs Form 16A certificates recorded; `difference`, `status` (`MATCHED`, `SHORT`, `EXCESS`, `NOT_RECEIVED`), `certificate_due` (15 Aug / 15 Nov / 15 Feb / 15 Jun) and `overdue`; optional `party_id`; `fy` defaults to this FY |
 | `GET /reports/gst-summary?period=2026-10` | GST documents' outward supplies by B2B/B2C and rate, CGST/SGST/IGST/cess, plus `totals` (basis for GSTR-1/3B) |
-| `POST /exports` · `GET /exports/{id}` | Async CSV/XLSX/GSTR-1 JSON export; download via presigned URL *(not built yet)* |
+| `POST /exports` · `GET /exports` · `GET /exports/{id}` | Async CSV / XLSX export (GSTR-1 JSON in E.2); download via presigned URL |
 
 Rules behind the numbers:
 
@@ -556,6 +556,31 @@ The mobile app needs only `/auth/*`, `/me`, `/reports/*`, read-only
 Same API, same permissions.
 
 ---
+
+### Exports (E.1, 2026-10-22)
+
+`POST /exports {kind, format, params}` → `202` with the export (`PENDING`); a
+Celery task writes the file to storage and marks it `READY` (or `FAILED` with
+`error`). Poll `GET /exports/{id}`; `download_url` (5 minutes,
+`Content-Disposition: attachment`) appears once `READY`. `GET /exports`
+lists the caller's latest 20. Rows and files are deleted after 7 days.
+
+| `kind` | `params` | Content |
+|---|---|---|
+| `DOCUMENTS` | `from`, `to`, `book` | Invoice register: every issued / cancelled document by date (drafts never) |
+| `PAYMENTS` | `from`, `to` | Payments with allocated / unallocated |
+| `EXPENSES` | `from`, `to` | Expenses with GST, ITC, paid, balance |
+| `RECEIVABLES` | `book` | What clients owe today, by age |
+
+* `format`: `CSV` (UTF-8 with BOM, ISO dates, plain `1234.50` amounts) or
+  `XLSX` (real dates and numbers, `#,##0.00`). `from` / `to` default to this
+  financial year to today and are stored filled in. Over 100,000 rows →
+  `FAILED` ("choose a shorter period").
+* User text cannot run as a spreadsheet formula: CSV text cells starting with
+  `= + - @` get a leading apostrophe; XLSX text cells are stored as strings.
+* Permission `reports.view`; each user sees only their own exports (another
+  member's: 404). Rate limit 20 per hour per user. `Idempotency-Key`
+  honoured when sent. Every export is in the audit trail (who exported what).
 
 ## 9. Operational endpoints
 

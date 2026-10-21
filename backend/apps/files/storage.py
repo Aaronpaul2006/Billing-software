@@ -58,20 +58,22 @@ def get(key: str) -> bytes:
     return data
 
 
-def content_disposition(filename: str) -> str:
-    """`inline` with the name safe for a header: an ASCII fallback without quotes
-    or control characters, plus the exact name in RFC 6266 / 5987 form."""
+def content_disposition(filename: str, disposition: str = "inline") -> str:
+    """The name made safe for a header: an ASCII fallback without quotes or
+    control characters, plus the exact name in RFC 6266 / 5987 form."""
     fallback = "".join(c if 32 <= ord(c) < 127 and c not in '"\\' else "_" for c in filename)
-    return f"inline; filename=\"{fallback}\"; filename*=UTF-8''{quote(filename, safe='')}"
+    return f"{disposition}; filename=\"{fallback}\"; filename*=UTF-8''{quote(filename, safe='')}"
 
 
-def download_url(key: str, filename: str, ttl: int = DOWNLOAD_URL_TTL) -> str:
+def download_url(
+    key: str, filename: str, ttl: int = DOWNLOAD_URL_TTL, disposition: str = "inline"
+) -> str:
     url: str = public_client().generate_presigned_url(
         "get_object",
         Params={
             "Bucket": settings.S3_BUCKET,
             "Key": key,
-            "ResponseContentDisposition": content_disposition(filename),
+            "ResponseContentDisposition": content_disposition(filename, disposition),
         },
         ExpiresIn=ttl,
     )

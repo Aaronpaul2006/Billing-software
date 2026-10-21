@@ -828,6 +828,47 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/exports": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * @description Your latest exports (kept 7 days), or ask for a new one: it is made in the
+         *     background (202); poll it until READY, then download within 5 minutes.
+         */
+        get: operations["exports_list"];
+        put?: never;
+        /**
+         * @description Your latest exports (kept 7 days), or ask for a new one: it is made in the
+         *     background (202); poll it until READY, then download within 5 minutes.
+         */
+        post: operations["exports_create"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/exports/{export_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** @description One of your exports, with a 5-minute download link once READY. */
+        get: operations["exports_retrieve"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/gst-registrations": {
         parameters: {
             query?: never;
@@ -2066,6 +2107,94 @@ export interface components {
          * @enum {string}
          */
         ExpenseWriteCategoryEnum: "MATERIAL" | "LABOUR" | "SUBCONTRACT" | "EQUIPMENT" | "TRANSPORT" | "SITE_OVERHEAD" | "OFFICE" | "OTHER";
+        Export: {
+            /** Format: uuid */
+            id: string;
+            kind: components["schemas"]["ExportKindEnum"];
+            format: components["schemas"]["ExportFormatEnum"];
+            params: {
+                [key: string]: unknown;
+            };
+            status: components["schemas"]["ExportStatusEnum"];
+            file_name: string | null;
+            size_bytes: number | null;
+            row_count: number | null;
+            warnings: string[];
+            error: string | null;
+            /** Format: date-time */
+            created_at: string;
+            /** Format: date-time */
+            finished_at: string | null;
+            /**
+             * Format: uri
+             * @description A link for 5 minutes; only when READY.
+             */
+            readonly download_url: string | null;
+        };
+        /**
+         * @description * `CSV` - Csv
+         *     * `XLSX` - Xlsx
+         *     * `JSON` - Json
+         * @enum {string}
+         */
+        ExportFormatEnum: "CSV" | "XLSX" | "JSON";
+        /**
+         * @description * `DOCUMENTS` - Documents
+         *     * `PAYMENTS` - Payments
+         *     * `EXPENSES` - Expenses
+         *     * `RECEIVABLES` - Receivables
+         *     * `GSTR1` - Gstr1
+         * @enum {string}
+         */
+        ExportKindEnum: "DOCUMENTS" | "PAYMENTS" | "EXPENSES" | "RECEIVABLES" | "GSTR1";
+        ExportList: {
+            results: components["schemas"]["Export"][];
+        };
+        /**
+         * @description Invoice register, payments, expenses: `from` / `to` (default: this FY to
+         *     today); invoice register and receivables: `book`.
+         */
+        ExportParams: {
+            /** Format: date */
+            to?: string;
+            /** @default ALL */
+            book?: components["schemas"]["ExportParamsBookEnum"];
+            /** Format: date */
+            from?: string;
+        };
+        /**
+         * @description * `ALL` - ALL
+         *     * `GST` - GST
+         *     * `NON_GST` - NON_GST
+         * @enum {string}
+         */
+        ExportParamsBookEnum: "ALL" | "GST" | "NON_GST";
+        ExportRequest: {
+            kind: components["schemas"]["ExportRequestKindEnum"];
+            format: components["schemas"]["ExportRequestFormatEnum"];
+            params?: components["schemas"]["ExportParams"];
+        };
+        /**
+         * @description * `CSV` - CSV
+         *     * `XLSX` - XLSX
+         * @enum {string}
+         */
+        ExportRequestFormatEnum: "CSV" | "XLSX";
+        /**
+         * @description * `DOCUMENTS` - DOCUMENTS
+         *     * `PAYMENTS` - PAYMENTS
+         *     * `EXPENSES` - EXPENSES
+         *     * `RECEIVABLES` - RECEIVABLES
+         * @enum {string}
+         */
+        ExportRequestKindEnum: "DOCUMENTS" | "PAYMENTS" | "EXPENSES" | "RECEIVABLES";
+        /**
+         * @description * `PENDING` - Pending
+         *     * `READY` - Ready
+         *     * `FAILED` - Failed
+         * @enum {string}
+         */
+        ExportStatusEnum: "PENDING" | "READY" | "FAILED";
         GstRegistration: {
             /** Format: uuid */
             readonly id: string;
@@ -5311,6 +5440,69 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["Expense"];
+                };
+            };
+        };
+    };
+    exports_list: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ExportList"];
+                };
+            };
+        };
+    };
+    exports_create: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ExportRequest"];
+            };
+        };
+        responses: {
+            202: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Export"];
+                };
+            };
+        };
+    };
+    exports_retrieve: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                export_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Export"];
                 };
             };
         };
