@@ -43,6 +43,13 @@ export const routes: RouteObject[] = [
     ),
   },
   {
+    path: "/confirm-email",
+    lazy: lazyPage(
+      () => import("@/pages/ConfirmEmailPage"),
+      (m) => m.ConfirmEmailPage,
+    ),
+  },
+  {
     path: "/verify-email",
     lazy: lazyPage(
       () => import("@/pages/VerifyEmailPage"),
@@ -221,6 +228,13 @@ export const routes: RouteObject[] = [
             lazy: lazyPage(
               () => import("@/features/settings/MembersPage"),
               (m) => m.MembersPage,
+            ),
+          },
+          {
+            path: "account",
+            lazy: lazyPage(
+              () => import("@/features/account/AccountPage"),
+              (m) => m.AccountPage,
             ),
           },
           {

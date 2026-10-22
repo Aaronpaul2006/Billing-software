@@ -144,7 +144,9 @@ lockout still guards passwords).
 | `POST /auth/password/forgot` | `{email}` → always `204` (no account enumeration) |
 | `POST /auth/password/reset` | `{token, password}` → `204`; signs out every session |
 | `POST /auth/mfa/setup` · `POST /auth/mfa/enable` · `POST /auth/mfa/disable` | TOTP enrolment (disable requires password + code) |
-| `GET /me` · `PATCH /me` | Profile, memberships |
+| `GET /me` · `PATCH /me` | Profile (`full_name`, `phone`), memberships |
+| `POST /me/email` · `POST /auth/email/confirm` | Change the sign-in email: `{new_email, password}` → a link to the new address; `{token}` from it switches (K.1) |
+| `POST /auth/password/change` | `{current_password, new_password}` while signed in; other devices signed out (K.1) |
 
 Access token claims: `sub` (user), `tid` (tenant), `role`, `sid` (session
 family), `amr` (`["pwd"]` or `["otp","pwd"]`), `iss`, `iat`, `exp` (10 min),
@@ -185,8 +187,16 @@ Implemented (Phase 0.5) as of 2026-10-19:
   is `422` with field `token`: `link_expired` or `link_invalid`. Emails are
   sent by a Celery task after commit (Mailpit in dev); the task builds the
   token, so tokens never sit in the queue.
-* Not yet built: `PATCH /me` (change name or email), rate limit headers,
-  `Idempotency-Key` on signup (see PROGRESS.md).
+* **Your account** (K.1, 2026-10-22): `PATCH /me` (name; phone stored as `+`
+  and 10–15 digits, spaces / dashes / brackets dropped). Password change:
+  `422 invalid_password` on `current_password` (counts towards the lockout),
+  `weak_password` on `new_password`; other sessions revoked, notice emailed;
+  5 per hour. Email change: `422 invalid_password` (field `password`),
+  `same_email`, `email_taken` on `new_email`; the link (1 day) names the
+  address it moves from, so it stops working if the email changed meanwhile
+  (`link_invalid`); confirming marks the new address verified and emails the
+  old one; opening it twice is harmless; 3 per hour.
+* Not yet built: `Idempotency-Key` on signup (see PROGRESS.md).
 
 ---
 

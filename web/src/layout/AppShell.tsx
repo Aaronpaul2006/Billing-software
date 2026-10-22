@@ -13,10 +13,11 @@ import {
   Receipt,
   Settings,
   UserCog,
+  UserRound,
   Users,
 } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
-import { NavLink, Outlet } from "react-router";
+import { NavLink, Outlet, useNavigate } from "react-router";
 
 import { useMe } from "@/api/me";
 import { useAuth, useSession } from "@/auth/context";
@@ -122,6 +123,7 @@ function TenantSwitcher() {
 
 function UserMenu() {
   const { logout } = useAuth();
+  const navigate = useNavigate();
   const session = useSession();
   const me = useMe();
   return (
@@ -137,6 +139,9 @@ function UserMenu() {
           <span className="text-muted-foreground text-xs font-normal">{session.role}</span>
         </DropdownMenuLabel>
         <DropdownMenuSeparator />
+        <DropdownMenuItem onSelect={() => void navigate("/account")}>
+          <UserRound aria-hidden /> Your account
+        </DropdownMenuItem>
         <DropdownMenuItem onSelect={() => void logout()}>
           <LogOut aria-hidden /> Sign out
         </DropdownMenuItem>

@@ -83,8 +83,10 @@ def test_change_password_signs_out_the_other_devices(
         url, {"current_password": "wrong one", "new_password": NEW_PASSWORD}, **bearer(token)
     )
     assert _problem(wrong) == (422, "invalid_password")
+    assert wrong.json()["errors"][0]["field"] == "current_password"
     weak = api.post(url, {"current_password": PASSWORD, "new_password": "short"}, **bearer(token))
     assert _problem(weak) == (422, "weak_password")
+    assert weak.json()["errors"][0]["field"] == "new_password"
     with django_capture_on_commit_callbacks(execute=True):
         done = api.post(
             url, {"current_password": PASSWORD, "new_password": NEW_PASSWORD}, **bearer(token)
@@ -111,7 +113,9 @@ def test_change_email_only_after_the_new_address_confirms(
     def ask(new_email: str, password: str = PASSWORD) -> Any:
         return api.post(url, {"new_email": new_email, "password": password}, **bearer(token))
 
-    assert _problem(ask("x@example.com", "nope")) == (422, "invalid_password")
+    wrong = ask("x@example.com", "nope")
+    assert _problem(wrong) == (422, "invalid_password")
+    assert wrong.json()["errors"][0]["field"] == "password"
     assert _problem(ask(account.email.upper())) == (422, "same_email")
     assert _problem(ask(make_account().email)) == (422, "email_taken")
 

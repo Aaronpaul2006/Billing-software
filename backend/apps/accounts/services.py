@@ -198,12 +198,14 @@ def active_memberships(user_id: uuid.UUID) -> list[tuple[Membership, Tenant]]:
     return [(m, tenants[m.tenant_id]) for m in memberships if m.tenant_id in tenants]
 
 
-def _check_new_password(password: str, *, email: str, full_name: str) -> None:
+def _check_new_password(
+    password: str, *, email: str, full_name: str, field: str = "password"
+) -> None:
     try:
         # The validators only read attributes (email, full_name) of `user`.
         validate_password(password, user=User(email=email, full_name=full_name))  # type: ignore[arg-type]
     except DjangoValidationError as exc:
-        raise Invalid("password", " ".join(exc.messages), code="weak_password") from exc
+        raise Invalid(field, " ".join(exc.messages), code="weak_password") from exc
 
 
 def _email_after_commit(
@@ -370,17 +372,17 @@ def update_profile(principal: Principal, changes: dict[str, Any]) -> User:
     return User.objects.get(pk=principal.user_id)
 
 
-def _check_current_password(user: User, password: str) -> None:
+def _check_current_password(user: User, password: str, field: str = "current_password") -> None:
     if not check_password(password, user.password_hash):
         _register_failure(user.pk)  # counts towards the lockout, like a failed login
-        raise Invalid("current_password", "The password is incorrect.", code="invalid_password")
+        raise Invalid(field, "The password is incorrect.", code="invalid_password")
 
 
 def change_password(principal: Principal, current: str, new: str) -> None:
     """Signs out every other device and sends a notice to the account's email."""
     user = User.objects.get(pk=principal.user_id)
     _check_current_password(user, current)
-    _check_new_password(new, email=user.email, full_name=user.full_name)
+    _check_new_password(new, email=user.email, full_name=user.full_name, field="new_password")
     with transaction.atomic():
         User.objects.filter(pk=user.pk).update(
             password_hash=make_password(new),
@@ -397,7 +399,7 @@ def request_email_change(principal: Principal, new_email: str, password: str) ->
     """Email a confirmation link to the new address; nothing changes until it
     is opened (so a typo cannot lock anyone out of their account)."""
     user = User.objects.get(pk=principal.user_id)
-    _check_current_password(user, password)
+    _check_current_password(user, password, field="password")
     new_email = normalise_email(new_email)
     if new_email == user.email:
         raise Invalid("new_email", "That is already your email.", code="same_email")
