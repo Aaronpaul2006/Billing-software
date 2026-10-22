@@ -48,7 +48,12 @@ npm run lint && npm run typecheck && npm run build
 
 After an API change: regenerate `backend/openapi.json`
 (`DJANGO_SETTINGS_MODULE=config.settings.test uv run python manage.py spectacular --format openapi-json --file openapi.json`
-in `backend/`), then `npm run gen:api` in `web/`. CI fails if either is stale.
+in `backend/`), then `npm run gen:api` in `web/` and in `mobile/`. CI fails if any is stale.
+
+## Owner mobile app
+
+Expo + React Native in `mobile/`: how to run it on a phone with Expo Go, and the
+checks, are in [`mobile/README.md`](mobile/README.md).
 
 ## Running the whole backend in Docker
 

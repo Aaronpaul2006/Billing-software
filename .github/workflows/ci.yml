@@ -163,3 +163,35 @@ jobs:
       - run: npm run build
       - name: Audit production dependencies
         run: npm audit --omit=dev --audit-level=high
+
+  mobile:
+    name: Mobile app (types up to date, lint, typecheck, tests, bundles)
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    defaults:
+      run:
+        working-directory: mobile
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: mobile/package-lock.json
+      - run: npm ci
+      - name: API types match backend/openapi.json
+        run: |
+          npm run gen:api
+          git diff --exit-code -- src/api/schema.d.ts
+      - run: npm run format:check
+      - run: npm run lint
+      - run: npm run typecheck
+      - run: npm test
+      - name: Android and iOS bundles build
+        run: npm run export:check
+      - name: Expo dependency check
+        run: npx expo install --check
+      # High findings today (braces, node-forge, sprintf-js; no fixed release)
+      # are Expo CLI / Metro / Jest tooling, not code in the app bundle.
+      - name: Audit production dependencies
+        run: npm audit --omit=dev --audit-level=critical

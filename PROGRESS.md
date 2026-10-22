@@ -78,9 +78,11 @@ Last updated: 2026-10-22
 
 - [x] K.3: the rest of the known gaps — exports `BOQ` (one project: contract, billed, balance, value, progress %, variation; CSV quantities as `42.5`, XLSX `#,##0.###`) and `PROJECTS` (project margins), schema.sql exports kind check + migration `exports/0002` (sync test passes); a BOQ export for an unknown or another company's project is `422 params.project_id` (cross-tenant test). Web: both kinds on the Exports page (`/exports?kind=BOQ&project_id=…`, linked from a project's progress tab as "Export to Excel or CSV"); TDS certificates are edited in place (pencil → the same form, PATCH with If-Match); Company settings has a time-zone choice (India first, then the browser's zones); the GST registration edit form now keeps and edits address line 2 and keeps the district (saving used to drop both: a real bug). Export tests share their S3 / task fixtures in `tests/exports/conftest.py`. Smoke-tested through the proxy against SeaweedFS: RA bill → BOQ CSV (42.5 billed, 57.5 left) and margins XLSX, unknown project refused, TDS edit + stale edit 412, time zone saved / unknown zone refused, registration edit keeps line 2 and district. Web 133 tests; backend 573.
 
+- [x] Mobile M.1 (owner decision 2026-10-22: the owner mobile app next): `mobile/`, Expo SDK 58 (React Native 0.88, React 19.3) from the official template, TypeScript strict (5.9.3 like the web: openapi-typescript needs 5; recorded in `expo.install.exclude`), expo-router with screens in `src/app/`. API client from the committed `backend/openapi.json` (`npm run gen:api`), same problem+json errors as the web. Session: refresh token only in `expo-secure-store` (Keychain / Keystore, this device only), access token in memory, `refreshSession()` single flight (one refresh for parallel `token_expired` requests, tested), a revoked session forgets the stored token, no connection keeps it and offers "Try again". Screens: sign-in (password, then the 2-step code or a recovery code), "turn on two-step verification in the web app" for owners / admins without it, dashboard (period and book chips; billed / collected / outstanding / expenses against the previous period; the five clients who owe most, sorted exactly in paise, 90+ days in red; pull to refresh; roles without reports told so), account (who is signed in, switch company, sign out). Money: `src/lib/money.ts` copied from the web with its tests. Tests: Jest (jest-expo) + React Native Testing Library rendering the real routes; MSW 3 is ESM-only and does not load under Jest, so `src/test/api.ts` stubs fetch and fails on unexpected requests. CI job `mobile`: types up to date, prettier, eslint (strict type-checked), tsc, tests, Android + iOS bundles (`expo export`), `expo install --check`, npm audit. `expo-doctor` 20/20. Smoke-tested against the real API (no phone here): mobile sign-in with 2-step returns the refresh token in the body and no cookie, reports with the mobile token, refresh rotates, logout ends it, reusing a rotated token ends the whole session. Mobile 45 tests.
+
 ## In progress
 
-- Nothing: the known-gap polish (K.1–K.3) is done. Waiting for the owner to choose the next phase.
+- Owner mobile app. Next: M.2 browsing (receivables, documents and PDFs, projects, payments).
 
 ## Next
 
@@ -142,7 +144,14 @@ Polish known gaps (owner decision 2026-10-22):
 2. ~~Invitations by email for people without an account~~ (done)
 3. ~~TDS certificate edit, company time zone, registration line 2, BOQ / project exports~~ (done)
 
-Still open for the owner: the owner mobile app, e-invoicing / e-way bills (needs GSP credentials).
+Owner mobile app (owner decision 2026-10-22):
+
+1. ~~Foundation, sign-in, dashboard~~ (done)
+2. Browsing: receivables, documents and PDFs (share), projects, payments
+3. Actions: record a payment, issue a draft
+4. Builds and store setup (needs the owner: Expo account, app ids, store accounts)
+
+Still open for the owner: e-invoicing / e-way bills (needs GSP credentials).
 
 Full roadmap: `docs/01-architecture.md` §9.
 
@@ -182,4 +191,5 @@ Full roadmap: `docs/01-architecture.md` §9.
 - Exports: no export of the GST summary (GSTR-1 covers the same supplies); dates in file names use the server's date (UTC), like the reports' "today". The BOQ export has no project-level header rows (client, contract value): the file name carries the project code.
 - GSTR-1: not yet checked by importing into the real GST offline tool / portal (do that with a CA on a real month before relying on it). Not covered: amendments (`b2ba`, `cdnra`…), advances (`at`, `atadj`), e-commerce operators, deemed exports, HSN descriptions; 0 % lines are all reported as nil-rated (the user re-labels exempt / non-GST in the tool); the B2CL limit is ₹1,00,000 for every period (correct from August 2024). The invoice value reported for reverse-charge invoices is the document total (without the tax): confirm with a CA.
 - GST: deemed exports, supplies to SEZ for non-authorised operations, and the exact goods vs services place-of-supply rules for exports of goods are not modelled; every overseas client without a project is treated as an export of services.
+- Mobile: no sign-up and no 2-step setup in the app (both on the web; an owner without 2-step is sent there). Not yet run on a real phone: checked by Jest on the real routes, by bundling for Android / iOS, and by the API smoke. `npm audit` for mobile gates at `critical`: the high findings today (braces, node-forge, sprintf-js; no fixed release) are Expo CLI, Metro and Jest tooling, not code in the app bundle. `mobile/src/lib/money.ts` and `periods.ts` are copies of the web's (a shared package fights Metro); keep them in step.
 - Reports run live SQL per request; fine at current scale, revisit (materialised summaries or caching) if dashboards get slow.

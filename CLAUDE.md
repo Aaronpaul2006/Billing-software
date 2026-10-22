@@ -26,6 +26,8 @@ Original concept: `Project billling software.docx`.
 | `backend/` | Django project: `config/` (settings base/dev/test/prod, urls), `apps/` (one Django app per module), `tests/` |
 | `backend/apps/core/db.py` | Field types / lookups that make models produce exactly `db/schema.sql` |
 | `backend/apps/core/migrations/0003_database_security.py` | Composite FKs, triggers, RLS, views, grants (frozen copy of `schema.sql` §7–§10) |
+| `web/` | Office web app (React + Vite + TypeScript) |
+| `mobile/` | Owner mobile app (Expo + React Native + TypeScript); see `mobile/README.md` |
 | `backend/scripts/bootstrap_db.py` | Creates the roles `billing_owner`, `billing_app`, `billing_app_login` (run once per cluster, as superuser) |
 
 ## Stack (decided, do not change without asking)
@@ -130,6 +132,19 @@ never `parseFloat` / `Number()`); the access token lives in memory only; refresh
 go through `refreshSession()` (single flight); mutations send one Idempotency-Key per
 user action.
 
+```bash
+# Mobile app (run inside mobile/; Node 22+)
+npm ci
+npx expo start               # Expo Go on a phone; API URL from mobile/.env (see README)
+npm run format:check && npm run lint && npm run typecheck && npm test && npm run export:check
+npm run gen:api              # after regenerating backend/openapi.json
+```
+
+Mobile rules: the same money rules (`mobile/src/lib/money.ts` is kept in step with
+the web's); the refresh token only in secure storage (`expo-secure-store`), never
+AsyncStorage or files; the access token in memory only; refreshes through
+`refreshSession()` (single flight).
+
 On Windows the real-PDF test skips (no Pango); run it in the container before pushing
 PDF changes. CI installs the libraries and runs it.
 
@@ -142,7 +157,8 @@ tries IPv6 `::1` first and stalls, while compose publishes on IPv4 only.
 
 `.github/workflows/ci.yml` runs on every push to `main` and every PR: ruff,
 mypy, migrations check + fresh migrate, pytest on real Postgres, pip-audit,
-and the PGlite schema checks. Run the same locally before pushing.
+the PGlite schema checks, and the web and mobile jobs (types up to date, lint,
+typecheck, tests, build / bundles, npm audit). Run the same locally before pushing.
 
 ## Repository
 
