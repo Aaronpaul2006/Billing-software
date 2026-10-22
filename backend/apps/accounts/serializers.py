@@ -1,3 +1,4 @@
+import re
 from typing import Any
 
 from rest_framework import serializers
@@ -130,6 +131,33 @@ class PasswordForgotSerializer(serializers.Serializer[Any]):
 
 class PasswordResetSerializer(serializers.Serializer[Any]):
     token = serializers.CharField(max_length=500)
+    password = serializers.CharField(max_length=128, write_only=True, trim_whitespace=False)
+
+
+class MeUpdateSerializer(serializers.Serializer[Any]):
+    full_name = serializers.CharField(min_length=1, max_length=200, required=False)
+    phone = serializers.CharField(max_length=25, required=False, allow_null=True)
+
+    def validate_phone(self, value: str | None) -> str | None:
+        """Stored as + and 10-15 digits (the database rule); spaces, dashes and
+        brackets people type are dropped."""
+        if value is None:
+            return None
+        digits = re.sub(r"[\s()-]", "", value)
+        if not re.fullmatch(r"\+?[0-9]{10,15}", digits):
+            raise serializers.ValidationError(
+                "A phone number like +91 98470 12345.", code="invalid"
+            )
+        return digits
+
+
+class PasswordChangeSerializer(serializers.Serializer[Any]):
+    current_password = serializers.CharField(max_length=128, write_only=True, trim_whitespace=False)
+    new_password = serializers.CharField(max_length=128, write_only=True, trim_whitespace=False)
+
+
+class EmailChangeSerializer(serializers.Serializer[Any]):
+    new_email = serializers.EmailField(max_length=254)
     password = serializers.CharField(max_length=128, write_only=True, trim_whitespace=False)
 
 

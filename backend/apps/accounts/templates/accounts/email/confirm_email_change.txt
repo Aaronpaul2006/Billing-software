@@ -1,0 +1,10 @@
+{% autoescape off %}Hello {{ name }},
+
+To make this your sign-in email address, open this link:
+
+{{ link }}
+
+The link works for {{ hours }} hours. Until you open it, you keep signing in with your current address.
+
+If you did not ask for this, ignore this email.
+{% endautoescape %}

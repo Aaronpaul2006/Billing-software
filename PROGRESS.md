@@ -70,9 +70,11 @@ Last updated: 2026-10-22
 
 - [x] G.2: GST correctness in the web app — editor: "Reverse charge (the client pays the GST)" on tax invoices (not sent for other types), for SEZ / export supplies a choice "Under the LUT, no IGST" / "Charge IGST" (the server's default shown until changed), a plain note above the totals ("Supply to an SEZ unit: zero-rated under the Letter of Undertaking, no IGST.", "Reverse charge: the client pays the GST to the government."), reverse-charge taxes labelled "(paid by the client)", place of supply 96 shown as "Outside India"; document page: SEZ / Export / Under LUT / Reverse charge badges and the same note; GST registrations: LUT ARN and financial year (normalised to upper case without spaces), "LUT 2026-27" badge; Reports: labels for the new GST summary rows. Backend fix found on the way: reverse charge asked on a quotation / proforma / bill of supply reached a database CHECK (would have been a 500); now `422 reverse_charge_not_allowed`, tested. Smoke-tested through the proxy on the dev database. Web 117 tests; backend 559.
 
+- [x] K.1 (backend part): your account (owner decision 2026-10-22: polish known gaps) — `PATCH /me` (name; phone stored as + and 10–15 digits, spaces / dashes dropped: the test caught the database rule rejecting what the first input check allowed); `POST /auth/password/change` (current + new: other devices signed out, "password changed" email, a wrong current password counts towards the lockout, 5 per hour); `POST /me/email` (new email + password; a signed link to the new address, 1 day; nothing changes until it is opened; `same_email` / `email_taken`; 3 per hour) and public `POST /auth/email/confirm` (switches the address, marks it verified, tells the old address; opening twice is harmless; a link made before another change is refused). No schema change. Tests: profile, password change signing out a second device, the whole email change. Backend 562.
+
 ## In progress
 
-- Nothing. GST correctness done; next to be chosen by the owner.
+- Polish known gaps. Next: K.1 web — a "Your account" page (profile, email change + public /confirm-email page, password change, two-step status / turn off where allowed, your devices with sign-out). Then K.2 email invitations for people without an account; K.3 TDS certificate edit, company time zone, registration address line 2, BOQ / project report exports.
 
 ## Next
 

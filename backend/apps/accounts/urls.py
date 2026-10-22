@@ -38,6 +38,9 @@ urlpatterns = [
     path("auth/mfa/enable", views.MfaEnableView.as_view(), name="auth-mfa-enable"),
     path("auth/mfa/disable", views.MfaDisableView.as_view(), name="auth-mfa-disable"),
     path("me", views.MeView.as_view(), name="me"),
+    path("me/email", views.EmailChangeView.as_view(), name="me-email"),
+    path("auth/password/change", views.PasswordChangeView.as_view(), name="auth-password-change"),
+    path("auth/email/confirm", public(views.EmailConfirmView.as_view()), name="auth-email-confirm"),
     path("members", member_views.MemberListView.as_view(), name="members"),
     path("invitations", member_views.InvitationListView.as_view(), name="invitations"),
     path(

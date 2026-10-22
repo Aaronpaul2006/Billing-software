@@ -1,0 +1,8 @@
+{% autoescape off %}Hello {{ name }},
+
+The sign-in email of your account was changed to {{ new_email }}. Emails now go there.
+
+If this was not you, reset your password straight away and tell your account owner:
+
+{{ link }}
+{% endautoescape %}

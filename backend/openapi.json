@@ -145,6 +145,33 @@
                 }
             }
         },
+        "/api/v1/auth/email/confirm": {
+            "post": {
+                "operationId": "auth_email_confirm_create",
+                "description": "Sign-in endpoints: no access token needed, and any sent is ignored\n(JWTAuthenticationMiddleware checks `ignores_access_token`).",
+                "tags": [
+                    "auth"
+                ],
+                "requestBody": {
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/VerifyEmail"
+                            }
+                        }
+                    },
+                    "required": true
+                },
+                "security": [
+                    {}
+                ],
+                "responses": {
+                    "204": {
+                        "description": "No response body"
+                    }
+                }
+            }
+        },
         "/api/v1/auth/login": {
             "post": {
                 "operationId": "auth_login_create",
@@ -325,6 +352,35 @@
                             }
                         },
                         "description": ""
+                    }
+                }
+            }
+        },
+        "/api/v1/auth/password/change": {
+            "post": {
+                "operationId": "auth_password_change_create",
+                "description": "Change your password while signed in; your other devices are signed out.",
+                "tags": [
+                    "auth"
+                ],
+                "requestBody": {
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/PasswordChange"
+                            }
+                        }
+                    },
+                    "required": true
+                },
+                "security": [
+                    {
+                        "bearerAuth": []
+                    }
+                ],
+                "responses": {
+                    "204": {
+                        "description": "No response body"
                     }
                 }
             }
@@ -2587,6 +2643,67 @@
                             }
                         },
                         "description": ""
+                    }
+                }
+            },
+            "patch": {
+                "operationId": "me_partial_update",
+                "tags": [
+                    "me"
+                ],
+                "requestBody": {
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/PatchedMeUpdate"
+                            }
+                        }
+                    }
+                },
+                "security": [
+                    {
+                        "bearerAuth": []
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/Me"
+                                }
+                            }
+                        },
+                        "description": ""
+                    }
+                }
+            }
+        },
+        "/api/v1/me/email": {
+            "post": {
+                "operationId": "me_email_create",
+                "description": "Ask to change your sign-in email: a link goes to the new address, and the\nemail changes only when it is opened.",
+                "tags": [
+                    "me"
+                ],
+                "requestBody": {
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/EmailChange"
+                            }
+                        }
+                    },
+                    "required": true
+                },
+                "security": [
+                    {
+                        "bearerAuth": []
+                    }
+                ],
+                "responses": {
+                    "204": {
+                        "description": "No response body"
                     }
                 }
             }
@@ -5924,6 +6041,25 @@
                 "type": "string",
                 "description": "* `QUOTATION` - QUOTATION\n* `PROFORMA` - PROFORMA\n* `TAX_INVOICE` - TAX_INVOICE\n* `BILL_OF_SUPPLY` - BILL_OF_SUPPLY"
             },
+            "EmailChange": {
+                "type": "object",
+                "properties": {
+                    "new_email": {
+                        "type": "string",
+                        "format": "email",
+                        "maxLength": 254
+                    },
+                    "password": {
+                        "type": "string",
+                        "writeOnly": true,
+                        "maxLength": 128
+                    }
+                },
+                "required": [
+                    "new_email",
+                    "password"
+                ]
+            },
             "Expense": {
                 "type": "object",
                 "properties": {
@@ -7880,6 +8016,25 @@
                 "type": "string",
                 "description": "* `REGISTERED` - REGISTERED\n* `COMPOSITION` - COMPOSITION\n* `UNREGISTERED` - UNREGISTERED\n* `CONSUMER` - CONSUMER\n* `SEZ` - SEZ\n* `OVERSEAS` - OVERSEAS"
             },
+            "PasswordChange": {
+                "type": "object",
+                "properties": {
+                    "current_password": {
+                        "type": "string",
+                        "writeOnly": true,
+                        "maxLength": 128
+                    },
+                    "new_password": {
+                        "type": "string",
+                        "writeOnly": true,
+                        "maxLength": 128
+                    }
+                },
+                "required": [
+                    "current_password",
+                    "new_password"
+                ]
+            },
             "PasswordForgot": {
                 "type": "object",
                 "properties": {
@@ -8242,6 +8397,23 @@
                         "maximum": 2100,
                         "minimum": 2017,
                         "description": "The financial year the LUT covers, by its first year (2026 = 2026-27)."
+                    }
+                }
+            },
+            "PatchedMeUpdate": {
+                "type": "object",
+                "properties": {
+                    "full_name": {
+                        "type": "string",
+                        "maxLength": 200,
+                        "minLength": 1
+                    },
+                    "phone": {
+                        "type": [
+                            "string",
+                            "null"
+                        ],
+                        "maxLength": 25
                     }
                 }
             },

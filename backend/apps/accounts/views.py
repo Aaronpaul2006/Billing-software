@@ -18,14 +18,17 @@ from apps.core.tenancy import Principal, user_context
 from . import services
 from .models import User
 from .serializers import (
+    EmailChangeSerializer,
     LoginSerializer,
     MeSerializer,
+    MeUpdateSerializer,
     MfaChallengeSerializer,
     MfaDisableSerializer,
     MfaEnabledSerializer,
     MfaEnableSerializer,
     MfaSetupResponseSerializer,
     MfaVerifySerializer,
+    PasswordChangeSerializer,
     PasswordForgotSerializer,
     PasswordResetSerializer,
     RefreshSerializer,
@@ -310,25 +313,75 @@ class MeView(APIView):
 
     @extend_schema(responses={200: MeSerializer}, tags=["me"])
     def get(self, request: Request) -> Response:
+        return _me_response(request)
+
+    @extend_schema(request=MeUpdateSerializer, responses={200: MeSerializer}, tags=["me"])
+    def patch(self, request: Request) -> Response:
+        data = MeUpdateSerializer(data=request.data)
+        data.is_valid(raise_exception=True)
+        services.update_profile(principal_of(request), dict(data.validated_data))
+        return _me_response(request)
+
+
+class EmailChangeView(APIView):
+    """Ask to change your sign-in email: a link goes to the new address, and the
+    email changes only when it is opened."""
+
+    @extend_schema(request=EmailChangeSerializer, responses={204: None}, tags=["me"])
+    def post(self, request: Request) -> Response:
         principal = principal_of(request)
-        user = User.objects.get(pk=principal.user_id)
-        with user_context(principal.user_id):
-            memberships = services.active_memberships(principal.user_id)
-        return Response(
-            {
-                "id": str(user.pk),
-                "email": user.email,
-                "email_verified": user.email_verified_at is not None,
-                "full_name": user.full_name,
-                "phone": user.phone,
-                "mfa_enabled": user.mfa_enabled,
-                "mfa_enrollment_required": principal.role in MFA_REQUIRED_ROLES
-                and "otp" not in principal.amr,
-                "tenant_id": str(principal.tenant_id),
-                "role": principal.role,
-                "memberships": [
-                    {"tenant_id": str(t.id), "legal_name": t.legal_name, "role": m.role}
-                    for m, t in memberships
-                ],
-            }
-        )
+        ratelimit.enforce(request, "email_change_user", str(principal.user_id))
+        data = EmailChangeSerializer(data=request.data)
+        data.is_valid(raise_exception=True)
+        v = data.validated_data
+        services.request_email_change(principal, v["new_email"], v["password"])
+        return Response(status=204)
+
+
+class EmailConfirmView(PublicAuthView):
+    @extend_schema(request=VerifyEmailSerializer, responses={204: None}, tags=["auth"])
+    def post(self, request: Request) -> Response:
+        data = VerifyEmailSerializer(data=request.data)
+        data.is_valid(raise_exception=True)
+        services.confirm_email_change(data.validated_data["token"])
+        return Response(status=204)
+
+
+class PasswordChangeView(APIView):
+    """Change your password while signed in; your other devices are signed out."""
+
+    @extend_schema(request=PasswordChangeSerializer, responses={204: None}, tags=["auth"])
+    def post(self, request: Request) -> Response:
+        principal = principal_of(request)
+        ratelimit.enforce(request, "password_change_user", str(principal.user_id))
+        data = PasswordChangeSerializer(data=request.data)
+        data.is_valid(raise_exception=True)
+        v = data.validated_data
+        services.change_password(principal, v["current_password"], v["new_password"])
+        return Response(status=204)
+
+
+def _me_response(request: Request) -> Response:
+    """The signed-in user and their companies (GET and PATCH /me)."""
+    principal = principal_of(request)
+    user = User.objects.get(pk=principal.user_id)
+    with user_context(principal.user_id):
+        memberships = services.active_memberships(principal.user_id)
+    return Response(
+        {
+            "id": str(user.pk),
+            "email": user.email,
+            "email_verified": user.email_verified_at is not None,
+            "full_name": user.full_name,
+            "phone": user.phone,
+            "mfa_enabled": user.mfa_enabled,
+            "mfa_enrollment_required": principal.role in MFA_REQUIRED_ROLES
+            and "otp" not in principal.amr,
+            "tenant_id": str(principal.tenant_id),
+            "role": principal.role,
+            "memberships": [
+                {"tenant_id": str(t.id), "legal_name": t.legal_name, "role": m.role}
+                for m, t in memberships
+            ],
+        }
+    )

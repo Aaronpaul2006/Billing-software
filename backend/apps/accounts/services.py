@@ -14,6 +14,7 @@ import time
 import uuid
 from dataclasses import dataclass, field, replace
 from datetime import datetime, timedelta
+from typing import Any
 
 import pyotp
 from django.conf import settings
@@ -205,12 +206,16 @@ def _check_new_password(password: str, *, email: str, full_name: str) -> None:
         raise Invalid("password", " ".join(exc.messages), code="weak_password") from exc
 
 
-def _email_after_commit(kind: Kind, user_id: uuid.UUID) -> None:
+def _email_after_commit(
+    kind: Kind, user_id: uuid.UUID, extra: dict[str, str] | None = None
+) -> None:
     """Queue an account email once the transaction commits. A broker outage is
     logged, not raised: the account change stands and the email can be resent."""
     from .tasks import send_account_email
 
-    transaction.on_commit(lambda: send_account_email.delay(kind.value, str(user_id)), robust=True)
+    transaction.on_commit(
+        lambda: send_account_email.delay(kind.value, str(user_id), extra), robust=True
+    )
 
 
 def revoke_family(family_id: uuid.UUID) -> int:
@@ -353,6 +358,76 @@ def reset_password(token: str, password: str) -> None:
         _revoke_all_sessions(user.pk)
         _email_after_commit(Kind.PASSWORD_CHANGED, user.pk)
     security_log.warning("password_reset user=%s", user.pk)
+
+
+# --- your account -------------------------------------------------------------------------
+
+
+def update_profile(principal: Principal, changes: dict[str, Any]) -> User:
+    """Name and phone; the email has its own confirmed flow."""
+    if changes:
+        User.objects.filter(pk=principal.user_id).update(**changes, updated_at=timezone.now())
+    return User.objects.get(pk=principal.user_id)
+
+
+def _check_current_password(user: User, password: str) -> None:
+    if not check_password(password, user.password_hash):
+        _register_failure(user.pk)  # counts towards the lockout, like a failed login
+        raise Invalid("current_password", "The password is incorrect.", code="invalid_password")
+
+
+def change_password(principal: Principal, current: str, new: str) -> None:
+    """Signs out every other device and sends a notice to the account's email."""
+    user = User.objects.get(pk=principal.user_id)
+    _check_current_password(user, current)
+    _check_new_password(new, email=user.email, full_name=user.full_name)
+    with transaction.atomic():
+        User.objects.filter(pk=user.pk).update(
+            password_hash=make_password(new),
+            failed_login_count=0,
+            locked_until=None,
+            updated_at=timezone.now(),
+        )
+        _revoke_all_sessions(user.pk, except_family=principal.session_id)
+        _email_after_commit(Kind.PASSWORD_CHANGED, user.pk)
+    security_log.warning("password_changed user=%s", user.pk)
+
+
+def request_email_change(principal: Principal, new_email: str, password: str) -> None:
+    """Email a confirmation link to the new address; nothing changes until it
+    is opened (so a typo cannot lock anyone out of their account)."""
+    user = User.objects.get(pk=principal.user_id)
+    _check_current_password(user, password)
+    new_email = normalise_email(new_email)
+    if new_email == user.email:
+        raise Invalid("new_email", "That is already your email.", code="same_email")
+    if User.objects.filter(email=new_email).exists():
+        raise Invalid("new_email", "An account with this email already exists.", code="email_taken")
+    _email_after_commit(Kind.CONFIRM_EMAIL_CHANGE, user.pk, {"new_email": new_email})
+    security_log.info("email_change_requested user=%s", user.pk)
+
+
+def confirm_email_change(token: str) -> None:
+    """Switch to the new address (now verified) and tell the old one."""
+    user_id, old, new = emails.read_email_change_token(token)
+    user = User.objects.filter(pk=user_id, status=UserStatus.ACTIVE).first()
+    if user is None:
+        raise emails.link_invalid()
+    if user.email == new:
+        return  # opened twice: already done
+    if user.email != old:
+        raise emails.link_invalid()  # the email changed again in between
+    try:
+        with transaction.atomic():
+            User.objects.filter(pk=user.pk, email=old).update(
+                email=new, email_verified_at=timezone.now(), updated_at=timezone.now()
+            )
+            _email_after_commit(Kind.EMAIL_CHANGED, user.pk, {"old_email": old, "new_email": new})
+    except IntegrityError as exc:
+        raise Invalid(
+            "token", "An account with this email already exists.", code="email_taken"
+        ) from exc
+    security_log.warning("email_changed user=%s", user.pk)
 
 
 def login(

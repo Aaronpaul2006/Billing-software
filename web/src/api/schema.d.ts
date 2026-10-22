@@ -82,6 +82,26 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/auth/email/confirm": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * @description Sign-in endpoints: no access token needed, and any sent is ignored
+         *     (JWTAuthenticationMiddleware checks `ignores_access_token`).
+         */
+        post: operations["auth_email_confirm_create"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/auth/login": {
         parameters: {
             query?: never;
@@ -180,6 +200,23 @@ export interface paths {
          *     (JWTAuthenticationMiddleware checks `ignores_access_token`).
          */
         post: operations["auth_mfa_verify_create"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/auth/password/change": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** @description Change your password while signed in; your other devices are signed out. */
+        post: operations["auth_password_change_create"];
         delete?: never;
         options?: never;
         head?: never;
@@ -980,6 +1017,26 @@ export interface paths {
         get: operations["me_retrieve"];
         put?: never;
         post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch: operations["me_partial_update"];
+        trace?: never;
+    };
+    "/api/v1/me/email": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * @description Ask to change your sign-in email: a link goes to the new address, and the
+         *     email changes only when it is opened.
+         */
+        post: operations["me_email_create"];
         delete?: never;
         options?: never;
         head?: never;
@@ -2037,6 +2094,11 @@ export interface components {
          * @enum {string}
          */
         DraftableDocTypeEnum: "QUOTATION" | "PROFORMA" | "TAX_INVOICE" | "BILL_OF_SUPPLY";
+        EmailChange: {
+            /** Format: email */
+            new_email: string;
+            password: string;
+        };
         Expense: {
             /** Format: uuid */
             readonly id: string;
@@ -2638,6 +2700,10 @@ export interface components {
          * @enum {string}
          */
         PartyWriteGstTreatmentEnum: "REGISTERED" | "COMPOSITION" | "UNREGISTERED" | "CONSUMER" | "SEZ" | "OVERSEAS";
+        PasswordChange: {
+            current_password: string;
+            new_password: string;
+        };
         PasswordForgot: {
             /** Format: email */
             email: string;
@@ -2751,6 +2817,10 @@ export interface components {
             lut_arn?: string | null;
             /** @description The financial year the LUT covers, by its first year (2026 = 2026-27). */
             lut_fy_start_year?: number | null;
+        };
+        PatchedMeUpdate: {
+            full_name?: string;
+            phone?: string | null;
         };
         PatchedMemberRole: {
             role?: components["schemas"]["RoleEnum"];
@@ -4346,6 +4416,28 @@ export interface operations {
             };
         };
     };
+    auth_email_confirm_create: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["VerifyEmail"];
+            };
+        };
+        responses: {
+            /** @description No response body */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
     auth_login_create: {
         parameters: {
             query?: never;
@@ -4475,6 +4567,28 @@ export interface operations {
                 content: {
                     "application/json": components["schemas"]["Tokens"];
                 };
+            };
+        };
+    };
+    auth_password_change_create: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["PasswordChange"];
+            };
+        };
+        responses: {
+            /** @description No response body */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
             };
         };
     };
@@ -5741,6 +5855,51 @@ export interface operations {
                 content: {
                     "application/json": components["schemas"]["Me"];
                 };
+            };
+        };
+    };
+    me_partial_update: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: {
+            content: {
+                "application/json": components["schemas"]["PatchedMeUpdate"];
+            };
+        };
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Me"];
+                };
+            };
+        };
+    };
+    me_email_create: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["EmailChange"];
+            };
+        };
+        responses: {
+            /** @description No response body */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
             };
         };
     };
