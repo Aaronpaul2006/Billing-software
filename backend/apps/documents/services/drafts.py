@@ -6,6 +6,13 @@ they are derived here and computed by the tax engine on every save.
 * registration: the project's billing registration, else the tenant default;
 * place of supply: the project's site state (works on immovable property,
   IGST Act s.12(3)); without a project the party's state; else our own;
+* supply category: SEZ when the client is an SEZ unit / developer (always
+  inter-State); EXPORT when the client is overseas and there is no Indian
+  site (place of supply 96); REGULAR otherwise. An overseas client of works
+  on a site in India is a domestic supply: the site decides;
+* LUT (zero-rated without IGST): SEZ and exports only; defaults to on when the
+  registration has a Letter of Undertaking for the document's financial year;
+* reverse charge: chosen by the user, for registered clients in India;
 * deductions: from the project (retention, TDS, GST TDS, advance recovery
   capped at the advance still outstanding), for invoices and proformas.
 """
@@ -20,6 +27,7 @@ from django.db.models import Sum
 
 from apps.catalog.models import CatalogItem
 from apps.core.errors import Conflict, Invalid
+from apps.core.india import FOREIGN_COUNTRY, fy_start_year
 from apps.core.permissions import require
 from apps.core.queries import get_or_404, get_or_invalid
 from apps.core.tenancy import Principal
@@ -30,7 +38,7 @@ from apps.tenants.models import GstRegistration
 
 from ..models import Document, DocumentLine
 from ..tax import Deductions, DocumentIn, DocumentOut, LineIn, LineOut, TaxError, compute
-from ..tax.engine import GST_DOC_TYPES
+from ..tax.engine import GST_DOC_TYPES, ZERO_RATED
 from . import ra_bills
 
 DRAFTABLE_TYPES = ("QUOTATION", "PROFORMA", "TAX_INVOICE", "BILL_OF_SUPPLY")
@@ -47,6 +55,7 @@ class Resolved:
     party: Party
     project: Project | None
     place_of_supply: str
+    supply_category: str = "REGULAR"
 
 
 @dataclass(frozen=True)
@@ -54,6 +63,8 @@ class Computed:
     resolved: Resolved
     lines: list[dict[str, Any]]  # stored line fields, inputs filled in
     out: DocumentOut
+    lut: bool = False
+    reverse_charge: bool = False
 
 
 # --- resolving references -------------------------------------------------------------
@@ -97,8 +108,50 @@ def _resolve(data: dict[str, Any]) -> Resolved:
     if not registration.is_active:
         raise Invalid("gst_registration_id", "This GST registration is inactive.", code="inactive")
 
-    place = project.site_state_code if project else party.state_code or registration.state_code
-    return Resolved(registration, party, project, place)
+    if party.gst_treatment == "SEZ":
+        category = "SEZ"
+    elif party.gst_treatment == "OVERSEAS" and project is None:
+        category = "EXPORT"
+    else:
+        category = "REGULAR"
+    if category == "EXPORT":
+        place = FOREIGN_COUNTRY
+    else:
+        place = project.site_state_code if project else party.state_code or registration.state_code
+    return Resolved(registration, party, project, place, category)
+
+
+def _lut(data: dict[str, Any], resolved: Resolved) -> bool:
+    """Zero-rated supplies go under the registration's LUT unless the user
+    chose to pay IGST; anything else never does."""
+    if resolved.supply_category not in ZERO_RATED:
+        return False
+    registration = resolved.registration
+    fy = fy_start_year(data["doc_date"])
+    has_lut = registration.lut_fy_start_year == fy
+    wanted = data.get("lut")
+    if wanted is None:
+        return has_lut
+    if wanted and not has_lut:
+        raise Invalid(
+            "lut",
+            f"No Letter of Undertaking for {fy}-{(fy + 1) % 100:02d} on this registration: add it"
+            " in the GST registration, or charge IGST.",
+            code="no_lut",
+        )
+    return bool(wanted)
+
+
+def _reverse_charge(data: dict[str, Any], resolved: Resolved) -> bool:
+    if not data.get("reverse_charge"):
+        return False
+    if not resolved.party.gstin or resolved.supply_category != "REGULAR":
+        raise Invalid(
+            "reverse_charge",
+            "Reverse charge applies to registered clients in India (outside SEZs).",
+            code="reverse_charge_not_allowed",
+        )
+    return True
 
 
 def _line_inputs(lines: list[dict[str, Any]], project: Project | None) -> list[dict[str, Any]]:
@@ -176,6 +229,8 @@ def _compute(data: dict[str, Any], doc_id: uuid.UUID | None = None) -> Computed:
     ra_bills.check_header(data, resolved.project)
     lines = _line_inputs(data.get("lines", []), resolved.project)
     ra_bills.check_lines(data, resolved.project, lines, doc_id)
+    lut = _lut(data, resolved)
+    reverse_charge = _reverse_charge(data, resolved)
     engine_in = DocumentIn(
         doc_type=data["doc_type"],
         registration_type=resolved.registration.registration_type,
@@ -192,13 +247,16 @@ def _compute(data: dict[str, Any], doc_id: uuid.UUID | None = None) -> Computed:
         ],
         round_to_rupee=data.get("round_to_rupee", False),
         deductions=_deductions(data["doc_type"], resolved.project, doc_id),
+        supply_category=resolved.supply_category,
+        lut=lut,
+        reverse_charge=reverse_charge,
     )
     try:
         out = compute(engine_in) if lines else _empty(engine_in)
     except TaxError as exc:
         field = exc.field.replace(".discount", ".discount_amount")
         raise Invalid(field, str(exc), code=exc.code) from exc
-    return Computed(resolved, lines, out)
+    return Computed(resolved, lines, out, lut, reverse_charge)
 
 
 def _empty(doc: DocumentIn) -> DocumentOut:
@@ -210,7 +268,7 @@ def _empty(doc: DocumentIn) -> DocumentOut:
             f"{doc.doc_type}; use BILL_OF_SUPPLY.",
             "doc_type_not_allowed",
         )
-    intra = doc.place_of_supply == doc.supplier_state
+    intra = doc.supply_category not in ZERO_RATED and doc.place_of_supply == doc.supplier_state
     zero = {f: ZERO for f in HEADER_TOTALS if f != "supply_type"}
     return DocumentOut(supply_type="INTRA_STATE" if intra else "INTER_STATE", lines=[], **zero)
 
@@ -250,6 +308,9 @@ def _header(c: Computed, data: dict[str, Any]) -> dict[str, Any]:
         "party_id": c.resolved.party.pk,
         "project_id": c.resolved.project.pk if c.resolved.project else None,
         "place_of_supply": c.resolved.place_of_supply,
+        "supply_category": c.resolved.supply_category,
+        "lut": c.lut,
+        "reverse_charge": c.reverse_charge,
         **{f: getattr(c.out, f) for f in HEADER_TOTALS},
     }
 
@@ -321,6 +382,8 @@ def current_state(doc: Document) -> dict[str, Any]:
         "terms": doc.terms,
         "round_to_rupee": doc.round_to_rupee,
         "is_ra_bill": doc.is_ra_bill,
+        "lut": doc.lut,
+        "reverse_charge": doc.reverse_charge,
         "lines": _stored_lines(doc),
     }
 

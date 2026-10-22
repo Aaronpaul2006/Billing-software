@@ -152,12 +152,17 @@ CREATE TABLE gst_registrations (
   address            jsonb NOT NULL,
   is_default         boolean NOT NULL DEFAULT false,
   is_active          boolean NOT NULL DEFAULT true,
+  -- Letter of Undertaking (form GST RFD-11) for the financial year starting in
+  -- lut_fy_start_year: zero-rated supplies (SEZ, exports) without paying IGST.
+  lut_arn            text CHECK (lut_arn ~ '^[A-Z0-9]{15}$'),
+  lut_fy_start_year  smallint CHECK (lut_fy_start_year BETWEEN 2017 AND 2100),
   version            integer NOT NULL DEFAULT 1,
   created_at         timestamptz NOT NULL DEFAULT now(),
   updated_at         timestamptz NOT NULL DEFAULT now(),
   UNIQUE (tenant_id, id),
   CHECK ((registration_type = 'UNREGISTERED') = (gstin IS NULL)),
-  CHECK (gstin IS NULL OR substr(gstin, 1, 2) = state_code)
+  CHECK (gstin IS NULL OR substr(gstin, 1, 2) = state_code),
+  CHECK ((lut_arn IS NULL AND lut_fy_start_year IS NULL) OR (lut_arn IS NOT NULL AND lut_fy_start_year IS NOT NULL))
 );
 CREATE UNIQUE INDEX gst_registrations_gstin_uq ON gst_registrations (tenant_id, gstin) WHERE gstin IS NOT NULL;
 CREATE UNIQUE INDEX gst_registrations_default_uq ON gst_registrations (tenant_id) WHERE is_default;
@@ -338,7 +343,11 @@ CREATE TABLE documents (
   party_snapshot           jsonb,
   place_of_supply          char(2) NOT NULL CHECK (place_of_supply ~ '^[0-9]{2}$'),
   supply_type              text NOT NULL CHECK (supply_type IN ('INTRA_STATE', 'INTER_STATE')),
-  reverse_charge           boolean NOT NULL DEFAULT false,
+  reverse_charge           boolean NOT NULL DEFAULT false,   -- the recipient pays the tax
+  -- SEZ: supply to an SEZ unit / developer (always inter-State, IGST Act s.7(5)(b));
+  -- EXPORT: recipient outside India and no Indian site (place of supply 96).
+  supply_category          text NOT NULL DEFAULT 'REGULAR' CHECK (supply_category IN ('REGULAR', 'SEZ', 'EXPORT')),
+  lut                      boolean NOT NULL DEFAULT false,   -- zero-rated without IGST, under the registration's LUT
   -- Totals: computed by the tax engine on every draft save and verified
   -- against the lines when the document is issued (see documents_guard).
   subtotal                 numeric(14,2) NOT NULL DEFAULT 0 CHECK (subtotal >= 0),
@@ -397,7 +406,12 @@ CREATE TABLE documents (
   CHECK (supply_type = 'INTRA_STATE' OR (cgst_amount = 0 AND sgst_amount = 0)),
   CHECK (supply_type = 'INTER_STATE' OR igst_amount = 0),
   CHECK (doc_type <> 'BILL_OF_SUPPLY' OR (cgst_amount = 0 AND igst_amount = 0 AND cess_amount = 0)),
-  CHECK (grand_total = subtotal + cgst_amount + sgst_amount + igst_amount + cess_amount + round_off),
+  CHECK (supply_category = 'REGULAR' OR supply_type = 'INTER_STATE'),
+  CHECK (supply_category <> 'EXPORT' OR place_of_supply = '96'),
+  CHECK (NOT lut OR (supply_category IN ('SEZ', 'EXPORT') AND igst_amount = 0 AND cgst_amount = 0 AND cess_amount = 0)),
+  CHECK (NOT reverse_charge OR (supply_category = 'REGULAR' AND doc_type IN ('TAX_INVOICE', 'CREDIT_NOTE', 'DEBIT_NOTE'))),
+  -- under reverse charge the tax is shown but the recipient pays it: not in the total
+  CHECK (grand_total = subtotal + CASE WHEN reverse_charge THEN 0 ELSE cgst_amount + sgst_amount + igst_amount + cess_amount END + round_off),
   CHECK (net_receivable = grand_total - retention_amount - income_tax_tds_amount - gst_tds_amount - advance_recovery_amount),
   CHECK (amount_settled >= 0 AND amount_settled <= net_receivable),
   CHECK (due_date IS NULL OR due_date >= doc_date)
@@ -720,15 +734,21 @@ BEGIN
       END IF;
 
       -- Document type must be legal for the issuing registration.
-      SELECT registration_type, state_code INTO reg
+      SELECT registration_type, state_code, lut_fy_start_year INTO reg
         FROM gst_registrations WHERE id = NEW.gst_registration_id;
       IF reg.registration_type <> 'REGULAR' AND NEW.doc_type IN ('TAX_INVOICE', 'CREDIT_NOTE', 'DEBIT_NOTE') THEN
         RAISE EXCEPTION '% registration cannot issue %; use BILL_OF_SUPPLY', reg.registration_type, NEW.doc_type
           USING ERRCODE = 'check_violation';
       END IF;
       IF reg.registration_type = 'REGULAR'
-         AND NEW.supply_type <> (CASE WHEN NEW.place_of_supply = reg.state_code THEN 'INTRA_STATE' ELSE 'INTER_STATE' END) THEN
+         AND NEW.supply_type <> (CASE WHEN NEW.supply_category <> 'REGULAR' THEN 'INTER_STATE'
+                                      WHEN NEW.place_of_supply = reg.state_code THEN 'INTRA_STATE'
+                                      ELSE 'INTER_STATE' END) THEN
         RAISE EXCEPTION 'supply_type does not match place of supply %', NEW.place_of_supply
+          USING ERRCODE = 'check_violation';
+      END IF;
+      IF NEW.lut AND reg.lut_fy_start_year IS DISTINCT FROM fy_start_year(NEW.doc_date) THEN
+        RAISE EXCEPTION 'no Letter of Undertaking for the financial year of %', NEW.doc_date
           USING ERRCODE = 'check_violation';
       END IF;
     END IF;
@@ -1065,8 +1085,10 @@ SELECT
   d.project_id,
   count(*)                                                       AS document_count,
   sum(CASE WHEN d.doc_type = 'CREDIT_NOTE' THEN -d.subtotal    ELSE d.subtotal    END) AS taxable_value,
-  sum(CASE WHEN d.doc_type = 'CREDIT_NOTE' THEN -(d.cgst_amount + d.sgst_amount + d.igst_amount + d.cess_amount)
-                                           ELSE  (d.cgst_amount + d.sgst_amount + d.igst_amount + d.cess_amount) END) AS tax,
+  -- tax charged by us: reverse-charge tax is paid by the recipient
+  sum(CASE WHEN d.reverse_charge THEN 0
+           WHEN d.doc_type = 'CREDIT_NOTE' THEN -(d.cgst_amount + d.sgst_amount + d.igst_amount + d.cess_amount)
+           ELSE  (d.cgst_amount + d.sgst_amount + d.igst_amount + d.cess_amount) END) AS tax,
   sum(CASE WHEN d.doc_type = 'CREDIT_NOTE' THEN -d.grand_total ELSE d.grand_total END) AS billed
 FROM documents d
 WHERE d.is_revenue AND d.status = 'ISSUED'
@@ -1160,6 +1182,7 @@ REVOKE UPDATE ON documents FROM billing_app;
 GRANT UPDATE (status, doc_type, gst_registration_id, series_id, doc_number, doc_date, due_date, valid_until,
               party_id, project_id, source_document_id, original_document_id, is_ra_bill, ra_sequence,
               supplier_snapshot, party_snapshot, place_of_supply, supply_type, reverse_charge,
+              supply_category, lut,
               subtotal, cgst_amount, sgst_amount, igst_amount, cess_amount, round_off, round_to_rupee, grand_total,
               retention_amount, income_tax_tds_amount, gst_tds_amount, advance_recovery_amount, net_receivable,
               notes, terms, pdf_attachment_id, issued_at, issued_by, cancelled_at, cancelled_by, cancel_reason,

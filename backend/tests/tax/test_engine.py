@@ -335,3 +335,110 @@ def test_rounding_a_tiny_bill_to_zero_cannot_leave_deductions() -> None:
             )
         )
     assert exc_info.value.code == "deductions_exceed_total"
+
+
+# --- SEZ, exports, LUT, reverse charge ----------------------------------------------------
+
+RCC = LineIn(quantity=D("10"), rate=D("6800.00"), gst_rate=D("18.00"))
+
+
+def test_sez_supply_is_inter_state_even_in_the_same_state() -> None:
+    """IGST Act s.7(5)(b): SEZ unit in Kerala, supplier in Kerala → IGST."""
+    out = compute(doc(RCC, supply_category="SEZ"))
+    assert out.supply_type == "INTER_STATE"
+    assert (out.cgst_amount, out.sgst_amount, out.igst_amount) == (
+        D("0.00"),
+        D("0.00"),
+        D("12240.00"),
+    )
+    assert out.grand_total == D("80240.00")
+
+
+def test_zero_rated_under_lut_carries_no_tax() -> None:
+    for category, place in (("SEZ", KERALA), ("EXPORT", "96")):
+        out = compute(doc(RCC, supply_category=category, place_of_supply=place, lut=True))
+        assert out.supply_type == "INTER_STATE"
+        assert (out.igst_amount, out.cgst_amount, out.cess_amount) == (D("0.00"),) * 3
+        assert out.grand_total == out.subtotal == D("68000.00")
+
+
+def test_export_with_payment_of_igst() -> None:
+    out = compute(doc(RCC, supply_category="EXPORT", place_of_supply="96"))
+    assert (out.supply_type, out.igst_amount, out.grand_total) == (
+        "INTER_STATE",
+        D("12240.00"),
+        D("80240.00"),
+    )
+
+
+def test_reverse_charge_shows_the_tax_but_does_not_charge_it() -> None:
+    out = compute(
+        doc(
+            RCC,
+            reverse_charge=True,
+            deductions=Deductions(retention_pct=D("5"), income_tax_tds_pct=D("1")),
+        )
+    )
+    assert (out.cgst_amount, out.sgst_amount) == (D("6120.00"), D("6120.00"))  # for the record
+    assert out.grand_total == D("68000.00")  # the client pays the tax to the government
+    assert out.net_receivable == D("68000.00") - D("3400.00") - D("680.00")
+
+
+@pytest.mark.parametrize(
+    ("kw", "field", "code"),
+    [
+        ({"lut": True}, "lut", "lut_not_zero_rated"),
+        (
+            {"lut": True, "supply_category": "SEZ", "doc_type": "BILL_OF_SUPPLY"},
+            "lut",
+            "lut_not_zero_rated",
+        ),
+        (
+            {"reverse_charge": True, "supply_category": "SEZ"},
+            "reverse_charge",
+            "reverse_charge_not_allowed",
+        ),
+        (
+            {"reverse_charge": True, "doc_type": "BILL_OF_SUPPLY"},
+            "reverse_charge",
+            "reverse_charge_not_allowed",
+        ),
+        ({"supply_category": "EXPORT"}, "place_of_supply", "invalid"),
+        ({"supply_category": "DEEMED"}, "supply_category", "invalid"),
+    ],
+)
+def test_category_rules(kw: dict[str, object], field: str, code: str) -> None:
+    with pytest.raises(TaxError) as caught:
+        compute(doc(RCC, **kw))
+    assert (caught.value.field, caught.value.code) == (field, code)
+
+
+@settings(max_examples=200, deadline=None)
+@given(
+    lines=lines_strategy,
+    category=st.sampled_from(["REGULAR", "SEZ", "EXPORT"]),
+    lut=st.booleans(),
+    reverse_charge=st.booleans(),
+)
+def test_category_identities(
+    lines: list[LineIn], category: str, lut: bool, reverse_charge: bool
+) -> None:
+    lut = lut and category != "REGULAR"
+    reverse_charge = reverse_charge and category == "REGULAR"
+    place = "96" if category == "EXPORT" else KERALA
+    out = compute(
+        doc(
+            *lines,
+            supply_category=category,
+            place_of_supply=place,
+            lut=lut,
+            reverse_charge=reverse_charge,
+        )
+    )
+    taxes = out.cgst_amount + out.sgst_amount + out.igst_amount + out.cess_amount
+    if category != "REGULAR":
+        assert out.supply_type == "INTER_STATE"
+    if lut:
+        assert taxes == 0
+    charged = 0 if reverse_charge else taxes
+    assert out.grand_total == out.subtotal + charged + out.round_off

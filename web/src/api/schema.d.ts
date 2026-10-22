@@ -1874,6 +1874,9 @@ export interface components {
             readonly project_name: string | null;
             readonly place_of_supply: string;
             readonly supply_type: components["schemas"]["SupplyTypeEnum"];
+            readonly supply_category: components["schemas"]["SupplyCategoryEnum"];
+            readonly lut: boolean;
+            readonly reverse_charge: boolean;
             readonly is_gst_document: boolean;
             readonly round_to_rupee: boolean;
             readonly is_ra_bill: boolean;
@@ -1930,6 +1933,9 @@ export interface components {
             readonly project_name: string | null;
             readonly place_of_supply: string;
             readonly supply_type: components["schemas"]["SupplyTypeEnum"];
+            readonly supply_category: components["schemas"]["SupplyCategoryEnum"];
+            readonly lut: boolean;
+            readonly reverse_charge: boolean;
             readonly is_gst_document: boolean;
             readonly round_to_rupee: boolean;
             readonly is_ra_bill: boolean;
@@ -2013,6 +2019,10 @@ export interface components {
             /** Format: date */
             valid_until?: string | null;
             round_to_rupee?: boolean;
+            /** @description SEZ and export supplies: true = zero-rated without IGST under the registration's Letter of Undertaking, false = charge IGST. Omitted / null: under the LUT when the registration has one for the document's financial year. */
+            lut?: boolean | null;
+            /** @description The recipient pays the tax (registered clients in India). The tax is shown but not added to the total. */
+            reverse_charge?: boolean;
             /** @description RA (running account) bill against the project's BOQ: every line names a BOQ item, once. Gets the project's next RA number. */
             is_ra_bill?: boolean;
             notes?: string | null;
@@ -2220,6 +2230,8 @@ export interface components {
             address: components["schemas"]["AddressOut"];
             readonly is_default: boolean;
             readonly is_active: boolean;
+            readonly lut_arn: string | null;
+            readonly lut_fy_start_year: number | null;
             readonly version: number;
             /** Format: date-time */
             readonly created_at: string;
@@ -2251,6 +2263,15 @@ export interface components {
          */
         GstRegistrationRegistrationTypeEnum: "REGULAR" | "COMPOSITION" | "UNREGISTERED";
         GstRow: {
+            /**
+             * @description B2B_REVERSE_CHARGE: the recipient pays the tax (not ours to pay).
+             *
+             *     * `B2B` - B2B
+             *     * `B2C` - B2C
+             *     * `B2B_REVERSE_CHARGE` - B2B_REVERSE_CHARGE
+             *     * `SEZ` - SEZ
+             *     * `EXPORT` - EXPORT
+             */
             supply: components["schemas"]["SupplyEnum"];
             /** Format: decimal */
             gst_rate: string;
@@ -2687,6 +2708,10 @@ export interface components {
             /** Format: date */
             valid_until?: string | null;
             round_to_rupee?: boolean;
+            /** @description SEZ and export supplies: true = zero-rated without IGST under the registration's Letter of Undertaking, false = charge IGST. Omitted / null: under the LUT when the registration has one for the document's financial year. */
+            lut?: boolean | null;
+            /** @description The recipient pays the tax (registered clients in India). The tax is shown but not added to the total. */
+            reverse_charge?: boolean;
             /** @description RA (running account) bill against the project's BOQ: every line names a BOQ item, once. Gets the project's next RA number. */
             is_ra_bill?: boolean;
             notes?: string | null;
@@ -2722,6 +2747,10 @@ export interface components {
             address?: components["schemas"]["Address"];
             is_default?: boolean;
             is_active?: boolean;
+            /** @description ARN of the Letter of Undertaking (GST RFD-11): zero-rated supplies to SEZs and exports without IGST. Set together with lut_fy_start_year; null both to remove. */
+            lut_arn?: string | null;
+            /** @description The financial year the LUT covers, by its first year (2026 = 2026-27). */
+            lut_fy_start_year?: number | null;
         };
         PatchedMemberRole: {
             role?: components["schemas"]["RoleEnum"];
@@ -2925,6 +2954,9 @@ export interface components {
         Preview: {
             place_of_supply: string;
             supply_type: string;
+            supply_category: components["schemas"]["SupplyCategoryEnum"];
+            lut: boolean;
+            reverse_charge: boolean;
             totals: components["schemas"]["Totals"];
             lines: components["schemas"]["PreviewLine"][];
         };
@@ -3374,11 +3406,21 @@ export interface components {
             previous: components["schemas"]["ReportTotals"];
         };
         /**
-         * @description * `B2B` - B2B
-         *     * `B2C` - B2C
+         * @description * `REGULAR` - Regular
+         *     * `SEZ` - Sez
+         *     * `EXPORT` - Export
          * @enum {string}
          */
-        SupplyEnum: "B2B" | "B2C";
+        SupplyCategoryEnum: "REGULAR" | "SEZ" | "EXPORT";
+        /**
+         * @description * `B2B` - B2B
+         *     * `B2C` - B2C
+         *     * `B2B_REVERSE_CHARGE` - B2B_REVERSE_CHARGE
+         *     * `SEZ` - SEZ
+         *     * `EXPORT` - EXPORT
+         * @enum {string}
+         */
+        SupplyEnum: "B2B" | "B2C" | "B2B_REVERSE_CHARGE" | "SEZ" | "EXPORT";
         /**
          * @description * `INTRA_STATE` - Intra State
          *     * `INTER_STATE` - Inter State

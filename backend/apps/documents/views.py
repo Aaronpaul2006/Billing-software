@@ -160,6 +160,9 @@ class PreviewTotalsView(ActionAPIView):
             {
                 "place_of_supply": c.resolved.place_of_supply,
                 "supply_type": c.out.supply_type,
+                "supply_category": c.resolved.supply_category,
+                "lut": c.lut,
+                "reverse_charge": c.reverse_charge,
                 "totals": TotalsSerializer(c.out).data,
                 "lines": lines,
             }

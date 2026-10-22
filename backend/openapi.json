@@ -5336,6 +5336,22 @@
                         ],
                         "readOnly": true
                     },
+                    "supply_category": {
+                        "allOf": [
+                            {
+                                "$ref": "#/components/schemas/SupplyCategoryEnum"
+                            }
+                        ],
+                        "readOnly": true
+                    },
+                    "lut": {
+                        "type": "boolean",
+                        "readOnly": true
+                    },
+                    "reverse_charge": {
+                        "type": "boolean",
+                        "readOnly": true
+                    },
                     "is_gst_document": {
                         "type": "boolean",
                         "readOnly": true
@@ -5411,6 +5427,7 @@
                     "is_ra_bill",
                     "issued_at",
                     "lines",
+                    "lut",
                     "notes",
                     "party_id",
                     "party_name",
@@ -5418,8 +5435,10 @@
                     "project_id",
                     "project_name",
                     "ra_sequence",
+                    "reverse_charge",
                     "round_to_rupee",
                     "status",
+                    "supply_category",
                     "supply_type",
                     "terms",
                     "totals",
@@ -5570,6 +5589,22 @@
                         ],
                         "readOnly": true
                     },
+                    "supply_category": {
+                        "allOf": [
+                            {
+                                "$ref": "#/components/schemas/SupplyCategoryEnum"
+                            }
+                        ],
+                        "readOnly": true
+                    },
+                    "lut": {
+                        "type": "boolean",
+                        "readOnly": true
+                    },
+                    "reverse_charge": {
+                        "type": "boolean",
+                        "readOnly": true
+                    },
                     "is_gst_document": {
                         "type": "boolean",
                         "readOnly": true
@@ -5623,14 +5658,17 @@
                     "is_gst_document",
                     "is_ra_bill",
                     "issued_at",
+                    "lut",
                     "party_id",
                     "party_name",
                     "place_of_supply",
                     "project_id",
                     "project_name",
                     "ra_sequence",
+                    "reverse_charge",
                     "round_to_rupee",
                     "status",
+                    "supply_category",
                     "supply_type",
                     "totals",
                     "updated_at",
@@ -5833,6 +5871,17 @@
                     },
                     "round_to_rupee": {
                         "type": "boolean"
+                    },
+                    "lut": {
+                        "type": [
+                            "boolean",
+                            "null"
+                        ],
+                        "description": "SEZ and export supplies: true = zero-rated without IGST under the registration's Letter of Undertaking, false = charge IGST. Omitted / null: under the LUT when the registration has one for the document's financial year."
+                    },
+                    "reverse_charge": {
+                        "type": "boolean",
+                        "description": "The recipient pays the tax (registered clients in India). The tax is shown but not added to the total."
                     },
                     "is_ra_bill": {
                         "type": "boolean",
@@ -6401,6 +6450,20 @@
                         "type": "boolean",
                         "readOnly": true
                     },
+                    "lut_arn": {
+                        "type": [
+                            "string",
+                            "null"
+                        ],
+                        "readOnly": true
+                    },
+                    "lut_fy_start_year": {
+                        "type": [
+                            "integer",
+                            "null"
+                        ],
+                        "readOnly": true
+                    },
                     "version": {
                         "type": "integer",
                         "readOnly": true
@@ -6424,6 +6487,8 @@
                     "is_active",
                     "is_default",
                     "legal_name",
+                    "lut_arn",
+                    "lut_fy_start_year",
                     "registration_type",
                     "state_code",
                     "state_name",
@@ -6496,7 +6561,12 @@
                 "type": "object",
                 "properties": {
                     "supply": {
-                        "$ref": "#/components/schemas/SupplyEnum"
+                        "allOf": [
+                            {
+                                "$ref": "#/components/schemas/SupplyEnum"
+                            }
+                        ],
+                        "description": "B2B_REVERSE_CHARGE: the recipient pays the tax (not ours to pay).\n\n* `B2B` - B2B\n* `B2C` - B2C\n* `B2B_REVERSE_CHARGE` - B2B_REVERSE_CHARGE\n* `SEZ` - SEZ\n* `EXPORT` - EXPORT"
                     },
                     "gst_rate": {
                         "type": "string",
@@ -8020,6 +8090,17 @@
                     "round_to_rupee": {
                         "type": "boolean"
                     },
+                    "lut": {
+                        "type": [
+                            "boolean",
+                            "null"
+                        ],
+                        "description": "SEZ and export supplies: true = zero-rated without IGST under the registration's Letter of Undertaking, false = charge IGST. Omitted / null: under the LUT when the registration has one for the document's financial year."
+                    },
+                    "reverse_charge": {
+                        "type": "boolean",
+                        "description": "The recipient pays the tax (registered clients in India). The tax is shown but not added to the total."
+                    },
                     "is_ra_bill": {
                         "type": "boolean",
                         "description": "RA (running account) bill against the project's BOQ: every line names a BOQ item, once. Gets the project's next RA number."
@@ -8144,6 +8225,23 @@
                     },
                     "is_active": {
                         "type": "boolean"
+                    },
+                    "lut_arn": {
+                        "type": [
+                            "string",
+                            "null"
+                        ],
+                        "description": "ARN of the Letter of Undertaking (GST RFD-11): zero-rated supplies to SEZs and exports without IGST. Set together with lut_fy_start_year; null both to remove.",
+                        "pattern": "^[A-Z0-9]{15}$"
+                    },
+                    "lut_fy_start_year": {
+                        "type": [
+                            "integer",
+                            "null"
+                        ],
+                        "maximum": 2100,
+                        "minimum": 2017,
+                        "description": "The financial year the LUT covers, by its first year (2026 = 2026-27)."
                     }
                 }
             },
@@ -8656,6 +8754,15 @@
                     "supply_type": {
                         "type": "string"
                     },
+                    "supply_category": {
+                        "$ref": "#/components/schemas/SupplyCategoryEnum"
+                    },
+                    "lut": {
+                        "type": "boolean"
+                    },
+                    "reverse_charge": {
+                        "type": "boolean"
+                    },
                     "totals": {
                         "$ref": "#/components/schemas/Totals"
                     },
@@ -8668,7 +8775,10 @@
                 },
                 "required": [
                     "lines",
+                    "lut",
                     "place_of_supply",
+                    "reverse_charge",
+                    "supply_category",
                     "supply_type",
                     "totals"
                 ]
@@ -9799,13 +9909,25 @@
                     "previous_period"
                 ]
             },
+            "SupplyCategoryEnum": {
+                "enum": [
+                    "REGULAR",
+                    "SEZ",
+                    "EXPORT"
+                ],
+                "type": "string",
+                "description": "* `REGULAR` - Regular\n* `SEZ` - Sez\n* `EXPORT` - Export"
+            },
             "SupplyEnum": {
                 "enum": [
                     "B2B",
-                    "B2C"
+                    "B2C",
+                    "B2B_REVERSE_CHARGE",
+                    "SEZ",
+                    "EXPORT"
                 ],
                 "type": "string",
-                "description": "* `B2B` - B2B\n* `B2C` - B2C"
+                "description": "* `B2B` - B2B\n* `B2C` - B2C\n* `B2B_REVERSE_CHARGE` - B2B_REVERSE_CHARGE\n* `SEZ` - SEZ\n* `EXPORT` - EXPORT"
             },
             "SupplyTypeEnum": {
                 "enum": [

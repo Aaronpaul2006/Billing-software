@@ -11,6 +11,12 @@ Rules
   always equal); inter-state supplies get IGST at the full rate.
 * Place of supply for construction is the site's state (immovable property,
   IGST Act s.12(3)); the caller passes it in.
+* Supplies to SEZ units / developers are inter-State whatever the place
+  (IGST Act s.7(5)(b)); exports have place of supply 96 (outside India). Both
+  are zero-rated (IGST Act s.16): IGST is charged, or nothing under a Letter
+  of Undertaking (`lut`), the rates staying on the lines for the return.
+* Reverse charge: the recipient pays the tax. It is computed and shown, but
+  not part of the document total (nor of what the client pays).
 * BILL_OF_SUPPLY, and any document of a non-REGULAR supplier, carries no tax.
   A non-REGULAR supplier cannot issue tax invoices / credit / debit notes.
 * GST rates are data (0-50 %), never constants here.
@@ -35,6 +41,8 @@ GST_TDS_RATE = Decimal("2")  # CGST Act s.51: 1 % CGST + 1 % SGST, or 2 % IGST
 GST_DOC_TYPES = frozenset({"TAX_INVOICE", "CREDIT_NOTE", "DEBIT_NOTE"})
 DOC_TYPES = frozenset({*GST_DOC_TYPES, "QUOTATION", "PROFORMA", "BILL_OF_SUPPLY"})
 REGISTRATION_TYPES = frozenset({"REGULAR", "COMPOSITION", "UNREGISTERED"})
+SUPPLY_CATEGORIES = frozenset({"REGULAR", "SEZ", "EXPORT"})
+ZERO_RATED = frozenset({"SEZ", "EXPORT"})
 
 
 class TaxError(ValueError):
@@ -88,6 +96,9 @@ class DocumentIn:
     lines: Sequence[LineIn]
     round_to_rupee: bool = False
     deductions: Deductions = field(default_factory=Deductions)
+    supply_category: str = "REGULAR"  # REGULAR / SEZ / EXPORT
+    lut: bool = False  # zero-rated without payment of IGST (Letter of Undertaking)
+    reverse_charge: bool = False  # the recipient pays the tax
 
 
 # --- output --------------------------------------------------------------------------------
@@ -172,6 +183,28 @@ def compute_line(line: LineIn, *, taxed: bool, intra_state: bool) -> LineOut:
     )
 
 
+def _check_category(doc: DocumentIn, taxed: bool) -> None:
+    if doc.supply_category not in SUPPLY_CATEGORIES:
+        raise TaxError("supply_category", "Unknown supply category.", "invalid")
+    if doc.supply_category == "EXPORT" and doc.place_of_supply != "96":
+        raise TaxError("place_of_supply", "Exports have place of supply 96.", "invalid")
+    if doc.lut and doc.supply_category not in ZERO_RATED:
+        raise TaxError(
+            "lut",
+            "Only supplies to SEZ units and exports go under a Letter of Undertaking.",
+            "lut_not_zero_rated",
+        )
+    if doc.lut and not taxed:
+        raise TaxError("lut", "This document carries no tax.", "lut_not_zero_rated")
+    if doc.reverse_charge and (doc.supply_category in ZERO_RATED or not taxed):
+        raise TaxError(
+            "reverse_charge",
+            "Only tax invoices and notes of a regular registration, to clients in India"
+            " outside SEZs, can be under reverse charge.",
+            "reverse_charge_not_allowed",
+        )
+
+
 def compute(doc: DocumentIn) -> DocumentOut:
     if doc.doc_type not in DOC_TYPES:
         raise TaxError("doc_type", f"Unknown document type {doc.doc_type}.", "invalid")
@@ -187,14 +220,17 @@ def compute(doc: DocumentIn) -> DocumentOut:
     if not doc.lines:
         raise TaxError("lines", "A document needs at least one line.", "no_lines")
 
-    intra_state = doc.place_of_supply == doc.supplier_state
     taxed = doc.registration_type == "REGULAR" and doc.doc_type != "BILL_OF_SUPPLY"
+    _check_category(doc, taxed)
+    zero_rated = doc.supply_category in ZERO_RATED
+    intra_state = not zero_rated and doc.place_of_supply == doc.supplier_state
+    pays_tax = taxed and not doc.lut
 
     lines: list[LineOut] = []
     for i, line in enumerate(doc.lines):
         _check_line(i, line)
         try:
-            lines.append(compute_line(line, taxed=taxed, intra_state=intra_state))
+            lines.append(compute_line(line, taxed=pays_tax, intra_state=intra_state))
         except TaxError as exc:
             raise TaxError(f"lines[{i}].{exc.field}", str(exc), exc.code) from None
 
@@ -203,7 +239,9 @@ def compute(doc: DocumentIn) -> DocumentOut:
     sgst = sum((ln.sgst_amount for ln in lines), ZERO)
     igst = sum((ln.igst_amount for ln in lines), ZERO)
     cess = sum((ln.cess_amount for ln in lines), ZERO)
-    before_rounding = subtotal + cgst + sgst + igst + cess
+    # Under reverse charge the recipient pays the tax to the government.
+    charged = ZERO if doc.reverse_charge else cgst + sgst + igst + cess
+    before_rounding = subtotal + charged
     grand_total = rupees(before_rounding) if doc.round_to_rupee else before_rounding
     round_off = grand_total - before_rounding
 
@@ -214,7 +252,7 @@ def compute(doc: DocumentIn) -> DocumentOut:
         raise TaxError("deductions.advance_outstanding", "Must be >= 0.", "invalid")
     retention = percent_of(subtotal, d.retention_pct)
     income_tax_tds = rupees(subtotal * d.income_tax_tds_pct / HUNDRED)
-    gst_tds = percent_of(subtotal, GST_TDS_RATE) if d.gst_tds_applicable and taxed else ZERO
+    gst_tds = percent_of(subtotal, GST_TDS_RATE) if d.gst_tds_applicable and pays_tax else ZERO
     advance = min(percent_of(subtotal, d.advance_recovery_pct), paise(d.advance_outstanding))
     net = grand_total - retention - income_tax_tds - gst_tds - advance
     if net < 0:

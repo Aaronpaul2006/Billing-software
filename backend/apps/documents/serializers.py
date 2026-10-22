@@ -6,7 +6,7 @@ from rest_framework import serializers
 
 from apps.core.fields import MoneyField, PercentField, QuantityField
 
-from .models import Document, DocumentLine
+from .models import Document, DocumentLine, SupplyCategory
 from .services.drafts import DRAFTABLE_TYPES
 
 # --- input ---------------------------------------------------------------------------------
@@ -39,6 +39,18 @@ class DocumentWriteSerializer(serializers.Serializer[Any]):
     due_date = serializers.DateField(required=False, allow_null=True)
     valid_until = serializers.DateField(required=False, allow_null=True)
     round_to_rupee = serializers.BooleanField(required=False)
+    lut = serializers.BooleanField(
+        required=False,
+        allow_null=True,
+        help_text="SEZ and export supplies: true = zero-rated without IGST under the"
+        " registration's Letter of Undertaking, false = charge IGST. Omitted / null:"
+        " under the LUT when the registration has one for the document's financial year.",
+    )
+    reverse_charge = serializers.BooleanField(
+        required=False,
+        help_text="The recipient pays the tax (registered clients in India). The tax is"
+        " shown but not added to the total.",
+    )
     is_ra_bill = serializers.BooleanField(
         required=False,
         help_text="RA (running account) bill against the project's BOQ: every line names a"
@@ -167,6 +179,9 @@ class DocumentListSerializer(serializers.ModelSerializer[Document]):
             "project_name",
             "place_of_supply",
             "supply_type",
+            "supply_category",
+            "lut",
+            "reverse_charge",
             "is_gst_document",
             "round_to_rupee",
             "is_ra_bill",
@@ -211,6 +226,9 @@ class PreviewLineSerializer(serializers.Serializer[Any]):
 class PreviewSerializer(serializers.Serializer[Any]):
     place_of_supply = serializers.CharField()
     supply_type = serializers.CharField()
+    supply_category = serializers.ChoiceField(choices=SupplyCategory.choices)
+    lut = serializers.BooleanField()
+    reverse_charge = serializers.BooleanField()
     totals = TotalsSerializer()
     lines = PreviewLineSerializer(many=True)
 

@@ -86,6 +86,9 @@ class GstRegistration(TenantScoped):
     address = models.JSONField()
     is_default = models.BooleanField(default=False, db_default=False)
     is_active = models.BooleanField(default=True, db_default=True)
+    # Letter of Undertaking for one financial year: zero-rated supplies without IGST.
+    lut_arn = models.TextField(null=True)  # noqa: DJ001 - mirrors schema
+    lut_fy_start_year = models.SmallIntegerField(null=True)
     version = models.IntegerField(default=1, db_default=1)
     created_at = created_at()
     updated_at = updated_at()
@@ -123,6 +126,13 @@ class GstRegistration(TenantScoped):
             ),
             models.UniqueConstraint(
                 fields=["tenant"], condition=Q(is_default=True), name="gst_registrations_default_uq"
+            ),
+            regex("lut_arn", r"^[A-Z0-9]{15}$", "gst_registrations_lut_arn_check"),
+            between("lut_fy_start_year", 2017, 2100, "gst_registrations_lut_fy_check"),
+            models.CheckConstraint(
+                condition=Q(lut_arn__isnull=True, lut_fy_start_year__isnull=True)
+                | Q(lut_arn__isnull=False, lut_fy_start_year__isnull=False),
+                name="gst_registrations_lut_complete_check",
             ),
         ]
 

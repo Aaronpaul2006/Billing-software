@@ -338,6 +338,38 @@ their own endpoints (Phase 1.6), RA bills below (Phase 3.2). Example response:
 }
 ```
 
+### SEZ, exports, LUT, reverse charge (G.1)
+
+Documents carry `supply_category` (`REGULAR` / `SEZ` / `EXPORT`, derived:
+SEZ from the client's GST treatment; EXPORT for an overseas client without a
+project; an overseas client's works on an Indian site are `REGULAR`), `lut`
+and `reverse_charge`; preview-totals returns them too.
+
+* SEZ: always `INTER_STATE` / IGST, place of supply = site (or client) state.
+  EXPORT: place of supply `96`.
+* `lut` (write, optional, SEZ / export only): `true` = zero-rated without
+  IGST under the registration's Letter of Undertaking (taxes 0, rates kept),
+  `false` = charge IGST, omitted / `null` = under the LUT when the
+  registration has one for the document's financial year. `422 no_lut` when
+  asked for (or still set at issue) without a LUT for that year; ignored on
+  other documents.
+* `reverse_charge` (write, optional): registered clients in India only
+  (`422 reverse_charge_not_allowed` otherwise). Taxes are computed and shown;
+  `grand_total` and `net_receivable` leave them out.
+* GST registrations: `lut_arn` (15 letters / digits) and `lut_fy_start_year`
+  (PATCH, together or both null; regular registrations only:
+  `422 required` / `not_allowed`). The ARN is frozen into the supplier
+  snapshot of documents issued under it and printed with the declaration.
+* PDF: the CGST Rules r.46 declarations ("SUPPLY TO SEZ UNIT OR SEZ DEVELOPER
+  FOR AUTHORISED OPERATIONS UNDER BOND OR LETTER OF UNDERTAKING WITHOUT
+  PAYMENT OF INTEGRATED TAX", "… ON PAYMENT OF INTEGRATED TAX", the export
+  equivalents) and, under reverse charge, taxes marked "payable by the
+  recipient".
+* Reports: GST summary rows `B2B_REVERSE_CHARGE`, `SEZ`, `EXPORT` besides
+  `B2B` / `B2C`; the summary's `tax` leaves reverse-charge tax out. GSTR-1:
+  SEZ → `SEWOP` under LUT, else `SEWP`; exports → `exp` `WOPAY` / `WPAY`;
+  reverse charge → `rchrg` `Y`.
+
 ### RA (running account) bills
 
 `is_ra_bill: true` on `POST /documents` (or `PATCH` of a draft) makes a tax

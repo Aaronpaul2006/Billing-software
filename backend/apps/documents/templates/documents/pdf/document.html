@@ -102,10 +102,10 @@
 <table class="totals">
   <tr><td>Taxable value</td><td class="num">{{ totals.subtotal }}</td></tr>
   {% if intra_state %}
-  <tr><td>CGST</td><td class="num">{{ totals.cgst }}</td></tr>
-  <tr><td>SGST</td><td class="num">{{ totals.sgst }}</td></tr>
+  <tr><td>CGST{% if doc.reverse_charge %} (payable by the recipient){% endif %}</td><td class="num">{{ totals.cgst }}</td></tr>
+  <tr><td>SGST{% if doc.reverse_charge %} (payable by the recipient){% endif %}</td><td class="num">{{ totals.sgst }}</td></tr>
   {% else %}
-  <tr><td>IGST</td><td class="num">{{ totals.igst }}</td></tr>
+  <tr><td>IGST{% if doc.reverse_charge %} (payable by the recipient){% endif %}</td><td class="num">{{ totals.igst }}</td></tr>
   {% endif %}
   {% if totals.cess %}<tr><td>Cess</td><td class="num">{{ totals.cess }}</td></tr>{% endif %}
   {% if totals.round_off %}<tr><td>Round off</td><td class="num">{{ totals.round_off }}</td></tr>{% endif %}
@@ -114,6 +114,7 @@
   {% if deductions %}<tr class="grand"><td>Net receivable (₹)</td><td class="num">{{ totals.net_receivable }}</td></tr>{% endif %}
 </table>
 
+{% if declaration %}<p class="declaration"><strong>{{ declaration }}</strong></p>{% endif %}
 <div class="words">{{ grand_total_words }}</div>
 {% if net_words %}<div class="words">Net receivable: {{ net_words }}</div>{% endif %}
 {% if doc.notes %}<p><strong>Notes:</strong> {{ doc.notes|linebreaksbr }}</p>{% endif %}

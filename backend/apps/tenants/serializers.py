@@ -67,6 +67,8 @@ class GstRegistrationSerializer(serializers.ModelSerializer[GstRegistration]):
             "address",
             "is_default",
             "is_active",
+            "lut_arn",
+            "lut_fy_start_year",
             "version",
             "created_at",
             "updated_at",
@@ -128,6 +130,24 @@ class GstRegistrationUpdateSerializer(serializers.Serializer[Any]):
     address = AddressSerializer()
     is_default = serializers.BooleanField()
     is_active = serializers.BooleanField()
+    lut_arn = serializers.RegexField(
+        r"^[A-Z0-9]{15}$",
+        allow_null=True,
+        help_text="ARN of the Letter of Undertaking (GST RFD-11): zero-rated supplies to SEZs"
+        " and exports without IGST. Set together with lut_fy_start_year; null both to remove.",
+        error_messages={"invalid": "The ARN is 15 letters and digits."},
+    )
+    lut_fy_start_year = serializers.IntegerField(
+        min_value=2017,
+        max_value=2100,
+        allow_null=True,
+        help_text="The financial year the LUT covers, by its first year (2026 = 2026-27).",
+    )
+
+    def to_internal_value(self, data: Any) -> Any:
+        if isinstance(data, dict) and isinstance(data.get("lut_arn"), str):
+            data = {**data, "lut_arn": data["lut_arn"].replace(" ", "").upper() or None}
+        return super().to_internal_value(data)
 
     def validate_address(self, value: dict[str, Any]) -> dict[str, Any]:
         registration: GstRegistration = self.context["instance"]

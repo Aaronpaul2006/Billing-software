@@ -4,6 +4,23 @@ Pure functions, no Django: used by serializers and services alike.
 """
 
 import re
+from datetime import date
+
+# Place of supply of exports (the GST portal's "Other Countries"); not a state.
+FOREIGN_COUNTRY = "96"
+
+
+def fy_start_year(d: date) -> int:
+    """India's financial year starts 1 April (mirrors SQL fy_start_year())."""
+    return d.year - 1 if d.month < 4 else d.year
+
+
+def place_name(code: str | None) -> str:
+    """'Kerala' for 32, 'Outside India' for 96."""
+    if code == FOREIGN_COUNTRY:
+        return "Outside India"
+    return STATE_CODES.get(code or "", "")
+
 
 # GST state / UT codes (first two digits of a GSTIN).
 STATE_CODES: dict[str, str] = {

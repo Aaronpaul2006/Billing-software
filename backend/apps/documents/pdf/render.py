@@ -13,7 +13,7 @@ from typing import Any
 
 from django.template.loader import render_to_string
 
-from apps.core.india import STATE_CODES
+from apps.core.india import place_name
 from apps.parties.models import Party
 from apps.projects.models import BoqItem, Project
 from apps.tenants.models import GstRegistration
@@ -54,7 +54,29 @@ def _qty(value: Decimal | None) -> str:
 
 
 def _state(code: str | None) -> str:
-    return f"{code} - {STATE_CODES.get(code, '')}" if code else ""
+    return f"{code} - {place_name(code)}" if code else ""
+
+
+# CGST Rules r.46(1)(p) and the IGST zero-rating conditions: the words these
+# invoices must carry.
+DECLARATIONS = {
+    ("SEZ", True): "SUPPLY TO SEZ UNIT OR SEZ DEVELOPER FOR AUTHORISED OPERATIONS UNDER BOND"
+    " OR LETTER OF UNDERTAKING WITHOUT PAYMENT OF INTEGRATED TAX",
+    ("SEZ", False): "SUPPLY TO SEZ UNIT OR SEZ DEVELOPER FOR AUTHORISED OPERATIONS ON PAYMENT"
+    " OF INTEGRATED TAX",
+    ("EXPORT", True): "SUPPLY MEANT FOR EXPORT UNDER BOND OR LETTER OF UNDERTAKING WITHOUT"
+    " PAYMENT OF INTEGRATED TAX",
+    ("EXPORT", False): "SUPPLY MEANT FOR EXPORT ON PAYMENT OF INTEGRATED TAX",
+}
+
+
+def _declaration(doc: Document, supplier: dict[str, Any]) -> str | None:
+    if doc.reverse_charge:
+        return "Tax on this supply is payable by the recipient under reverse charge."
+    text = DECLARATIONS.get((doc.supply_category, doc.lut))
+    if text and doc.lut and supplier.get("lut_arn"):
+        text += f" (LUT ARN {supplier['lut_arn']})"
+    return text
 
 
 def _live_snapshots(doc: Document) -> tuple[dict[str, Any], dict[str, Any]]:
@@ -63,7 +85,7 @@ def _live_snapshots(doc: Document) -> tuple[dict[str, Any], dict[str, Any]]:
 
     registration = GstRegistration.objects.get(pk=doc.gst_registration_id)
     party = Party.objects.get(pk=doc.party_id)
-    return _supplier_snapshot(registration), _party_snapshot(party)
+    return _supplier_snapshot(registration, lut=doc.lut), _party_snapshot(party)
 
 
 def build_context(doc: Document) -> dict[str, Any]:
@@ -109,6 +131,7 @@ def build_context(doc: Document) -> dict[str, Any]:
         "show_discount": any(ln.discount_amount for ln in lines),
         "is_draft": doc.status == "DRAFT",
         "is_cancelled": doc.status == "CANCELLED",
+        "declaration": _declaration(doc, supplier),
         "doc": doc,
         "supplier": supplier,
         "supplier_state": _state(supplier.get("state_code")),

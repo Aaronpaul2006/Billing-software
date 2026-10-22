@@ -120,7 +120,10 @@ class ProjectReportSerializer(serializers.Serializer[Any]):
 
 
 class GstRowSerializer(serializers.Serializer[Any]):
-    supply = serializers.ChoiceField(choices=["B2B", "B2C"])
+    supply = serializers.ChoiceField(
+        choices=["B2B", "B2C", "B2B_REVERSE_CHARGE", "SEZ", "EXPORT"],
+        help_text="B2B_REVERSE_CHARGE: the recipient pays the tax (not ours to pay).",
+    )
     gst_rate = MoneyField()
     document_count = serializers.IntegerField()
     taxable_value = MoneyField()

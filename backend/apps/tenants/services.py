@@ -102,8 +102,21 @@ def update_registration(
             raise Conflict("An inactive registration cannot be the default.", code="inactive")
         if changes.get("is_default"):
             _make_default(registration.pk)
+        _check_lut(registration, changes)
         update_versioned(GstRegistration.objects, registration.pk, expected, **changes)
     return _registration(registration_id)
+
+
+def _check_lut(registration: GstRegistration, changes: dict[str, Any]) -> None:
+    arn = changes.get("lut_arn", registration.lut_arn)
+    fy = changes.get("lut_fy_start_year", registration.lut_fy_start_year)
+    if (arn is None) != (fy is None):
+        field = "lut_fy_start_year" if fy is None else "lut_arn"
+        raise Invalid(field, "Give the LUT's ARN and its financial year together.", code="required")
+    if arn and registration.registration_type != "REGULAR":
+        raise Invalid(
+            "lut_arn", "Only regular registrations make zero-rated supplies.", code="not_allowed"
+        )
 
 
 # --- number series -------------------------------------------------------------------------

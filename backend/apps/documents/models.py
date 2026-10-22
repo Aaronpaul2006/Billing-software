@@ -53,6 +53,12 @@ class DocumentStatus(models.TextChoices):
     CANCELLED = "CANCELLED"
 
 
+class SupplyCategory(models.TextChoices):
+    REGULAR = "REGULAR"
+    SEZ = "SEZ"  # to an SEZ unit / developer: always inter-State (IGST Act s.7(5)(b))
+    EXPORT = "EXPORT"  # recipient outside India, no Indian site: place of supply 96
+
+
 class Document(TenantScoped):
     Status = DocumentStatus
     SupplyType = DocumentSupplyType
@@ -88,6 +94,10 @@ class Document(TenantScoped):
     place_of_supply = FixedCharField(max_length=2)
     supply_type = models.TextField(choices=SupplyType)
     reverse_charge = models.BooleanField(default=False, db_default=False)
+    supply_category = models.TextField(
+        choices=SupplyCategory, default=SupplyCategory.REGULAR, db_default=SupplyCategory.REGULAR
+    )
+    lut = models.BooleanField(default=False, db_default=False)
     # Totals: computed by the tax engine on every draft save, verified against
     # the lines when the document is issued (trigger documents_guard).
     subtotal = _money_zero()
@@ -231,17 +241,8 @@ class Document(TenantScoped):
                 | (Q(cgst_amount=0) & Q(igst_amount=0) & Q(cess_amount=0)),
                 name="documents_bill_of_supply_tax_check",
             ),
-            models.CheckConstraint(
-                condition=Q(
-                    grand_total=F("subtotal")
-                    + F("cgst_amount")
-                    + F("sgst_amount")
-                    + F("igst_amount")
-                    + F("cess_amount")
-                    + F("round_off")
-                ),
-                name="documents_grand_total_check",
-            ),
+            one_of("supply_category", SupplyCategory.values, "documents_supply_category_check"),
+            # grand total, LUT and reverse-charge rules: SQL in migration 0003 (db/schema.sql §4)
             models.CheckConstraint(
                 condition=Q(
                     net_receivable=F("grand_total")

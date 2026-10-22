@@ -37,8 +37,10 @@ def totals(tenant: uuid.UUID, start: date, end: date, book: str) -> dict[str, De
     b = BOOK_SQL[book]
     billed = _one(
         f"""SELECT coalesce(sum({SIGNED} * d.grand_total), 0) AS billed,
-                   coalesce(sum({SIGNED} * (d.cgst_amount + d.sgst_amount + d.igst_amount
-                                            + d.cess_amount)), 0) AS tax,
+                   coalesce(sum(CASE WHEN d.reverse_charge THEN 0
+                                     ELSE {SIGNED} * (d.cgst_amount + d.sgst_amount
+                                                      + d.igst_amount + d.cess_amount) END),
+                            0) AS tax,
                    coalesce(sum({SIGNED} * d.subtotal), 0) AS taxable
               FROM documents d
              WHERE d.tenant_id = %s AND d.status = 'ISSUED' AND d.is_revenue
@@ -146,10 +148,14 @@ def projects(tenant: uuid.UUID, project: uuid.UUID | None = None) -> list[dict[s
 
 
 def gst_summary(tenant: uuid.UUID, start: date, end: date) -> list[dict[str, Any]]:
-    """Outward supplies of GST documents by rate and B2B (recipient GSTIN) / B2C."""
+    """Outward supplies of GST documents by rate and kind: B2B (recipient GSTIN),
+    B2C, B2B under reverse charge (tax payable by the recipient), SEZ, export."""
     return _rows(
-        f"""SELECT CASE WHEN coalesce(d.party_snapshot ->> 'gstin', '') <> ''
-                        THEN 'B2B' ELSE 'B2C' END AS supply,
+        f"""SELECT CASE WHEN d.supply_category = 'SEZ' THEN 'SEZ'
+                        WHEN d.supply_category = 'EXPORT' THEN 'EXPORT'
+                        WHEN d.reverse_charge THEN 'B2B_REVERSE_CHARGE'
+                        WHEN coalesce(d.party_snapshot ->> 'gstin', '') <> '' THEN 'B2B'
+                        ELSE 'B2C' END AS supply,
                    l.gst_rate,
                    count(DISTINCT d.id)::int AS document_count,
                    sum({SIGNED} * l.taxable_value) AS taxable_value,

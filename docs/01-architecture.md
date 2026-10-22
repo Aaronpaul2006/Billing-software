@@ -268,6 +268,15 @@ A pure Python package (`documents/tax/`) with no Django imports.
   inter-state ones.
 * **Place of supply for construction = the site's state** (immovable
   property), taken from `projects.site_state_code`, not the client's address.
+* **SEZ, exports, reverse charge** (G.1, 2026-10-22): supplies to an SEZ unit
+  or developer are inter-State (IGST) even within one state (IGST Act
+  s.7(5)(b)); an overseas client with no Indian site is an export (place of
+  supply 96), but works on a site in India stay domestic (s.12(3) / s.13(4)).
+  Both are zero-rated (s.16): IGST, or nothing under the registration's
+  Letter of Undertaking for that financial year (`lut`; the rates stay on the
+  lines). Under reverse charge the tax is computed and shown but left out of
+  the total and of what the client pays; reports do not count it as ours.
+  The database enforces all of it (CHECKs and the issue guard).
 * Optional invoice round-off to the nearest rupee (stored in `round_off`,
   ±₹1).
 * Deductions after tax: retention, income-tax TDS (s.194C), GST TDS (s.51,

@@ -12,7 +12,7 @@ from typing import Any
 from django.db.models import OuterRef, Subquery, Sum
 from django.utils import timezone
 
-from apps.core.india import STATE_CODES
+from apps.core.india import place_name
 from apps.documents.models import Document
 from apps.documents.pdf.render import TITLES
 from apps.expenses.models import Expense
@@ -58,7 +58,7 @@ def _label(value: str) -> str:
 
 
 def _state(code: str | None) -> str | None:
-    return f"{code} {STATE_CODES.get(code, '')}".strip() if code else None
+    return f"{code} {place_name(code)}".strip() if code else None
 
 
 def documents(tenant_id: uuid.UUID, params: dict[str, Any]) -> Built:

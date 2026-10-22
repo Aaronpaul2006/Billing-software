@@ -283,25 +283,20 @@ def build_gstr1(tenant_id: uuid.UUID, params: dict[str, Any]) -> tuple[bytes, st
         nil_lines = [ln for ln in all_lines if ln.gst_rate == 0]
         sign = -1 if doc.doc_type == "CREDIT_NOTE" else 1
 
-        if gstin and treatment in ("REGISTERED", "COMPOSITION", "SEZ"):
-            section, bucket = "b2b", "b2b"
-        elif treatment == "OVERSEAS":
+        if doc.supply_category == "EXPORT":
             section, bucket = "exp", "b2c"
+        elif gstin and treatment in ("REGISTERED", "COMPOSITION", "SEZ"):
+            section, bucket = "b2b", "b2b"
         elif _is_b2cl(doc):
             section, bucket = "b2cl", "b2c"
         else:
             section, bucket = "b2cs", "b2c"
-        if treatment in ("SEZ", "OVERSEAS"):
-            ret.warn(
-                "Supplies to SEZ units and exports are taxed here by place of supply: check the "
-                "IGST / LUT treatment of those documents before filing."
-            )
-        if treatment == "SEZ" and not gstin:
+        if doc.supply_category == "SEZ" and not gstin:
             ret.warn(f"{doc.doc_number}: SEZ recipient without a GSTIN is reported as B2C.")
 
         inv_typ = "R"
-        if treatment == "SEZ":
-            inv_typ = "SEWP" if doc.igst_amount > 0 else "SEWOP"
+        if doc.supply_category == "SEZ":
+            inv_typ = "SEWOP" if doc.lut else "SEWP"
 
         if section == "b2b" and taxed:
             if note:
@@ -352,7 +347,7 @@ def build_gstr1(tenant_id: uuid.UUID, params: dict[str, Any]) -> tuple[bytes, st
                     }
                 )
         elif section == "exp" and (taxed or nil_lines):
-            typ = "WPAY" if doc.igst_amount > 0 else "WOPAY"
+            typ = "WOPAY" if doc.lut else "WPAY"
             if note:
                 cdnur.append(
                     {

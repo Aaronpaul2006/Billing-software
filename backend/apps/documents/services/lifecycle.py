@@ -19,6 +19,7 @@ from django.utils import timezone
 
 from apps.accounts.services import require_verified_email
 from apps.core.errors import Conflict, Invalid, PreconditionFailed
+from apps.core.india import fy_start_year
 from apps.core.permissions import require
 from apps.core.queries import get_or_404
 from apps.core.tenancy import Principal
@@ -39,11 +40,6 @@ CONVERSIONS: dict[str, frozenset[str]] = {
 CONVERTIBLE_STATUSES = frozenset({"ISSUED", "ACCEPTED"})
 
 
-def fy_start_year(d: date) -> int:
-    """India's financial year starts 1 April (mirrors SQL fy_start_year())."""
-    return d.year - 1 if d.month < 4 else d.year
-
-
 def _locked(doc_id: uuid.UUID, expected: int | None) -> Document:
     doc = get_or_404(Document, doc_id, for_update=True)
     if expected is not None and doc.version != expected:
@@ -51,9 +47,11 @@ def _locked(doc_id: uuid.UUID, expected: int | None) -> Document:
     return doc
 
 
-def _supplier_snapshot(registration: GstRegistration) -> dict[str, Any]:
+def _supplier_snapshot(registration: GstRegistration, *, lut: bool) -> dict[str, Any]:
     tenant = Tenant.objects.get(pk=registration.tenant_id)
     return {
+        # the LUT the document was issued under (printed on SEZ / export invoices)
+        "lut_arn": registration.lut_arn if lut else None,
         "gstin": registration.gstin,
         "registration_type": registration.registration_type,
         "legal_name": registration.legal_name,
@@ -148,7 +146,7 @@ def issue(principal: Principal, doc_id: uuid.UUID, expected: int) -> Document:
             status="ISSUED",
             series_id=series.pk,
             doc_number=number,
-            supplier_snapshot=_supplier_snapshot(computed.resolved.registration),
+            supplier_snapshot=_supplier_snapshot(computed.resolved.registration, lut=computed.lut),
             party_snapshot=_party_snapshot(computed.resolved.party),
             issued_at=timezone.now(),
             issued_by_id=principal.user_id,
