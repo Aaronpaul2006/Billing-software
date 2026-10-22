@@ -9,11 +9,15 @@ from rest_framework.request import Request
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
+from apps.core import ratelimit
 from apps.core.api import principal_of
 from apps.core.permissions import HasAction, MfaSatisfied
 
-from . import members
+from . import email_invitations, members
 from .serializers import (
+    EmailInvitationListSerializer,
+    EmailInvitationSerializer,
+    EmailInviteSerializer,
     InvitationListSerializer,
     InviteSerializer,
     MemberListSerializer,
@@ -94,3 +98,50 @@ class MemberDetailView(APIView):
     def delete(self, request: Request, membership_id: uuid.UUID) -> Response:
         members.revoke(principal_of(request), membership_id)
         return Response(status=204)
+
+
+class EmailInvitationListView(APIView):
+    """Invitations to people with no account yet: pending ones, and new ones
+    (an email with a link to create the account and join, for 7 days)."""
+
+    permission_classes = MANAGE_MEMBERS
+
+    @extend_schema(responses={200: EmailInvitationListSerializer}, tags=["members"])
+    def get(self, request: Request) -> Response:
+        rows = email_invitations.pending(principal_of(request))
+        return Response({"results": EmailInvitationSerializer(rows, many=True).data})
+
+    @extend_schema(
+        request=EmailInviteSerializer, responses={201: EmailInvitationSerializer}, tags=["members"]
+    )
+    def post(self, request: Request) -> Response:
+        principal = principal_of(request)
+        ratelimit.enforce(request, "invite_user", str(principal.user_id))
+        data = EmailInviteSerializer(data=request.data)
+        data.is_valid(raise_exception=True)
+        invitation = email_invitations.create(
+            principal, data.validated_data["email"], data.validated_data["role"]
+        )
+        return Response(EmailInvitationSerializer(invitation).data, status=201)
+
+
+class EmailInvitationDetailView(APIView):
+    permission_classes = MANAGE_MEMBERS
+
+    @extend_schema(responses={204: None}, tags=["members"])
+    def delete(self, request: Request, invitation_id: uuid.UUID) -> Response:
+        email_invitations.revoke(principal_of(request), invitation_id)
+        return Response(status=204)
+
+
+class EmailInvitationResendView(APIView):
+    """Send the invitation email again; the link works for 7 more days."""
+
+    permission_classes = MANAGE_MEMBERS
+
+    @extend_schema(request=None, responses={200: EmailInvitationSerializer}, tags=["members"])
+    def post(self, request: Request, invitation_id: uuid.UUID) -> Response:
+        principal = principal_of(request)
+        ratelimit.enforce(request, "invite_user", str(principal.user_id))
+        invitation = email_invitations.resend(principal, invitation_id)
+        return Response(EmailInvitationSerializer(invitation).data)

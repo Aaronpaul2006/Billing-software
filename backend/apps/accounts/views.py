@@ -1,10 +1,11 @@
 """Auth endpoints (docs/02-api-design.md §2). Thin: validate, call a service, respond."""
 
 import uuid
+from dataclasses import asdict
 from typing import Any
 
 from django.conf import settings
-from drf_spectacular.utils import PolymorphicProxySerializer, extend_schema
+from drf_spectacular.utils import OpenApiParameter, PolymorphicProxySerializer, extend_schema
 from rest_framework.permissions import AllowAny, IsAuthenticated
 from rest_framework.request import Request
 from rest_framework.response import Response
@@ -15,10 +16,12 @@ from apps.core.api import principal_of
 from apps.core.permissions import MFA_REQUIRED_ROLES
 from apps.core.tenancy import Principal, user_context
 
-from . import services
+from . import email_invitations, emails, services
 from .models import User
 from .serializers import (
     EmailChangeSerializer,
+    JoinDetailsSerializer,
+    JoinSerializer,
     LoginSerializer,
     MeSerializer,
     MeUpdateSerializer,
@@ -336,6 +339,37 @@ class EmailChangeView(APIView):
         v = data.validated_data
         services.request_email_change(principal, v["new_email"], v["password"])
         return Response(status=204)
+
+
+class JoinView(PublicAuthView):
+    """An invitation by email: what it is (GET), and joining with it (POST):
+    the account is created, joins the company with the invited role and is
+    signed in."""
+
+    @extend_schema(
+        parameters=[OpenApiParameter("token", str, required=True)],
+        responses={200: JoinDetailsSerializer},
+        tags=["auth"],
+    )
+    def get(self, request: Request) -> Response:
+        token = request.query_params.get("token", "")
+        if not token:
+            raise emails.link_invalid()
+        return Response(asdict(email_invitations.details(token)))
+
+    @extend_schema(request=JoinSerializer, responses={201: TokensSerializer}, tags=["auth"])
+    def post(self, request: Request) -> Response:
+        ratelimit.enforce(request, "signup_ip", ratelimit.client_ip(request))
+        data = JoinSerializer(data=request.data)
+        data.is_valid(raise_exception=True)
+        v = data.validated_data
+        tokens = email_invitations.join(
+            v["token"],
+            full_name=v["full_name"],
+            password=v["password"],
+            client=_client(request, v),
+        )
+        return _tokens_response(tokens, v["client"], status=201)
 
 
 class EmailConfirmView(PublicAuthView):

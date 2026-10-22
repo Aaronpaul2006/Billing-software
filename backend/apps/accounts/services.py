@@ -276,6 +276,10 @@ def signup(
                 client=client,
             )
             _email_after_commit(Kind.VERIFY_EMAIL, user.id)
+            # Invited by email before signing up: those invitations wait in the banner.
+            from .email_invitations import claim_for_new_user
+
+            claim_for_new_user(user.id)
     except IntegrityError as exc:
         if User.objects.filter(email=email).exists():
             raise Invalid(

@@ -223,6 +223,7 @@ NOT_TENANT_DATA = {
     "auth-password-reset": "signed link for one user's own password",
     "auth-password-change": "caller's own account",
     "auth-email-confirm": "signed link for one user's own address",
+    "auth-join": "signed invitation link; the tenant comes from our signature",
     "me-email": "caller's own account",
     "auth-switch-tenant": "membership-checked (tests/accounts/test_auth.py)",
     "auth-mfa-setup": "caller's own account",
@@ -966,3 +967,28 @@ def test_export_routes_reject_other_tenant(world: World) -> None:
 
 OBJECT_ROUTES["export-detail"] = lambda w: None  # test_export_routes_reject_other_tenant
 COLLECTION_ROUTES["exports"] = lambda w: None  # same test
+
+
+# --- K.2 invitations by email -------------------------------------------------------------
+
+
+def test_email_invitation_routes_reject_other_tenant(world: World) -> None:
+    from apps.accounts.models import EmailInvitation
+
+    a = world.a
+    with tenant_context(a.tenant_id, a.user_id):
+        invitation = EmailInvitation.objects.create(
+            email="newcomer@example.com", role="VIEWER", invited_by_id=a.user_id
+        )
+    api, b = world.api, world.as_b()
+    url = f"/api/v1/email-invitations/{invitation.pk}"
+    assert api.get("/api/v1/email-invitations", **b).json()["results"] == []
+    assert api.delete(url, **b).status_code == 404
+    assert api.post(f"{url}/resend", **b).status_code == 404
+    with tenant_context(a.tenant_id, a.user_id):
+        assert EmailInvitation.objects.get(pk=invitation.pk).status == "PENDING"
+
+
+OBJECT_ROUTES["email-invitation-detail"] = lambda w: None  # test_email_invitation_routes_...
+OBJECT_ROUTES["email-invitation-resend"] = lambda w: None  # same test
+COLLECTION_ROUTES["email-invitations"] = lambda w: None  # same test

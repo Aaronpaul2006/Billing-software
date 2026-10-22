@@ -10,10 +10,12 @@ from apps.core.db import (
     one_of,
     ref,
     regex,
+    tenant_id_key,
     tenant_ref,
     updated_at,
     uuid7_pk,
 )
+from apps.core.managers import TenantScoped
 
 
 class Role(models.TextChoices):
@@ -109,6 +111,54 @@ class Membership(models.Model):
             ),
         ]
         indexes = [models.Index(fields=["user"], name="memberships_user_idx")]
+
+
+class EmailInvitationStatus(models.TextChoices):
+    PENDING = "PENDING"
+    ACCEPTED = "ACCEPTED"  # joined through the link, or signed up and got an INVITED membership
+    REVOKED = "REVOKED"
+
+
+class EmailInvitation(TenantScoped):
+    """An invitation to someone with no account yet (db/schema.sql §2): the
+    email's signed link lets them create the account and join."""
+
+    Status = EmailInvitationStatus
+    id = uuid7_pk()
+    tenant = tenant_ref()
+    email = CITextField()
+    role = models.TextField(choices=Role)
+    status = models.TextField(
+        choices=EmailInvitationStatus,
+        default=EmailInvitationStatus.PENDING,
+        db_default=EmailInvitationStatus.PENDING,
+    )
+    invited_by = ref("accounts.User", db_column="invited_by")
+    accepted_by = ref("accounts.User", null=True, db_column="accepted_by")
+    expires_at = models.DateTimeField(
+        db_default=SQLDefault("(now() + '7 days'::interval)", models.DateTimeField())
+    )
+    created_at = created_at()
+    updated_at = updated_at()
+
+    class Meta:
+        db_table = "email_invitations"
+        constraints = [
+            tenant_id_key("email_invitations"),
+            models.CheckConstraint(
+                condition=Q(email__char_length__lte=254), name="email_invitations_email_check"
+            ),
+            one_of("role", Role.values, "email_invitations_role_check"),
+            one_of("status", EmailInvitationStatus.values, "email_invitations_status_check"),
+            models.UniqueConstraint(
+                fields=["tenant", "email"],
+                condition=Q(status="PENDING"),
+                name="email_invitations_pending_uq",
+            ),
+        ]
+
+    def __str__(self) -> str:
+        return f"{self.email} ({self.role}, {self.status})"
 
 
 class AuthSession(models.Model):

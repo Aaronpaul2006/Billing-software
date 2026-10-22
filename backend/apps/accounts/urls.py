@@ -41,6 +41,22 @@ urlpatterns = [
     path("me/email", views.EmailChangeView.as_view(), name="me-email"),
     path("auth/password/change", views.PasswordChangeView.as_view(), name="auth-password-change"),
     path("auth/email/confirm", public(views.EmailConfirmView.as_view()), name="auth-email-confirm"),
+    path("auth/join", public(views.JoinView.as_view()), name="auth-join"),
+    path(
+        "email-invitations",
+        member_views.EmailInvitationListView.as_view(),
+        name="email-invitations",
+    ),
+    path(
+        "email-invitations/<uuid:invitation_id>",
+        member_views.EmailInvitationDetailView.as_view(),
+        name="email-invitation-detail",
+    ),
+    path(
+        "email-invitations/<uuid:invitation_id>/resend",
+        member_views.EmailInvitationResendView.as_view(),
+        name="email-invitation-resend",
+    ),
     path("members", member_views.MemberListView.as_view(), name="members"),
     path("invitations", member_views.InvitationListView.as_view(), name="invitations"),
     path(

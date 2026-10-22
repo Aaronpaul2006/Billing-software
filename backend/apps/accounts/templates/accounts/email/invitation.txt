@@ -1,0 +1,10 @@
+{% autoescape off %}Hello,
+
+{{ inviter }} invited you to join {{ company }} as {{ role }}.
+
+Create your account and join here:
+
+{{ link }}
+
+The link works for {{ days }} days. If you did not expect this invitation, you can ignore this email.
+{% endautoescape %}

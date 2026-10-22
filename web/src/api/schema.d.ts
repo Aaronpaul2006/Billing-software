@@ -102,6 +102,32 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/auth/join": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * @description An invitation by email: what it is (GET), and joining with it (POST):
+         *     the account is created, joins the company with the invited role and is
+         *     signed in.
+         */
+        get: operations["auth_join_retrieve"];
+        put?: never;
+        /**
+         * @description An invitation by email: what it is (GET), and joining with it (POST):
+         *     the account is created, joins the company with the invited role and is
+         *     signed in.
+         */
+        post: operations["auth_join_create"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/auth/login": {
         parameters: {
             query?: never;
@@ -786,6 +812,63 @@ export interface paths {
         put?: never;
         /** @description Live totals while the user types: nothing is saved. */
         post: operations["documents:preview_totals_create"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/email-invitations": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * @description Invitations to people with no account yet: pending ones, and new ones
+         *     (an email with a link to create the account and join, for 7 days).
+         */
+        get: operations["email_invitations_retrieve"];
+        put?: never;
+        /**
+         * @description Invitations to people with no account yet: pending ones, and new ones
+         *     (an email with a link to create the account and join, for 7 days).
+         */
+        post: operations["email_invitations_create"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/email-invitations/{invitation_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        delete: operations["email_invitations_destroy"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/email-invitations/{invitation_id}/resend": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** @description Send the invitation email again; the link works for 7 more days. */
+        post: operations["email_invitations_resend_create"];
         delete?: never;
         options?: never;
         head?: never;
@@ -2099,6 +2182,29 @@ export interface components {
             new_email: string;
             password: string;
         };
+        EmailInvitation: {
+            /** Format: uuid */
+            id: string;
+            /** Format: email */
+            email: string;
+            role: string;
+            status: string;
+            /** Format: uuid */
+            invited_by: string;
+            /** Format: date-time */
+            expires_at: string;
+            /** Format: date-time */
+            created_at: string;
+            readonly expired: boolean;
+        };
+        EmailInvitationList: {
+            results: components["schemas"]["EmailInvitation"][];
+        };
+        EmailInvite: {
+            /** Format: email */
+            email: string;
+            role: components["schemas"]["RoleEnum"];
+        };
         Expense: {
             /** Format: uuid */
             readonly id: string;
@@ -2385,6 +2491,23 @@ export interface components {
             /** Format: email */
             email: string;
             role: components["schemas"]["RoleEnum"];
+        };
+        Join: {
+            /** @default mobile */
+            client?: components["schemas"]["ClientEnum"];
+            device_label?: string;
+            token: string;
+            full_name: string;
+            password: string;
+        };
+        JoinDetails: {
+            /** Format: email */
+            email: string;
+            legal_name: string;
+            role: string;
+            invited_by_name: string;
+            /** Format: date-time */
+            expires_at: string;
         };
         /**
          * @description A line. Description, unit, SAC/HSN, rate and GST rate may be left out
@@ -4438,6 +4561,50 @@ export interface operations {
             };
         };
     };
+    auth_join_retrieve: {
+        parameters: {
+            query: {
+                token: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["JoinDetails"];
+                };
+            };
+        };
+    };
+    auth_join_create: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["Join"];
+            };
+        };
+        responses: {
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Tokens"];
+                };
+            };
+        };
+    };
     auth_login_create: {
         parameters: {
             query?: never;
@@ -5476,6 +5643,89 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["Preview"];
+                };
+            };
+        };
+    };
+    email_invitations_retrieve: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["EmailInvitationList"];
+                };
+            };
+        };
+    };
+    email_invitations_create: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["EmailInvite"];
+            };
+        };
+        responses: {
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["EmailInvitation"];
+                };
+            };
+        };
+    };
+    email_invitations_destroy: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                invitation_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description No response body */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    email_invitations_resend_create: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                invitation_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["EmailInvitation"];
                 };
             };
         };

@@ -114,6 +114,26 @@ CREATE INDEX memberships_user_idx ON memberships (user_id);
 -- Refresh-token sessions. Only a SHA-256 of the opaque token is stored.
 -- Rotation: each refresh issues a new row in the same family; presenting an
 -- already-rotated token revokes the whole family (token theft detection).
+-- Invitations to people with no account yet. The email carries a signed link
+-- (7 days) to create the account and join; an account that exists gets an
+-- INVITED membership instead. Signing up the normal way also finds them
+-- (claim_email_invitations(), section 8).
+CREATE TABLE email_invitations (
+  id           uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+  tenant_id    uuid NOT NULL REFERENCES tenants (id),
+  email        citext NOT NULL CHECK (char_length(email) <= 254),
+  role         text NOT NULL CHECK (role IN ('OWNER', 'ADMIN', 'ACCOUNTANT', 'SITE_ENGINEER', 'VIEWER')),
+  status       text NOT NULL DEFAULT 'PENDING' CHECK (status IN ('PENDING', 'ACCEPTED', 'REVOKED')),
+  invited_by   uuid NOT NULL REFERENCES users (id),
+  accepted_by  uuid REFERENCES users (id),
+  expires_at   timestamptz NOT NULL DEFAULT now() + interval '7 days',
+  created_at   timestamptz NOT NULL DEFAULT now(),
+  updated_at   timestamptz NOT NULL DEFAULT now(),
+  UNIQUE (tenant_id, id),
+  CHECK ((status = 'ACCEPTED') = (accepted_by IS NOT NULL))
+);
+CREATE UNIQUE INDEX email_invitations_pending_uq ON email_invitations (tenant_id, email) WHERE status = 'PENDING';
+
 CREATE TABLE auth_sessions (
   id                  uuid PRIMARY KEY DEFAULT gen_random_uuid(),
   user_id             uuid NOT NULL REFERENCES users (id),
@@ -912,7 +932,8 @@ BEGIN
   FOREACH t IN ARRAY ARRAY[
     'tenants', 'memberships', 'gst_registrations', 'parties', 'projects', 'boq_items',
     'catalog_items', 'attachments', 'document_series', 'documents', 'document_lines',
-    'payments', 'allocations', 'expenses', 'retention_releases', 'tds_certificates', 'exports']
+    'payments', 'allocations', 'expenses', 'retention_releases', 'tds_certificates', 'exports',
+    'email_invitations']
   LOOP
     EXECUTE format(
       'CREATE TRIGGER audit AFTER INSERT OR UPDATE OR DELETE ON %I FOR EACH ROW EXECUTE FUNCTION audit_row_change()', t);
@@ -931,7 +952,7 @@ BEGIN
   FOREACH t IN ARRAY ARRAY[
     'gst_registrations', 'parties', 'projects', 'boq_items', 'catalog_items', 'attachments',
     'document_series', 'documents', 'document_lines', 'payments', 'allocations', 'expenses',
-    'retention_releases', 'tds_certificates', 'idempotency_keys', 'exports']
+    'retention_releases', 'tds_certificates', 'idempotency_keys', 'exports', 'email_invitations']
   LOOP
     EXECUTE format('ALTER TABLE %I ENABLE ROW LEVEL SECURITY', t);
     EXECUTE format('ALTER TABLE %I FORCE ROW LEVEL SECURITY', t);
@@ -994,6 +1015,42 @@ END $$;
 ALTER TABLE audit_log ENABLE ROW LEVEL SECURITY;
 CREATE POLICY audit_tenant_read ON audit_log FOR SELECT
   USING (tenant_id = app_current_tenant());
+
+-- Someone invited by email signed up the normal way: their pending email
+-- invitations, in any tenant, become INVITED memberships (shown in their
+-- invitations banner). Runs as the owner, who alone sees invitations across
+-- tenants (policy below), and only for the user's own address.
+CREATE POLICY claim_by_email ON email_invitations
+  USING (current_user = (SELECT pg_get_userbyid(relowner) FROM pg_class
+                          WHERE oid = 'email_invitations'::regclass));
+
+CREATE FUNCTION claim_email_invitations(p_user_id uuid) RETURNS integer
+LANGUAGE plpgsql SECURITY DEFINER SET search_path = public, pg_temp AS $$
+DECLARE
+  r       record;
+  n       integer := 0;
+  address citext;
+  prev    text := current_setting('app.tenant_id', true);
+BEGIN
+  SELECT email INTO address FROM users WHERE id = p_user_id;
+  FOR r IN SELECT id, tenant_id, role, invited_by FROM email_invitations
+            WHERE email = address AND status = 'PENDING' AND expires_at > now()
+            FOR UPDATE
+  LOOP
+    PERFORM set_config('app.tenant_id', r.tenant_id::text, true);
+    INSERT INTO memberships (tenant_id, user_id, role, status, invited_by)
+      VALUES (r.tenant_id, p_user_id, r.role, 'INVITED', r.invited_by)
+      ON CONFLICT (tenant_id, user_id) DO NOTHING;
+    UPDATE email_invitations SET status = 'ACCEPTED', accepted_by = p_user_id, updated_at = now()
+     WHERE id = r.id;
+    n := n + 1;
+  END LOOP;
+  PERFORM set_config('app.tenant_id', coalesce(prev, ''), true);
+  RETURN n;
+END $$;
+
+REVOKE ALL ON FUNCTION claim_email_invitations(uuid) FROM PUBLIC;
+GRANT EXECUTE ON FUNCTION claim_email_invitations(uuid) TO billing_app;
 
 -- users and auth_sessions have no tenant; the app only ever reads them by
 -- primary key, email or token hash, and never lists them across tenants.

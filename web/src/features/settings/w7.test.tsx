@@ -139,7 +139,7 @@ describe("members", () => {
     const form = screen.getByRole("form", { name: "Invite member" });
     await user.type(within(form).getByLabelText("Email"), "new@x.in");
     await user.click(within(form).getByRole("button", { name: "Invite" }));
-    expect(await screen.findByText(/Ask them to sign up/)).toBeInTheDocument();
+    expect(await screen.findByText(/No account uses new@x.in yet/)).toBeInTheDocument();
 
     await user.selectOptions(screen.getByLabelText("Role of Ravi"), "VIEWER");
     await waitFor(() => {

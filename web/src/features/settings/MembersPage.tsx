@@ -1,5 +1,5 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { AlertCircle } from "lucide-react";
+import { AlertCircle, CheckCircle2, MailPlus } from "lucide-react";
 import { useState } from "react";
 
 import { api, unwrap } from "@/api/client";
@@ -41,7 +41,7 @@ function problemText(e: unknown): string {
     const codes = [e.code, ...(e.problem.errors ?? []).map((x) => x.code)];
     switch (codes.find((c) => c === "no_account" || c === "last_owner") ?? e.code) {
       case "no_account":
-        return "There is no account with this email yet. Ask them to sign up, then invite them again.";
+        return "There is no account with this email yet.";
       case "last_owner":
         return "The company must keep at least one owner.";
       default:
@@ -51,12 +51,113 @@ function problemText(e: unknown): string {
   return errorMessage(e);
 }
 
+function isNoAccount(e: unknown): boolean {
+  return e instanceof ApiError && (e.problem.errors ?? []).some((x) => x.code === "no_account");
+}
+
+function WaitingToJoin({ notify }: { notify: (n: Notice) => void }) {
+  const queryClient = useQueryClient();
+  const pending = useQuery({
+    queryKey: ["email-invitations"],
+    queryFn: async () => unwrap(await api.GET("/api/v1/email-invitations")).results,
+  });
+  const refresh = () => {
+    void queryClient.invalidateQueries({ queryKey: ["email-invitations"] });
+  };
+  const resend = useMutation({
+    mutationFn: async (id: string) =>
+      unwrap(
+        await api.POST("/api/v1/email-invitations/{invitation_id}/resend", {
+          params: { path: { invitation_id: id } },
+        }),
+      ),
+    onSuccess: (sent) => {
+      notify({ ok: true, text: `Invitation sent again to ${sent.email}.` });
+      refresh();
+    },
+    onError: (e) => {
+      notify({ ok: false, text: problemText(e) });
+    },
+  });
+  const withdraw = useMutation({
+    mutationFn: async (id: string) => {
+      unwrap(
+        await api.DELETE("/api/v1/email-invitations/{invitation_id}", {
+          params: { path: { invitation_id: id } },
+        }),
+      );
+    },
+    onSuccess: refresh,
+    onError: (e) => {
+      notify({ ok: false, text: problemText(e) });
+    },
+  });
+  if (!pending.data?.length) return null;
+  return (
+    <section aria-label="Waiting to join" className="mt-8 max-w-3xl">
+      <h2 className="mb-2 font-medium">Waiting to join</h2>
+      <p className="text-muted-foreground mb-2 text-sm">
+        Invited by email: they join when they create their account from the link (7 days).
+      </p>
+      <Table>
+        <TableBody>
+          {pending.data.map((x) => (
+            <TableRow key={x.id}>
+              <TableCell>
+                {x.email}
+                <div className="text-muted-foreground text-xs">
+                  sent {new Date(x.created_at).toLocaleDateString("en-IN")}
+                </div>
+              </TableCell>
+              <TableCell>
+                {ROLE_LABELS[x.role as Role].label}
+                {x.expired && (
+                  <Badge variant="secondary" className="ml-2">
+                    Link expired
+                  </Badge>
+                )}
+              </TableCell>
+              <TableCell className="text-right">
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  disabled={resend.isPending}
+                  aria-label={`Send again to ${x.email}`}
+                  onClick={() => {
+                    resend.mutate(x.id);
+                  }}
+                >
+                  Send again
+                </Button>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  disabled={withdraw.isPending}
+                  aria-label={`Withdraw the invitation to ${x.email}`}
+                  onClick={() => {
+                    withdraw.mutate(x.id);
+                  }}
+                >
+                  Withdraw
+                </Button>
+              </TableCell>
+            </TableRow>
+          ))}
+        </TableBody>
+      </Table>
+    </section>
+  );
+}
+
+type Notice = { ok: boolean; text: string } | null;
+
 export function MembersPage() {
   const session = useSession();
   const queryClient = useQueryClient();
   const [email, setEmail] = useState("");
   const [role, setRole] = useState<Role>("ACCOUNTANT");
-  const [notice, setNotice] = useState<string | null>(null);
+  const [notice, setNotice] = useState<Notice>(null);
+  const [noAccount, setNoAccount] = useState<{ email: string; role: Role } | null>(null);
   const members = useQuery({
     queryKey: ["members"],
     queryFn: async () => unwrap(await api.GET("/api/v1/members")).results,
@@ -65,7 +166,7 @@ export function MembersPage() {
     void queryClient.invalidateQueries({ queryKey: ["members"] });
   };
   const onError = (e: Error) => {
-    setNotice(problemText(e));
+    setNotice({ ok: false, text: problemText(e) });
   };
   const invite = useMutation({
     mutationFn: async () =>
@@ -74,6 +175,26 @@ export function MembersPage() {
       setEmail("");
       setNotice(null);
       refresh();
+    },
+    onError: (e) => {
+      if (isNoAccount(e)) {
+        setNoAccount({ email: email.trim(), role });
+        return;
+      }
+      onError(e);
+    },
+  });
+  const inviteByEmail = useMutation({
+    mutationFn: async (target: { email: string; role: Role }) =>
+      unwrap(await api.POST("/api/v1/email-invitations", { body: target })),
+    onSuccess: (sent) => {
+      setNoAccount(null);
+      setEmail("");
+      setNotice({
+        ok: true,
+        text: `Invitation sent to ${sent.email}. They join when they create their account from the link.`,
+      });
+      void queryClient.invalidateQueries({ queryKey: ["email-invitations"] });
     },
     onError,
   });
@@ -115,10 +236,15 @@ export function MembersPage() {
         onSubmit={(e) => {
           e.preventDefault();
           setNotice(null);
+          setNoAccount(null);
           invite.mutate();
         }}
       >
-        <Field id="invite-email" label="Email" hint="They need an account already.">
+        <Field
+          id="invite-email"
+          label="Email"
+          hint="People without an account yet can be invited by email."
+        >
           <Input
             id="invite-email"
             type="email"
@@ -149,10 +275,32 @@ export function MembersPage() {
           </Button>
         </div>
       </form>
+      {noAccount && (
+        <Alert className="mb-4 max-w-3xl">
+          <MailPlus aria-hidden />
+          <AlertDescription className="grid gap-2">
+            <span>
+              No account uses {noAccount.email} yet. Send an invitation by email: they create their
+              account from the link and join as {ROLE_LABELS[noAccount.role].label.toLowerCase()}.
+            </span>
+            <span>
+              <Button
+                size="sm"
+                disabled={inviteByEmail.isPending}
+                onClick={() => {
+                  inviteByEmail.mutate(noAccount);
+                }}
+              >
+                Invite by email
+              </Button>
+            </span>
+          </AlertDescription>
+        </Alert>
+      )}
       {notice && (
-        <Alert variant="destructive" className="mb-4">
-          <AlertCircle aria-hidden />
-          <AlertDescription>{notice}</AlertDescription>
+        <Alert variant={notice.ok ? "default" : "destructive"} className="mb-4 max-w-3xl">
+          {notice.ok ? <CheckCircle2 aria-hidden /> : <AlertCircle aria-hidden />}
+          <AlertDescription>{notice.text}</AlertDescription>
         </Alert>
       )}
       {members.error ? (
@@ -232,6 +380,7 @@ export function MembersPage() {
           </TableBody>
         </Table>
       )}
+      <WaitingToJoin notify={setNotice} />
     </>
   );
 }

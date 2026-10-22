@@ -172,6 +172,72 @@
                 }
             }
         },
+        "/api/v1/auth/join": {
+            "get": {
+                "operationId": "auth_join_retrieve",
+                "description": "An invitation by email: what it is (GET), and joining with it (POST):\nthe account is created, joins the company with the invited role and is\nsigned in.",
+                "parameters": [
+                    {
+                        "in": "query",
+                        "name": "token",
+                        "schema": {
+                            "type": "string"
+                        },
+                        "required": true
+                    }
+                ],
+                "tags": [
+                    "auth"
+                ],
+                "security": [
+                    {}
+                ],
+                "responses": {
+                    "200": {
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/JoinDetails"
+                                }
+                            }
+                        },
+                        "description": ""
+                    }
+                }
+            },
+            "post": {
+                "operationId": "auth_join_create",
+                "description": "An invitation by email: what it is (GET), and joining with it (POST):\nthe account is created, joins the company with the invited role and is\nsigned in.",
+                "tags": [
+                    "auth"
+                ],
+                "requestBody": {
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/Join"
+                            }
+                        }
+                    },
+                    "required": true
+                },
+                "security": [
+                    {}
+                ],
+                "responses": {
+                    "201": {
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/Tokens"
+                                }
+                            }
+                        },
+                        "description": ""
+                    }
+                }
+            }
+        },
         "/api/v1/auth/login": {
             "post": {
                 "operationId": "auth_login_create",
@@ -1952,6 +2018,132 @@
                             "application/json": {
                                 "schema": {
                                     "$ref": "#/components/schemas/Preview"
+                                }
+                            }
+                        },
+                        "description": ""
+                    }
+                }
+            }
+        },
+        "/api/v1/email-invitations": {
+            "get": {
+                "operationId": "email_invitations_retrieve",
+                "description": "Invitations to people with no account yet: pending ones, and new ones\n(an email with a link to create the account and join, for 7 days).",
+                "tags": [
+                    "members"
+                ],
+                "security": [
+                    {
+                        "bearerAuth": []
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/EmailInvitationList"
+                                }
+                            }
+                        },
+                        "description": ""
+                    }
+                }
+            },
+            "post": {
+                "operationId": "email_invitations_create",
+                "description": "Invitations to people with no account yet: pending ones, and new ones\n(an email with a link to create the account and join, for 7 days).",
+                "tags": [
+                    "members"
+                ],
+                "requestBody": {
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/EmailInvite"
+                            }
+                        }
+                    },
+                    "required": true
+                },
+                "security": [
+                    {
+                        "bearerAuth": []
+                    }
+                ],
+                "responses": {
+                    "201": {
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/EmailInvitation"
+                                }
+                            }
+                        },
+                        "description": ""
+                    }
+                }
+            }
+        },
+        "/api/v1/email-invitations/{invitation_id}": {
+            "delete": {
+                "operationId": "email_invitations_destroy",
+                "parameters": [
+                    {
+                        "in": "path",
+                        "name": "invitation_id",
+                        "schema": {
+                            "type": "string",
+                            "format": "uuid"
+                        },
+                        "required": true
+                    }
+                ],
+                "tags": [
+                    "members"
+                ],
+                "security": [
+                    {
+                        "bearerAuth": []
+                    }
+                ],
+                "responses": {
+                    "204": {
+                        "description": "No response body"
+                    }
+                }
+            }
+        },
+        "/api/v1/email-invitations/{invitation_id}/resend": {
+            "post": {
+                "operationId": "email_invitations_resend_create",
+                "description": "Send the invitation email again; the link works for 7 more days.",
+                "parameters": [
+                    {
+                        "in": "path",
+                        "name": "invitation_id",
+                        "schema": {
+                            "type": "string",
+                            "format": "uuid"
+                        },
+                        "required": true
+                    }
+                ],
+                "tags": [
+                    "members"
+                ],
+                "security": [
+                    {
+                        "bearerAuth": []
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/EmailInvitation"
                                 }
                             }
                         },
@@ -6060,6 +6252,82 @@
                     "password"
                 ]
             },
+            "EmailInvitation": {
+                "type": "object",
+                "properties": {
+                    "id": {
+                        "type": "string",
+                        "format": "uuid"
+                    },
+                    "email": {
+                        "type": "string",
+                        "format": "email"
+                    },
+                    "role": {
+                        "type": "string"
+                    },
+                    "status": {
+                        "type": "string"
+                    },
+                    "invited_by": {
+                        "type": "string",
+                        "format": "uuid"
+                    },
+                    "expires_at": {
+                        "type": "string",
+                        "format": "date-time"
+                    },
+                    "created_at": {
+                        "type": "string",
+                        "format": "date-time"
+                    },
+                    "expired": {
+                        "type": "boolean",
+                        "readOnly": true
+                    }
+                },
+                "required": [
+                    "created_at",
+                    "email",
+                    "expired",
+                    "expires_at",
+                    "id",
+                    "invited_by",
+                    "role",
+                    "status"
+                ]
+            },
+            "EmailInvitationList": {
+                "type": "object",
+                "properties": {
+                    "results": {
+                        "type": "array",
+                        "items": {
+                            "$ref": "#/components/schemas/EmailInvitation"
+                        }
+                    }
+                },
+                "required": [
+                    "results"
+                ]
+            },
+            "EmailInvite": {
+                "type": "object",
+                "properties": {
+                    "email": {
+                        "type": "string",
+                        "format": "email",
+                        "maxLength": 254
+                    },
+                    "role": {
+                        "$ref": "#/components/schemas/RoleEnum"
+                    }
+                },
+                "required": [
+                    "email",
+                    "role"
+                ]
+            },
             "Expense": {
                 "type": "object",
                 "properties": {
@@ -6874,6 +7142,71 @@
                 },
                 "required": [
                     "email",
+                    "role"
+                ]
+            },
+            "Join": {
+                "type": "object",
+                "properties": {
+                    "client": {
+                        "allOf": [
+                            {
+                                "$ref": "#/components/schemas/ClientEnum"
+                            }
+                        ],
+                        "default": "mobile"
+                    },
+                    "device_label": {
+                        "type": "string",
+                        "maxLength": 100
+                    },
+                    "token": {
+                        "type": "string",
+                        "maxLength": 500
+                    },
+                    "full_name": {
+                        "type": "string",
+                        "maxLength": 200,
+                        "minLength": 1
+                    },
+                    "password": {
+                        "type": "string",
+                        "writeOnly": true,
+                        "maxLength": 128
+                    }
+                },
+                "required": [
+                    "full_name",
+                    "password",
+                    "token"
+                ]
+            },
+            "JoinDetails": {
+                "type": "object",
+                "properties": {
+                    "email": {
+                        "type": "string",
+                        "format": "email"
+                    },
+                    "legal_name": {
+                        "type": "string"
+                    },
+                    "role": {
+                        "type": "string"
+                    },
+                    "invited_by_name": {
+                        "type": "string"
+                    },
+                    "expires_at": {
+                        "type": "string",
+                        "format": "date-time"
+                    }
+                },
+                "required": [
+                    "email",
+                    "expires_at",
+                    "invited_by_name",
+                    "legal_name",
                     "role"
                 ]
             },

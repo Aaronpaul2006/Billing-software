@@ -123,6 +123,7 @@ RATE_LIMITS: dict[str, tuple[int, int]] = {
     "export_user": (20, 3600),
     "password_change_user": (5, 3600),
     "email_change_user": (3, 3600),
+    "invite_user": (30, 3600),
 }
 RATE_LIMIT_PREFIX = "rl:"
 RATE_LIMIT_ENABLED: bool = env.bool("RATE_LIMIT_ENABLED", default=True)
@@ -163,6 +164,7 @@ APP_BASE_URL: str = env("APP_BASE_URL", default="http://localhost:5173")
 VERIFY_EMAIL_MAX_AGE = 7 * 24 * 3600  # seconds
 PASSWORD_RESET_MAX_AGE = 3600
 EMAIL_CHANGE_MAX_AGE = 24 * 3600
+EMAIL_INVITATION_MAX_AGE = 7 * 24 * 3600
 
 # --- Object storage (S3 API) -------------------------------------------------------
 S3_ENDPOINT_URL: str | None = env("S3_ENDPOINT_URL", default=None)  # None: AWS S3

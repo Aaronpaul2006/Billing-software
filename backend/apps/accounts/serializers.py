@@ -1,6 +1,7 @@
 import re
 from typing import Any
 
+from django.utils import timezone
 from rest_framework import serializers
 
 from .models import Role
@@ -209,3 +210,43 @@ class InvitationSerializer(serializers.Serializer[Any]):
 
 class InvitationListSerializer(serializers.Serializer[Any]):
     results = InvitationSerializer(many=True)
+
+
+# --- invitations by email (K.2) -------------------------------------------------------
+
+
+class EmailInviteSerializer(serializers.Serializer[Any]):
+    email = serializers.EmailField(max_length=254)
+    role = serializers.ChoiceField(choices=Role.values)
+
+
+class EmailInvitationSerializer(serializers.Serializer[Any]):
+    id = serializers.UUIDField()
+    email = serializers.EmailField()
+    role = serializers.CharField()
+    status = serializers.CharField()
+    invited_by = serializers.UUIDField(source="invited_by_id")
+    expires_at = serializers.DateTimeField()
+    created_at = serializers.DateTimeField()
+    expired = serializers.SerializerMethodField()
+
+    def get_expired(self, obj: Any) -> bool:
+        return bool(obj.expires_at <= timezone.now())
+
+
+class EmailInvitationListSerializer(serializers.Serializer[Any]):
+    results = EmailInvitationSerializer(many=True)
+
+
+class JoinDetailsSerializer(serializers.Serializer[Any]):
+    email = serializers.EmailField()
+    legal_name = serializers.CharField()
+    role = serializers.CharField()
+    invited_by_name = serializers.CharField()
+    expires_at = serializers.DateTimeField()
+
+
+class JoinSerializer(_ClientFields):
+    token = serializers.CharField(max_length=500)
+    full_name = serializers.CharField(min_length=1, max_length=200)
+    password = serializers.CharField(max_length=128, write_only=True, trim_whitespace=False)

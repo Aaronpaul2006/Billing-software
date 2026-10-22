@@ -43,6 +43,13 @@ export const routes: RouteObject[] = [
     ),
   },
   {
+    path: "/join",
+    lazy: lazyPage(
+      () => import("@/pages/JoinPage"),
+      (m) => m.JoinPage,
+    ),
+  },
+  {
     path: "/confirm-email",
     lazy: lazyPage(
       () => import("@/pages/ConfirmEmailPage"),
