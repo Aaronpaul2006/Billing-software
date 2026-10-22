@@ -26,6 +26,15 @@ import { compareMoney, formatInr, formatQty, toPaise } from "@/lib/money";
 import { cn } from "@/lib/utils";
 
 type TdsStatus = components["schemas"]["TdsRowStatusEnum"];
+type Supply = components["schemas"]["GstRow"]["supply"];
+
+const SUPPLY_LABELS: Record<Supply, string> = {
+  B2B: "B2B",
+  B2C: "B2C",
+  B2B_REVERSE_CHARGE: "B2B, reverse charge (client pays the GST)",
+  SEZ: "SEZ",
+  EXPORT: "Export",
+};
 
 const TABS = [
   { key: "gst", label: "GST summary" },
@@ -93,7 +102,7 @@ function GstSummary() {
           <TableBody>
             {report.data.results.map((r) => (
               <TableRow key={`${r.supply}-${r.gst_rate}`}>
-                <TableCell>{r.supply}</TableCell>
+                <TableCell>{SUPPLY_LABELS[r.supply]}</TableCell>
                 <TableCell className="text-right">{formatQty(r.gst_rate)} %</TableCell>
                 <TableCell className="text-right">{r.document_count}</TableCell>
                 <Money value={r.taxable_value} />

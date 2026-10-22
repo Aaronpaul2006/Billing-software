@@ -26,7 +26,7 @@ import {
 } from "@/components/ui/table";
 import { isoDate } from "@/features/dashboard/periods";
 import { ifMatch } from "@/lib/forms";
-import { STATES } from "@/lib/india";
+import { placeName } from "@/lib/india";
 import { errorMessage } from "@/lib/errors";
 import { formatInr, formatQty } from "@/lib/money";
 import { DocumentSettlement } from "@/features/payments/DocumentSettlement";
@@ -38,6 +38,7 @@ import {
   RECEIVABLE_TYPES,
   STATUS_LABELS,
   statusVariant,
+  supplyNote,
   useDocument,
 } from "./api";
 import type { DocType, Document } from "./api";
@@ -529,6 +530,10 @@ export function DocumentPage() {
           <span className="flex items-center gap-2">
             <Badge variant={statusVariant(doc.status)}>{STATUS_LABELS[doc.status]}</Badge>
             {doc.is_gst_document ? "GST book" : "Non-GST book"}
+            {doc.supply_category === "SEZ" && <Badge variant="outline">SEZ</Badge>}
+            {doc.supply_category === "EXPORT" && <Badge variant="outline">Export</Badge>}
+            {doc.lut && <Badge variant="outline">Under LUT</Badge>}
+            {doc.reverse_charge && <Badge variant="outline">Reverse charge</Badge>}
           </span>
         }
       />
@@ -552,7 +557,7 @@ export function DocumentPage() {
                 )}
               </Info>
               <Info label="Place of supply">
-                {STATES[doc.place_of_supply] ?? doc.place_of_supply} (
+                {placeName(doc.place_of_supply)} (
                 {doc.supply_type === "INTRA_STATE" ? "CGST + SGST" : "IGST"})
               </Info>
               <Info label="Date">{formatDate(doc.doc_date)}</Info>
@@ -570,6 +575,7 @@ export function DocumentPage() {
         <Lines doc={doc} />
         <div className="flex flex-wrap justify-between gap-6">
           <div className="text-muted-foreground max-w-prose space-y-2 text-sm whitespace-pre-line">
+            {supplyNote(doc) && <p className="text-foreground font-medium">{supplyNote(doc)}</p>}
             {doc.notes && <p>{doc.notes}</p>}
             {doc.terms && <p>{doc.terms}</p>}
           </div>
@@ -577,6 +583,7 @@ export function DocumentPage() {
             totals={doc.totals}
             intraState={doc.supply_type === "INTRA_STATE"}
             showSettlement={receivable}
+            reverseCharge={doc.reverse_charge}
           />
         </div>
         {(receivable || (doc.doc_type === "CREDIT_NOTE" && doc.status === "ISSUED")) && (

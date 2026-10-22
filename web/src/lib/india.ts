@@ -50,3 +50,8 @@ export const STATE_OPTIONS: readonly { code: string; name: string }[] = Object.e
   });
 
 export const GSTIN_PATTERN = /^[0-9]{2}[A-Z]{5}[0-9]{4}[A-Z][1-9A-Z]Z[0-9A-Z]$/;
+
+/** Place of supply 96 is not a state: exports (outside India). */
+export function placeName(code: string): string {
+  return code === "96" ? "Outside India" : (STATES[code] ?? code);
+}

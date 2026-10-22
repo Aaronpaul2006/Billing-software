@@ -25,6 +25,7 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
+import { fyStartYear } from "@/features/dashboard/periods";
 import { applyServerErrors, blankToNull, ifMatch } from "@/lib/forms";
 import { GSTIN_PATTERN, STATE_OPTIONS, STATES } from "@/lib/india";
 
@@ -242,6 +243,11 @@ function AddRegistration({ first, onDone }: { first: boolean; onDone: () => void
 type Registration = components["schemas"]["GstRegistration"];
 
 /** GSTIN, type and state are fixed (register again to change them); the rest may change. */
+/** 2026 → "2026-27". */
+function fyLabel(startYear: number): string {
+  return `${String(startYear)}-${String((startYear + 1) % 100).padStart(2, "0")}`;
+}
+
 function EditRegistration({
   registration,
   onDone,
@@ -258,7 +264,13 @@ function EditRegistration({
   const [pincode, setPincode] = useState(a.pincode ?? "");
   const [isDefault, setIsDefault] = useState(registration.is_default);
   const [isActive, setIsActive] = useState(registration.is_active);
+  const [lutArn, setLutArn] = useState(registration.lut_arn ?? "");
+  const [lutFy, setLutFy] = useState(
+    registration.lut_fy_start_year === null ? "" : String(registration.lut_fy_start_year),
+  );
   const [error, setError] = useState<string | null>(null);
+  const regular = registration.registration_type === "REGULAR";
+  const thisFy = fyStartYear(new Date());
   const save = useMutation({
     mutationFn: async () =>
       unwrap(
@@ -275,6 +287,12 @@ function EditRegistration({
             },
             is_default: isDefault,
             is_active: isActive,
+            ...(regular
+              ? {
+                  lut_arn: blankToNull(lutArn.replace(/\s/g, "").toUpperCase()),
+                  lut_fy_start_year: lutArn.trim() && lutFy ? Number(lutFy) : null,
+                }
+              : {}),
           },
           headers: { "If-Match": ifMatch(registration.version) },
         }),
@@ -339,6 +357,41 @@ function EditRegistration({
           Active
         </label>
       </div>
+      {regular && (
+        <>
+          <Field
+            id={`reg-${registration.id}-lut`}
+            label="LUT ARN"
+            hint="Letter of Undertaking (RFD-11): SEZ and export supplies without IGST."
+          >
+            <Input
+              id={`reg-${registration.id}-lut`}
+              className="font-mono uppercase"
+              maxLength={20}
+              value={lutArn}
+              onChange={(e) => {
+                setLutArn(e.target.value);
+              }}
+            />
+          </Field>
+          <Field id={`reg-${registration.id}-lut-fy`} label="LUT for financial year">
+            <NativeSelect
+              id={`reg-${registration.id}-lut-fy`}
+              value={lutFy}
+              onChange={(e) => {
+                setLutFy(e.target.value);
+              }}
+            >
+              <option value="">–</option>
+              {[thisFy - 1, thisFy, thisFy + 1].map((y) => (
+                <option key={y} value={String(y)}>
+                  {fyLabel(y)}
+                </option>
+              ))}
+            </NativeSelect>
+          </Field>
+        </>
+      )}
       {error && <p className="text-destructive text-sm sm:col-span-3">{error}</p>}
       <div className="flex gap-2 sm:col-span-3">
         <Button type="submit" size="sm" disabled={save.isPending}>
@@ -439,6 +492,9 @@ export function GstRegistrationsPage() {
                   <TableCell className="flex gap-1">
                     {r.is_default && <Badge>Default</Badge>}
                     {!r.is_active && <Badge variant="secondary">Inactive</Badge>}
+                    {r.lut_fy_start_year !== null && (
+                      <Badge variant="outline">LUT {fyLabel(r.lut_fy_start_year)}</Badge>
+                    )}
                   </TableCell>
                   <TableCell className="text-right">
                     <Button

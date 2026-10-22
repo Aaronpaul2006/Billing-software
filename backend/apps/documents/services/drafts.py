@@ -145,6 +145,12 @@ def _lut(data: dict[str, Any], resolved: Resolved) -> bool:
 def _reverse_charge(data: dict[str, Any], resolved: Resolved) -> bool:
     if not data.get("reverse_charge"):
         return False
+    if data["doc_type"] not in GST_DOC_TYPES:
+        raise Invalid(
+            "reverse_charge",
+            "Only tax invoices and their notes can be under reverse charge.",
+            code="reverse_charge_not_allowed",
+        )
     if not resolved.party.gstin or resolved.supply_category != "REGULAR":
         raise Invalid(
             "reverse_charge",

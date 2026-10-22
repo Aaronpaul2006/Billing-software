@@ -21,11 +21,11 @@ import { NativeSelect } from "@/components/ui/native-select";
 import { Skeleton } from "@/components/ui/skeleton";
 import { isoDate } from "@/features/dashboard/periods";
 import { applyServerErrors, blankToNull, formPath, ifMatch } from "@/lib/forms";
-import { STATES } from "@/lib/india";
+import { placeName } from "@/lib/india";
 import { cleanMoneyInput, formatInr, formatQty } from "@/lib/money";
 import { useDebounced } from "@/lib/useDebounced";
 
-import { DOC_TYPE_LABELS, documentKey, DRAFTABLE, useDocument } from "./api";
+import { DOC_TYPE_LABELS, documentKey, DRAFTABLE, supplyNote, useDocument } from "./api";
 import type { Document, DraftableType } from "./api";
 import { TotalsPanel } from "./TotalsPanel";
 
@@ -54,6 +54,9 @@ interface FormValues {
   valid_until: string;
   is_ra_bill: boolean;
   round_to_rupee: boolean;
+  reverse_charge: boolean;
+  /** SEZ / export: "yes" under the LUT, "no" charge IGST, "" the server's default. */
+  lut: "" | "yes" | "no";
   notes: string;
   terms: string;
   lines: LineForm[];
@@ -84,6 +87,8 @@ function toForm(doc: Document | undefined, type: DraftableType): FormValues {
       valid_until: "",
       is_ra_bill: false,
       round_to_rupee: false,
+      reverse_charge: false,
+      lut: "",
       notes: "",
       terms: "",
       lines: [{ ...EMPTY_LINE }],
@@ -98,6 +103,8 @@ function toForm(doc: Document | undefined, type: DraftableType): FormValues {
     valid_until: doc.valid_until ?? "",
     is_ra_bill: doc.is_ra_bill,
     round_to_rupee: doc.round_to_rupee,
+    reverse_charge: doc.reverse_charge,
+    lut: doc.supply_category === "REGULAR" ? "" : doc.lut ? "yes" : "no",
     notes: doc.notes ?? "",
     terms: doc.terms ?? "",
     lines: doc.lines.map((l) => ({
@@ -146,6 +153,8 @@ function toApi(v: FormValues): DocumentWrite {
     valid_until: quotation ? blankToNull(v.valid_until) : null,
     is_ra_bill: v.project_id !== "" && RA_TYPES.has(v.doc_type) && v.is_ra_bill,
     round_to_rupee: v.round_to_rupee,
+    reverse_charge: v.doc_type === "TAX_INVOICE" && v.reverse_charge,
+    lut: v.lut === "" ? null : v.lut === "yes",
     notes: blankToNull(v.notes),
     terms: blankToNull(v.terms),
     lines: v.lines.filter((l) => l.quantity.trim() !== "" || l.item !== "").map(apiLine),
@@ -333,6 +342,8 @@ function Editor({ doc }: { doc?: Document }) {
           "due_date",
           "valid_until",
           "is_ra_bill",
+          "reverse_charge",
+          "lut",
           "notes",
           "terms",
           "lines.*",
@@ -477,7 +488,31 @@ function Editor({ doc }: { doc?: Document }) {
                 <input type="checkbox" {...register("round_to_rupee")} /> Round the total to the
                 rupee
               </label>
+              {values.doc_type === "TAX_INVOICE" && (
+                <label className="flex items-center gap-2">
+                  <input type="checkbox" {...register("reverse_charge")} /> Reverse charge (the
+                  client pays the GST)
+                </label>
+              )}
             </div>
+            {!isNote && preview.data && preview.data.supply_category !== "REGULAR" && (
+              <Field
+                id="lut"
+                label={preview.data.supply_category === "SEZ" ? "Supply to an SEZ unit" : "Export"}
+                hint="Zero-rated: without IGST under your Letter of Undertaking, or with IGST."
+              >
+                <NativeSelect
+                  id="lut"
+                  value={values.lut || (preview.data.lut ? "yes" : "no")}
+                  onChange={(e) => {
+                    setValue("lut", e.target.value as "yes" | "no", { shouldDirty: true });
+                  }}
+                >
+                  <option value="yes">Under the LUT, no IGST</option>
+                  <option value="no">Charge IGST</option>
+                </NativeSelect>
+              </Field>
+            )}
           </CardContent>
         </Card>
 
@@ -647,13 +682,16 @@ function Editor({ doc }: { doc?: Document }) {
             {preview.data ? (
               <>
                 <p className="text-muted-foreground text-xs">
-                  Place of supply{" "}
-                  {STATES[preview.data.place_of_supply] ?? preview.data.place_of_supply}
+                  Place of supply {placeName(preview.data.place_of_supply)}
                   {preview.isFetching ? " · updating…" : ""}
                 </p>
+                {supplyNote(preview.data) && (
+                  <p className="max-w-72 text-sm font-medium">{supplyNote(preview.data)}</p>
+                )}
                 <TotalsPanel
                   totals={preview.data.totals}
                   intraState={preview.data.supply_type === "INTRA_STATE"}
+                  reverseCharge={preview.data.reverse_charge}
                 />
               </>
             ) : (

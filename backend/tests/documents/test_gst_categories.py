@@ -189,6 +189,9 @@ def test_reverse_charge(g: Gst) -> None:
     for party in (g.consumer, g.sez):  # unregistered client; SEZ supply
         refused = g.create(party_id=str(party.pk), project_id=None, reverse_charge=True)
         assert problem(refused) == (422, "reverse_charge_not_allowed")
+    for doc_type in ("QUOTATION", "PROFORMA", "BILL_OF_SUPPLY"):  # not tax invoices
+        refused = g.create(doc_type=doc_type, reverse_charge=True)
+        assert problem(refused) == (422, "reverse_charge_not_allowed"), doc_type
 
 
 def test_a_credit_note_follows_its_invoice(g: Gst) -> None:

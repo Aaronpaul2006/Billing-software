@@ -79,3 +79,20 @@ export function documentTitle(
   const ra = d.is_ra_bill && d.ra_sequence ? ` · RA bill ${String(d.ra_sequence)}` : "";
   return `${type} ${d.doc_number ?? "(draft)"}${ra}`;
 }
+
+export type SupplyCategory = Document["supply_category"];
+
+/** How GST applies, in words, for SEZ / export / reverse-charge documents (else null). */
+export function supplyNote(d: {
+  supply_category: SupplyCategory;
+  lut: boolean;
+  reverse_charge: boolean;
+}): string | null {
+  if (d.reverse_charge) return "Reverse charge: the client pays the GST to the government.";
+  const zeroRated = d.lut
+    ? "zero-rated under the Letter of Undertaking, no IGST"
+    : "zero-rated with IGST charged";
+  if (d.supply_category === "SEZ") return `Supply to an SEZ unit: ${zeroRated}.`;
+  if (d.supply_category === "EXPORT") return `Export: ${zeroRated}.`;
+  return null;
+}

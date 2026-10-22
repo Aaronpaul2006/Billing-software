@@ -38,11 +38,15 @@ export function TotalsPanel({
   totals,
   intraState,
   showSettlement = false,
+  reverseCharge = false,
 }: {
   totals: Totals;
   intraState: boolean;
   showSettlement?: boolean;
+  /** Tax shown for the record; the client pays it, so it is not in the total. */
+  reverseCharge?: boolean;
 }) {
+  const tax = (name: string) => (reverseCharge ? `${name} (paid by the client)` : name);
   const nonZero = (v: string | undefined) => (v !== undefined && !ZERO.test(v) ? v : undefined);
   const deductions = [
     ["Retention", totals.retention],
@@ -55,11 +59,11 @@ export function TotalsPanel({
       <Row label="Taxable value" value={totals.subtotal} />
       {intraState ? (
         <>
-          <Row label="CGST" value={totals.cgst} />
-          <Row label="SGST" value={totals.sgst} />
+          <Row label={tax("CGST")} value={totals.cgst} />
+          <Row label={tax("SGST")} value={totals.sgst} />
         </>
       ) : (
-        <Row label="IGST" value={totals.igst} />
+        <Row label={tax("IGST")} value={totals.igst} />
       )}
       <Row label="Cess" value={nonZero(totals.cess)} />
       <Row label="Round off" value={nonZero(totals.round_off)} />

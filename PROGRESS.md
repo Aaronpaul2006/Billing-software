@@ -4,7 +4,7 @@ Last updated: 2026-10-22
 
 ## Current phase
 
-**Launch gaps** (owner decision 2026-10-21, after the web app W.1–W.7): L.1–L.4 done (email, rate limits, user uploads, housekeeping); Exports + GSTR-1 (E.1–E.2) done. Production setup (P.1–P.3) done (owner decision 2026-10-22): ready to go live once the server, domain, buckets and email exist (docs/03-operations.md). Backend Phases 0–3 and web W.1–W.7 complete.
+**Launch gaps** (owner decision 2026-10-21, after the web app W.1–W.7): L.1–L.4 done (email, rate limits, user uploads, housekeeping); Exports + GSTR-1 (E.1–E.2) done. Production setup (P.1–P.3) done: ready to go live once the server, domain, buckets and email exist (docs/03-operations.md). GST correctness (G.1–G.2: SEZ, exports, LUT, reverse charge) done (owner decision 2026-10-22). Backend Phases 0–3 and web W.1–W.7 complete.
 
 ## Done
 
@@ -68,9 +68,11 @@ Last updated: 2026-10-22
 
 - [x] G.1: GST correctness, backend (owner decision 2026-10-22) — tax engine: supply category (`REGULAR` / `SEZ` / `EXPORT`), `lut`, `reverse_charge`: SEZ always IGST even in the same state (IGST Act s.7(5)(b)); exports place of supply 96; overseas client with an Indian site stays domestic (immovable property); zero-rated under LUT = no tax, rates kept; reverse charge = tax shown, not in the total or the receivable; GST TDS only when tax is charged. Category derived in the draft service; LUT defaults from the registration's LUT for the document's FY (`422 no_lut`, rechecked at issue); reverse charge only for registered clients in India. Schema (schema.sql + migrations `tenants/0003_lut`, `documents/0003`): `gst_registrations.lut_arn` / `lut_fy_start_year`; `documents.supply_category` / `lut`; CHECKs (SEZ / export inter-State, export place 96, LUT means zero tax, reverse charge only on regular GST documents, grand total leaves reverse-charge tax out); the issue guard knows SEZ / exports and refuses LUT without a LUT for the FY; `v_billing_summary` and the dashboard's tax leave reverse-charge tax out; column grants. PDF: r.46 declarations with the LUT ARN (frozen in the supplier snapshot), reverse-charge labels. GST summary rows for SEZ / export / reverse charge; GSTR-1 from the document's category and LUT (the "taxed by place of supply" warning is gone). Shared `fy_start_year` / place names (96 = Outside India) in `apps/core/india.py`. Tests: engine (worked examples, rule errors, a property test over categories), API end to end (SEZ same-state IGST, LUT on and off, FY coverage, LUT removed before issue, exports and an overseas client's Indian site, reverse charge with reports, credit note follows its invoice, GSTR-1 SEWOP / SEWP / WOPAY / rchrg, registration LUT rules, database CHECKs refusing bad updates). Backend 559.
 
+- [x] G.2: GST correctness in the web app — editor: "Reverse charge (the client pays the GST)" on tax invoices (not sent for other types), for SEZ / export supplies a choice "Under the LUT, no IGST" / "Charge IGST" (the server's default shown until changed), a plain note above the totals ("Supply to an SEZ unit: zero-rated under the Letter of Undertaking, no IGST.", "Reverse charge: the client pays the GST to the government."), reverse-charge taxes labelled "(paid by the client)", place of supply 96 shown as "Outside India"; document page: SEZ / Export / Under LUT / Reverse charge badges and the same note; GST registrations: LUT ARN and financial year (normalised to upper case without spaces), "LUT 2026-27" badge; Reports: labels for the new GST summary rows. Backend fix found on the way: reverse charge asked on a quotation / proforma / bill of supply reached a database CHECK (would have been a 500); now `422 reverse_charge_not_allowed`, tested. Smoke-tested through the proxy on the dev database. Web 117 tests; backend 559.
+
 ## In progress
 
-- G.2: GST correctness in the web app (reverse charge / LUT in the editor, category on documents, LUT on registrations).
+- Nothing. GST correctness done; next to be chosen by the owner.
 
 ## Next
 
