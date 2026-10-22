@@ -82,9 +82,11 @@ Last updated: 2026-10-22
 
 - [x] Mobile M.2: browsing — bottom tabs (Home, Bills, Payments, Projects; `expo-router/js-tabs`, Ionicons) with detail screens over them. Bills: Unpaid (oldest first, to chase in order) / All / Drafts, search by number, cursor pages loading near the end plus a "Load more" button (screen readers; also what the tests press: FlatList end-reached does not fire reliably under Jest once data arrives after mount), badges Paid / Part paid / Overdue / Unpaid from exact paise comparisons. A bill: client (opens the client), project, dates, SEZ / export / reverse-charge wording, only the amounts that apply (no ₹0.00 rows), deductions, net receivable, settled / outstanding, "settled by" (opens the payment), lines with RA previous / up-to-date quantities; "Share PDF" for issued bills downloads the 5-minute link (`?as=link`) into the cache and opens the share sheet (WhatsApp, email), "still being made" on 202, none for drafts. A client (from the dashboard or a bill): GSTIN, call / email buttons, unpaid bills with the total summed exactly. Projects: margins for all projects in one call (`/reports/projects`, losses in red), a project with its money and BOQ progress. Payments: newest first, "not allocated" and Voided flags; a payment opens the bills it settled. New packages: expo-sharing, expo-file-system, @expo/vector-icons (`expo-doctor` 20/20). Smoke-tested against the real API with the app's exact queries (RA bill + part payment: unpaid list, drafts, search, bill, settled by, client, projects, project, BOQ, payments); the PDF link answered 202 on Windows (no WeasyPrint), the share itself only runs on a phone. Mobile 56 tests.
 
+- [x] Mobile M.3: actions — record a payment from a client or from an unpaid bill (that bill first, then the oldest): amount, date (today / yesterday / another), mode, reference (UTR or cheque number), the client's unpaid bills filled oldest first in exact paise (`fillInOrder`), each share editable, "Fill oldest first" to reset, the rest kept as an advance; checked before sending (amount, date, shares not above the payment or a bill's outstanding), then `POST /payments` with one Idempotency-Key per payment (a retry resends the same key), opening the saved payment. Issue a draft: "Issue" with a confirmation ("It gets the next number and can no longer be edited"), If-Match + Idempotency-Key, the number shown at once; missing number series and stale version explained. Buttons only for owners, admins and accountants (`backend/apps/core/permissions.py`); the server checks again. New package expo-crypto for the keys (Hermes has no `crypto.randomUUID`). A test caught that jest-expo's automatic mock of expo-crypto returns undefined, so the key header was silently missing and a "same key on retry" check passed on two nulls; the setup now uses Node's randomUUID and the tests assert a real UUID. Smoke-tested against the real API: issue with a key and again with the same key (same number, no second one), stale If-Match 412, a payment spread over two bills and retried with the same key (one payment), over-allocation 422 with the field message. Mobile 61 tests.
+
 ## In progress
 
-- Owner mobile app. Next: M.3 actions (record a payment against open bills, issue a draft).
+- Owner mobile app. Next: M.4 builds and store setup (needs the owner: Expo account, app ids, store accounts).
 
 ## Next
 
@@ -150,7 +152,7 @@ Owner mobile app (owner decision 2026-10-22):
 
 1. ~~Foundation, sign-in, dashboard~~ (done)
 2. ~~Browsing: receivables, documents and PDFs (share), projects, payments~~ (done)
-3. Actions: record a payment, issue a draft
+3. ~~Actions: record a payment, issue a draft~~ (done)
 4. Builds and store setup (needs the owner: Expo account, app ids, store accounts)
 
 Still open for the owner: e-invoicing / e-way bills (needs GSP credentials).

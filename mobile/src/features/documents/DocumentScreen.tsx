@@ -1,15 +1,20 @@
-import { useMutation, useQuery } from "@tanstack/react-query";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { Stack, useLocalSearchParams, useRouter } from "expo-router";
-import { Pressable, RefreshControl, ScrollView, StyleSheet, Text, View } from "react-native";
+import { useState } from "react";
+import { Alert, Pressable, RefreshControl, ScrollView, StyleSheet, Text, View } from "react-native";
 
 import { api, unwrap } from "@/api/client";
+import { ApiError } from "@/api/problem";
 import type { components } from "@/api/schema";
+import { useSession } from "@/auth/context";
 import { Badge } from "@/components/list";
 import { Body, Button, Card, ErrorView, Loading, Notice } from "@/components/ui";
+import { canIssueDocuments, canRecordPayments, ifMatch, newIdempotencyKey } from "@/lib/actions";
+import { errorMessage } from "@/lib/errors";
 import { compareMoney, formatInr, formatQty } from "@/lib/money";
 import { space, useColors } from "@/theme";
 
-import { documentTitle, formatDate, RECEIVABLE_TYPES, standing } from "./labels";
+import { DOC_TYPE_LABELS, documentTitle, formatDate, RECEIVABLE_TYPES, standing } from "./labels";
 import { shareDocumentPdf, shareErrorText } from "./sharePdf";
 
 type Document = components["schemas"]["Document"];
@@ -140,10 +145,27 @@ function SettledBy({ documentId }: { documentId: string }) {
   );
 }
 
+/** Why issuing did not work, and what to do about it. */
+function issueError(error: unknown): string {
+  if (error instanceof ApiError) {
+    if (error.code === "series_missing") {
+      return `${error.message} Add a number series in the web app (Settings, Number series).`;
+    }
+    if (error.code === "stale_version") {
+      return "Someone else changed this bill. Pull down to reload, then try again.";
+    }
+    if (error.problem.errors?.length) return error.problem.errors.map((e) => e.message).join(" ");
+  }
+  return errorMessage(error);
+}
+
 export function DocumentScreen() {
   const c = useColors();
   const router = useRouter();
+  const queryClient = useQueryClient();
+  const session = useSession();
   const { id } = useLocalSearchParams<{ id: string }>();
+  const [issueKey, setIssueKey] = useState(newIdempotencyKey); // one per issue, renewed after
   const doc = useQuery({
     queryKey: ["document", id],
     queryFn: async () =>
@@ -157,6 +179,36 @@ export function DocumentScreen() {
     mutationFn: async (d: Document) =>
       shareDocumentPdf(d.id, d.doc_number ?? documentTitle(d).replace(/\W+/g, "-")),
   });
+  const issue = useMutation({
+    mutationFn: async (d: Document) =>
+      unwrap(
+        await api.POST("/api/v1/documents/{document_id}/issue", {
+          params: { path: { document_id: d.id } },
+          headers: { "If-Match": ifMatch(d.version), "Idempotency-Key": issueKey },
+        }),
+      ),
+    onSuccess: (issued) => {
+      setIssueKey(newIdempotencyKey());
+      queryClient.setQueryData(["document", issued.id], issued);
+      void queryClient.invalidateQueries({ queryKey: ["documents"] });
+      void queryClient.invalidateQueries({ queryKey: ["reports"] });
+    },
+  });
+  const confirmIssue = (d: Document) => {
+    Alert.alert(
+      `Issue this ${DOC_TYPE_LABELS[d.doc_type].toLowerCase()}?`,
+      "It gets the next number and can no longer be edited.",
+      [
+        { text: "Not now", style: "cancel" },
+        {
+          text: "Issue",
+          onPress: () => {
+            issue.mutate(d);
+          },
+        },
+      ],
+    );
+  };
 
   if (doc.error) {
     return (
@@ -224,6 +276,31 @@ export function DocumentScreen() {
         <Notice tone="info" text="Sharing is not available on this device." />
       )}
       {share.error && <Notice text={shareErrorText(share.error)} />}
+      {d.status === "DRAFT" && canIssueDocuments(session.role) && (
+        <Button
+          label="Issue"
+          busy={issue.isPending}
+          onPress={() => {
+            confirmIssue(d);
+          }}
+        />
+      )}
+      {issue.error && <Notice text={issueError(issue.error)} />}
+      {d.status === "ISSUED" &&
+        RECEIVABLE_TYPES.includes(d.doc_type) &&
+        compareMoney(d.totals.outstanding, "0") === 1 &&
+        canRecordPayments(session.role) && (
+          <Button
+            label="Record a payment"
+            variant="secondary"
+            onPress={() => {
+              router.push({
+                pathname: "/payments/new",
+                params: { party: d.party_id, document: d.id },
+              });
+            }}
+          />
+        )}
       <Totals d={d} />
       <SettledBy documentId={d.id} />
       <Text accessibilityRole="header" style={[styles.heading, { color: c.text }]}>

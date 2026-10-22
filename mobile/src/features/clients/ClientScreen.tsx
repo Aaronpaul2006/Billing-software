@@ -3,6 +3,7 @@ import { Stack, useLocalSearchParams, useRouter } from "expo-router";
 import { Linking, RefreshControl, ScrollView, StyleSheet, Text, View } from "react-native";
 
 import { api, unwrap } from "@/api/client";
+import { useSession } from "@/auth/context";
 import { Badge, ListRow } from "@/components/list";
 import { Body, Button, Card, ErrorView, Loading } from "@/components/ui";
 import {
@@ -11,6 +12,7 @@ import {
   RECEIVABLE_TYPES,
   standing,
 } from "@/features/documents/labels";
+import { canRecordPayments } from "@/lib/actions";
 import { formatInr, sumMoney } from "@/lib/money";
 import { space, useColors } from "@/theme";
 
@@ -18,6 +20,7 @@ import { space, useColors } from "@/theme";
 export function ClientScreen() {
   const c = useColors();
   const router = useRouter();
+  const session = useSession();
   const { id } = useLocalSearchParams<{ id: string }>();
   const party = useQuery({
     queryKey: ["party", id],
@@ -76,6 +79,14 @@ export function ClientScreen() {
         {p.phone && <Body muted>{p.phone}</Body>}
         {p.email && <Body muted>{p.email}</Body>}
       </Card>
+      {canRecordPayments(session.role) && (
+        <Button
+          label="Record a payment"
+          onPress={() => {
+            router.push({ pathname: "/payments/new", params: { party: p.id } });
+          }}
+        />
+      )}
       {(p.phone ?? p.email) && (
         <View style={styles.actions}>
           {p.phone && (
