@@ -64,11 +64,20 @@ describe("company", () => {
     await user.type(legal, "Nair Constructions Pvt Ltd");
     await user.type(screen.getByLabelText("Trade name"), "Nair");
     await user.type(screen.getByLabelText("PAN"), "aaacn1234a");
+    const zone = screen.getByLabelText("Time zone");
+    expect(zone).toHaveValue("Asia/Kolkata");
+    expect(within(zone).getAllByRole("option")[0]).toHaveTextContent("Asia/Kolkata (India)");
+    await user.selectOptions(zone, "Asia/Dubai");
     await user.click(screen.getByRole("button", { name: "Save" }));
     expect(await screen.findByText("Saved.")).toBeInTheDocument();
     expect(sent).toEqual({
       ifMatch: '"v3"',
-      body: { legal_name: "Nair Constructions Pvt Ltd", trade_name: "Nair", pan: "AAACN1234A" },
+      body: {
+        legal_name: "Nair Constructions Pvt Ltd",
+        trade_name: "Nair",
+        pan: "AAACN1234A",
+        timezone: "Asia/Dubai",
+      },
     });
   });
 });
@@ -204,7 +213,14 @@ describe("registrations and series", () => {
               state_name: "Kerala",
               legal_name: "Nair Constructions",
               trade_name: null,
-              address: { line1: "MG Road", city: "Kochi", state_code: "32", pincode: "682016" },
+              address: {
+                line1: "MG Road",
+                line2: "Near Jos Junction",
+                city: "Kochi",
+                district: "Ernakulam",
+                state_code: "32",
+                pincode: "682016",
+              },
               is_default: true,
               is_active: true,
               version: 2,
@@ -254,12 +270,18 @@ describe("registrations and series", () => {
     await user.click(await screen.findByRole("button", { name: "Edit" }));
     const reg = screen.getByRole("form", { name: "Edit 32AAACN1234A1Z5" });
     await user.type(within(reg).getByLabelText("Trade name"), "Nair");
+    const line2 = within(reg).getByLabelText("Address line 2");
+    expect(line2).toHaveValue("Near Jos Junction"); // kept: it used to be dropped on save
+    await user.type(line2, ", 2nd floor");
     await user.click(within(reg).getByRole("button", { name: "Save" }));
     await waitFor(() => {
       expect(calls[0]).toContain('reg "v2"');
     });
     expect(calls[0]).toContain('"trade_name":"Nair"');
-    expect(calls[0]).toContain('"state_code":"32"');
+    expect(calls[0]).toContain(
+      '"address":{"line1":"MG Road","line2":"Near Jos Junction, 2nd floor","city":"Kochi",' +
+        '"district":"Ernakulam","pincode":"682016","state_code":"32"}',
+    );
 
     cleanup(); // one app at a time
     renderSignedIn("/settings/series");

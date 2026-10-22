@@ -965,6 +965,17 @@ def test_export_routes_reject_other_tenant(world: World) -> None:
     assert api.get("/api/v1/exports", **b).json()["results"] == []
 
 
+def test_boq_export_rejects_other_tenant_project(world: World, masters: dict[str, str]) -> None:
+    r = world.api.post(
+        "/api/v1/exports",
+        {"kind": "BOQ", "format": "CSV", "params": {"project_id": masters["project"]}},
+        format="json",
+        **world.as_b(),
+    )
+    assert r.status_code == 422, r.content  # A's project is unknown to B
+    assert r.json()["errors"][0]["field"] == "params.project_id"
+
+
 OBJECT_ROUTES["export-detail"] = lambda w: None  # test_export_routes_reject_other_tenant
 COLLECTION_ROUTES["exports"] = lambda w: None  # same test
 

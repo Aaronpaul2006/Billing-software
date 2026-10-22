@@ -17,6 +17,8 @@ from apps.documents.models import Document
 from apps.documents.pdf.render import TITLES
 from apps.expenses.models import Expense
 from apps.payments.models import Allocation, Payment
+from apps.projects.models import Project
+from apps.projects.services import boq_progress_rows
 from apps.reports import queries
 
 from .writers import Column, Table
@@ -267,9 +269,83 @@ def receivables(tenant_id: uuid.UUID, params: dict[str, Any]) -> Built:
     return Built(Table("Receivables", columns, rows), f"receivables_{timezone.localdate()}")
 
 
+def boq(tenant_id: uuid.UUID, params: dict[str, Any]) -> Built:
+    """One project's BOQ: what was contracted, billed so far, and what is left."""
+    project = Project.objects.get(pk=params["project_id"])
+    progress = boq_progress_rows(project)
+    columns = [
+        Column("Item code", width=12),
+        Column("Description", width=40),
+        Column("Unit", width=8),
+        Column("Rate", "money"),
+        Column("Contract qty", "number", 12),
+        Column("Billed qty", "number", 12),
+        Column("Balance qty", "number", 12),
+        Column("Contract value", "money"),
+        Column("Billed value", "money"),
+        Column("Progress %", "number", 10),
+        Column("Variation", width=9),
+    ]
+    rows = [
+        [
+            r["item_code"],
+            r["description"],
+            r["unit"],
+            r["rate"],
+            r["contract_qty"],
+            r["billed_qty"],
+            r["balance_qty"],
+            r["contract_value"],
+            r["billed_value"],
+            r["progress_pct"],
+            "Yes" if r["is_variation"] else "No",
+        ]
+        for r in progress["results"]
+    ]
+    _check_size(len(rows))
+    stem = f"boq_{project.code}_{timezone.localdate()}".replace("/", "-")
+    return Built(Table("BOQ", columns, rows), stem)
+
+
+def projects(tenant_id: uuid.UUID, params: dict[str, Any]) -> Built:
+    """The project margins report: billing, deductions, cost and margin."""
+    columns = [
+        Column("Code", width=12),
+        Column("Project", width=30),
+        Column("Contract value", "money"),
+        Column("Billed (before GST)", "money"),
+        Column("Retention held", "money"),
+        Column("Retention released", "money"),
+        Column("TDS deducted", "money"),
+        Column("Advance recovered", "money"),
+        Column("Outstanding", "money"),
+        Column("Cost", "money"),
+        Column("Margin", "money"),
+    ]
+    rows = [
+        [
+            r["code"],
+            r["name"],
+            r["contract_value"],
+            r["billed_taxable"],
+            r["retention_held"],
+            r["retention_released"],
+            r["tds_deducted"],
+            r["advance_recovered"],
+            r["outstanding"],
+            r["cost"],
+            r["margin"],
+        ]
+        for r in queries.projects(tenant_id)
+    ]
+    return Built(Table("Projects", columns, rows), f"project-margins_{timezone.localdate()}")
+
+
 BUILDERS: dict[str, Callable[[uuid.UUID, dict[str, Any]], Built]] = {
     "DOCUMENTS": documents,
     "PAYMENTS": payments,
     "EXPENSES": expenses,
     "RECEIVABLES": receivables,
+    "BOQ": boq,
+    "PROJECTS": projects,
 }

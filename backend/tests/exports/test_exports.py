@@ -3,17 +3,13 @@
 import csv
 import io
 import uuid
-from collections.abc import Callable, Iterator
 from datetime import date, datetime, timedelta
 from decimal import Decimal
 from typing import Any
 
-import boto3
 import pytest
 from django.db import connection
-from django.test import override_settings
 from django.utils import timezone
-from moto import mock_aws
 from openpyxl import load_workbook
 from rest_framework.test import APIClient
 
@@ -33,36 +29,12 @@ pytestmark = pytest.mark.django_db
 
 
 @pytest.fixture
-def s3() -> Iterator[Any]:
-    with (
-        mock_aws(),
-        override_settings(
-            S3_ENDPOINT_URL=None,
-            S3_PUBLIC_ENDPOINT_URL=None,
-            S3_REGION="us-east-1",
-            S3_BUCKET="test-bucket",
-        ),
-    ):
-        storage._client.cache_clear()
-        client = boto3.client("s3", region_name="us-east-1")
-        client.create_bucket(Bucket="test-bucket")
-        yield client
-    storage._client.cache_clear()
-
-
-@pytest.fixture
 def w() -> World:
     world = World()
     with tenant_context(world.t.tenant_id, world.t.user_id):
         # A name a spreadsheet would run as a formula if it were not escaped.
         Party.objects.filter(pk=world.client.pk).update(display_name='=HYPERLINK("x")')
     return world
-
-
-@pytest.fixture
-def run(django_capture_on_commit_callbacks: Any) -> Callable[[], Any]:
-    """`with run():` runs the after-commit export task (Celery is eager in tests)."""
-    return lambda: django_capture_on_commit_callbacks(execute=True)
 
 
 def request(w: World, member: Any = None, **body: Any) -> Any:

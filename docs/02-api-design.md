@@ -616,9 +616,14 @@ lists the caller's latest 20. Rows and files are deleted after 7 days.
 | `EXPENSES` | `from`, `to` | Expenses with GST, ITC, paid, balance |
 | `RECEIVABLES` | `book` | What clients owe today, by age |
 | `GSTR1` (format `JSON`) | `gst_registration_id`, `period` (`YYYY-MM`) | GSTR-1 for one regular registration and month (E.2, below) |
+| `BOQ` | `project_id` | One project's BOQ: contract, billed, balance (quantity and value), progress %, variation (as `GET /projects/{id}/boq-progress`) |
+| `PROJECTS` | none | Project margins to date: contract value, billed, retention, TDS, advance recovered, outstanding, cost, margin (as `GET /reports/projects`) |
 
 * `format`: `CSV` (UTF-8 with BOM, ISO dates, plain `1234.50` amounts) or
-  `XLSX` (real dates and numbers, `#,##0.00`). `from` / `to` default to this
+  `XLSX` (real dates and numbers, `#,##0.00`). Quantities and percentages
+  are plain decimals without trailing zeros (`42.5`; XLSX `#,##0.###`).
+  A `BOQ` request for a project the company does not have is `422`
+  (`params.project_id`). `from` / `to` default to this
   financial year to today and are stored filled in. Over 100,000 rows →
   `FAILED` ("choose a shorter period").
 * User text cannot run as a spreadsheet formula: CSV text cells starting with

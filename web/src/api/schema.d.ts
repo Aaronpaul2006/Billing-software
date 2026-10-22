@@ -2322,9 +2322,11 @@ export interface components {
          *     * `EXPENSES` - Expenses
          *     * `RECEIVABLES` - Receivables
          *     * `GSTR1` - Gstr1
+         *     * `BOQ` - Boq
+         *     * `PROJECTS` - Projects
          * @enum {string}
          */
-        ExportKindEnum: "DOCUMENTS" | "PAYMENTS" | "EXPENSES" | "RECEIVABLES" | "GSTR1";
+        ExportKindEnum: "DOCUMENTS" | "PAYMENTS" | "EXPENSES" | "RECEIVABLES" | "GSTR1" | "BOQ" | "PROJECTS";
         ExportList: {
             results: components["schemas"]["Export"][];
         };
@@ -2340,6 +2342,11 @@ export interface components {
             book?: components["schemas"]["ExportParamsBookEnum"];
             /** Format: uuid */
             gst_registration_id?: string;
+            /**
+             * Format: uuid
+             * @description BOQ: the project.
+             */
+            project_id?: string;
             period?: string;
             /** Format: date */
             from?: string;
@@ -2376,9 +2383,11 @@ export interface components {
          *     * `EXPENSES` - EXPENSES
          *     * `RECEIVABLES` - RECEIVABLES
          *     * `GSTR1` - GSTR1
+         *     * `BOQ` - BOQ
+         *     * `PROJECTS` - PROJECTS
          * @enum {string}
          */
-        ExportRequestKindEnum: "DOCUMENTS" | "PAYMENTS" | "EXPENSES" | "RECEIVABLES" | "GSTR1";
+        ExportRequestKindEnum: "DOCUMENTS" | "PAYMENTS" | "EXPENSES" | "RECEIVABLES" | "GSTR1" | "BOQ" | "PROJECTS";
         /**
          * @description * `PENDING` - Pending
          *     * `READY` - Ready

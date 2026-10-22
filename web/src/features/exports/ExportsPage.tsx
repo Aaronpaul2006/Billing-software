@@ -26,6 +26,7 @@ type Kind = components["schemas"]["ExportRequest"]["kind"];
 type Format = components["schemas"]["ExportRequest"]["format"];
 
 const DATED: Kind[] = ["DOCUMENTS", "PAYMENTS", "EXPENSES"];
+const KINDS = Object.keys(KIND_LABELS) as Kind[];
 const WITH_BOOK: Kind[] = ["DOCUMENTS", "RECEIVABLES"];
 
 /** GSTR-1 is usually filed for the month just ended. */
@@ -38,7 +39,8 @@ function ExportForm() {
   const queryClient = useQueryClient();
   const [search] = useSearchParams();
   const year = periodRange("this_fy", new Date());
-  const [kind, setKind] = useState<Kind>(search.get("kind") === "GSTR1" ? "GSTR1" : "DOCUMENTS");
+  const asked = search.get("kind") as Kind | null;
+  const [kind, setKind] = useState<Kind>(asked && KINDS.includes(asked) ? asked : "DOCUMENTS");
   const [format, setFormat] = useState<Format>("XLSX");
   const [period, setPeriod] = useState(search.get("period") ?? lastMonth());
   const [registrationId, setRegistrationId] = useState("");
@@ -51,6 +53,17 @@ function ExportForm() {
     enabled: kind === "GSTR1",
   });
   const chosenRegistration = registrationId || registrations.data?.[0]?.id || "";
+  const [projectId, setProjectId] = useState(search.get("project_id") ?? "");
+  const projects = useQuery({
+    queryKey: ["projects", "active-list"],
+    queryFn: async () =>
+      unwrap(
+        await api.GET("/api/v1/projects", { params: { query: { limit: 100, ordering: "code" } } }),
+      ).results,
+    enabled: kind === "BOQ",
+    staleTime: 60_000,
+  });
+  const chosenProject = projectId || projects.data?.[0]?.id || "";
   const [from, setFrom] = useState(year.from);
   const [to, setTo] = useState(year.to);
   const [book, setBook] = useState<"ALL" | "GST" | "NON_GST">("ALL");
@@ -66,14 +79,16 @@ function ExportForm() {
                   format: "JSON",
                   params: { gst_registration_id: chosenRegistration, period },
                 }
-              : {
-                  kind,
-                  format,
-                  params: {
-                    ...(DATED.includes(kind) ? { from, to } : {}),
-                    ...(WITH_BOOK.includes(kind) ? { book } : {}),
+              : kind === "BOQ"
+                ? { kind, format, params: { project_id: chosenProject } }
+                : {
+                    kind,
+                    format,
+                    params: {
+                      ...(DATED.includes(kind) ? { from, to } : {}),
+                      ...(WITH_BOOK.includes(kind) ? { book } : {}),
+                    },
                   },
-                },
           headers: { "Idempotency-Key": key },
         }),
       ),
@@ -101,7 +116,7 @@ function ExportForm() {
                 setKind(e.target.value as Kind);
               }}
             >
-              {(Object.keys(KIND_LABELS) as Export["kind"][]).map((k) => (
+              {KINDS.map((k) => (
                 <option key={k} value={k}>
                   {KIND_LABELS[k]}
                 </option>
@@ -171,8 +186,37 @@ function ExportForm() {
                 <option value="NON_GST">Non-GST</option>
               </NativeSelect>
             </Field>
+          ) : kind === "BOQ" ? (
+            <Field id="export-project" label="Project">
+              <NativeSelect
+                id="export-project"
+                value={chosenProject}
+                onChange={(e) => {
+                  setProjectId(e.target.value);
+                }}
+              >
+                {projects.data?.length === 0 && <option value="">No projects</option>}
+                {projects.data?.map((p) => (
+                  <option key={p.id} value={p.id}>
+                    {p.code} · {p.name}
+                  </option>
+                ))}
+              </NativeSelect>
+            </Field>
           ) : (
             <div />
+          )}
+          {kind === "BOQ" && (
+            <p className="text-muted-foreground text-sm sm:col-span-3">
+              Each BOQ item: contract quantity, billed so far in issued invoices, balance and
+              progress.
+            </p>
+          )}
+          {kind === "PROJECTS" && (
+            <p className="text-muted-foreground text-sm sm:col-span-3">
+              Every project to date: contract value, billed, retention, TDS, advances recovered,
+              outstanding, cost and margin.
+            </p>
           )}
           {DATED.includes(kind) && (
             <>

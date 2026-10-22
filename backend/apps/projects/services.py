@@ -226,7 +226,11 @@ def boq_progress(principal: Principal, project_id: uuid.UUID) -> dict[str, Any]:
     supply), for preparing the next RA bill. Variation items may go past
     100 % (negative balance)."""
     require(principal, "tenant.read")
-    project = get_or_404(Project, project_id)
+    return boq_progress_rows(get_or_404(Project, project_id))
+
+
+def boq_progress_rows(project: Project) -> dict[str, Any]:
+    """boq_progress() for a loaded project (also used by the BOQ export)."""
     billed_lines = DocumentLine.objects.filter(
         boq_item_id=OuterRef("pk"),
         document__status="ISSUED",

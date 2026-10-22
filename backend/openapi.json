@@ -6691,10 +6691,12 @@
                     "PAYMENTS",
                     "EXPENSES",
                     "RECEIVABLES",
-                    "GSTR1"
+                    "GSTR1",
+                    "BOQ",
+                    "PROJECTS"
                 ],
                 "type": "string",
-                "description": "* `DOCUMENTS` - Documents\n* `PAYMENTS` - Payments\n* `EXPENSES` - Expenses\n* `RECEIVABLES` - Receivables\n* `GSTR1` - Gstr1"
+                "description": "* `DOCUMENTS` - Documents\n* `PAYMENTS` - Payments\n* `EXPENSES` - Expenses\n* `RECEIVABLES` - Receivables\n* `GSTR1` - Gstr1\n* `BOQ` - Boq\n* `PROJECTS` - Projects"
             },
             "ExportList": {
                 "type": "object",
@@ -6729,6 +6731,11 @@
                     "gst_registration_id": {
                         "type": "string",
                         "format": "uuid"
+                    },
+                    "project_id": {
+                        "type": "string",
+                        "format": "uuid",
+                        "description": "BOQ: the project."
                     },
                     "period": {
                         "type": "string",
@@ -6787,10 +6794,12 @@
                     "PAYMENTS",
                     "EXPENSES",
                     "RECEIVABLES",
-                    "GSTR1"
+                    "GSTR1",
+                    "BOQ",
+                    "PROJECTS"
                 ],
                 "type": "string",
-                "description": "* `DOCUMENTS` - DOCUMENTS\n* `PAYMENTS` - PAYMENTS\n* `EXPENSES` - EXPENSES\n* `RECEIVABLES` - RECEIVABLES\n* `GSTR1` - GSTR1"
+                "description": "* `DOCUMENTS` - DOCUMENTS\n* `PAYMENTS` - PAYMENTS\n* `EXPENSES` - EXPENSES\n* `RECEIVABLES` - RECEIVABLES\n* `GSTR1` - GSTR1\n* `BOQ` - BOQ\n* `PROJECTS` - PROJECTS"
             },
             "ExportStatusEnum": {
                 "enum": [

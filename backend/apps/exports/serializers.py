@@ -5,6 +5,7 @@ from django.utils import timezone
 from drf_spectacular.utils import extend_schema_field
 from rest_framework import serializers
 
+from apps.projects.models import Project
 from apps.reports.serializers import BOOKS, PeriodSerializer
 from apps.tenants.models import GstRegistration
 
@@ -24,6 +25,7 @@ class ExportParamsSerializer(serializers.Serializer[Any]):
     to = serializers.DateField(required=False)
     book = serializers.ChoiceField(choices=BOOKS, default="ALL")
     gst_registration_id = serializers.UUIDField(required=False)
+    project_id = serializers.UUIDField(required=False, help_text="BOQ: the project.")
     period = serializers.RegexField(r"^\d{4}-(0[1-9]|1[0-2])$", required=False)
 
     def get_fields(self) -> dict[str, Any]:
@@ -50,6 +52,19 @@ class ExportRequestSerializer(serializers.Serializer[Any]):
             )
         if attrs["kind"] == "GSTR1":
             return {"kind": "GSTR1", "format": "JSON", "params": self._gstr1(given)}
+        if attrs["kind"] == "BOQ":
+            if not given.get("project_id"):
+                raise serializers.ValidationError({"params.project_id": "Choose the project."})
+            project = Project.objects.filter(pk=given["project_id"]).first()  # RLS: own only
+            if project is None:
+                raise serializers.ValidationError({"params.project_id": "No such project."})
+            return {
+                "kind": "BOQ",
+                "format": attrs["format"],
+                "params": {"project_id": str(project.pk)},
+            }
+        if attrs["kind"] == "PROJECTS":
+            return {"kind": "PROJECTS", "format": attrs["format"], "params": {}}
         params: dict[str, Any] = {"book": given["book"]}
         if attrs["kind"] in DATED_KINDS:
             period = PeriodSerializer(data={k: v for k, v in given.items() if v is not None})

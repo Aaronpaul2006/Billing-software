@@ -18,7 +18,7 @@ from openpyxl.cell import WriteOnlyCell
 from openpyxl.styles import Font
 from openpyxl.utils import get_column_letter
 
-ColumnType = Literal["text", "money", "date", "int"]
+ColumnType = Literal["text", "money", "date", "int", "number"]  # number: quantities, %
 FORMULA_PREFIXES = ("=", "+", "-", "@", "\t", "\r")
 
 CONTENT_TYPES = {
@@ -48,6 +48,8 @@ def _csv_value(value: Any, column: Column) -> str:
         return ""
     if column.type == "money":
         return f"{Decimal(value):.2f}"
+    if column.type == "number":
+        return format(Decimal(value).normalize(), "f")
     if column.type == "date":
         return value.isoformat() if isinstance(value, date) else str(value)
     text = str(value)
@@ -86,6 +88,8 @@ def to_xlsx(table: Table) -> bytes:
                 pass
             elif column.type == "money":
                 cell.number_format = "#,##0.00"
+            elif column.type == "number":
+                cell.number_format = "#,##0.###"
             elif column.type == "date":
                 cell.number_format = "DD-MM-YYYY"
             elif column.type == "text":

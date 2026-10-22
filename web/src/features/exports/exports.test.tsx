@@ -200,4 +200,49 @@ describe("exports", () => {
       params: { gst_registration_id: "r1", period: "2026-09" },
     });
   });
+
+  it("makes the BOQ file for the project in the link, and project margins", async () => {
+    const sent: unknown[] = [];
+    server.use(
+      http.get(`${API}/exports`, () => HttpResponse.json({ results: [] })),
+      http.get(`${API}/projects`, () =>
+        HttpResponse.json({
+          results: [
+            { id: "p1", code: "VILLA-1", name: "Villa at Kakkanad" },
+            { id: "p2", code: "SCH-2", name: "School block" },
+          ],
+        }),
+      ),
+      http.post(`${API}/exports`, async ({ request }) => {
+        sent.push(await request.json());
+        return HttpResponse.json(exported({ kind: "BOQ", format: "XLSX" }), { status: 202 });
+      }),
+    );
+    const user = userEvent.setup();
+    renderSignedIn("/exports?kind=BOQ&project_id=p2");
+    const form = await screen.findByRole("form", { name: "New export" });
+    expect(within(form).getByLabelText("What")).toHaveValue("BOQ");
+    const project = within(form).getByLabelText("Project");
+    await waitFor(() => {
+      expect(within(project).getAllByRole("option")).toHaveLength(2);
+    });
+    expect(project).toHaveValue("p2");
+    expect(within(form).queryByLabelText("From")).not.toBeInTheDocument();
+    await user.click(within(form).getByRole("button", { name: "Make the file" }));
+    await waitFor(() => {
+      expect(sent).toHaveLength(1);
+    });
+
+    await user.selectOptions(within(form).getByLabelText("What"), "PROJECTS");
+    expect(within(form).queryByLabelText("Project")).not.toBeInTheDocument();
+    expect(within(form).getByText(/Every project to date/)).toBeInTheDocument();
+    await user.click(within(form).getByRole("button", { name: "Make the file" }));
+    await waitFor(() => {
+      expect(sent).toHaveLength(2);
+    });
+    expect(sent).toEqual([
+      { kind: "BOQ", format: "XLSX", params: { project_id: "p2" } },
+      { kind: "PROJECTS", format: "XLSX", params: {} },
+    ]);
+  });
 });

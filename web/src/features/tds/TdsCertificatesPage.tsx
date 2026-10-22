@@ -1,5 +1,5 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { AlertCircle, ArrowLeft, Plus, Trash2 } from "lucide-react";
+import { AlertCircle, ArrowLeft, Pencil, Plus, Trash2 } from "lucide-react";
 import { useState } from "react";
 import { Link } from "react-router";
 
@@ -26,8 +26,10 @@ import {
 } from "@/components/ui/table";
 import { fyStartYear } from "@/features/dashboard/periods";
 import { errorMessage } from "@/lib/errors";
+import { ifMatch } from "@/lib/forms";
 import { cleanMoneyInput, formatInr, MONEY_INPUT } from "@/lib/money";
 
+type Certificate = components["schemas"]["TdsCertificate"];
 type CertificateWrite = components["schemas"]["TdsCertificateWrite"];
 
 const QUARTERS = [
@@ -47,23 +49,46 @@ function problemText(e: unknown): string {
   return errorMessage(e);
 }
 
-function NewCertificate({ fy, onDone }: { fy: number; onDone: () => void }) {
+/** Adds a certificate, or corrects `existing` (a typo in the number, the amount...). */
+function CertificateForm({
+  fy,
+  existing,
+  onDone,
+}: {
+  fy: number;
+  existing?: Certificate;
+  onDone: () => void;
+}) {
   const queryClient = useQueryClient();
-  const [party, setParty] = useState<PickedParty | null>(null);
-  const [tan, setTan] = useState("");
-  const [quarter, setQuarter] = useState(1);
-  const [number, setNumber] = useState("");
-  const [date, setDate] = useState("");
-  const [credited, setCredited] = useState("");
-  const [tds, setTds] = useState("");
+  const [party, setParty] = useState<PickedParty | null>(
+    existing ? { id: existing.party_id, name: existing.party_name } : null,
+  );
+  const [tan, setTan] = useState(existing?.deductor_tan ?? "");
+  const [quarter, setQuarter] = useState(existing?.quarter ?? 1);
+  const [number, setNumber] = useState(existing?.certificate_number ?? "");
+  const [date, setDate] = useState(existing?.certificate_date ?? "");
+  const [credited, setCredited] = useState(existing?.amount_credited ?? "");
+  const [tds, setTds] = useState(existing?.tds_amount ?? "");
   const [error, setError] = useState<string | null>(null);
   const [key] = useState(newIdempotencyKey);
+  const idPrefix = existing ? `cert-${existing.id}` : "cert";
 
   const save = useMutation({
     mutationFn: async (body: CertificateWrite) =>
-      unwrap(
-        await api.POST("/api/v1/tds-certificates", { body, headers: { "Idempotency-Key": key } }),
-      ),
+      existing
+        ? unwrap(
+            await api.PATCH("/api/v1/tds-certificates/{certificate_id}", {
+              params: { path: { certificate_id: existing.id } },
+              body,
+              headers: { "If-Match": ifMatch(existing.version) },
+            }),
+          )
+        : unwrap(
+            await api.POST("/api/v1/tds-certificates", {
+              body,
+              headers: { "Idempotency-Key": key },
+            }),
+          ),
     onSuccess: () => {
       void queryClient.invalidateQueries({ queryKey: ["tds-certificates"] });
       void queryClient.invalidateQueries({ queryKey: ["reports", "tds"] });
@@ -76,7 +101,9 @@ function NewCertificate({ fy, onDone }: { fy: number; onDone: () => void }) {
 
   return (
     <form
-      aria-label="New TDS certificate"
+      aria-label={
+        existing ? `Edit certificate ${existing.certificate_number}` : "New TDS certificate"
+      }
       className="bg-muted/40 mb-6 grid max-w-4xl gap-4 rounded-lg border p-4 sm:grid-cols-3"
       onSubmit={(e) => {
         e.preventDefault();
@@ -101,7 +128,7 @@ function NewCertificate({ fy, onDone }: { fy: number; onDone: () => void }) {
         save.mutate({
           party_id: party.id,
           deductor_tan: tan.trim().toUpperCase(),
-          fy_start_year: fy,
+          fy_start_year: existing?.fy_start_year ?? fy,
           quarter,
           certificate_number: number.trim(),
           certificate_date: date || null,
@@ -116,12 +143,12 @@ function NewCertificate({ fy, onDone }: { fy: number; onDone: () => void }) {
           <AlertDescription>{error}</AlertDescription>
         </Alert>
       )}
-      <Field id="cert-party" label="Client">
-        <PartyPicker id="cert-party" value={party} onChange={setParty} />
+      <Field id={`${idPrefix}-party`} label="Client">
+        <PartyPicker id={`${idPrefix}-party`} value={party} onChange={setParty} />
       </Field>
-      <Field id="cert-tan" label="Client's TAN">
+      <Field id={`${idPrefix}-tan`} label="Client's TAN">
         <Input
-          id="cert-tan"
+          id={`${idPrefix}-tan`}
           className="font-mono uppercase"
           maxLength={10}
           value={tan}
@@ -130,9 +157,9 @@ function NewCertificate({ fy, onDone }: { fy: number; onDone: () => void }) {
           }}
         />
       </Field>
-      <Field id="cert-quarter" label="Quarter">
+      <Field id={`${idPrefix}-quarter`} label="Quarter">
         <NativeSelect
-          id="cert-quarter"
+          id={`${idPrefix}-quarter`}
           value={quarter}
           onChange={(e) => {
             setQuarter(Number(e.target.value));
@@ -145,9 +172,9 @@ function NewCertificate({ fy, onDone }: { fy: number; onDone: () => void }) {
           ))}
         </NativeSelect>
       </Field>
-      <Field id="cert-number" label="Certificate number">
+      <Field id={`${idPrefix}-number`} label="Certificate number">
         <Input
-          id="cert-number"
+          id={`${idPrefix}-number`}
           className="font-mono"
           value={number}
           onChange={(e) => {
@@ -155,9 +182,9 @@ function NewCertificate({ fy, onDone }: { fy: number; onDone: () => void }) {
           }}
         />
       </Field>
-      <Field id="cert-date" label="Certificate date">
+      <Field id={`${idPrefix}-date`} label="Certificate date">
         <Input
-          id="cert-date"
+          id={`${idPrefix}-date`}
           type="date"
           value={date}
           onChange={(e) => {
@@ -167,12 +194,12 @@ function NewCertificate({ fy, onDone }: { fy: number; onDone: () => void }) {
       </Field>
       <div />
       <Field
-        id="cert-credited"
+        id={`${idPrefix}-credited`}
         label="Amount paid / credited (₹)"
         hint="As the certificate states."
       >
         <Input
-          id="cert-credited"
+          id={`${idPrefix}-credited`}
           inputMode="decimal"
           value={credited}
           onChange={(e) => {
@@ -180,9 +207,9 @@ function NewCertificate({ fy, onDone }: { fy: number; onDone: () => void }) {
           }}
         />
       </Field>
-      <Field id="cert-tds" label="TDS deducted (₹)">
+      <Field id={`${idPrefix}-tds`} label="TDS deducted (₹)">
         <Input
-          id="cert-tds"
+          id={`${idPrefix}-tds`}
           inputMode="decimal"
           value={tds}
           onChange={(e) => {
@@ -192,7 +219,7 @@ function NewCertificate({ fy, onDone }: { fy: number; onDone: () => void }) {
       </Field>
       <div className="flex items-end gap-2">
         <Button type="submit" disabled={save.isPending}>
-          Add certificate
+          {existing ? "Save" : "Add certificate"}
         </Button>
         <Button type="button" variant="ghost" onClick={onDone}>
           Cancel
@@ -208,6 +235,7 @@ export function TdsCertificatesPage() {
   const current = fyStartYear(new Date());
   const [fy, setFy] = useState(current);
   const [adding, setAdding] = useState(false);
+  const [editing, setEditing] = useState<string | null>(null);
   const [notice, setNotice] = useState<string | null>(null);
   const certificates = useQuery({
     queryKey: ["tds-certificates", fy],
@@ -274,7 +302,7 @@ export function TdsCertificatesPage() {
         }
       />
       {adding && (
-        <NewCertificate
+        <CertificateForm
           fy={fy}
           onDone={() => {
             setAdding(false);
@@ -308,40 +336,66 @@ export function TdsCertificatesPage() {
             </TableRow>
           </TableHeader>
           <TableBody>
-            {certificates.data.map((c) => (
-              <TableRow key={c.id}>
-                <TableCell>
-                  {c.party_name}
-                  <div className="text-muted-foreground font-mono text-xs">{c.deductor_tan}</div>
-                </TableCell>
-                <TableCell>Q{c.quarter}</TableCell>
-                <TableCell>
-                  <span className="font-mono">{c.certificate_number}</span>
-                  {c.certificate_date && (
-                    <div className="text-muted-foreground text-xs">{c.certificate_date}</div>
-                  )}
-                </TableCell>
-                <TableCell className="text-right tabular-nums">{formatInr(c.tds_amount)}</TableCell>
-                <TableCell className="text-right">
-                  <Button
-                    variant="ghost"
-                    size="icon"
-                    aria-label={`Delete certificate ${c.certificate_number}`}
-                    disabled={remove.isPending}
-                    onClick={() => {
-                      if (
-                        window.confirm(
-                          `Delete certificate ${c.certificate_number}? Only for a wrong entry.`,
+            {certificates.data.map((c) =>
+              editing === c.id ? (
+                <TableRow key={c.id}>
+                  <TableCell colSpan={5} className="whitespace-normal">
+                    <CertificateForm
+                      fy={fy}
+                      existing={c}
+                      onDone={() => {
+                        setEditing(null);
+                      }}
+                    />
+                  </TableCell>
+                </TableRow>
+              ) : (
+                <TableRow key={c.id}>
+                  <TableCell>
+                    {c.party_name}
+                    <div className="text-muted-foreground font-mono text-xs">{c.deductor_tan}</div>
+                  </TableCell>
+                  <TableCell>Q{c.quarter}</TableCell>
+                  <TableCell>
+                    <span className="font-mono">{c.certificate_number}</span>
+                    {c.certificate_date && (
+                      <div className="text-muted-foreground text-xs">{c.certificate_date}</div>
+                    )}
+                  </TableCell>
+                  <TableCell className="text-right tabular-nums">
+                    {formatInr(c.tds_amount)}
+                  </TableCell>
+                  <TableCell className="text-right">
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      aria-label={`Edit certificate ${c.certificate_number}`}
+                      onClick={() => {
+                        setEditing(c.id);
+                      }}
+                    >
+                      <Pencil aria-hidden />
+                    </Button>
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      aria-label={`Delete certificate ${c.certificate_number}`}
+                      disabled={remove.isPending}
+                      onClick={() => {
+                        if (
+                          window.confirm(
+                            `Delete certificate ${c.certificate_number}? Only for a wrong entry.`,
+                          )
                         )
-                      )
-                        remove.mutate(c.id);
-                    }}
-                  >
-                    <Trash2 aria-hidden />
-                  </Button>
-                </TableCell>
-              </TableRow>
-            ))}
+                          remove.mutate(c.id);
+                      }}
+                    >
+                      <Trash2 aria-hidden />
+                    </Button>
+                  </TableCell>
+                </TableRow>
+              ),
+            )}
           </TableBody>
         </Table>
       )}

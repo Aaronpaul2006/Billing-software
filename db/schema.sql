@@ -660,7 +660,8 @@ CREATE INDEX idempotency_keys_expiry_idx ON idempotency_keys (expires_at);
 CREATE TABLE exports (
   id            uuid PRIMARY KEY DEFAULT gen_random_uuid(),
   tenant_id     uuid NOT NULL REFERENCES tenants (id),
-  kind          text NOT NULL CHECK (kind IN ('DOCUMENTS', 'PAYMENTS', 'EXPENSES', 'RECEIVABLES', 'GSTR1')),
+  kind          text NOT NULL CHECK (kind IN ('DOCUMENTS', 'PAYMENTS', 'EXPENSES', 'RECEIVABLES', 'GSTR1',
+                                              'BOQ', 'PROJECTS')),
   format        text NOT NULL CHECK (format IN ('CSV', 'XLSX', 'JSON')),
   params        jsonb NOT NULL DEFAULT '{}',
   status        text NOT NULL DEFAULT 'PENDING' CHECK (status IN ('PENDING', 'READY', 'FAILED')),

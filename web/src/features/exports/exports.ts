@@ -11,6 +11,8 @@ export const KIND_LABELS: Record<Export["kind"], string> = {
   EXPENSES: "Expenses",
   RECEIVABLES: "Receivables (as of today)",
   GSTR1: "GSTR-1",
+  BOQ: "BOQ progress (one project)",
+  PROJECTS: "Project margins",
 };
 
 export function fileSize(bytes: number | null): string {

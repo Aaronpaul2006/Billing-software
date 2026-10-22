@@ -20,6 +20,8 @@ class ExportKind(models.TextChoices):
     EXPENSES = "EXPENSES"
     RECEIVABLES = "RECEIVABLES"
     GSTR1 = "GSTR1"
+    BOQ = "BOQ"  # one project's BOQ: contract vs billed
+    PROJECTS = "PROJECTS"  # the project margins report
 
 
 class ExportFormat(models.TextChoices):

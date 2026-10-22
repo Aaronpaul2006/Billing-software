@@ -260,6 +260,7 @@ function EditRegistration({
   const [legalName, setLegalName] = useState(registration.legal_name);
   const [tradeName, setTradeName] = useState(registration.trade_name ?? "");
   const [line1, setLine1] = useState(a.line1 ?? "");
+  const [line2, setLine2] = useState(a.line2 ?? "");
   const [city, setCity] = useState(a.city ?? "");
   const [pincode, setPincode] = useState(a.pincode ?? "");
   const [isDefault, setIsDefault] = useState(registration.is_default);
@@ -281,7 +282,9 @@ function EditRegistration({
             trade_name: blankToNull(tradeName),
             address: {
               line1: line1.trim(),
+              ...(line2.trim() ? { line2: line2.trim() } : {}),
               city: city.trim(),
+              ...(a.district ? { district: a.district } : {}), // no field for it: kept as it is
               pincode: pincode.trim(),
               state_code: registration.state_code as StateCode,
             },
@@ -333,6 +336,7 @@ function EditRegistration({
       {text(`reg-${registration.id}-legal`, "Legal name", legalName, setLegalName)}
       {text(`reg-${registration.id}-trade`, "Trade name", tradeName, setTradeName)}
       {text(`reg-${registration.id}-line1`, "Address", line1, setLine1)}
+      {text(`reg-${registration.id}-line2`, "Address line 2", line2, setLine2)}
       {text(`reg-${registration.id}-city`, "City", city, setCity)}
       {text(`reg-${registration.id}-pin`, "PIN code", pincode, setPincode)}
       <div className="grid content-end gap-1 text-sm">

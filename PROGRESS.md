@@ -76,9 +76,11 @@ Last updated: 2026-10-22
 
 - [x] K.2: invitations by email for people with no account yet — table `email_invitations` (schema.sql §2 + migration `accounts/0004`: RLS forced, audited, one pending invitation per email per tenant, accepted ⇔ accepted_by); `POST/GET /email-invitations`, `DELETE …/{id}` (withdraw), `POST …/{id}/resend` (7 more days); the email "Meera invited you to Kochi Infra" with a signed link (7 days, built in the worker); public `GET/POST /auth/join`: the invitation, then the account is created (email confirmed), joins with the invited role and is signed in; signing up the normal way turns pending email invitations into INVITED memberships through `claim_email_invitations()` (SECURITY DEFINER, only for the user's own address; an owner-only policy lets it see invitations across tenants). Web: on the members page "No account uses … yet" → "Invite by email", a "Waiting to join" list (sent date, expired badge, send again, withdraw); public `/join` page (company, inviter, role, email fixed; name + password; signs in; asks to sign out first if someone is signed in). Tests: invite → email → join → signed in; roles; withdraw / resend; expired and tampered links; normal sign-up finds the invitation and accepts it; cross-tenant routes. A flaky assertion compared a Postgres (Docker) timestamp with the Windows clock; the test now checks the behaviour (an expired link is renewed). Smoke-tested through the proxy with Mailpit (both paths). Web 131 tests; backend 568.
 
+- [x] K.3: the rest of the known gaps — exports `BOQ` (one project: contract, billed, balance, value, progress %, variation; CSV quantities as `42.5`, XLSX `#,##0.###`) and `PROJECTS` (project margins), schema.sql exports kind check + migration `exports/0002` (sync test passes); a BOQ export for an unknown or another company's project is `422 params.project_id` (cross-tenant test). Web: both kinds on the Exports page (`/exports?kind=BOQ&project_id=…`, linked from a project's progress tab as "Export to Excel or CSV"); TDS certificates are edited in place (pencil → the same form, PATCH with If-Match); Company settings has a time-zone choice (India first, then the browser's zones); the GST registration edit form now keeps and edits address line 2 and keeps the district (saving used to drop both: a real bug). Export tests share their S3 / task fixtures in `tests/exports/conftest.py`. Smoke-tested through the proxy against SeaweedFS: RA bill → BOQ CSV (42.5 billed, 57.5 left) and margins XLSX, unknown project refused, TDS edit + stale edit 412, time zone saved / unknown zone refused, registration edit keeps line 2 and district. Web 133 tests; backend 573.
+
 ## In progress
 
-- Polish known gaps. Next: K.3 TDS certificate edit, company time zone, registration address line 2, BOQ / project report exports.
+- Nothing: the known-gap polish (K.1–K.3) is done. Waiting for the owner to choose the next phase.
 
 ## Next
 
@@ -134,6 +136,14 @@ Launch gaps (owner decision 2026-10-21):
 3. ~~User uploads~~ (done)
 4. ~~Housekeeping: re-render the PDF on cancel, Celery beat~~ (done)
 
+Polish known gaps (owner decision 2026-10-22):
+
+1. ~~Your account: profile, password, email change, 2-step, devices~~ (done)
+2. ~~Invitations by email for people without an account~~ (done)
+3. ~~TDS certificate edit, company time zone, registration line 2, BOQ / project exports~~ (done)
+
+Still open for the owner: the owner mobile app, e-invoicing / e-way bills (needs GSP credentials).
+
 Full roadmap: `docs/01-architecture.md` §9.
 
 ## Open questions (for the owner)
@@ -165,11 +175,11 @@ Full roadmap: `docs/01-architecture.md` §9.
 
 - Payables (vendor bills, payments to subcontractors) are deferred; expenses track their own payment for now.
 - RA bills: credit notes do not reduce the billed quantity (a note may correct a rate rather than a quantity), so over-billing corrected by a credit note still counts against the BOQ; revisit with a quantity flag on note lines. The real-PDF render of the new RA columns is checked only as HTML on Windows (the WeasyPrint test runs in CI / Docker).
-- Web: TDS certificates can be added and deleted but not edited (delete and add again); the company time zone is shown, not editable; a registration's second address line is not editable; On Windows dev the PDF preview fails (no Pango; run the stack in Docker for PDFs). Editor: the BOQ / catalog item lists are plain selects (fine for hundreds of items; a search box would suit very large BOQs); the refresh cookie is `Secure` only outside dev settings.
+- Web: on Windows dev the PDF preview fails (no Pango; run the stack in Docker for PDFs). Editor: the BOQ / catalog item lists are plain selects (fine for hundreds of items; a search box would suit very large BOQs); the refresh cookie is `Secure` only outside dev settings.
 - TDS: only income-tax TDS (s.194C) is reconciled; GST TDS (s.51, deducted at payment) is not yet. No import of Form 26AS / TRACES files: certificates are typed in. Expected TDS counts by bill date (credit) and ignores credit notes.
 - Retention releases have no PDF / letter yet and no email; a release is not linked to particular bills (retention is pooled per project and book).
 - BOQ import only adds items; updating existing items from a file (e.g. revised rates) is not supported. In a dry run, previewed items have null `id` / timestamps although the schema marks them as strings.
-- Exports: no export of BOQ / project reports / GST summary yet; dates in file names use the server's date (UTC), like the reports' "today".
+- Exports: no export of the GST summary (GSTR-1 covers the same supplies); dates in file names use the server's date (UTC), like the reports' "today". The BOQ export has no project-level header rows (client, contract value): the file name carries the project code.
 - GSTR-1: not yet checked by importing into the real GST offline tool / portal (do that with a CA on a real month before relying on it). Not covered: amendments (`b2ba`, `cdnra`…), advances (`at`, `atadj`), e-commerce operators, deemed exports, HSN descriptions; 0 % lines are all reported as nil-rated (the user re-labels exempt / non-GST in the tool); the B2CL limit is ₹1,00,000 for every period (correct from August 2024). The invoice value reported for reverse-charge invoices is the document total (without the tax): confirm with a CA.
 - GST: deemed exports, supplies to SEZ for non-authorised operations, and the exact goods vs services place-of-supply rules for exports of goods are not modelled; every overseas client without a project is treated as an export of services.
 - Reports run live SQL per request; fine at current scale, revisit (materialised summaries or caching) if dashboards get slow.

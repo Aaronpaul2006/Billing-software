@@ -343,6 +343,10 @@ describe("project page", () => {
     renderSignedIn(`/projects/${PID}/progress`);
     expect(await screen.findByText("57.5")).toBeInTheDocument();
     expect(screen.getAllByText("42.5 %")).toHaveLength(2);
+    expect(screen.getByRole("link", { name: "Export to Excel or CSV" })).toHaveAttribute(
+      "href",
+      `/exports?kind=BOQ&project_id=${PID}`,
+    );
   });
 
   it("retention: what is held, recording a release and cancelling one", async () => {

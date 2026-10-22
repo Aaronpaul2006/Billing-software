@@ -1,4 +1,5 @@
 import { useQuery } from "@tanstack/react-query";
+import { Link } from "react-router";
 
 import { api, unwrap } from "@/api/client";
 import { ErrorState } from "@/components/ErrorState";
@@ -55,7 +56,13 @@ export function ProgressTab() {
             <h2>BOQ progress</h2>
           </CardTitle>
           <CardDescription>
-            Billed in issued tax invoices and bills of supply, against the contract quantities.
+            Billed in issued tax invoices and bills of supply, against the contract quantities.{" "}
+            <Link
+              to={`/exports?kind=BOQ&project_id=${project.id}`}
+              className="text-foreground underline"
+            >
+              Export to Excel or CSV
+            </Link>
           </CardDescription>
         </CardHeader>
         <CardContent>

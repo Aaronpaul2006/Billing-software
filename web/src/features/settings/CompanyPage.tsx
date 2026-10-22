@@ -12,17 +12,36 @@ import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
+import { NativeSelect } from "@/components/ui/native-select";
 import { Skeleton } from "@/components/ui/skeleton";
 import { errorMessage } from "@/lib/errors";
 import { blankToNull, ifMatch } from "@/lib/forms";
 
 type Tenant = components["schemas"]["Tenant"];
+type TimeZone = components["schemas"]["TimezoneEnum"];
+
+const INDIA = "Asia/Kolkata";
+
+/** India first, then every zone the browser knows (and the company's current one). */
+function timeZoneChoices(current: string): string[] {
+  let known: string[] = [];
+  try {
+    known = Intl.supportedValuesOf("timeZone");
+  } catch {
+    // an older browser: India and the current zone are enough
+  }
+  const others = new Set([current, ...known]);
+  others.delete(INDIA);
+  return [INDIA, ...[...others].sort()];
+}
 
 function CompanyForm({ tenant }: { tenant: Tenant }) {
   const queryClient = useQueryClient();
   const [legalName, setLegalName] = useState(tenant.legal_name);
   const [tradeName, setTradeName] = useState(tenant.trade_name ?? "");
   const [pan, setPan] = useState(tenant.pan ?? "");
+  const [timeZone, setTimeZone] = useState<string>(tenant.timezone);
+  const [zones] = useState(() => timeZoneChoices(tenant.timezone));
   const [notice, setNotice] = useState<{ ok: boolean; text: string } | null>(null);
   const save = useMutation({
     mutationFn: async () =>
@@ -32,6 +51,7 @@ function CompanyForm({ tenant }: { tenant: Tenant }) {
             legal_name: legalName.trim(),
             trade_name: blankToNull(tradeName),
             pan: blankToNull(pan.toUpperCase()),
+            timezone: timeZone as TimeZone, // the server checks it is a real zone
           },
           headers: { "If-Match": ifMatch(tenant.version) },
         }),
@@ -99,8 +119,27 @@ function CompanyForm({ tenant }: { tenant: Tenant }) {
               }}
             />
           </Field>
+          <Field
+            id="timezone"
+            label="Time zone"
+            hint="Decides what “today” is for document dates, due dates and reports."
+          >
+            <NativeSelect
+              id="timezone"
+              value={timeZone}
+              onChange={(e) => {
+                setTimeZone(e.target.value);
+              }}
+            >
+              {zones.map((z) => (
+                <option key={z} value={z}>
+                  {z === INDIA ? `${z} (India)` : z}
+                </option>
+              ))}
+            </NativeSelect>
+          </Field>
           <p className="text-muted-foreground text-sm">
-            Time zone {tenant.timezone}. GSTINs and addresses are set per GST registration.
+            GSTINs and addresses are set per GST registration.
           </p>
         </CardContent>
       </Card>
