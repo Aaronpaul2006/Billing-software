@@ -8,6 +8,8 @@ const light = {
   border: "#e4e4e7",
   primary: "#1d4ed8",
   primaryText: "#ffffff",
+  good: "#15803d",
+  warn: "#b45309",
   danger: "#b91c1c",
   dangerBackground: "#fef2f2",
 };
@@ -20,6 +22,8 @@ const dark: typeof light = {
   border: "#27272a",
   primary: "#3b82f6",
   primaryText: "#ffffff",
+  good: "#4ade80",
+  warn: "#fbbf24",
   danger: "#f87171",
   dangerBackground: "#2a1215",
 };

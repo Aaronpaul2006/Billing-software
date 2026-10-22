@@ -1,4 +1,4 @@
-import { Stack, useRouter } from "expo-router";
+import { Stack } from "expo-router";
 import { StyleSheet, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 
@@ -24,29 +24,18 @@ function FinishSetupOnWeb() {
   );
 }
 
+/** The tabs, with the detail screens opening over them. */
 export default function AppLayout() {
   const session = useSession();
-  const router = useRouter();
   if (session.mfa_enrollment_required) return <FinishSetupOnWeb />;
-  const company = session.tenants.find((t) => t.id === session.tenant_id)?.legal_name;
   return (
     <Stack>
-      <Stack.Screen
-        name="index"
-        options={{
-          title: company ?? "Dashboard",
-          headerRight: () => (
-            <Button
-              label="Account"
-              variant="ghost"
-              onPress={() => {
-                router.push("/account");
-              }}
-            />
-          ),
-        }}
-      />
+      <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
       <Stack.Screen name="account" options={{ title: "Account" }} />
+      <Stack.Screen name="documents/[id]" options={{ title: "Bill" }} />
+      <Stack.Screen name="clients/[id]" options={{ title: "Client" }} />
+      <Stack.Screen name="projects/[id]" options={{ title: "Project" }} />
+      <Stack.Screen name="payments/[id]" options={{ title: "Payment" }} />
     </Stack>
   );
 }

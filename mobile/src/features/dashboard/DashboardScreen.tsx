@@ -1,6 +1,7 @@
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useState } from "react";
-import { RefreshControl, ScrollView, StyleSheet, Text, View } from "react-native";
+import { useRouter } from "expo-router";
+import { Pressable, RefreshControl, ScrollView, StyleSheet, Text, View } from "react-native";
 
 import { api, unwrap } from "@/api/client";
 import type { components } from "@/api/schema";
@@ -61,10 +62,18 @@ function Summary({ from, to, book }: { from: string; to: string; book: Book }) {
 
 function ReceivableRow({ r }: { r: Receivable }) {
   const c = useColors();
+  const router = useRouter();
   const overdue =
     compareMoney(r.days_90_plus, "0") === 1 ? `${formatInr(r.days_90_plus)} over 90 days` : null;
   return (
-    <View style={[styles.row, { borderColor: c.border }]}>
+    <Pressable
+      accessibilityRole="button"
+      accessibilityLabel={`${r.display_name}, owes ${formatInr(r.total)}`}
+      onPress={() => {
+        router.push(`/clients/${r.party_id}`);
+      }}
+      style={[styles.row, { borderColor: c.border }]}
+    >
       <View style={styles.rowText}>
         <Text style={[styles.name, { color: c.text }]} numberOfLines={1}>
           {r.display_name}
@@ -74,7 +83,7 @@ function ReceivableRow({ r }: { r: Receivable }) {
         </Text>
       </View>
       <Text style={[styles.amount, { color: c.text }]}>{formatInr(r.total)}</Text>
-    </View>
+    </Pressable>
   );
 }
 
