@@ -4,7 +4,36 @@ Expo (SDK 58) + React Native + TypeScript, on the same REST API as the web app
 (`docs/02-api-design.md`). Screens live in `src/app/` (expo-router: one file per
 route); the code behind them in `src/features/`, `src/auth/`, `src/api/`, `src/lib/`.
 
-## Run it on your phone (development)
+## Run it on an Android phone over USB (development)
+
+No Wi-Fi, no server: the cable carries both the app's code and the API calls,
+and the API stays on `127.0.0.1` (nothing to add to `DJANGO_ALLOWED_HOSTS`).
+
+1. On the phone: Settings → About phone → tap **Build number** seven times, then
+   Settings → Developer options → turn on **USB debugging**. Install **Expo Go**
+   from the Play Store.
+2. On the PC, once: `winget install Google.PlatformTools` (gives `adb`). Plug the
+   phone in, accept "Allow USB debugging?" on it; `adb devices` lists the phone.
+3. Start the local services and the API as usual (`docker compose up -d` in the
+   repository, `uv run python manage.py runserver 127.0.0.1:8000` in `backend/`;
+   add `CELERY_TASK_ALWAYS_EAGER=true` before it so emails go out without a worker).
+4. Let the phone's `localhost` reach the PC through the cable (again after every
+   re-plug):
+
+   ```bash
+   adb reverse tcp:8000 tcp:8000   # the API
+   adb reverse tcp:8081 tcp:8081   # Metro, which serves the app's code
+   ```
+
+5. In `mobile/`: `npm ci`, then `npx expo start --localhost` and press **a**: the
+   app opens in Expo Go on the phone. No `.env` is needed: the app's default API
+   address is `http://127.0.0.1:8000`, which `adb reverse` sends to the PC.
+
+Sign in with an account made in the web app (`http://localhost:5173/signup`)
+with two-step verification on. Emails (for example "confirm your address",
+needed before issuing a bill) arrive in Mailpit: `http://localhost:8025`.
+
+## Run it on your phone over Wi-Fi (development)
 
 1. Install **Expo Go** from the App Store / Play Store.
 2. Start the API so the phone can reach it (same Wi-Fi as the PC):
