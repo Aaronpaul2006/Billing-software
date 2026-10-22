@@ -36,12 +36,24 @@ function proxyToApi(req, res) {
   req.pipe(upstream);
 }
 
+// Metro listens on every network interface; the API must not become reachable
+// from the Wi-Fi through it. Only this PC may use the proxy (a phone on USB
+// arrives as localhost through `adb reverse`; on Wi-Fi it calls the API itself).
+function fromThisPc(req) {
+  const address = req.socket.remoteAddress ?? "";
+  return address === "127.0.0.1" || address === "::1" || address === "::ffff:127.0.0.1";
+}
+
 const config = getDefaultConfig(__dirname);
 
 config.server = {
   ...config.server,
   enhanceMiddleware: (metroMiddleware) => (req, res, next) => {
-    if (req.url && req.url.startsWith("/api/")) return proxyToApi(req, res);
+    if (req.url && req.url.startsWith("/api/")) {
+      if (fromThisPc(req)) return proxyToApi(req, res);
+      res.writeHead(403, { "Content-Type": "text/plain" });
+      return res.end("The /api proxy only serves this computer.");
+    }
     return metroMiddleware(req, res, next);
   },
 };
