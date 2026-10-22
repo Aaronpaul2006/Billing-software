@@ -4,6 +4,25 @@ Expo (SDK 58) + React Native + TypeScript, on the same REST API as the web app
 (`docs/02-api-design.md`). Screens live in `src/app/` (expo-router: one file per
 route); the code behind them in `src/features/`, `src/auth/`, `src/api/`, `src/lib/`.
 
+## Run it on the PC, in a browser (development)
+
+The same screens, in a phone-sized browser window; no phone needed.
+
+1. Start the local services and the API: `docker compose up -d` in the
+   repository, then in `backend/`
+   `CELERY_TASK_ALWAYS_EAGER=true uv run python manage.py runserver 127.0.0.1:8000`.
+2. In `mobile/`: `npm ci` (once), then `npm run web` and open
+   `http://localhost:8081`. For a phone-shaped window press F12, then
+   Ctrl+Shift+M (device toolbar).
+3. Sign in with an account made in the web app (`npm run dev` in `web/`, then
+   `http://localhost:5173/signup`) with two-step verification on.
+
+In the browser the dev server passes `/api` to the API on `127.0.0.1:8000`
+(`metro.config.js`), so there is nothing to configure. Differences from a
+phone: the session lives in memory (reloading the page signs you out),
+confirmations use the browser's dialog, and "Share PDF" opens the PDF in a new
+tab (on Windows the PDF is never made, so it says "still being made").
+
 ## Run it on an Android phone over USB (development)
 
 No Wi-Fi, no server: the cable carries both the app's code and the API calls,

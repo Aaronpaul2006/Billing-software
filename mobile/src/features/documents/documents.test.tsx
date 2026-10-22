@@ -125,9 +125,9 @@ describe("a bill", () => {
     await renderSignedIn("/documents/d1");
     expect(await screen.findByText("₹3,41,020.00")).toBeTruthy(); // total
     expect(screen.getByText("Less retention")).toBeTruthy();
-    expect(screen.getByText("Less income-tax tds")).toBeTruthy();
+    expect(screen.getByText("Less income-tax TDS")).toBeTruthy();
     expect(screen.queryByText("IGST")).toBeNull(); // ₹0.00 rows are left out
-    expect(screen.queryByText("Less gst tds")).toBeNull();
+    expect(screen.queryByText("Less GST TDS")).toBeNull();
     expect(screen.getByText("₹3,23,680.00")).toBeTruthy(); // net receivable
     expect(screen.getByText("₹1,73,680.00")).toBeTruthy(); // outstanding
     expect(screen.getByText("Previous 10 · up to date 52.5 cum")).toBeTruthy();

@@ -86,6 +86,7 @@ Last updated: 2026-10-22
 
 ## In progress
 
+- Mobile on the PC (owner request 2026-10-22: run it on the PC first): `npm run web` in `mobile/` serves the app in a browser; the dev server passes `/api` to 127.0.0.1:8000 (`metro.config.js`, no CORS, backend unchanged). Web-only stand-ins: the refresh token in memory (`refreshToken.web.ts`; reload signs you out), the browser's confirm dialog (`confirm.web.ts`), the PDF opened in a new tab (`sharePdf.web.ts`). Walked through in Edge at phone size with Playwright (sign-in with a 2-step code, dashboard, projects, payments, issue a draft, bill, client, record a payment): no errors; it caught the deductions written "income-tax tds" (now TDS / GST) and tab labels cut off in the browser (taller bar on the web only). Steps in `mobile/README.md`. Also there: testing on an Android phone over USB (Expo Go + `adb reverse`).
 - Mobile M.4 (owner decision 2026-10-22: an Android test build, talking to production, so deploy production first). Ready: `mobile/eas.json` (`preview` = installable APK, `production` = Play Store bundle) and `mobile/app.config.ts` (app id and API address from the build environment; a test or store build stops without an app id or with a non-HTTPS address; checked for all four cases), instructions in `mobile/README.md` and `docs/03-operations.md` §11. Waiting for the owner: a server and domain, the file / backup buckets and an email provider (runbook §2–§5), an Expo account, and the app id (e.g. `in.<company>.billing`).
 
 ## Next

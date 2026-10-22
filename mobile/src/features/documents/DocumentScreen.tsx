@@ -1,7 +1,7 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { Stack, useLocalSearchParams, useRouter } from "expo-router";
 import { useState } from "react";
-import { Alert, Pressable, RefreshControl, ScrollView, StyleSheet, Text, View } from "react-native";
+import { Pressable, RefreshControl, ScrollView, StyleSheet, Text, View } from "react-native";
 
 import { api, unwrap } from "@/api/client";
 import { ApiError } from "@/api/problem";
@@ -10,6 +10,7 @@ import { useSession } from "@/auth/context";
 import { Badge } from "@/components/list";
 import { Body, Button, Card, ErrorView, Loading, Notice } from "@/components/ui";
 import { canIssueDocuments, canRecordPayments, ifMatch, newIdempotencyKey } from "@/lib/actions";
+import { confirmAction } from "@/lib/confirm";
 import { errorMessage } from "@/lib/errors";
 import { compareMoney, formatInr, formatQty } from "@/lib/money";
 import { space, useColors } from "@/theme";
@@ -45,10 +46,10 @@ function Totals({ d }: { d: Document }) {
   const some = (v: string) => compareMoney(v, "0") !== 0;
   const deductions = (
     [
-      ["Retention", t.retention],
-      ["Income-tax TDS", t.income_tax_tds],
-      ["GST TDS", t.gst_tds],
-      ["Advance recovered", t.advance_recovery],
+      ["Less retention", t.retention],
+      ["Less income-tax TDS", t.income_tax_tds],
+      ["Less GST TDS", t.gst_tds],
+      ["Less advance recovered", t.advance_recovery],
     ] as const
   ).filter(([, v]) => some(v));
   const receivable = RECEIVABLE_TYPES.includes(d.doc_type) && d.status !== "DRAFT";
@@ -62,7 +63,7 @@ function Totals({ d }: { d: Document }) {
       {some(t.round_off) && <Amount label="Round off" value={t.round_off} />}
       <Amount label="Total" value={t.grand_total} strong />
       {deductions.map(([label, value]) => (
-        <Amount key={label} label={`Less ${label.toLowerCase()}`} value={value} />
+        <Amount key={label} label={label} value={value} />
       ))}
       {deductions.length > 0 && <Amount label="Net receivable" value={t.net_receivable} strong />}
       {receivable && (
@@ -195,18 +196,13 @@ export function DocumentScreen() {
     },
   });
   const confirmIssue = (d: Document) => {
-    Alert.alert(
+    confirmAction(
       `Issue this ${DOC_TYPE_LABELS[d.doc_type].toLowerCase()}?`,
       "It gets the next number and can no longer be edited.",
-      [
-        { text: "Not now", style: "cancel" },
-        {
-          text: "Issue",
-          onPress: () => {
-            issue.mutate(d);
-          },
-        },
-      ],
+      "Issue",
+      () => {
+        issue.mutate(d);
+      },
     );
   };
 

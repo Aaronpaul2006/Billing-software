@@ -3,6 +3,7 @@ import { useRouter } from "expo-router";
 import { Tabs } from "expo-router/js-tabs";
 import type { BottomTabNavigationOptions } from "expo-router/js-tabs";
 import type { ComponentProps } from "react";
+import { Platform } from "react-native";
 
 import { useSession } from "@/auth/context";
 import { Button } from "@/components/ui";
@@ -35,7 +36,14 @@ export default function TabsLayout() {
     />
   );
   return (
-    <Tabs screenOptions={{ tabBarActiveTintColor: c.primary, headerRight: account }}>
+    <Tabs
+      screenOptions={{
+        tabBarActiveTintColor: c.primary,
+        headerRight: account,
+        // In a browser the default bar (sized for phones) cuts the labels off.
+        ...(Platform.OS === "web" ? { tabBarStyle: { height: 64, paddingBottom: 8 } } : {}),
+      }}
+    >
       <Tabs.Screen
         name="index"
         options={{
