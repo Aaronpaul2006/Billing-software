@@ -210,3 +210,10 @@ saw their data.
   Database passwords: also run the migrate job (it re-applies them).
 * Upgrade the server OS once a year (Ubuntu LTS) and Postgres between major
   versions with a dump and restore (section 9), never in place.
+
+## 11. Owner mobile app
+
+Android test builds come from Expo's cloud (EAS) and talk to this server's
+API (`https://<domain>`): see `mobile/README.md`, "Android test build". The
+build refuses an address that is not `https://`. Nothing on the server
+changes for the app: it uses the same API and the same accounts.

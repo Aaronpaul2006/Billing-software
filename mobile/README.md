@@ -25,6 +25,30 @@ route); the code behind them in `src/features/`, `src/auth/`, `src/api/`, `src/l
 Sign up and turn on two-step verification in the web app first: the app signs in
 existing accounts only.
 
+## Android test build (EAS)
+
+Built in Expo's cloud (EAS); you get a link to an APK to install on the phone.
+The app talks to the production API, so deploy that first
+(`docs/03-operations.md`).
+
+1. A free account at expo.dev. In `mobile/`: `npx eas-cli@latest login`
+   (or set `EXPO_TOKEN` to a robot access token that may build).
+2. Once: `npx eas-cli@latest init` links the project (adds its id to `app.json`).
+3. The two build values for the `preview` environment (not secrets):
+
+   ```bash
+   npx eas-cli@latest env:create --environment preview --visibility plaintext --name APP_ID --value in.<company>.billing
+   npx eas-cli@latest env:create --environment preview --visibility plaintext --name EXPO_PUBLIC_API_URL --value https://app.<company>.in
+   ```
+
+4. `npx eas-cli@latest build --platform android --profile preview`, then open
+   the link on the phone and install (allow "install unknown apps").
+
+`app.config.ts` stops the build when `APP_ID` is missing or the API address is
+not `https://`. The app id cannot change once the app is on the Play Store; for
+test APKs a new id only means installing again. Store builds use the
+`production` profile (an app bundle for the Play Console).
+
 ## Checks (what CI runs)
 
 ```bash

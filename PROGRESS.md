@@ -86,7 +86,7 @@ Last updated: 2026-10-22
 
 ## In progress
 
-- Owner mobile app. Next: M.4 builds and store setup (needs the owner: Expo account, app ids, store accounts).
+- Mobile M.4 (owner decision 2026-10-22: an Android test build, talking to production, so deploy production first). Ready: `mobile/eas.json` (`preview` = installable APK, `production` = Play Store bundle) and `mobile/app.config.ts` (app id and API address from the build environment; a test or store build stops without an app id or with a non-HTTPS address; checked for all four cases), instructions in `mobile/README.md` and `docs/03-operations.md` §11. Waiting for the owner: a server and domain, the file / backup buckets and an email provider (runbook §2–§5), an Expo account, and the app id (e.g. `in.<company>.billing`).
 
 ## Next
 
