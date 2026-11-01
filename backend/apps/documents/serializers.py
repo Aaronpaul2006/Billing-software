@@ -17,6 +17,11 @@ class LineInSerializer(serializers.Serializer[Any]):
     when the line names a catalog or BOQ item: they are filled from it."""
 
     catalog_item_id = serializers.UUIDField(required=False, allow_null=True)
+    catalog_variant_id = serializers.UUIDField(
+        required=False,
+        allow_null=True,
+        help_text="A variant of catalog_item_id: rate = item rate + the variant's delta.",
+    )
     boq_item_id = serializers.UUIDField(required=False, allow_null=True)
     description = serializers.CharField(max_length=2000, required=False)
     sac_hsn = serializers.RegexField(r"^[0-9]{4,8}$", required=False, allow_null=True)
@@ -83,6 +88,7 @@ class DocumentWriteSerializer(serializers.Serializer[Any]):
 
 class LineOutSerializer(serializers.ModelSerializer[DocumentLine]):
     catalog_item_id = serializers.UUIDField(allow_null=True)
+    catalog_variant_id = serializers.UUIDField(allow_null=True)
     boq_item_id = serializers.UUIDField(allow_null=True)
     quantity = QuantityField(help_text="RA bill: the quantity in this bill.")
     prev_cumulative_qty = QuantityField(
@@ -104,6 +110,7 @@ class LineOutSerializer(serializers.ModelSerializer[DocumentLine]):
         fields = (
             "line_no",
             "catalog_item_id",
+            "catalog_variant_id",
             "boq_item_id",
             "description",
             "sac_hsn",

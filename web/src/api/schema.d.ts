@@ -501,6 +501,63 @@ export interface paths {
         patch: operations["catalog_items_partial_update"];
         trace?: never;
     };
+    "/api/v1/catalog-items/{item_id}/variants": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * @description Permission by action name (docs/01-architecture.md §3): `read_action`
+         *     for GET/HEAD/OPTIONS, `write_action` for everything else. Generic, so list
+         *     endpoints get pagination and filtering from the DRF defaults.
+         */
+        get: operations["catalog_items_variants_retrieve"];
+        put?: never;
+        /**
+         * @description Permission by action name (docs/01-architecture.md §3): `read_action`
+         *     for GET/HEAD/OPTIONS, `write_action` for everything else. Generic, so list
+         *     endpoints get pagination and filtering from the DRF defaults.
+         */
+        post: operations["catalog_items_variants_create"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/catalog-variants/{variant_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * @description Permission by action name (docs/01-architecture.md §3): `read_action`
+         *     for GET/HEAD/OPTIONS, `write_action` for everything else. Generic, so list
+         *     endpoints get pagination and filtering from the DRF defaults.
+         */
+        get: operations["catalog_variants_retrieve"];
+        put?: never;
+        post?: never;
+        /**
+         * @description Permission by action name (docs/01-architecture.md §3): `read_action`
+         *     for GET/HEAD/OPTIONS, `write_action` for everything else. Generic, so list
+         *     endpoints get pagination and filtering from the DRF defaults.
+         */
+        delete: operations["catalog_variants_destroy"];
+        options?: never;
+        head?: never;
+        /**
+         * @description Permission by action name (docs/01-architecture.md §3): `read_action`
+         *     for GET/HEAD/OPTIONS, `write_action` for everything else. Generic, so list
+         *     endpoints get pagination and filtering from the DRF defaults.
+         */
+        patch: operations["catalog_variants_partial_update"];
+        trace?: never;
+    };
     "/api/v1/document-series": {
         parameters: {
             query?: never;
@@ -2077,6 +2134,7 @@ export interface components {
             default_rate: string | null;
             /** Format: decimal */
             gst_rate: string;
+            readonly variants: components["schemas"]["CatalogVariant"][];
             readonly is_active: boolean;
             readonly version: number;
             /** Format: date-time */
@@ -2096,6 +2154,41 @@ export interface components {
              * @default 18.00
              */
             gst_rate?: string;
+            /** @default true */
+            is_active?: boolean;
+        };
+        CatalogVariant: {
+            /** Format: uuid */
+            readonly id: string;
+            /** Format: uuid */
+            catalog_item_id: string;
+            readonly attribute: string;
+            readonly value: string;
+            /**
+             * Format: decimal
+             * @description Added to the item's default rate (may be negative).
+             */
+            rate_delta: string;
+            readonly is_active: boolean;
+            readonly version: number;
+            /** Format: date-time */
+            readonly created_at: string;
+            /** Format: date-time */
+            readonly updated_at: string;
+        };
+        CatalogVariantList: {
+            results: components["schemas"]["CatalogVariant"][];
+        };
+        CatalogVariantWrite: {
+            /** @description e.g. Brand */
+            attribute: string;
+            /** @description e.g. UltraTech */
+            value: string;
+            /**
+             * Format: decimal
+             * @default 0.00
+             */
+            rate_delta?: string;
             /** @default true */
             is_active?: boolean;
         };
@@ -2677,6 +2770,11 @@ export interface components {
         LineIn: {
             /** Format: uuid */
             catalog_item_id?: string | null;
+            /**
+             * Format: uuid
+             * @description A variant of catalog_item_id: rate = item rate + the variant's delta.
+             */
+            catalog_variant_id?: string | null;
             /** Format: uuid */
             boq_item_id?: string | null;
             description?: string;
@@ -2695,6 +2793,8 @@ export interface components {
             readonly line_no: number;
             /** Format: uuid */
             catalog_item_id: string | null;
+            /** Format: uuid */
+            catalog_variant_id: string | null;
             /** Format: uuid */
             boq_item_id: string | null;
             readonly description: string;
@@ -3040,6 +3140,19 @@ export interface components {
              * @default 18.00
              */
             gst_rate?: string;
+            /** @default true */
+            is_active?: boolean;
+        };
+        PatchedCatalogVariantWrite: {
+            /** @description e.g. Brand */
+            attribute?: string;
+            /** @description e.g. UltraTech */
+            value?: string;
+            /**
+             * Format: decimal
+             * @default 0.00
+             */
+            rate_delta?: string;
             /** @default true */
             is_active?: boolean;
         };
@@ -5458,6 +5571,118 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["CatalogItem"];
+                };
+            };
+        };
+    };
+    catalog_items_variants_retrieve: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                item_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CatalogVariantList"];
+                };
+            };
+        };
+    };
+    catalog_items_variants_create: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                item_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CatalogVariantWrite"];
+            };
+        };
+        responses: {
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CatalogVariant"];
+                };
+            };
+        };
+    };
+    catalog_variants_retrieve: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                variant_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CatalogVariant"];
+                };
+            };
+        };
+    };
+    catalog_variants_destroy: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                variant_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description No response body */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    catalog_variants_partial_update: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                variant_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: {
+            content: {
+                "application/json": components["schemas"]["PatchedCatalogVariantWrite"];
+            };
+        };
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CatalogVariant"];
                 };
             };
         };

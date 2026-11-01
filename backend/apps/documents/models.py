@@ -308,6 +308,7 @@ class DocumentLine(TenantScoped):
     document = ref("documents.Document", related_name="lines", on_delete=models.CASCADE)
     line_no = models.SmallIntegerField()
     catalog_item = ref("catalog.CatalogItem", null=True)
+    catalog_variant = ref("catalog.CatalogItemVariant", null=True)
     boq_item = ref("projects.BoqItem", null=True)
     description = models.TextField()
     sac_hsn = models.TextField(null=True)  # noqa: DJ001 - mirrors schema

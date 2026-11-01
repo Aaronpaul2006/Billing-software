@@ -288,6 +288,27 @@ CREATE TABLE catalog_items (
   UNIQUE (tenant_id, id)
 );
 
+-- Variants of a catalog item (W.4), e.g. Brand: UltraTech, Grade: OPC 53. A
+-- variant's rate is the item's default rate plus `rate_delta` (may be
+-- negative). Bill lines name a variant of their own item only: the
+-- three-column key below lets document_lines enforce that.
+CREATE TABLE catalog_item_variants (
+  id               uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+  tenant_id        uuid NOT NULL REFERENCES tenants (id),
+  catalog_item_id  uuid NOT NULL,
+  attribute        text NOT NULL CHECK (char_length(attribute) BETWEEN 1 AND 50),
+  value            text NOT NULL CHECK (char_length(value) BETWEEN 1 AND 100),
+  rate_delta       numeric(14,2) NOT NULL DEFAULT 0,
+  is_active        boolean NOT NULL DEFAULT true,
+  version          integer NOT NULL DEFAULT 1,
+  created_at       timestamptz NOT NULL DEFAULT now(),
+  updated_at       timestamptz NOT NULL DEFAULT now(),
+  UNIQUE (tenant_id, id),
+  UNIQUE (tenant_id, catalog_item_id, id),
+  UNIQUE (tenant_id, catalog_item_id, attribute, value),
+  FOREIGN KEY (tenant_id, catalog_item_id) REFERENCES catalog_items (tenant_id, id)
+);
+
 -- A saved quote / bill to start new drafts from (W.3), e.g. "2BHK interior
 -- package". Lines are copied values (description, HSN / SAC, unit, quantity,
 -- rate, GST %, discount), checked by the API; drafts made from a template go
@@ -480,6 +501,7 @@ CREATE TABLE document_lines (
   document_id          uuid NOT NULL,
   line_no              smallint NOT NULL CHECK (line_no > 0),
   catalog_item_id      uuid,
+  catalog_variant_id   uuid,                                -- W.4: a variant of catalog_item_id
   boq_item_id          uuid,
   description          text NOT NULL CHECK (char_length(description) BETWEEN 1 AND 2000),
   sac_hsn              text CHECK (sac_hsn ~ '^[0-9]{4,8}$'),
@@ -499,7 +521,10 @@ CREATE TABLE document_lines (
   UNIQUE (document_id, line_no),
   FOREIGN KEY (tenant_id, document_id)     REFERENCES documents (tenant_id, id) ON DELETE CASCADE,
   FOREIGN KEY (tenant_id, catalog_item_id) REFERENCES catalog_items (tenant_id, id),
+  FOREIGN KEY (tenant_id, catalog_item_id, catalog_variant_id)
+    REFERENCES catalog_item_variants (tenant_id, catalog_item_id, id),
   FOREIGN KEY (tenant_id, boq_item_id)     REFERENCES boq_items (tenant_id, id),
+  CHECK (catalog_variant_id IS NULL OR catalog_item_id IS NOT NULL),
   CHECK (taxable_value = round(quantity * rate, 2) - discount_amount),
   CHECK (cgst_amount = sgst_amount),
   CHECK (line_total = taxable_value + cgst_amount + sgst_amount + igst_amount + cess_amount)
@@ -980,7 +1005,7 @@ BEGIN
     'tenants', 'memberships', 'gst_registrations', 'parties', 'projects', 'boq_items',
     'catalog_items', 'attachments', 'document_series', 'documents', 'document_lines',
     'payments', 'allocations', 'expenses', 'retention_releases', 'tds_certificates', 'exports',
-    'email_invitations', 'payment_reminders', 'document_templates']
+    'email_invitations', 'payment_reminders', 'document_templates', 'catalog_item_variants']
   LOOP
     EXECUTE format(
       'CREATE TRIGGER audit AFTER INSERT OR UPDATE OR DELETE ON %I FOR EACH ROW EXECUTE FUNCTION audit_row_change()', t);
@@ -1000,7 +1025,7 @@ BEGIN
     'gst_registrations', 'parties', 'projects', 'boq_items', 'catalog_items', 'attachments',
     'document_series', 'documents', 'document_lines', 'payments', 'allocations', 'expenses',
     'retention_releases', 'tds_certificates', 'idempotency_keys', 'exports', 'email_invitations',
-    'payment_reminders', 'document_templates']
+    'payment_reminders', 'document_templates', 'catalog_item_variants']
   LOOP
     EXECUTE format('ALTER TABLE %I ENABLE ROW LEVEL SECURITY', t);
     EXECUTE format('ALTER TABLE %I FORCE ROW LEVEL SECURITY', t);
@@ -1293,7 +1318,7 @@ GRANT SELECT, INSERT, UPDATE ON ALL TABLES IN SCHEMA public TO billing_app;
 -- allocations, editable masters, housekeeping). Everything else is
 -- cancelled / voided / archived instead.
 GRANT DELETE ON documents, document_lines, allocations, boq_items, catalog_items, tds_certificates,
-                idempotency_keys, auth_sessions, document_templates TO billing_app;
+                idempotency_keys, auth_sessions, document_templates, catalog_item_variants TO billing_app;
 -- Audit rows are written only by the trigger.
 REVOKE INSERT, UPDATE, DELETE ON audit_log FROM billing_app;
 REVOKE INSERT, UPDATE ON v_billing_summary, v_receivables, v_project_billing FROM billing_app;

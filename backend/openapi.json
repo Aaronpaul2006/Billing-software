@@ -1027,6 +1027,197 @@
                 }
             }
         },
+        "/api/v1/catalog-items/{item_id}/variants": {
+            "get": {
+                "operationId": "catalog_items_variants_retrieve",
+                "description": "Permission by action name (docs/01-architecture.md §3): `read_action`\nfor GET/HEAD/OPTIONS, `write_action` for everything else. Generic, so list\nendpoints get pagination and filtering from the DRF defaults.",
+                "parameters": [
+                    {
+                        "in": "path",
+                        "name": "item_id",
+                        "schema": {
+                            "type": "string",
+                            "format": "uuid"
+                        },
+                        "required": true
+                    }
+                ],
+                "tags": [
+                    "catalog"
+                ],
+                "security": [
+                    {
+                        "bearerAuth": []
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/CatalogVariantList"
+                                }
+                            }
+                        },
+                        "description": ""
+                    }
+                }
+            },
+            "post": {
+                "operationId": "catalog_items_variants_create",
+                "description": "Permission by action name (docs/01-architecture.md §3): `read_action`\nfor GET/HEAD/OPTIONS, `write_action` for everything else. Generic, so list\nendpoints get pagination and filtering from the DRF defaults.",
+                "parameters": [
+                    {
+                        "in": "path",
+                        "name": "item_id",
+                        "schema": {
+                            "type": "string",
+                            "format": "uuid"
+                        },
+                        "required": true
+                    }
+                ],
+                "tags": [
+                    "catalog"
+                ],
+                "requestBody": {
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/CatalogVariantWrite"
+                            }
+                        }
+                    },
+                    "required": true
+                },
+                "security": [
+                    {
+                        "bearerAuth": []
+                    }
+                ],
+                "responses": {
+                    "201": {
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/CatalogVariant"
+                                }
+                            }
+                        },
+                        "description": ""
+                    }
+                }
+            }
+        },
+        "/api/v1/catalog-variants/{variant_id}": {
+            "get": {
+                "operationId": "catalog_variants_retrieve",
+                "description": "Permission by action name (docs/01-architecture.md §3): `read_action`\nfor GET/HEAD/OPTIONS, `write_action` for everything else. Generic, so list\nendpoints get pagination and filtering from the DRF defaults.",
+                "parameters": [
+                    {
+                        "in": "path",
+                        "name": "variant_id",
+                        "schema": {
+                            "type": "string",
+                            "format": "uuid"
+                        },
+                        "required": true
+                    }
+                ],
+                "tags": [
+                    "catalog"
+                ],
+                "security": [
+                    {
+                        "bearerAuth": []
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/CatalogVariant"
+                                }
+                            }
+                        },
+                        "description": ""
+                    }
+                }
+            },
+            "patch": {
+                "operationId": "catalog_variants_partial_update",
+                "description": "Permission by action name (docs/01-architecture.md §3): `read_action`\nfor GET/HEAD/OPTIONS, `write_action` for everything else. Generic, so list\nendpoints get pagination and filtering from the DRF defaults.",
+                "parameters": [
+                    {
+                        "in": "path",
+                        "name": "variant_id",
+                        "schema": {
+                            "type": "string",
+                            "format": "uuid"
+                        },
+                        "required": true
+                    }
+                ],
+                "tags": [
+                    "catalog"
+                ],
+                "requestBody": {
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/PatchedCatalogVariantWrite"
+                            }
+                        }
+                    }
+                },
+                "security": [
+                    {
+                        "bearerAuth": []
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/CatalogVariant"
+                                }
+                            }
+                        },
+                        "description": ""
+                    }
+                }
+            },
+            "delete": {
+                "operationId": "catalog_variants_destroy",
+                "description": "Permission by action name (docs/01-architecture.md §3): `read_action`\nfor GET/HEAD/OPTIONS, `write_action` for everything else. Generic, so list\nendpoints get pagination and filtering from the DRF defaults.",
+                "parameters": [
+                    {
+                        "in": "path",
+                        "name": "variant_id",
+                        "schema": {
+                            "type": "string",
+                            "format": "uuid"
+                        },
+                        "required": true
+                    }
+                ],
+                "tags": [
+                    "catalog"
+                ],
+                "security": [
+                    {
+                        "bearerAuth": []
+                    }
+                ],
+                "responses": {
+                    "204": {
+                        "description": "No response body"
+                    }
+                }
+            }
+        },
         "/api/v1/document-series": {
             "get": {
                 "operationId": "document_series_list",
@@ -5838,6 +6029,13 @@
                         "format": "decimal",
                         "pattern": "^-?\\d{0,3}(?:\\.\\d{0,2})?$"
                     },
+                    "variants": {
+                        "type": "array",
+                        "items": {
+                            "$ref": "#/components/schemas/CatalogVariant"
+                        },
+                        "readOnly": true
+                    },
                     "is_active": {
                         "type": "boolean",
                         "readOnly": true
@@ -5868,6 +6066,7 @@
                     "sac_hsn",
                     "unit",
                     "updated_at",
+                    "variants",
                     "version"
                 ]
             },
@@ -5921,6 +6120,108 @@
                 },
                 "required": [
                     "name"
+                ]
+            },
+            "CatalogVariant": {
+                "type": "object",
+                "properties": {
+                    "id": {
+                        "type": "string",
+                        "format": "uuid",
+                        "readOnly": true
+                    },
+                    "catalog_item_id": {
+                        "type": "string",
+                        "format": "uuid"
+                    },
+                    "attribute": {
+                        "type": "string",
+                        "readOnly": true
+                    },
+                    "value": {
+                        "type": "string",
+                        "readOnly": true
+                    },
+                    "rate_delta": {
+                        "type": "string",
+                        "format": "decimal",
+                        "pattern": "^-?\\d{0,12}(?:\\.\\d{0,2})?$",
+                        "description": "Added to the item's default rate (may be negative)."
+                    },
+                    "is_active": {
+                        "type": "boolean",
+                        "readOnly": true
+                    },
+                    "version": {
+                        "type": "integer",
+                        "readOnly": true
+                    },
+                    "created_at": {
+                        "type": "string",
+                        "format": "date-time",
+                        "readOnly": true
+                    },
+                    "updated_at": {
+                        "type": "string",
+                        "format": "date-time",
+                        "readOnly": true
+                    }
+                },
+                "required": [
+                    "attribute",
+                    "catalog_item_id",
+                    "created_at",
+                    "id",
+                    "is_active",
+                    "rate_delta",
+                    "updated_at",
+                    "value",
+                    "version"
+                ]
+            },
+            "CatalogVariantList": {
+                "type": "object",
+                "properties": {
+                    "results": {
+                        "type": "array",
+                        "items": {
+                            "$ref": "#/components/schemas/CatalogVariant"
+                        }
+                    }
+                },
+                "required": [
+                    "results"
+                ]
+            },
+            "CatalogVariantWrite": {
+                "type": "object",
+                "properties": {
+                    "attribute": {
+                        "type": "string",
+                        "description": "e.g. Brand",
+                        "maxLength": 50,
+                        "minLength": 1
+                    },
+                    "value": {
+                        "type": "string",
+                        "description": "e.g. UltraTech",
+                        "maxLength": 100,
+                        "minLength": 1
+                    },
+                    "rate_delta": {
+                        "type": "string",
+                        "format": "decimal",
+                        "pattern": "^-?\\d{0,12}(?:\\.\\d{0,2})?$",
+                        "default": "0.00"
+                    },
+                    "is_active": {
+                        "type": "boolean",
+                        "default": true
+                    }
+                },
+                "required": [
+                    "attribute",
+                    "value"
                 ]
             },
             "ClientEnum": {
@@ -7663,6 +7964,14 @@
                         ],
                         "format": "uuid"
                     },
+                    "catalog_variant_id": {
+                        "type": [
+                            "string",
+                            "null"
+                        ],
+                        "format": "uuid",
+                        "description": "A variant of catalog_item_id: rate = item rate + the variant's delta."
+                    },
                     "boq_item_id": {
                         "type": [
                             "string",
@@ -7721,6 +8030,13 @@
                         "readOnly": true
                     },
                     "catalog_item_id": {
+                        "type": [
+                            "string",
+                            "null"
+                        ],
+                        "format": "uuid"
+                    },
+                    "catalog_variant_id": {
                         "type": [
                             "string",
                             "null"
@@ -7824,6 +8140,7 @@
                 "required": [
                     "boq_item_id",
                     "catalog_item_id",
+                    "catalog_variant_id",
                     "cess_amount",
                     "cgst_amount",
                     "description",
@@ -8968,6 +9285,33 @@
                         "format": "decimal",
                         "pattern": "^-?\\d{0,3}(?:\\.\\d{0,2})?$",
                         "default": "18.00"
+                    },
+                    "is_active": {
+                        "type": "boolean",
+                        "default": true
+                    }
+                }
+            },
+            "PatchedCatalogVariantWrite": {
+                "type": "object",
+                "properties": {
+                    "attribute": {
+                        "type": "string",
+                        "description": "e.g. Brand",
+                        "maxLength": 50,
+                        "minLength": 1
+                    },
+                    "value": {
+                        "type": "string",
+                        "description": "e.g. UltraTech",
+                        "maxLength": 100,
+                        "minLength": 1
+                    },
+                    "rate_delta": {
+                        "type": "string",
+                        "format": "decimal",
+                        "pattern": "^-?\\d{0,12}(?:\\.\\d{0,2})?$",
+                        "default": "0.00"
                     },
                     "is_active": {
                         "type": "boolean",

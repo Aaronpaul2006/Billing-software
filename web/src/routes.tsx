@@ -104,6 +104,13 @@ export const routes: RouteObject[] = [
           },
           { path: "documents/:documentId", lazy: lazyPage(documents, (m) => m.DocumentPage) },
           {
+            path: "catalog",
+            lazy: lazyPage(
+              () => import("@/features/catalog/CatalogPage"),
+              (m) => m.CatalogPage,
+            ),
+          },
+          {
             path: "templates",
             lazy: lazyPage(
               () => import("@/features/templates/TemplatesPage"),

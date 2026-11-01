@@ -22,7 +22,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { isoDate } from "@/features/dashboard/periods";
 import { applyServerErrors, blankToNull, formPath, ifMatch } from "@/lib/forms";
 import { placeName } from "@/lib/india";
-import { cleanMoneyInput, formatInr, formatQty } from "@/lib/money";
+import { cleanMoneyInput, formatInr, formatQty, sumMoney } from "@/lib/money";
 import { useDebounced } from "@/lib/useDebounced";
 
 import { DOC_TYPE_LABELS, documentKey, DRAFTABLE, supplyNote, useDocument } from "./api";
@@ -110,9 +110,11 @@ function toForm(doc: Document | undefined, type: DraftableType): FormValues {
     lines: doc.lines.map((l) => ({
       item: l.boq_item_id
         ? `boq:${l.boq_item_id}`
-        : l.catalog_item_id
-          ? `cat:${l.catalog_item_id}`
-          : "",
+        : l.catalog_item_id && l.catalog_variant_id
+          ? `var:${l.catalog_item_id}:${l.catalog_variant_id}`
+          : l.catalog_item_id
+            ? `cat:${l.catalog_item_id}`
+            : "",
       description: l.description,
       sac_hsn: l.sac_hsn ?? "",
       unit: l.unit ?? "",
@@ -126,12 +128,15 @@ function toForm(doc: Document | undefined, type: DraftableType): FormValues {
 
 /** Lines for the API: blanks left out, so the server fills them from the BOQ / catalog item. */
 function apiLine(l: LineForm): LineIn {
-  const [kind, id] = l.item.split(":");
+  const [kind, id, variantId] = l.item.split(":");
   const rate = cleanMoneyInput(l.rate);
   const discount = cleanMoneyInput(l.discount_amount);
   return {
     ...(kind === "boq" && id ? { boq_item_id: id } : {}),
     ...(kind === "cat" && id ? { catalog_item_id: id } : {}),
+    ...(kind === "var" && id && variantId
+      ? { catalog_item_id: id, catalog_variant_id: variantId }
+      : {}),
     ...(l.description.trim() ? { description: l.description.trim() } : {}),
     ...(l.sac_hsn.trim() ? { sac_hsn: l.sac_hsn.trim() } : {}),
     ...(l.unit.trim() ? { unit: l.unit.trim() } : {}),
@@ -194,7 +199,7 @@ function fillFromItem(
   catalog: CatalogItem[],
   setValue: UseFormSetValue<FormValues>,
 ) {
-  const [kind, id] = value.split(":");
+  const [kind, id, variantId] = value.split(":");
   const set = (field: keyof LineForm, v: string | null | undefined) => {
     setValue(`lines.${index}.${field}`, v ?? "", { shouldDirty: true });
   };
@@ -213,6 +218,16 @@ function fillFromItem(
     set("unit", c.unit);
     set("sac_hsn", c.sac_hsn);
     set("rate", c.default_rate);
+    set("gst_rate", c.gst_rate);
+  } else if (kind === "var") {
+    const c = catalog.find((x) => x.id === id);
+    const v = c?.variants.find((x) => x.id === variantId);
+    if (!c || !v) return;
+    set("description", `${c.description ?? c.name} — ${v.attribute}: ${v.value}`);
+    set("unit", c.unit);
+    set("sac_hsn", c.sac_hsn);
+    // The item's rate plus the variant's change, added exactly (paise); the server does the same.
+    set("rate", c.default_rate ? sumMoney([c.default_rate, v.rate_delta]) : "");
     set("gst_rate", c.gst_rate);
   }
 }
@@ -563,11 +578,19 @@ function Editor({ doc }: { doc?: Document }) {
                       )}
                       {!ra && catalogItems.length > 0 && (
                         <optgroup label="Catalog">
-                          {catalogItems.map((c) => (
+                          {catalogItems.flatMap((c) => [
                             <option key={c.id} value={`cat:${c.id}`}>
                               {c.name}
-                            </option>
-                          ))}
+                            </option>,
+                            ...c.variants
+                              .filter((v) => v.is_active)
+                              .map((v) => (
+                                <option key={v.id} value={`var:${c.id}:${v.id}`}>
+                                  {"\u00a0\u00a0"}
+                                  {c.name} — {v.attribute}: {v.value}
+                                </option>
+                              )),
+                          ])}
                         </optgroup>
                       )}
                     </NativeSelect>

@@ -823,6 +823,39 @@ for _name in ("document-template-detail", "document-template-use", "document-sav
 COLLECTION_ROUTES["document-templates"] = lambda w: None  # same test
 
 
+# --- W.4 catalog variants ---------------------------------------------------------------
+
+
+def test_catalog_variants_reject_other_tenant(world: World) -> None:
+    from apps.catalog.models import CatalogItem, CatalogItemVariant
+
+    a = world.a
+    with tenant_context(a.tenant_id, a.user_id):
+        item = CatalogItem.objects.create(name="A's cement")
+        variant = CatalogItemVariant.objects.create(
+            catalog_item=item, attribute="Brand", value="Secret"
+        )
+    api, b = world.api, world.as_b()
+    assert api.get(f"/api/v1/catalog-items/{item.pk}/variants", **b).status_code == 404
+    r = api.post(
+        f"/api/v1/catalog-items/{item.pk}/variants",
+        {"attribute": "Brand", "value": "Mine"},
+        format="json",
+        **b,
+    )
+    assert r.status_code == 404
+    url = f"/api/v1/catalog-variants/{variant.pk}"
+    assert api.get(url, **b).status_code == 404
+    assert (
+        api.patch(url, {"value": "x"}, format="json", HTTP_IF_MATCH='"v1"', **b).status_code == 404
+    )
+    assert api.delete(url, **b).status_code == 404
+
+
+OBJECT_ROUTES["catalog-item-variants"] = lambda w: None  # test_catalog_variants_reject_other_tenant
+OBJECT_ROUTES["catalog-variant-detail"] = lambda w: None  # same test
+
+
 # --- Phase 3.1 BOQ import ------------------------------------------------------------
 
 

@@ -64,6 +64,7 @@ function doc(overrides: Partial<Document> = {}): Document {
       {
         line_no: 1,
         catalog_item_id: null,
+        catalog_variant_id: null,
         boq_item_id: "b1",
         description: "RCC M25 for slabs",
         sac_hsn: "995453",
@@ -266,6 +267,92 @@ describe("document editor", () => {
     expect(
       await within(line).findByText("rate: A rate is required.", {}, { timeout: 3000 }),
     ).toBeInTheDocument();
+  });
+
+  it("prices a catalog variant at the item rate plus its change", async () => {
+    const previews: unknown[] = [];
+    server.use(
+      http.get(`${API}/parties`, () =>
+        HttpResponse.json({
+          results: [{ id: CLIENT, display_name: "Skyline Developers", gstin: null }],
+          next_cursor: null,
+        }),
+      ),
+      http.get(`${API}/projects`, () => HttpResponse.json({ results: [], next_cursor: null })),
+      http.get(`${API}/catalog-items`, () =>
+        HttpResponse.json({
+          results: [
+            {
+              id: "c1",
+              name: "OPC 53 cement",
+              description: null,
+              unit: "bag",
+              sac_hsn: "2523",
+              default_rate: "380.00",
+              gst_rate: "28.00",
+              variants: [
+                {
+                  id: "v1",
+                  catalog_item_id: "c1",
+                  attribute: "Brand",
+                  value: "UltraTech",
+                  rate_delta: "20.00",
+                  is_active: true,
+                  version: 1,
+                  created_at: "",
+                  updated_at: "",
+                },
+                {
+                  id: "v2",
+                  catalog_item_id: "c1",
+                  attribute: "Brand",
+                  value: "Old stock",
+                  rate_delta: "-50.00",
+                  is_active: false,
+                  version: 2,
+                  created_at: "",
+                  updated_at: "",
+                },
+              ],
+              is_active: true,
+              version: 1,
+              created_at: "",
+              updated_at: "",
+            },
+          ],
+          next_cursor: null,
+        }),
+      ),
+      http.post(`${API}/documents:preview-totals`, async ({ request }) => {
+        previews.push(await request.json());
+        return problem(422, "validation_error");
+      }),
+    );
+    const user = userEvent.setup();
+    renderSignedIn("/documents/new");
+    await user.type(await screen.findByLabelText("Client"), "sky");
+    await user.click(await screen.findByRole("button", { name: /Skyline Developers/ }));
+    const line = screen.getByRole("group", { name: "Line 1" });
+    const item = within(line).getByLabelText("Item");
+    await waitFor(() => {
+      expect(
+        within(item)
+          .getAllByRole("option")
+          .map((o) => o.textContent),
+      ).toContain("  OPC 53 cement — Brand: UltraTech");
+    });
+    // archived variants are not offered
+    expect(within(item).queryByText(/Old stock/)).not.toBeInTheDocument();
+    await user.selectOptions(item, "var:c1:v1");
+    expect(within(line).getByLabelText("Description")).toHaveValue(
+      "OPC 53 cement — Brand: UltraTech",
+    );
+    expect(within(line).getByLabelText("Rate (₹)")).toHaveValue("400.00");
+    await user.type(within(line).getByLabelText("Quantity"), "100");
+    await waitFor(() => {
+      expect(JSON.stringify(previews.at(-1))).toContain('"catalog_variant_id":"v1"');
+    });
+    expect(JSON.stringify(previews.at(-1))).toContain('"catalog_item_id":"c1"');
   });
 
   it("issued documents are not edited here", async () => {

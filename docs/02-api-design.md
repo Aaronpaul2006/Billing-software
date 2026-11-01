@@ -350,6 +350,22 @@ their own endpoints (Phase 1.6), RA bills below (Phase 3.2). Example response:
 }
 ```
 
+### Catalog item variants (W.4)
+
+A catalog item may have variants (`attribute` + `value`, e.g. Brand:
+UltraTech) with a `rate_delta` (may be negative). `GET /catalog-items`
+includes each item's `variants`. A draft line naming `catalog_item_id` and
+`catalog_variant_id` gets, unless typed: rate = item rate + delta (`422
+negative_rate` below zero), description "item — Brand: UltraTech", unit,
+HSN / SAC and GST from the item. `422 variant_mismatch` (another item's
+variant), `variant_without_item`. The database enforces the pairing too
+(foreign key on tenant, item, variant).
+
+| Method & path | |
+|---|---|
+| `GET/POST /catalog-items/{id}/variants` | List, add (`409 variant_exists`; `masters.edit`) |
+| `GET/PATCH/DELETE /catalog-variants/{id}` | Read, edit (If-Match), delete only if no bill uses it (`409 variant_used`: archive with `is_active: false`) |
+
 ### Templates (W.3)
 
 A template keeps a quote's or bill's lines (description, HSN / SAC, unit,

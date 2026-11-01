@@ -25,7 +25,7 @@ from typing import Any
 from django.db import transaction
 from django.db.models import Sum
 
-from apps.catalog.models import CatalogItem
+from apps.catalog.models import CatalogItem, CatalogItemVariant
 from apps.core.errors import Conflict, Invalid
 from apps.core.india import FOREIGN_COUNTRY, fy_start_year
 from apps.core.permissions import require
@@ -187,6 +187,12 @@ def _line_inputs(lines: list[dict[str, Any]], project: Project | None) -> list[d
             defaults = {"rate": source.default_rate}
         else:
             defaults = {}
+        if line.get("catalog_variant_id") and not line.get("catalog_item_id"):
+            raise Invalid(
+                f"lines[{i}].catalog_variant_id",
+                "A variant needs its catalog item.",
+                code="variant_without_item",
+            )
         if source is not None:
             defaults |= {
                 "description": source.description or getattr(source, "name", None),
@@ -194,6 +200,31 @@ def _line_inputs(lines: list[dict[str, Any]], project: Project | None) -> list[d
                 "sac_hsn": source.sac_hsn,
                 "gst_rate": source.gst_rate,
             }
+        if line.get("catalog_variant_id") and isinstance(source, CatalogItem):
+            variant = get_or_invalid(
+                CatalogItemVariant,
+                line["catalog_variant_id"],
+                f"lines[{i}].catalog_variant_id",
+                label="variant",
+            )
+            if variant.catalog_item_id != source.pk:
+                raise Invalid(
+                    f"lines[{i}].catalog_variant_id",
+                    "This variant belongs to another catalog item.",
+                    code="variant_mismatch",
+                )
+            base = source.default_rate
+            rate = None if base is None else base + variant.rate_delta
+            if rate is not None and rate < 0:
+                raise Invalid(
+                    f"lines[{i}].catalog_variant_id",
+                    "The variant takes the rate below zero.",
+                    code="negative_rate",
+                )
+            defaults["rate"] = rate
+            defaults["description"] = (
+                f"{defaults['description']} — {variant.attribute}: {variant.value}"
+            )
         for key, value in defaults.items():
             if line.get(key) in (None, "") and value is not None:
                 line[key] = value
@@ -328,6 +359,7 @@ def _write_lines(doc: Document, c: Computed) -> None:
             document=doc,
             line_no=i,
             catalog_item_id=ln.get("catalog_item_id"),
+            catalog_variant_id=ln.get("catalog_variant_id"),
             boq_item_id=ln.get("boq_item_id"),
             description=ln["description"],
             sac_hsn=ln.get("sac_hsn") or None,
@@ -360,6 +392,7 @@ def _stored_lines(doc: Document) -> list[dict[str, Any]]:
             f: getattr(ln, f)
             for f in (
                 "catalog_item_id",
+                "catalog_variant_id",
                 "boq_item_id",
                 "description",
                 "sac_hsn",

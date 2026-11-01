@@ -65,6 +65,7 @@ export function line(over: Partial<S["LineOut"]> = {}): S["LineOut"] {
   return {
     line_no: 1,
     catalog_item_id: null,
+    catalog_variant_id: null,
     boq_item_id: "b1",
     description: "RCC M25",
     sac_hsn: "995411",

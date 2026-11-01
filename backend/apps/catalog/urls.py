@@ -9,4 +9,14 @@ urlpatterns = [
         views.CatalogItemDetailView.as_view(),
         name="catalog-item-detail",
     ),
+    path(
+        "catalog-items/<uuid:item_id>/variants",
+        views.CatalogVariantListView.as_view(),
+        name="catalog-item-variants",
+    ),
+    path(
+        "catalog-variants/<uuid:variant_id>",
+        views.CatalogVariantDetailView.as_view(),
+        name="catalog-variant-detail",
+    ),
 ]
