@@ -168,6 +168,10 @@ describe("party form", () => {
       }),
     );
     renderSignedIn(`/parties/${ID}`);
+    expect(await screen.findByRole("link", { name: "Statement of account" })).toHaveAttribute(
+      "href",
+      `/parties/${ID}/statement`,
+    );
     await user.click(await screen.findByRole("button", { name: "Archive" }));
     expect(await screen.findByText("Archived.")).toBeInTheDocument();
     expect(screen.getByRole("button", { name: "Restore" })).toBeInTheDocument();

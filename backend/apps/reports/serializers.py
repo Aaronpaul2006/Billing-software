@@ -202,3 +202,47 @@ class TdsReconciliationSerializer(serializers.Serializer[Any]):
     fy_start_year = serializers.IntegerField()
     results = TdsRowSerializer(many=True)
     totals = TdsTotalsSerializer()
+
+
+class StatementEntrySerializer(serializers.Serializer[Any]):
+    date = serializers.DateField()
+    kind = serializers.ChoiceField(
+        choices=[
+            "TAX_INVOICE",
+            "BILL_OF_SUPPLY",
+            "DEBIT_NOTE",
+            "CREDIT_NOTE",
+            "RETENTION_RELEASE",
+            "PAYMENT",
+        ]
+    )
+    reference = serializers.CharField(allow_null=True)
+    description = serializers.CharField()
+    debit = MoneyField()
+    credit = MoneyField()
+    balance = MoneyField(help_text="After this entry; positive = the client owes.")
+    document_id = serializers.UUIDField(allow_null=True)
+    payment_id = serializers.UUIDField(allow_null=True)
+    retention_release_id = serializers.UUIDField(allow_null=True)
+
+
+class StatementPartySerializer(serializers.Serializer[Any]):
+    id = serializers.UUIDField()
+    display_name = serializers.CharField()
+    gstin = serializers.CharField(allow_null=True)
+
+
+class StatementSerializer(serializers.Serializer[Any]):
+    party = StatementPartySerializer()
+    from_ = serializers.DateField()
+    to = serializers.DateField()
+    opening_balance = MoneyField(help_text="Positive = the client owes; negative = paid ahead.")
+    entries = StatementEntrySerializer(many=True)
+    total_debit = MoneyField()
+    total_credit = MoneyField()
+    closing_balance = MoneyField()
+
+    def get_fields(self) -> dict[str, Any]:
+        fields = super().get_fields()
+        fields["from"] = fields.pop("from_")  # `from` is a Python keyword
+        return fields

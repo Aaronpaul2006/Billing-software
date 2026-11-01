@@ -739,6 +739,20 @@ for _name in ("report-summary", *REPORT_LISTS):
 OBJECT_ROUTES["report-project"] = lambda w: None  # same test
 
 
+# --- W.1 statement of account -----------------------------------------------------------
+
+
+def test_statement_rejects_other_tenant_party(world: World, masters: dict[str, str]) -> None:
+    api, b = world.api, world.as_b()
+    url = f"/api/v1/parties/{masters['party']}/statement"
+    as_a: dict[str, Any] = {"HTTP_AUTHORIZATION": f"Bearer {world.a_owner.access_token}"}
+    assert api.get(url, **as_a).status_code == 200
+    assert api.get(url, **b).status_code == 404
+
+
+OBJECT_ROUTES["party-statement"] = lambda w: None  # test_statement_rejects_other_tenant_party
+
+
 # --- Phase 3.1 BOQ import ------------------------------------------------------------
 
 

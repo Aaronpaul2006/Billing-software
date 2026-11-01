@@ -11,15 +11,18 @@ from typing import Any
 
 from django.db.models import OuterRef, Subquery, Sum
 from django.utils import timezone
+from django.utils.text import slugify
 
 from apps.core.india import place_name
 from apps.documents.models import Document
 from apps.documents.pdf.render import TITLES
 from apps.expenses.models import Expense
+from apps.parties.models import Party
 from apps.payments.models import Allocation, Payment
 from apps.projects.models import Project
 from apps.projects.services import boq_progress_rows
 from apps.reports import queries
+from apps.reports.statement import build_statement
 
 from .writers import Column, Table
 
@@ -341,6 +344,55 @@ def projects(tenant_id: uuid.UUID, params: dict[str, Any]) -> Built:
     return Built(Table("Projects", columns, rows), f"project-margins_{timezone.localdate()}")
 
 
+STATEMENT_KINDS = {
+    "TAX_INVOICE": "Tax invoice",
+    "BILL_OF_SUPPLY": "Bill of supply",
+    "DEBIT_NOTE": "Debit note",
+    "CREDIT_NOTE": "Credit note",
+    "RETENTION_RELEASE": "Retention release",
+    "PAYMENT": "Payment",
+}
+
+
+def statement_stem(party: Party, params: dict[str, Any]) -> str:
+    name = slugify(party.display_name)[:40] or "client"
+    return f"statement_{name}_{params['from']}_{params['to']}"
+
+
+def statement(tenant_id: uuid.UUID, params: dict[str, Any]) -> Built:
+    """A client's statement of account, opening and closing balance as rows."""
+    party = Party.objects.get(pk=params["party_id"])
+    start, end = _date_range(params)
+    s = build_statement(tenant_id, party.pk, start, end)
+    columns = [
+        Column("Date", "date", 11),
+        Column("Type", width=16),
+        Column("Reference", width=16),
+        Column("Description", width=56),
+        Column("Debit", "money"),
+        Column("Credit", "money"),
+        Column("Balance", "money"),
+    ]
+    rows: list[list[Any]] = [[start, "", "", "Opening balance", None, None, s["opening_balance"]]]
+    rows += [
+        [
+            e["date"],
+            STATEMENT_KINDS[e["kind"]],
+            e["reference"],
+            e["description"],
+            e["debit"] or None,
+            e["credit"] or None,
+            e["balance"],
+        ]
+        for e in s["entries"]
+    ]
+    rows.append(
+        [end, "", "", "Closing balance", s["total_debit"], s["total_credit"], s["closing_balance"]]
+    )
+    _check_size(len(rows))
+    return Built(Table("Statement", columns, rows), statement_stem(party, params))
+
+
 BUILDERS: dict[str, Callable[[uuid.UUID, dict[str, Any]], Built]] = {
     "DOCUMENTS": documents,
     "PAYMENTS": payments,
@@ -348,4 +400,5 @@ BUILDERS: dict[str, Callable[[uuid.UUID, dict[str, Any]], Built]] = {
     "RECEIVABLES": receivables,
     "BOQ": boq,
     "PROJECTS": projects,
+    "STATEMENT": statement,
 }

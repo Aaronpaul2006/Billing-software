@@ -273,15 +273,22 @@ export function PartyFormPage() {
         actions={
           !isNew &&
           party.data && (
-            <Button
-              variant="outline"
-              disabled={archive.isPending}
-              onClick={() => {
-                archive.mutate(!party.data.is_active);
-              }}
-            >
-              {party.data.is_active ? "Archive" : "Restore"}
-            </Button>
+            <>
+              {party.data.is_customer && (
+                <Button variant="outline" asChild>
+                  <Link to={`/parties/${party.data.id}/statement`}>Statement of account</Link>
+                </Button>
+              )}
+              <Button
+                variant="outline"
+                disabled={archive.isPending}
+                onClick={() => {
+                  archive.mutate(!party.data.is_active);
+                }}
+              >
+                {party.data.is_active ? "Archive" : "Restore"}
+              </Button>
+            </>
           )
         }
       />

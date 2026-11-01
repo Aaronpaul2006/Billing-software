@@ -13,7 +13,13 @@ export const KIND_LABELS: Record<Export["kind"], string> = {
   GSTR1: "GSTR-1",
   BOQ: "BOQ progress (one project)",
   PROJECTS: "Project margins",
+  STATEMENT: "Statement of account",
 };
+
+/** Made from a client's page, not from the Exports form (it needs the client). */
+export const FORM_KINDS = (Object.keys(KIND_LABELS) as Export["kind"][]).filter(
+  (k) => k !== "STATEMENT",
+);
 
 export function fileSize(bytes: number | null): string {
   if (bytes === null) return "";
@@ -45,4 +51,29 @@ export function useExports() {
     refetchInterval: (query) =>
       query.state.data?.some((x) => x.status === "PENDING") ? 2000 : false,
   });
+}
+
+type ExportRequest = components["schemas"]["ExportRequest"];
+
+/** How often a file being made is looked at again (tests set 0). */
+export const polling = { delayMs: 1500, attempts: 40 };
+
+/**
+ * Ask for a file, wait while the worker makes it, then download it. Throws
+ * with a readable message if it failed or is still not ready after a minute
+ * (it then stays on the Exports page for 7 days).
+ */
+export async function makeAndDownload(body: ExportRequest, key: string): Promise<void> {
+  let x = unwrap(await api.POST("/api/v1/exports", { body, headers: { "Idempotency-Key": key } }));
+  for (let i = 0; x.status === "PENDING" && i < polling.attempts; i += 1) {
+    await new Promise((resolve) => setTimeout(resolve, polling.delayMs));
+    x = unwrap(
+      await api.GET("/api/v1/exports/{export_id}", { params: { path: { export_id: x.id } } }),
+    );
+  }
+  if (x.status === "FAILED") throw new Error(x.error ?? "The file could not be made.");
+  if (x.status === "PENDING") {
+    throw new Error("The file is still being made. It will be on the Exports page shortly.");
+  }
+  await downloadExport(x.id);
 }

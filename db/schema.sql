@@ -661,8 +661,8 @@ CREATE TABLE exports (
   id            uuid PRIMARY KEY DEFAULT gen_random_uuid(),
   tenant_id     uuid NOT NULL REFERENCES tenants (id),
   kind          text NOT NULL CHECK (kind IN ('DOCUMENTS', 'PAYMENTS', 'EXPENSES', 'RECEIVABLES', 'GSTR1',
-                                              'BOQ', 'PROJECTS')),
-  format        text NOT NULL CHECK (format IN ('CSV', 'XLSX', 'JSON')),
+                                              'BOQ', 'PROJECTS', 'STATEMENT')),
+  format        text NOT NULL CHECK (format IN ('CSV', 'XLSX', 'JSON', 'PDF')),
   params        jsonb NOT NULL DEFAULT '{}',
   status        text NOT NULL DEFAULT 'PENDING' CHECK (status IN ('PENDING', 'READY', 'FAILED')),
   file_name     text CHECK (char_length(file_name) BETWEEN 1 AND 200),
@@ -677,7 +677,8 @@ CREATE TABLE exports (
   UNIQUE (tenant_id, id),
   CHECK ((status = 'READY') = (storage_key IS NOT NULL AND file_name IS NOT NULL AND size_bytes IS NOT NULL)),
   CHECK ((status = 'PENDING') = (finished_at IS NULL)),
-  CHECK ((format = 'JSON') = (kind = 'GSTR1'))
+  CHECK ((format = 'JSON') = (kind = 'GSTR1')),
+  CONSTRAINT exports_pdf_check CHECK (format <> 'PDF' OR kind = 'STATEMENT')  -- a statement of account
 );
 CREATE INDEX exports_requested_idx ON exports (tenant_id, requested_by, created_at DESC);
 

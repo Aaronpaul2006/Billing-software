@@ -5,6 +5,7 @@ from django.utils import timezone
 from drf_spectacular.utils import extend_schema_field
 from rest_framework import serializers
 
+from apps.parties.models import Party
 from apps.projects.models import Project
 from apps.reports.serializers import BOOKS, PeriodSerializer
 from apps.tenants.models import GstRegistration
@@ -26,6 +27,7 @@ class ExportParamsSerializer(serializers.Serializer[Any]):
     book = serializers.ChoiceField(choices=BOOKS, default="ALL")
     gst_registration_id = serializers.UUIDField(required=False)
     project_id = serializers.UUIDField(required=False, help_text="BOQ: the project.")
+    party_id = serializers.UUIDField(required=False, help_text="STATEMENT: the client.")
     period = serializers.RegexField(r"^\d{4}-(0[1-9]|1[0-2])$", required=False)
 
     def get_fields(self) -> dict[str, Any]:
@@ -37,7 +39,8 @@ class ExportParamsSerializer(serializers.Serializer[Any]):
 class ExportRequestSerializer(serializers.Serializer[Any]):
     kind = serializers.ChoiceField(choices=ExportKind.values)
     format = serializers.ChoiceField(
-        choices=ExportFormat.values, help_text="GSTR-1: JSON; everything else: CSV or XLSX."
+        choices=ExportFormat.values,
+        help_text="GSTR-1: JSON; statement: CSV, XLSX or PDF; everything else: CSV or XLSX.",
     )
     params = ExportParamsSerializer(required=False)
 
@@ -50,8 +53,19 @@ class ExportRequestSerializer(serializers.Serializer[Any]):
                 {"format": "GSTR-1 is a JSON file; the registers are CSV or XLSX."},
                 code="invalid_format",
             )
+        if attrs["format"] == "PDF" and attrs["kind"] != "STATEMENT":
+            raise serializers.ValidationError(
+                {"format": "Only a statement of account is made as a PDF."},
+                code="invalid_format",
+            )
         if attrs["kind"] == "GSTR1":
             return {"kind": "GSTR1", "format": "JSON", "params": self._gstr1(given)}
+        if attrs["kind"] == "STATEMENT":
+            return {
+                "kind": "STATEMENT",
+                "format": attrs["format"],
+                "params": self._statement(given),
+            }
         if attrs["kind"] == "BOQ":
             if not given.get("project_id"):
                 raise serializers.ValidationError({"params.project_id": "Choose the project."})
@@ -75,6 +89,23 @@ class ExportRequestSerializer(serializers.Serializer[Any]):
             if attrs["kind"] == "DOCUMENTS":
                 params["book"] = v["book"]
         return {"kind": attrs["kind"], "format": attrs["format"], "params": params}
+
+    def _statement(self, given: dict[str, Any]) -> dict[str, Any]:
+        if not given.get("party_id"):
+            raise serializers.ValidationError({"params.party_id": "Choose the client."})
+        party = Party.objects.filter(pk=given["party_id"]).first()  # RLS: own only
+        if party is None:
+            raise serializers.ValidationError({"params.party_id": "No such client."})
+        dates = {k: given[k] for k in ("from", "to") if given.get(k) is not None}
+        period = PeriodSerializer(data=dates)
+        if not period.is_valid():
+            raise serializers.ValidationError({"params": period.errors})
+        v = period.validated_data
+        return {
+            "party_id": str(party.pk),
+            "from": v["start"].isoformat(),
+            "to": v["end"].isoformat(),
+        }
 
     def _gstr1(self, given: dict[str, Any]) -> dict[str, Any]:
         errors: dict[str, str] = {}

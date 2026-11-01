@@ -25,8 +25,9 @@ CONTENT_TYPES = {
     "CSV": "text/csv; charset=utf-8",
     "XLSX": "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
     "JSON": "application/json",
+    "PDF": "application/pdf",
 }
-EXTENSIONS = {"CSV": "csv", "XLSX": "xlsx", "JSON": "json"}
+EXTENSIONS = {"CSV": "csv", "XLSX": "xlsx", "JSON": "json", "PDF": "pdf"}
 
 
 @dataclass(frozen=True)

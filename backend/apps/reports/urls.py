@@ -16,6 +16,11 @@ urlpatterns = [
         views.ProjectReportView.as_view(),
         name="report-project",
     ),
+    path(
+        "parties/<uuid:party_id>/statement",
+        views.StatementView.as_view(),
+        name="party-statement",
+    ),
     path("reports/gst-summary", views.GstSummaryView.as_view(), name="report-gst-summary"),
     path(
         "reports/tds-reconciliation",

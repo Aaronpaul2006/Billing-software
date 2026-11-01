@@ -1,0 +1,90 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Statement of account · {{ party.display_name }}</title>
+<style>
+  @page { size: A4; margin: 14mm 12mm 16mm; @bottom-right { content: "Page " counter(page) " of " counter(pages); font-size: 8pt; color: #666; } }
+  * { box-sizing: border-box; }
+  body { font-family: "DejaVu Sans", "Noto Sans", sans-serif; font-size: 9pt; color: #111; }
+  h1 { font-size: 15pt; margin: 0 0 2mm; letter-spacing: .5px; }
+  .muted { color: #555; }
+  .row { display: flex; gap: 6mm; }
+  .box { border: 1px solid #999; padding: 3mm; flex: 1; }
+  .box h3 { margin: 0 0 1.5mm; font-size: 8pt; text-transform: uppercase; color: #555; }
+  table { width: 100%; border-collapse: collapse; margin-top: 4mm; }
+  th, td { border: 1px solid #999; padding: 1.5mm 2mm; vertical-align: top; }
+  th { background: #eee; font-size: 8pt; text-align: left; }
+  thead { display: table-header-group; }
+  .num { text-align: right; white-space: nowrap; }
+  .edge td { background: #f6f6f6; font-weight: bold; }
+  .closing { margin-top: 4mm; font-size: 11pt; font-weight: bold; }
+  .words { font-style: italic; }
+</style>
+</head>
+<body>
+
+<div class="row">
+  <div style="flex: 2">
+    <h1>Statement of Account</h1>
+    <div><strong>{{ company.name }}</strong>{% if company.trade_name %} ({{ company.trade_name }}){% endif %}</div>
+    {% with a=company.address %}{% if a.line1 %}<div class="muted">{{ a.line1 }}{% if a.line2 %}, {{ a.line2 }}{% endif %}{% if a.city %}, {{ a.city }}{% endif %}{% if a.pincode %} - {{ a.pincode }}{% endif %}</div>{% endif %}{% endwith %}
+    {% if company.gstin %}<div>GSTIN: <strong>{{ company.gstin }}</strong></div>{% endif %}
+  </div>
+  <div class="box">
+    <div>Period: <strong>{{ period }}</strong></div>
+    <div class="muted">Made on {{ made_on }}</div>
+  </div>
+</div>
+
+<div class="row" style="margin-top: 4mm">
+  <div class="box">
+    <h3>To</h3>
+    <div><strong>{{ party.display_name }}</strong></div>
+    {% if party.legal_name and party.legal_name != party.display_name %}<div>{{ party.legal_name }}</div>{% endif %}
+    {% if party.gstin %}<div>GSTIN: {{ party.gstin }}</div>{% endif %}
+  </div>
+</div>
+
+<table>
+  <thead>
+    <tr>
+      <th style="width: 15mm">Date</th>
+      <th style="width: 22mm">Type</th>
+      <th>Particulars</th>
+      <th class="num" style="width: 24mm">Debit (₹)</th>
+      <th class="num" style="width: 24mm">Credit (₹)</th>
+      <th class="num" style="width: 26mm">Balance (₹)</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr class="edge"><td colspan="5">Opening balance</td><td class="num">{{ opening }}</td></tr>
+    {% for r in rows %}
+    <tr>
+      <td>{{ r.date }}</td>
+      <td>{{ r.type }}</td>
+      <td>{{ r.description }}</td>
+      <td class="num">{{ r.debit }}</td>
+      <td class="num">{{ r.credit }}</td>
+      <td class="num">{{ r.balance }}</td>
+    </tr>
+    {% empty %}
+    <tr><td colspan="6" class="muted">Nothing in this period.</td></tr>
+    {% endfor %}
+    <tr class="edge">
+      <td colspan="3">Totals for the period</td>
+      <td class="num">{{ total_debit }}</td>
+      <td class="num">{{ total_credit }}</td>
+      <td></td>
+    </tr>
+  </tbody>
+</table>
+
+<div class="closing">Closing balance: ₹{{ closing }}{% if closing_side %} {{ closing_side }}{% endif %}</div>
+<div class="words">{{ closing_words }}</div>
+<p class="muted">Bills are shown less the retention and TDS deducted on them. Retention appears when it is released;
+a mobilisation advance is credited when received and adjusted in the bills that recover it.
+Please tell us within 15 days if anything does not match your books.</p>
+
+</body>
+</html>

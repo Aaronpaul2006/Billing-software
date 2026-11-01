@@ -153,6 +153,13 @@ export const routes: RouteObject[] = [
             ),
           },
           {
+            path: "parties/:partyId/statement",
+            lazy: lazyPage(
+              () => import("@/features/parties/StatementPage"),
+              (m) => m.StatementPage,
+            ),
+          },
+          {
             path: "projects",
             lazy: lazyPage(
               () => import("@/features/projects/ProjectsPage"),

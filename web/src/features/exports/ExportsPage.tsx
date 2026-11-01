@@ -19,14 +19,14 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { isoDate, periodRange } from "@/features/dashboard/periods";
 import { errorMessage } from "@/lib/errors";
 
-import { KIND_LABELS, downloadExport, fileSize, useExports } from "./exports";
+import { FORM_KINDS, KIND_LABELS, downloadExport, fileSize, useExports } from "./exports";
 import type { Export } from "./exports";
 
 type Kind = components["schemas"]["ExportRequest"]["kind"];
 type Format = components["schemas"]["ExportRequest"]["format"];
 
 const DATED: Kind[] = ["DOCUMENTS", "PAYMENTS", "EXPENSES"];
-const KINDS = Object.keys(KIND_LABELS) as Kind[];
+const KINDS: Kind[] = FORM_KINDS;
 const WITH_BOOK: Kind[] = ["DOCUMENTS", "RECEIVABLES"];
 
 /** GSTR-1 is usually filed for the month just ended. */

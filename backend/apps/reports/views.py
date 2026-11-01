@@ -16,6 +16,7 @@ from rest_framework.response import Response
 
 from apps.core.api import ActionAPIView
 from apps.core.queries import get_or_404
+from apps.parties.models import Party
 from apps.projects.models import Project
 
 from . import queries
@@ -32,12 +33,14 @@ from .serializers import (
     ReceivableSerializer,
     ReceivablesSerializer,
     ReportTotalsSerializer,
+    StatementSerializer,
     SummarySerializer,
     TdsParamsSerializer,
     TdsReconciliationSerializer,
     fy_start,
     previous_period,
 )
+from .statement import build_statement
 
 PERIOD_PARAMS = [
     OpenApiParameter("from", str, description="YYYY-MM-DD; default 1 April of this FY"),
@@ -206,3 +209,23 @@ class TdsReconciliationView(ReportView):
                 {"fy_start_year": fy, "results": rows, "totals": totals}
             ).data
         )
+
+
+class StatementView(ReportView):
+    """A client's statement of account between `from` and `to` (default: this FY to today)."""
+
+    @extend_schema(
+        parameters=PERIOD_PARAMS[:2],
+        responses={200: StatementSerializer},
+        tags=["reports"],
+    )
+    def get(self, request: Request, party_id: uuid.UUID) -> Response:
+        party = get_or_404(Party, party_id)  # unknown or another tenant's: 404
+        p = self.period(request)
+        statement = build_statement(self.principal.tenant_id, party.pk, p["start"], p["end"])
+        statement["party"] = {
+            "id": party.pk,
+            "display_name": party.display_name,
+            "gstin": party.gstin,
+        }
+        return Response(StatementSerializer(statement).data)

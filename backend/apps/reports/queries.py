@@ -21,7 +21,7 @@ BOOK_SQL = {
 }
 
 
-def _rows(sql: str, params: list[Any]) -> list[dict[str, Any]]:
+def _rows(sql: str, params: list[Any] | dict[str, Any]) -> list[dict[str, Any]]:
     with connection.cursor() as cursor:
         cursor.execute(sql, params)
         columns = [c.name for c in cursor.description or []]

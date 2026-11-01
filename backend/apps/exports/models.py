@@ -22,12 +22,14 @@ class ExportKind(models.TextChoices):
     GSTR1 = "GSTR1"
     BOQ = "BOQ"  # one project's BOQ: contract vs billed
     PROJECTS = "PROJECTS"  # the project margins report
+    STATEMENT = "STATEMENT"  # one client's statement of account
 
 
 class ExportFormat(models.TextChoices):
     CSV = "CSV"
     XLSX = "XLSX"
     JSON = "JSON"
+    PDF = "PDF"  # statements only
 
 
 class ExportStatus(models.TextChoices):

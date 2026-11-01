@@ -578,7 +578,8 @@ VIEWER; site engineers get 403). Period reports accept `from`, `to`
 | `GET /reports/projects` · `GET /reports/projects/{id}` | Contract value vs billed, retention held, TDS deducted, advance recovered, outstanding, cost → margin |
 | `GET /reports/tds-reconciliation?fy=2026` | Per client and quarter: income-tax TDS on issued tax invoices / bills of supply (by bill date) vs Form 16A certificates recorded; `difference`, `status` (`MATCHED`, `SHORT`, `EXCESS`, `NOT_RECEIVED`), `certificate_due` (15 Aug / 15 Nov / 15 Feb / 15 Jun) and `overdue`; optional `party_id`; `fy` defaults to this FY |
 | `GET /reports/gst-summary?period=2026-10` | GST documents' outward supplies by B2B/B2C and rate, CGST/SGST/IGST/cess, plus `totals` (basis for GSTR-1/3B) |
-| `POST /exports` · `GET /exports` · `GET /exports/{id}` | Async CSV / XLSX registers and GSTR-1 JSON; download via presigned URL |
+| `GET /parties/{id}/statement` | A client's statement of account (`from` / `to`, default this FY to today): `opening_balance`, `entries` (date, kind, reference, description, debit, credit, running `balance`, links to the document / payment / release), `total_debit`, `total_credit`, `closing_balance`; positive = the client owes. 404 for another tenant's party |
+| `POST /exports` · `GET /exports` · `GET /exports/{id}` | Async CSV / XLSX registers, the statement of account (also PDF) and GSTR-1 JSON; download via presigned URL |
 
 Rules behind the numbers:
 
@@ -591,6 +592,14 @@ Rules behind the numbers:
   advances not yet allocated); with a book, what was allocated to that book's
   documents.
 - *Outstanding* and receivables are as of today, whatever the period.
+- *Statement of account* (W.1): a bill counts at its total less the retention
+  and TDS deducted on it (= net receivable + advance recovered): retention is
+  owed later and appears as a debit when released; TDS is paid to the
+  government for the client; a mobilisation advance is a payment the client
+  made, so the bills' "advance recovered" only adjusts it and is not
+  subtracted again. Credit notes and payments (allocated or not) are credits.
+  Cancelled bills / releases and voided payments count nowhere. Same day:
+  bills, releases, credit notes, then payments.
 - *Project cost*: recorded expenses on the project; their GST counts as cost
   unless input tax credit can be claimed (`itc_eligible`). Margin =
   billed taxable value − cost.
@@ -617,6 +626,7 @@ lists the caller's latest 20. Rows and files are deleted after 7 days.
 | `RECEIVABLES` | `book` | What clients owe today, by age |
 | `GSTR1` (format `JSON`) | `gst_registration_id`, `period` (`YYYY-MM`) | GSTR-1 for one regular registration and month (E.2, below) |
 | `BOQ` | `project_id` | One project's BOQ: contract, billed, balance (quantity and value), progress %, variation (as `GET /projects/{id}/boq-progress`) |
+| `STATEMENT` (CSV, XLSX or PDF) | `party_id`, `from`, `to` | One client's statement of account: opening balance, entries, closing balance (W.1, below). The only kind made as a PDF |
 | `PROJECTS` | none | Project margins to date: contract value, billed, retention, TDS, advance recovered, outstanding, cost, margin (as `GET /reports/projects`) |
 
 * `format`: `CSV` (UTF-8 with BOM, ISO dates, plain `1234.50` amounts) or

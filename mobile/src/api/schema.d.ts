@@ -1210,6 +1210,23 @@ export interface paths {
         patch: operations["parties_partial_update"];
         trace?: never;
     };
+    "/api/v1/parties/{party_id}/statement": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** @description A client's statement of account between `from` and `to` (default: this FY to today). */
+        get: operations["parties_statement_retrieve"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/payments": {
         parameters: {
             query?: never;
@@ -2313,9 +2330,10 @@ export interface components {
          * @description * `CSV` - Csv
          *     * `XLSX` - Xlsx
          *     * `JSON` - Json
+         *     * `PDF` - Pdf
          * @enum {string}
          */
-        ExportFormatEnum: "CSV" | "XLSX" | "JSON";
+        ExportFormatEnum: "CSV" | "XLSX" | "JSON" | "PDF";
         /**
          * @description * `DOCUMENTS` - Documents
          *     * `PAYMENTS` - Payments
@@ -2324,9 +2342,10 @@ export interface components {
          *     * `GSTR1` - Gstr1
          *     * `BOQ` - Boq
          *     * `PROJECTS` - Projects
+         *     * `STATEMENT` - Statement
          * @enum {string}
          */
-        ExportKindEnum: "DOCUMENTS" | "PAYMENTS" | "EXPENSES" | "RECEIVABLES" | "GSTR1" | "BOQ" | "PROJECTS";
+        ExportKindEnum: "DOCUMENTS" | "PAYMENTS" | "EXPENSES" | "RECEIVABLES" | "GSTR1" | "BOQ" | "PROJECTS" | "STATEMENT";
         ExportList: {
             results: components["schemas"]["Export"][];
         };
@@ -2347,6 +2366,11 @@ export interface components {
              * @description BOQ: the project.
              */
             project_id?: string;
+            /**
+             * Format: uuid
+             * @description STATEMENT: the client.
+             */
+            party_id?: string;
             period?: string;
             /** Format: date */
             from?: string;
@@ -2361,11 +2385,12 @@ export interface components {
         ExportRequest: {
             kind: components["schemas"]["ExportRequestKindEnum"];
             /**
-             * @description GSTR-1: JSON; everything else: CSV or XLSX.
+             * @description GSTR-1: JSON; statement: CSV, XLSX or PDF; everything else: CSV or XLSX.
              *
              *     * `CSV` - CSV
              *     * `XLSX` - XLSX
              *     * `JSON` - JSON
+             *     * `PDF` - PDF
              */
             format: components["schemas"]["ExportRequestFormatEnum"];
             params?: components["schemas"]["ExportParams"];
@@ -2374,9 +2399,10 @@ export interface components {
          * @description * `CSV` - CSV
          *     * `XLSX` - XLSX
          *     * `JSON` - JSON
+         *     * `PDF` - PDF
          * @enum {string}
          */
-        ExportRequestFormatEnum: "CSV" | "XLSX" | "JSON";
+        ExportRequestFormatEnum: "CSV" | "XLSX" | "JSON" | "PDF";
         /**
          * @description * `DOCUMENTS` - DOCUMENTS
          *     * `PAYMENTS` - PAYMENTS
@@ -2385,9 +2411,10 @@ export interface components {
          *     * `GSTR1` - GSTR1
          *     * `BOQ` - BOQ
          *     * `PROJECTS` - PROJECTS
+         *     * `STATEMENT` - STATEMENT
          * @enum {string}
          */
-        ExportRequestKindEnum: "DOCUMENTS" | "PAYMENTS" | "EXPENSES" | "RECEIVABLES" | "GSTR1" | "BOQ" | "PROJECTS";
+        ExportRequestKindEnum: "DOCUMENTS" | "PAYMENTS" | "EXPENSES" | "RECEIVABLES" | "GSTR1" | "BOQ" | "PROJECTS" | "STATEMENT";
         /**
          * @description * `PENDING` - Pending
          *     * `READY` - Ready
@@ -3596,6 +3623,63 @@ export interface components {
          * @enum {string}
          */
         StateCodeEnum: "01" | "02" | "03" | "04" | "05" | "06" | "07" | "08" | "09" | "10" | "11" | "12" | "13" | "14" | "15" | "16" | "17" | "18" | "19" | "20" | "21" | "22" | "23" | "24" | "25" | "26" | "27" | "28" | "29" | "30" | "31" | "32" | "33" | "34" | "35" | "36" | "37" | "38" | "97";
+        Statement: {
+            party: components["schemas"]["StatementParty"];
+            /** Format: date */
+            to: string;
+            /**
+             * Format: decimal
+             * @description Positive = the client owes; negative = paid ahead.
+             */
+            opening_balance: string;
+            entries: components["schemas"]["StatementEntry"][];
+            /** Format: decimal */
+            total_debit: string;
+            /** Format: decimal */
+            total_credit: string;
+            /** Format: decimal */
+            closing_balance: string;
+            /** Format: date */
+            from: string;
+        };
+        StatementEntry: {
+            /** Format: date */
+            date: string;
+            kind: components["schemas"]["StatementEntryKindEnum"];
+            reference: string | null;
+            description: string;
+            /** Format: decimal */
+            debit: string;
+            /** Format: decimal */
+            credit: string;
+            /**
+             * Format: decimal
+             * @description After this entry; positive = the client owes.
+             */
+            balance: string;
+            /** Format: uuid */
+            document_id: string | null;
+            /** Format: uuid */
+            payment_id: string | null;
+            /** Format: uuid */
+            retention_release_id: string | null;
+        };
+        /**
+         * @description * `TAX_INVOICE` - TAX_INVOICE
+         *     * `BILL_OF_SUPPLY` - BILL_OF_SUPPLY
+         *     * `DEBIT_NOTE` - DEBIT_NOTE
+         *     * `CREDIT_NOTE` - CREDIT_NOTE
+         *     * `RETENTION_RELEASE` - RETENTION_RELEASE
+         *     * `PAYMENT` - PAYMENT
+         * @enum {string}
+         */
+        StatementEntryKindEnum: "TAX_INVOICE" | "BILL_OF_SUPPLY" | "DEBIT_NOTE" | "CREDIT_NOTE" | "RETENTION_RELEASE" | "PAYMENT";
+        StatementParty: {
+            /** Format: uuid */
+            id: string;
+            display_name: string;
+            gstin: string | null;
+        };
         Summary: {
             book: string;
             period: {
@@ -6355,6 +6439,32 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["Party"];
+                };
+            };
+        };
+    };
+    parties_statement_retrieve: {
+        parameters: {
+            query?: {
+                /** @description YYYY-MM-DD; default 1 April of this FY */
+                from?: string;
+                /** @description YYYY-MM-DD; default today */
+                to?: string;
+            };
+            header?: never;
+            path: {
+                party_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Statement"];
                 };
             };
         };

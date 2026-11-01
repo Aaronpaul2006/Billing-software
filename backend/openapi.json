@@ -3252,6 +3252,59 @@
                 }
             }
         },
+        "/api/v1/parties/{party_id}/statement": {
+            "get": {
+                "operationId": "parties_statement_retrieve",
+                "description": "A client's statement of account between `from` and `to` (default: this FY to today).",
+                "parameters": [
+                    {
+                        "in": "query",
+                        "name": "from",
+                        "schema": {
+                            "type": "string"
+                        },
+                        "description": "YYYY-MM-DD; default 1 April of this FY"
+                    },
+                    {
+                        "in": "path",
+                        "name": "party_id",
+                        "schema": {
+                            "type": "string",
+                            "format": "uuid"
+                        },
+                        "required": true
+                    },
+                    {
+                        "in": "query",
+                        "name": "to",
+                        "schema": {
+                            "type": "string"
+                        },
+                        "description": "YYYY-MM-DD; default today"
+                    }
+                ],
+                "tags": [
+                    "reports"
+                ],
+                "security": [
+                    {
+                        "bearerAuth": []
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/Statement"
+                                }
+                            }
+                        },
+                        "description": ""
+                    }
+                }
+            }
+        },
         "/api/v1/payments": {
             "get": {
                 "operationId": "payments_list",
@@ -6680,10 +6733,11 @@
                 "enum": [
                     "CSV",
                     "XLSX",
-                    "JSON"
+                    "JSON",
+                    "PDF"
                 ],
                 "type": "string",
-                "description": "* `CSV` - Csv\n* `XLSX` - Xlsx\n* `JSON` - Json"
+                "description": "* `CSV` - Csv\n* `XLSX` - Xlsx\n* `JSON` - Json\n* `PDF` - Pdf"
             },
             "ExportKindEnum": {
                 "enum": [
@@ -6693,10 +6747,11 @@
                     "RECEIVABLES",
                     "GSTR1",
                     "BOQ",
-                    "PROJECTS"
+                    "PROJECTS",
+                    "STATEMENT"
                 ],
                 "type": "string",
-                "description": "* `DOCUMENTS` - Documents\n* `PAYMENTS` - Payments\n* `EXPENSES` - Expenses\n* `RECEIVABLES` - Receivables\n* `GSTR1` - Gstr1\n* `BOQ` - Boq\n* `PROJECTS` - Projects"
+                "description": "* `DOCUMENTS` - Documents\n* `PAYMENTS` - Payments\n* `EXPENSES` - Expenses\n* `RECEIVABLES` - Receivables\n* `GSTR1` - Gstr1\n* `BOQ` - Boq\n* `PROJECTS` - Projects\n* `STATEMENT` - Statement"
             },
             "ExportList": {
                 "type": "object",
@@ -6737,6 +6792,11 @@
                         "format": "uuid",
                         "description": "BOQ: the project."
                     },
+                    "party_id": {
+                        "type": "string",
+                        "format": "uuid",
+                        "description": "STATEMENT: the client."
+                    },
                     "period": {
                         "type": "string",
                         "pattern": "^\\d{4}-(0[1-9]|1[0-2])$"
@@ -6768,7 +6828,7 @@
                                 "$ref": "#/components/schemas/ExportRequestFormatEnum"
                             }
                         ],
-                        "description": "GSTR-1: JSON; everything else: CSV or XLSX.\n\n* `CSV` - CSV\n* `XLSX` - XLSX\n* `JSON` - JSON"
+                        "description": "GSTR-1: JSON; statement: CSV, XLSX or PDF; everything else: CSV or XLSX.\n\n* `CSV` - CSV\n* `XLSX` - XLSX\n* `JSON` - JSON\n* `PDF` - PDF"
                     },
                     "params": {
                         "$ref": "#/components/schemas/ExportParams"
@@ -6783,10 +6843,11 @@
                 "enum": [
                     "CSV",
                     "XLSX",
-                    "JSON"
+                    "JSON",
+                    "PDF"
                 ],
                 "type": "string",
-                "description": "* `CSV` - CSV\n* `XLSX` - XLSX\n* `JSON` - JSON"
+                "description": "* `CSV` - CSV\n* `XLSX` - XLSX\n* `JSON` - JSON\n* `PDF` - PDF"
             },
             "ExportRequestKindEnum": {
                 "enum": [
@@ -6796,10 +6857,11 @@
                     "RECEIVABLES",
                     "GSTR1",
                     "BOQ",
-                    "PROJECTS"
+                    "PROJECTS",
+                    "STATEMENT"
                 ],
                 "type": "string",
-                "description": "* `DOCUMENTS` - DOCUMENTS\n* `PAYMENTS` - PAYMENTS\n* `EXPENSES` - EXPENSES\n* `RECEIVABLES` - RECEIVABLES\n* `GSTR1` - GSTR1\n* `BOQ` - BOQ\n* `PROJECTS` - PROJECTS"
+                "description": "* `DOCUMENTS` - DOCUMENTS\n* `PAYMENTS` - PAYMENTS\n* `EXPENSES` - EXPENSES\n* `RECEIVABLES` - RECEIVABLES\n* `GSTR1` - GSTR1\n* `BOQ` - BOQ\n* `PROJECTS` - PROJECTS\n* `STATEMENT` - STATEMENT"
             },
             "ExportStatusEnum": {
                 "enum": [
@@ -10387,6 +10449,164 @@
                 ],
                 "type": "string",
                 "description": "* `01` - Jammu and Kashmir\n* `02` - Himachal Pradesh\n* `03` - Punjab\n* `04` - Chandigarh\n* `05` - Uttarakhand\n* `06` - Haryana\n* `07` - Delhi\n* `08` - Rajasthan\n* `09` - Uttar Pradesh\n* `10` - Bihar\n* `11` - Sikkim\n* `12` - Arunachal Pradesh\n* `13` - Nagaland\n* `14` - Manipur\n* `15` - Mizoram\n* `16` - Tripura\n* `17` - Meghalaya\n* `18` - Assam\n* `19` - West Bengal\n* `20` - Jharkhand\n* `21` - Odisha\n* `22` - Chhattisgarh\n* `23` - Madhya Pradesh\n* `24` - Gujarat\n* `25` - Daman and Diu (before 2020)\n* `26` - Dadra and Nagar Haveli and Daman and Diu\n* `27` - Maharashtra\n* `28` - Andhra Pradesh (before 2014)\n* `29` - Karnataka\n* `30` - Goa\n* `31` - Lakshadweep\n* `32` - Kerala\n* `33` - Tamil Nadu\n* `34` - Puducherry\n* `35` - Andaman and Nicobar Islands\n* `36` - Telangana\n* `37` - Andhra Pradesh\n* `38` - Ladakh\n* `97` - Other Territory"
+            },
+            "Statement": {
+                "type": "object",
+                "properties": {
+                    "party": {
+                        "$ref": "#/components/schemas/StatementParty"
+                    },
+                    "to": {
+                        "type": "string",
+                        "format": "date"
+                    },
+                    "opening_balance": {
+                        "type": "string",
+                        "format": "decimal",
+                        "pattern": "^-?\\d{0,12}(?:\\.\\d{0,2})?$",
+                        "description": "Positive = the client owes; negative = paid ahead."
+                    },
+                    "entries": {
+                        "type": "array",
+                        "items": {
+                            "$ref": "#/components/schemas/StatementEntry"
+                        }
+                    },
+                    "total_debit": {
+                        "type": "string",
+                        "format": "decimal",
+                        "pattern": "^-?\\d{0,12}(?:\\.\\d{0,2})?$"
+                    },
+                    "total_credit": {
+                        "type": "string",
+                        "format": "decimal",
+                        "pattern": "^-?\\d{0,12}(?:\\.\\d{0,2})?$"
+                    },
+                    "closing_balance": {
+                        "type": "string",
+                        "format": "decimal",
+                        "pattern": "^-?\\d{0,12}(?:\\.\\d{0,2})?$"
+                    },
+                    "from": {
+                        "type": "string",
+                        "format": "date"
+                    }
+                },
+                "required": [
+                    "closing_balance",
+                    "entries",
+                    "from",
+                    "opening_balance",
+                    "party",
+                    "to",
+                    "total_credit",
+                    "total_debit"
+                ]
+            },
+            "StatementEntry": {
+                "type": "object",
+                "properties": {
+                    "date": {
+                        "type": "string",
+                        "format": "date"
+                    },
+                    "kind": {
+                        "$ref": "#/components/schemas/StatementEntryKindEnum"
+                    },
+                    "reference": {
+                        "type": [
+                            "string",
+                            "null"
+                        ]
+                    },
+                    "description": {
+                        "type": "string"
+                    },
+                    "debit": {
+                        "type": "string",
+                        "format": "decimal",
+                        "pattern": "^-?\\d{0,12}(?:\\.\\d{0,2})?$"
+                    },
+                    "credit": {
+                        "type": "string",
+                        "format": "decimal",
+                        "pattern": "^-?\\d{0,12}(?:\\.\\d{0,2})?$"
+                    },
+                    "balance": {
+                        "type": "string",
+                        "format": "decimal",
+                        "pattern": "^-?\\d{0,12}(?:\\.\\d{0,2})?$",
+                        "description": "After this entry; positive = the client owes."
+                    },
+                    "document_id": {
+                        "type": [
+                            "string",
+                            "null"
+                        ],
+                        "format": "uuid"
+                    },
+                    "payment_id": {
+                        "type": [
+                            "string",
+                            "null"
+                        ],
+                        "format": "uuid"
+                    },
+                    "retention_release_id": {
+                        "type": [
+                            "string",
+                            "null"
+                        ],
+                        "format": "uuid"
+                    }
+                },
+                "required": [
+                    "balance",
+                    "credit",
+                    "date",
+                    "debit",
+                    "description",
+                    "document_id",
+                    "kind",
+                    "payment_id",
+                    "reference",
+                    "retention_release_id"
+                ]
+            },
+            "StatementEntryKindEnum": {
+                "enum": [
+                    "TAX_INVOICE",
+                    "BILL_OF_SUPPLY",
+                    "DEBIT_NOTE",
+                    "CREDIT_NOTE",
+                    "RETENTION_RELEASE",
+                    "PAYMENT"
+                ],
+                "type": "string",
+                "description": "* `TAX_INVOICE` - TAX_INVOICE\n* `BILL_OF_SUPPLY` - BILL_OF_SUPPLY\n* `DEBIT_NOTE` - DEBIT_NOTE\n* `CREDIT_NOTE` - CREDIT_NOTE\n* `RETENTION_RELEASE` - RETENTION_RELEASE\n* `PAYMENT` - PAYMENT"
+            },
+            "StatementParty": {
+                "type": "object",
+                "properties": {
+                    "id": {
+                        "type": "string",
+                        "format": "uuid"
+                    },
+                    "display_name": {
+                        "type": "string"
+                    },
+                    "gstin": {
+                        "type": [
+                            "string",
+                            "null"
+                        ]
+                    }
+                },
+                "required": [
+                    "display_name",
+                    "gstin",
+                    "id"
+                ]
             },
             "Summary": {
                 "type": "object",
