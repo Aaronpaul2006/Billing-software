@@ -767,6 +767,62 @@ def test_reminders_reject_other_tenant_document(world: World, a_document: str) -
 OBJECT_ROUTES["document-reminders"] = lambda w: None  # test_reminders_reject_other_tenant_document
 
 
+# --- W.3 document templates -------------------------------------------------------------
+
+
+def test_templates_reject_other_tenant(
+    world: World, masters: dict[str, str], a_document: str
+) -> None:
+    from apps.doc_templates.models import DocumentTemplate
+
+    a = world.a
+    with tenant_context(a.tenant_id, a.user_id):
+        template = DocumentTemplate.objects.create(
+            name="A's secret package",
+            doc_type="QUOTATION",
+            lines=[
+                {
+                    "description": "x",
+                    "quantity": "1",
+                    "rate": "1.00",
+                    "gst_rate": "18.00",
+                    "discount_amount": "0.00",
+                }
+            ],
+            created_by_id=a.user_id,
+        )
+    api, b = world.api, world.as_b()
+    url = f"/api/v1/document-templates/{template.pk}"
+    assert api.get(url, **b).status_code == 404
+    assert (
+        api.patch(url, {"name": "mine"}, format="json", HTTP_IF_MATCH='"v1"', **b).status_code
+        == 404
+    )
+    assert api.delete(url, **b).status_code == 404
+    r = api.post(
+        f"{url}/use",
+        {"party_id": masters["party"]},
+        format="json",
+        HTTP_IDEMPOTENCY_KEY=str(uuid.uuid4()),
+        **b,
+    )
+    assert r.status_code == 404
+    r = api.post(
+        f"/api/v1/documents/{a_document}/save-as-template",
+        {"name": "stolen"},
+        format="json",
+        HTTP_IDEMPOTENCY_KEY=str(uuid.uuid4()),
+        **b,
+    )
+    assert r.status_code == 404
+    assert api.get("/api/v1/document-templates", **b).json()["results"] == []
+
+
+for _name in ("document-template-detail", "document-template-use", "document-save-as-template"):
+    OBJECT_ROUTES[_name] = lambda w: None  # test_templates_reject_other_tenant
+COLLECTION_ROUTES["document-templates"] = lambda w: None  # same test
+
+
 # --- Phase 3.1 BOQ import ------------------------------------------------------------
 
 

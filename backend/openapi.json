@@ -1232,6 +1232,258 @@
                 }
             }
         },
+        "/api/v1/document-templates": {
+            "get": {
+                "operationId": "document_templates_list",
+                "description": "Permission by action name (docs/01-architecture.md §3): `read_action`\nfor GET/HEAD/OPTIONS, `write_action` for everything else. Generic, so list\nendpoints get pagination and filtering from the DRF defaults.",
+                "parameters": [
+                    {
+                        "name": "cursor",
+                        "required": false,
+                        "in": "query",
+                        "description": "The pagination cursor value.",
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    {
+                        "in": "query",
+                        "name": "doc_type",
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    {
+                        "name": "limit",
+                        "required": false,
+                        "in": "query",
+                        "description": "Number of results to return per page.",
+                        "schema": {
+                            "type": "integer"
+                        }
+                    },
+                    {
+                        "name": "ordering",
+                        "required": false,
+                        "in": "query",
+                        "description": "Which field to use when ordering the results.",
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                ],
+                "tags": [
+                    "templates"
+                ],
+                "security": [
+                    {
+                        "bearerAuth": []
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/PaginatedTemplateList"
+                                }
+                            }
+                        },
+                        "description": ""
+                    }
+                }
+            },
+            "post": {
+                "operationId": "document_templates_create",
+                "description": "Permission by action name (docs/01-architecture.md §3): `read_action`\nfor GET/HEAD/OPTIONS, `write_action` for everything else. Generic, so list\nendpoints get pagination and filtering from the DRF defaults.",
+                "tags": [
+                    "templates"
+                ],
+                "requestBody": {
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/TemplateWrite"
+                            }
+                        }
+                    },
+                    "required": true
+                },
+                "security": [
+                    {
+                        "bearerAuth": []
+                    }
+                ],
+                "responses": {
+                    "201": {
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/Template"
+                                }
+                            }
+                        },
+                        "description": ""
+                    }
+                }
+            }
+        },
+        "/api/v1/document-templates/{template_id}": {
+            "get": {
+                "operationId": "document_templates_retrieve",
+                "description": "Permission by action name (docs/01-architecture.md §3): `read_action`\nfor GET/HEAD/OPTIONS, `write_action` for everything else. Generic, so list\nendpoints get pagination and filtering from the DRF defaults.",
+                "parameters": [
+                    {
+                        "in": "path",
+                        "name": "template_id",
+                        "schema": {
+                            "type": "string",
+                            "format": "uuid"
+                        },
+                        "required": true
+                    }
+                ],
+                "tags": [
+                    "templates"
+                ],
+                "security": [
+                    {
+                        "bearerAuth": []
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/Template"
+                                }
+                            }
+                        },
+                        "description": ""
+                    }
+                }
+            },
+            "patch": {
+                "operationId": "document_templates_partial_update",
+                "description": "Permission by action name (docs/01-architecture.md §3): `read_action`\nfor GET/HEAD/OPTIONS, `write_action` for everything else. Generic, so list\nendpoints get pagination and filtering from the DRF defaults.",
+                "parameters": [
+                    {
+                        "in": "path",
+                        "name": "template_id",
+                        "schema": {
+                            "type": "string",
+                            "format": "uuid"
+                        },
+                        "required": true
+                    }
+                ],
+                "tags": [
+                    "templates"
+                ],
+                "requestBody": {
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/PatchedTemplateWrite"
+                            }
+                        }
+                    }
+                },
+                "security": [
+                    {
+                        "bearerAuth": []
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/Template"
+                                }
+                            }
+                        },
+                        "description": ""
+                    }
+                }
+            },
+            "delete": {
+                "operationId": "document_templates_destroy",
+                "description": "Permission by action name (docs/01-architecture.md §3): `read_action`\nfor GET/HEAD/OPTIONS, `write_action` for everything else. Generic, so list\nendpoints get pagination and filtering from the DRF defaults.",
+                "parameters": [
+                    {
+                        "in": "path",
+                        "name": "template_id",
+                        "schema": {
+                            "type": "string",
+                            "format": "uuid"
+                        },
+                        "required": true
+                    }
+                ],
+                "tags": [
+                    "templates"
+                ],
+                "security": [
+                    {
+                        "bearerAuth": []
+                    }
+                ],
+                "responses": {
+                    "204": {
+                        "description": "No response body"
+                    }
+                }
+            }
+        },
+        "/api/v1/document-templates/{template_id}/use": {
+            "post": {
+                "operationId": "document_templates_use_create",
+                "description": "Permission by action name (docs/01-architecture.md §3): `read_action`\nfor GET/HEAD/OPTIONS, `write_action` for everything else. Generic, so list\nendpoints get pagination and filtering from the DRF defaults.",
+                "parameters": [
+                    {
+                        "in": "path",
+                        "name": "template_id",
+                        "schema": {
+                            "type": "string",
+                            "format": "uuid"
+                        },
+                        "required": true
+                    }
+                ],
+                "tags": [
+                    "templates"
+                ],
+                "requestBody": {
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/UseTemplate"
+                            }
+                        }
+                    },
+                    "required": true
+                },
+                "security": [
+                    {
+                        "bearerAuth": []
+                    }
+                ],
+                "responses": {
+                    "201": {
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/Document"
+                                }
+                            }
+                        },
+                        "description": ""
+                    }
+                }
+            }
+        },
         "/api/v1/documents": {
             "get": {
                 "operationId": "documents_list",
@@ -2054,6 +2306,53 @@
                             "application/json": {
                                 "schema": {
                                     "$ref": "#/components/schemas/PaymentReminder"
+                                }
+                            }
+                        },
+                        "description": ""
+                    }
+                }
+            }
+        },
+        "/api/v1/documents/{document_id}/save-as-template": {
+            "post": {
+                "operationId": "documents_save_as_template_create",
+                "description": "Permission by action name (docs/01-architecture.md §3): `read_action`\nfor GET/HEAD/OPTIONS, `write_action` for everything else. Generic, so list\nendpoints get pagination and filtering from the DRF defaults.",
+                "parameters": [
+                    {
+                        "in": "path",
+                        "name": "document_id",
+                        "schema": {
+                            "type": "string",
+                            "format": "uuid"
+                        },
+                        "required": true
+                    }
+                ],
+                "tags": [
+                    "templates"
+                ],
+                "requestBody": {
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/SaveAsTemplate"
+                            }
+                        }
+                    },
+                    "required": true
+                },
+                "security": [
+                    {
+                        "bearerAuth": []
+                    }
+                ],
+                "responses": {
+                    "201": {
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/Template"
                                 }
                             }
                         },
@@ -8225,6 +8524,28 @@
                     }
                 }
             },
+            "PaginatedTemplateList": {
+                "type": "object",
+                "required": [
+                    "results",
+                    "next_cursor"
+                ],
+                "properties": {
+                    "results": {
+                        "type": "array",
+                        "items": {
+                            "$ref": "#/components/schemas/Template"
+                        }
+                    },
+                    "next_cursor": {
+                        "type": [
+                            "string",
+                            "null"
+                        ],
+                        "description": "Pass as ?cursor="
+                    }
+                }
+            },
             "Party": {
                 "type": "object",
                 "properties": {
@@ -9156,6 +9477,53 @@
                             "null"
                         ],
                         "maxLength": 2000
+                    }
+                }
+            },
+            "PatchedTemplateWrite": {
+                "type": "object",
+                "properties": {
+                    "name": {
+                        "type": "string",
+                        "maxLength": 100,
+                        "minLength": 1
+                    },
+                    "doc_type": {
+                        "allOf": [
+                            {
+                                "$ref": "#/components/schemas/DraftableDocTypeEnum"
+                            }
+                        ],
+                        "default": "QUOTATION"
+                    },
+                    "valid_days": {
+                        "type": [
+                            "integer",
+                            "null"
+                        ],
+                        "maximum": 365,
+                        "minimum": 1,
+                        "description": "Quotations: valid until = the date + this many days."
+                    },
+                    "notes": {
+                        "type": [
+                            "string",
+                            "null"
+                        ],
+                        "maxLength": 5000
+                    },
+                    "terms": {
+                        "type": [
+                            "string",
+                            "null"
+                        ],
+                        "maxLength": 5000
+                    },
+                    "lines": {
+                        "type": "array",
+                        "items": {
+                            "$ref": "#/components/schemas/TemplateLine"
+                        }
                     }
                 }
             },
@@ -10442,6 +10810,27 @@
                 "type": "string",
                 "description": "* `OWNER` - OWNER\n* `ADMIN` - ADMIN\n* `ACCOUNTANT` - ACCOUNTANT\n* `SITE_ENGINEER` - SITE_ENGINEER\n* `VIEWER` - VIEWER"
             },
+            "SaveAsTemplate": {
+                "type": "object",
+                "properties": {
+                    "name": {
+                        "type": "string",
+                        "maxLength": 100,
+                        "minLength": 1
+                    },
+                    "valid_days": {
+                        "type": [
+                            "integer",
+                            "null"
+                        ],
+                        "maximum": 365,
+                        "minimum": 1
+                    }
+                },
+                "required": [
+                    "name"
+                ]
+            },
             "Session": {
                 "type": "object",
                 "properties": {
@@ -11156,6 +11545,180 @@
                     "certified",
                     "difference",
                     "expected"
+                ]
+            },
+            "Template": {
+                "type": "object",
+                "properties": {
+                    "id": {
+                        "type": "string",
+                        "format": "uuid",
+                        "readOnly": true
+                    },
+                    "version": {
+                        "type": "integer",
+                        "readOnly": true
+                    },
+                    "name": {
+                        "type": "string",
+                        "readOnly": true
+                    },
+                    "doc_type": {
+                        "type": "string",
+                        "readOnly": true
+                    },
+                    "valid_days": {
+                        "type": [
+                            "integer",
+                            "null"
+                        ],
+                        "readOnly": true
+                    },
+                    "notes": {
+                        "type": [
+                            "string",
+                            "null"
+                        ],
+                        "readOnly": true
+                    },
+                    "terms": {
+                        "type": [
+                            "string",
+                            "null"
+                        ],
+                        "readOnly": true
+                    },
+                    "lines": {
+                        "type": "array",
+                        "items": {
+                            "$ref": "#/components/schemas/TemplateLine"
+                        }
+                    },
+                    "created_at": {
+                        "type": "string",
+                        "format": "date-time",
+                        "readOnly": true
+                    },
+                    "updated_at": {
+                        "type": "string",
+                        "format": "date-time",
+                        "readOnly": true
+                    }
+                },
+                "required": [
+                    "created_at",
+                    "doc_type",
+                    "id",
+                    "lines",
+                    "name",
+                    "notes",
+                    "terms",
+                    "updated_at",
+                    "valid_days",
+                    "version"
+                ]
+            },
+            "TemplateLine": {
+                "type": "object",
+                "description": "A line as typed: no catalog or BOQ link (a template outlives both).",
+                "properties": {
+                    "description": {
+                        "type": "string",
+                        "maxLength": 2000,
+                        "minLength": 1
+                    },
+                    "sac_hsn": {
+                        "type": [
+                            "string",
+                            "null"
+                        ],
+                        "pattern": "^[0-9]{4,8}$"
+                    },
+                    "unit": {
+                        "type": [
+                            "string",
+                            "null"
+                        ],
+                        "maxLength": 20
+                    },
+                    "quantity": {
+                        "type": "string",
+                        "format": "decimal",
+                        "pattern": "^-?\\d{0,11}(?:\\.\\d{0,3})?$"
+                    },
+                    "rate": {
+                        "type": "string",
+                        "format": "decimal",
+                        "pattern": "^-?\\d{0,12}(?:\\.\\d{0,2})?$"
+                    },
+                    "discount_amount": {
+                        "type": "string",
+                        "format": "decimal",
+                        "pattern": "^-?\\d{0,12}(?:\\.\\d{0,2})?$",
+                        "default": "0.00"
+                    },
+                    "gst_rate": {
+                        "type": "string",
+                        "format": "decimal",
+                        "pattern": "^-?\\d{0,3}(?:\\.\\d{0,2})?$"
+                    }
+                },
+                "required": [
+                    "description",
+                    "gst_rate",
+                    "quantity",
+                    "rate"
+                ]
+            },
+            "TemplateWrite": {
+                "type": "object",
+                "properties": {
+                    "name": {
+                        "type": "string",
+                        "maxLength": 100,
+                        "minLength": 1
+                    },
+                    "doc_type": {
+                        "allOf": [
+                            {
+                                "$ref": "#/components/schemas/DraftableDocTypeEnum"
+                            }
+                        ],
+                        "default": "QUOTATION"
+                    },
+                    "valid_days": {
+                        "type": [
+                            "integer",
+                            "null"
+                        ],
+                        "maximum": 365,
+                        "minimum": 1,
+                        "description": "Quotations: valid until = the date + this many days."
+                    },
+                    "notes": {
+                        "type": [
+                            "string",
+                            "null"
+                        ],
+                        "maxLength": 5000
+                    },
+                    "terms": {
+                        "type": [
+                            "string",
+                            "null"
+                        ],
+                        "maxLength": 5000
+                    },
+                    "lines": {
+                        "type": "array",
+                        "items": {
+                            "$ref": "#/components/schemas/TemplateLine"
+                        }
+                    }
+                },
+                "required": [
+                    "lines",
+                    "name"
                 ]
             },
             "Tenant": {
@@ -12068,6 +12631,30 @@
                     "expires_in",
                     "upload_headers",
                     "upload_url"
+                ]
+            },
+            "UseTemplate": {
+                "type": "object",
+                "properties": {
+                    "party_id": {
+                        "type": "string",
+                        "format": "uuid"
+                    },
+                    "project_id": {
+                        "type": [
+                            "string",
+                            "null"
+                        ],
+                        "format": "uuid"
+                    },
+                    "doc_date": {
+                        "type": "string",
+                        "format": "date",
+                        "description": "Default: today."
+                    }
+                },
+                "required": [
+                    "party_id"
                 ]
             },
             "VerifyEmail": {

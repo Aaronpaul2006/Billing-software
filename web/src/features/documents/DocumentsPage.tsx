@@ -86,6 +86,9 @@ export function DocumentsPage() {
         description="Drafts get their number when issued."
         actions={
           <>
+            <Button variant="ghost" asChild>
+              <Link to="/templates">From a template</Link>
+            </Button>
             <Button variant="outline" asChild>
               <Link to="/documents/new?type=QUOTATION">New quotation</Link>
             </Button>

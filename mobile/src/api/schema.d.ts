@@ -553,6 +553,84 @@ export interface paths {
         patch: operations["document_series_partial_update"];
         trace?: never;
     };
+    "/api/v1/document-templates": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * @description Permission by action name (docs/01-architecture.md §3): `read_action`
+         *     for GET/HEAD/OPTIONS, `write_action` for everything else. Generic, so list
+         *     endpoints get pagination and filtering from the DRF defaults.
+         */
+        get: operations["document_templates_list"];
+        put?: never;
+        /**
+         * @description Permission by action name (docs/01-architecture.md §3): `read_action`
+         *     for GET/HEAD/OPTIONS, `write_action` for everything else. Generic, so list
+         *     endpoints get pagination and filtering from the DRF defaults.
+         */
+        post: operations["document_templates_create"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/document-templates/{template_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * @description Permission by action name (docs/01-architecture.md §3): `read_action`
+         *     for GET/HEAD/OPTIONS, `write_action` for everything else. Generic, so list
+         *     endpoints get pagination and filtering from the DRF defaults.
+         */
+        get: operations["document_templates_retrieve"];
+        put?: never;
+        post?: never;
+        /**
+         * @description Permission by action name (docs/01-architecture.md §3): `read_action`
+         *     for GET/HEAD/OPTIONS, `write_action` for everything else. Generic, so list
+         *     endpoints get pagination and filtering from the DRF defaults.
+         */
+        delete: operations["document_templates_destroy"];
+        options?: never;
+        head?: never;
+        /**
+         * @description Permission by action name (docs/01-architecture.md §3): `read_action`
+         *     for GET/HEAD/OPTIONS, `write_action` for everything else. Generic, so list
+         *     endpoints get pagination and filtering from the DRF defaults.
+         */
+        patch: operations["document_templates_partial_update"];
+        trace?: never;
+    };
+    "/api/v1/document-templates/{template_id}/use": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * @description Permission by action name (docs/01-architecture.md §3): `read_action`
+         *     for GET/HEAD/OPTIONS, `write_action` for everything else. Generic, so list
+         *     endpoints get pagination and filtering from the DRF defaults.
+         */
+        post: operations["document_templates_use_create"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/documents": {
         parameters: {
             query?: never;
@@ -821,6 +899,27 @@ export interface paths {
          *     endpoints get pagination and filtering from the DRF defaults.
          */
         post: operations["documents_reminders_create"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/documents/{document_id}/save-as-template": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * @description Permission by action name (docs/01-architecture.md §3): `read_action`
+         *     for GET/HEAD/OPTIONS, `write_action` for everything else. Generic, so list
+         *     endpoints get pagination and filtering from the DRF defaults.
+         */
+        post: operations["documents_save_as_template_create"];
         delete?: never;
         options?: never;
         head?: never;
@@ -2812,6 +2911,11 @@ export interface components {
             /** @description Pass as ?cursor= */
             next_cursor: string | null;
         };
+        PaginatedTemplateList: {
+            results: components["schemas"]["Template"][];
+            /** @description Pass as ?cursor= */
+            next_cursor: string | null;
+        };
         Party: {
             /** Format: uuid */
             readonly id: string;
@@ -3147,6 +3251,16 @@ export interface components {
             /** Format: decimal */
             tds_amount?: string;
             notes?: string | null;
+        };
+        PatchedTemplateWrite: {
+            name?: string;
+            /** @default QUOTATION */
+            doc_type?: components["schemas"]["DraftableDocTypeEnum"];
+            /** @description Quotations: valid until = the date + this many days. */
+            valid_days?: number | null;
+            notes?: string | null;
+            terms?: string | null;
+            lines?: components["schemas"]["TemplateLine"][];
         };
         PatchedTenantUpdate: {
             legal_name?: string;
@@ -3607,6 +3721,10 @@ export interface components {
          * @enum {string}
          */
         RoleEnum: "OWNER" | "ADMIN" | "ACCOUNTANT" | "SITE_ENGINEER" | "VIEWER";
+        SaveAsTemplate: {
+            name: string;
+            valid_days?: number | null;
+        };
         Session: {
             /** Format: uuid */
             id: string;
@@ -3890,6 +4008,48 @@ export interface components {
             certified: string;
             /** Format: decimal */
             difference: string;
+        };
+        Template: {
+            /** Format: uuid */
+            readonly id: string;
+            readonly version: number;
+            readonly name: string;
+            readonly doc_type: string;
+            readonly valid_days: number | null;
+            readonly notes: string | null;
+            readonly terms: string | null;
+            lines: components["schemas"]["TemplateLine"][];
+            /** Format: date-time */
+            readonly created_at: string;
+            /** Format: date-time */
+            readonly updated_at: string;
+        };
+        /** @description A line as typed: no catalog or BOQ link (a template outlives both). */
+        TemplateLine: {
+            description: string;
+            sac_hsn?: string | null;
+            unit?: string | null;
+            /** Format: decimal */
+            quantity: string;
+            /** Format: decimal */
+            rate: string;
+            /**
+             * Format: decimal
+             * @default 0.00
+             */
+            discount_amount?: string;
+            /** Format: decimal */
+            gst_rate: string;
+        };
+        TemplateWrite: {
+            name: string;
+            /** @default QUOTATION */
+            doc_type?: components["schemas"]["DraftableDocTypeEnum"];
+            /** @description Quotations: valid until = the date + this many days. */
+            valid_days?: number | null;
+            notes?: string | null;
+            terms?: string | null;
+            lines: components["schemas"]["TemplateLine"][];
         };
         Tenant: {
             /** Format: uuid */
@@ -4595,6 +4755,17 @@ export interface components {
                 [key: string]: string;
             };
             expires_in: number;
+        };
+        UseTemplate: {
+            /** Format: uuid */
+            party_id: string;
+            /** Format: uuid */
+            project_id?: string | null;
+            /**
+             * Format: date
+             * @description Default: today.
+             */
+            doc_date?: string;
         };
         VerifyEmail: {
             token: string;
@@ -5391,6 +5562,147 @@ export interface operations {
             };
         };
     };
+    document_templates_list: {
+        parameters: {
+            query?: {
+                /** @description The pagination cursor value. */
+                cursor?: string;
+                doc_type?: string;
+                /** @description Number of results to return per page. */
+                limit?: number;
+                /** @description Which field to use when ordering the results. */
+                ordering?: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PaginatedTemplateList"];
+                };
+            };
+        };
+    };
+    document_templates_create: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["TemplateWrite"];
+            };
+        };
+        responses: {
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Template"];
+                };
+            };
+        };
+    };
+    document_templates_retrieve: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                template_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Template"];
+                };
+            };
+        };
+    };
+    document_templates_destroy: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                template_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description No response body */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    document_templates_partial_update: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                template_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: {
+            content: {
+                "application/json": components["schemas"]["PatchedTemplateWrite"];
+            };
+        };
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Template"];
+                };
+            };
+        };
+    };
+    document_templates_use_create: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                template_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["UseTemplate"];
+            };
+        };
+        responses: {
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Document"];
+                };
+            };
+        };
+    };
     documents_list: {
         parameters: {
             query?: {
@@ -5819,6 +6131,31 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["PaymentReminder"];
+                };
+            };
+        };
+    };
+    documents_save_as_template_create: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                document_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["SaveAsTemplate"];
+            };
+        };
+        responses: {
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Template"];
                 };
             };
         };

@@ -31,6 +31,7 @@ import { errorMessage } from "@/lib/errors";
 import { formatInr, formatQty } from "@/lib/money";
 import { DocumentSettlement } from "@/features/payments/DocumentSettlement";
 import { DocumentReminders } from "@/features/reminders/DocumentReminders";
+import { SaveAsTemplate } from "@/features/templates/SaveAsTemplate";
 
 import {
   DOC_TYPE_LABELS,
@@ -540,6 +541,7 @@ export function DocumentPage() {
       />
       <div className="grid gap-6">
         <Actions doc={doc} />
+        <SaveAsTemplate documentId={doc.id} docType={doc.doc_type} />
         <Card>
           <CardContent>
             <dl className="grid gap-4 sm:grid-cols-3">

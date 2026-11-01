@@ -46,6 +46,7 @@ INSTALLED_APPS = [
     "apps.tds",
     "apps.exports",
     "apps.reminders",
+    "apps.doc_templates",
 ]
 
 MIDDLEWARE = [

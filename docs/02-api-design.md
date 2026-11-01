@@ -350,6 +350,20 @@ their own endpoints (Phase 1.6), RA bills below (Phase 3.2). Example response:
 }
 ```
 
+### Templates (W.3)
+
+A template keeps a quote's or bill's lines (description, HSN / SAC, unit,
+quantity, rate, GST %, discount, as typed: no catalog or BOQ link), notes,
+terms and, for quotations, `valid_days`. Types: QUOTATION, PROFORMA,
+TAX_INVOICE, BILL_OF_SUPPLY (not notes). Names are unique per tenant
+(`409 template_name_taken`).
+
+| Method & path | |
+|---|---|
+| `GET/POST /document-templates` · `GET/PATCH/DELETE /document-templates/{id}` | List (`?doc_type=`), create, read, edit (If-Match; turning a quotation template into another type drops `valid_days`), delete. Write: `masters.edit` |
+| `POST /documents/{id}/save-as-template` | `{name, valid_days?}` → `201` template from the document (BOQ lines become plain lines; a quote's validity is kept as days); `409 not_templatable` (notes), `409 no_lines` |
+| `POST /document-templates/{id}/use` | `{party_id, project_id?, doc_date?}` (Idempotency-Key; `documents.draft`) → `201` a new **draft** built by the normal draft rules (place of supply, GST, totals, references); a quotation's `valid_until` = `doc_date` + `valid_days` |
+
 ### SEZ, exports, LUT, reverse charge (G.1)
 
 Documents carry `supply_category` (`REGULAR` / `SEZ` / `EXPORT`, derived:

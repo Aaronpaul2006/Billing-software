@@ -573,3 +573,47 @@ describe("payment reminders", () => {
     ).not.toBeInTheDocument();
   });
 });
+
+describe("save as template", () => {
+  it("saves a quote's lines under a name", async () => {
+    const quote = doc({ doc_type: "QUOTATION", valid_until: "2026-11-18" });
+    useDoc(quote);
+    let sent: unknown = null;
+    server.use(
+      http.post(`${API}/documents/${DOC}/save-as-template`, async ({ request }) => {
+        sent = await request.json();
+        return HttpResponse.json(
+          {
+            id: "t1",
+            version: 1,
+            name: "2BHK interior",
+            doc_type: "QUOTATION",
+            valid_days: 30,
+            notes: null,
+            terms: null,
+            lines: [],
+            created_at: "",
+            updated_at: "",
+          },
+          { status: 201 },
+        );
+      }),
+    );
+    const user = userEvent.setup();
+    renderSignedIn(`/documents/${DOC}`);
+    await user.click(await screen.findByRole("button", { name: "Save as template" }));
+    const form = screen.getByRole("form", { name: "Save as template" });
+    await user.type(within(form).getByLabelText("Template name"), "2BHK interior");
+    await user.type(within(form).getByLabelText("Valid for (days)"), "30");
+    await user.click(within(form).getByRole("button", { name: "Save" }));
+    expect(await screen.findByText(/Saved as the template “2BHK interior”/)).toBeInTheDocument();
+    expect(sent).toEqual({ name: "2BHK interior", valid_days: 30 });
+  });
+
+  it("is not offered for credit notes", async () => {
+    useDoc(doc({ doc_type: "CREDIT_NOTE", status: "ISSUED", doc_number: "CN/0001" }));
+    renderSignedIn(`/documents/${DOC}`);
+    await screen.findByRole("heading", { name: /Credit note CN\/0001/ });
+    expect(screen.queryByRole("button", { name: "Save as template" })).not.toBeInTheDocument();
+  });
+});
