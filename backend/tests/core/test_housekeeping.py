@@ -157,11 +157,17 @@ def test_the_app_role_sees_no_stale_uploads_of_other_tenants(s3: Any) -> None:
     assert _count("SELECT count(*) FROM attachments", a) == 1
 
 
-def test_beat_runs_both_jobs_hourly(settings: Any) -> None:
-    schedule = settings.CELERY_BEAT_SCHEDULE
-    assert {entry["task"] for entry in schedule.values()} == {
+def test_beat_schedule(settings: Any) -> None:
+    """Purges hourly; payment reminders daily at 04:00 UTC (09:30 IST)."""
+    schedule = {
+        entry["task"]: entry["schedule"] for entry in settings.CELERY_BEAT_SCHEDULE.values()
+    }
+    assert set(schedule) == {
         "apps.core.tasks.purge_idempotency_keys",
         "apps.files.tasks.purge_stale_uploads",
         "apps.exports.tasks.purge_old_exports",
+        "apps.reminders.tasks.send_due_reminders",
     }
-    assert all(entry["schedule"] == 3600.0 for entry in schedule.values())
+    reminders = schedule.pop("apps.reminders.tasks.send_due_reminders")
+    assert (reminders.hour, reminders.minute) == ({4}, {0})
+    assert all(every == 3600.0 for every in schedule.values())

@@ -30,6 +30,7 @@ function party(overrides: Partial<Party> = {}): Party {
     },
     email: null,
     phone: "9847012345",
+    reminders_enabled: true,
     is_active: true,
     version: 3,
     created_at: "2026-10-19T10:00:00Z",

@@ -20,6 +20,7 @@ urlpatterns: list[URLPattern | URLResolver] = [
     path("api/v1/", include("apps.tds.urls")),
     path("api/v1/", include("apps.files.urls")),
     path("api/v1/", include("apps.exports.urls")),
+    path("api/v1/", include("apps.reminders.urls")),
 ]
 
 if settings.DEBUG:

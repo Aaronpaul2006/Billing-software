@@ -504,6 +504,28 @@ POST /api/v1/retention-releases
   report (`retention_held` = deducted − released, `retention_released`);
   payments allocated to them count as collected in their book.
 
+### Payment reminders (W.2)
+
+Emails to a client about an unpaid issued invoice, bill of supply or debit
+note. **Automatic** (Celery beat, 04:00 UTC = 09:30 IST; each tenant's
+"today" in its own time zone): 3 days before the due date (`BEFORE_DUE`), on
+it (`ON_DUE`), then 7, 15 and 30 days after (`OVERDUE_7`, `OVERDUE_15`,
+`OVERDUE_30`). Only the latest stage due and not yet sent goes out, so a
+missed day never sends a burst; a unique index sends each stage at most once
+per bill. Skipped: bills without a due date, settled bills, clients without
+an email, clients with `parties.reminders_enabled = false`. A mail-server
+failure logs nothing, so the next run tries again.
+
+| Method & path | |
+|---|---|
+| `GET /documents/{id}/reminders` | What went out, newest first: `stage`, `sent_to`, `amount_due`, `sent_by_name` (null = the daily job), `sent_at` |
+| `POST /documents/{id}/reminders` | Send one now (`MANUAL`; Idempotency-Key; `payments.record`: owner, admin, accountant) → `201`. `409 not_receivable` (not an issued receivable), `409 nothing_due`, `409 reminded_recently` (one a day per bill), `422 no_client_email` (field `party.email`), `503 email_unavailable` (nothing logged). Sent even if the client's automatic reminders are off |
+
+`PATCH /parties/{id}` takes `reminders_enabled` (default `true`). Table
+`payment_reminders` is append-only (the app role cannot update it); across
+tenants the job sees only active tenant ids and time zones
+(`active_tenants()`, SECURITY DEFINER, owner-only policy on `tenants`).
+
 ### TDS certificates (Phase 3.4)
 
 Income-tax TDS (s.194C) deducted by clients is certified quarterly on Form

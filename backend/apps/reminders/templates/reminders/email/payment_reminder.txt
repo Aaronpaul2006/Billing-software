@@ -1,0 +1,10 @@
+{% autoescape off %}Dear {{ client }},
+
+{% if overdue %}Our {{ title|lower }} {{ number }} dated {{ doc_date }} was due on {{ due_date }}, {{ days_late }} day{{ days_late|pluralize }} ago, and {% elif due_today %}Our {{ title|lower }} {{ number }} dated {{ doc_date }} is due today, and {% elif due_date %}A gentle reminder that our {{ title|lower }} {{ number }} dated {{ doc_date }} is due on {{ due_date }}, and {% else %}Our {{ title|lower }} {{ number }} dated {{ doc_date }} {% endif %}₹{{ outstanding }} of it is still unpaid (amount payable on the bill: ₹{{ total }}).
+
+Please arrange the payment{% if overdue %} at the earliest{% endif %}. If you have already paid, kindly send us the payment details (UTR or cheque number) so we can match it, and please ignore this message.
+
+Regards,
+{{ company.legal_name }}{% if company.gstin %}
+GSTIN {{ company.gstin }}{% endif %}
+{% endautoescape %}

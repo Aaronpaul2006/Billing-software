@@ -201,6 +201,7 @@ CREATE TABLE parties (
   billing_address jsonb,
   email           citext,
   phone           text,
+  reminders_enabled boolean NOT NULL DEFAULT true,     -- automatic payment reminders by email
   is_active       boolean NOT NULL DEFAULT true,
   version         integer NOT NULL DEFAULT 1,
   created_by      uuid NOT NULL REFERENCES users (id),
@@ -632,6 +633,27 @@ CREATE TABLE tds_certificates (
 );
 CREATE INDEX tds_certificates_party_idx ON tds_certificates (tenant_id, party_id, fy_start_year, quarter);
 
+-- Payment reminders emailed to a client about an unpaid bill (W.2): a log,
+-- append-only. The daily job sends each stage at most once per bill (the
+-- partial unique index); MANUAL ones are sent by a member from the bill.
+CREATE TABLE payment_reminders (
+  id           uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+  tenant_id    uuid NOT NULL REFERENCES tenants (id),
+  document_id  uuid NOT NULL,
+  stage        text NOT NULL CHECK (stage IN ('BEFORE_DUE', 'ON_DUE', 'OVERDUE_7', 'OVERDUE_15',
+                                              'OVERDUE_30', 'MANUAL')),
+  sent_to      citext NOT NULL CHECK (char_length(sent_to) BETWEEN 3 AND 254),
+  amount_due   numeric(14,2) NOT NULL CHECK (amount_due > 0),
+  sent_by      uuid REFERENCES users (id),               -- NULL: the daily job
+  sent_at      timestamptz NOT NULL DEFAULT now(),
+  UNIQUE (tenant_id, id),
+  FOREIGN KEY (tenant_id, document_id) REFERENCES documents (tenant_id, id),
+  CHECK ((stage = 'MANUAL') = (sent_by IS NOT NULL))
+);
+CREATE UNIQUE INDEX payment_reminders_stage_once ON payment_reminders (tenant_id, document_id, stage)
+  WHERE NOT (stage = 'MANUAL');
+CREATE INDEX payment_reminders_document_idx ON payment_reminders (tenant_id, document_id, sent_at DESC);
+
 -- =============================================================================
 -- 6. Infrastructure tables
 -- =============================================================================
@@ -935,7 +957,7 @@ BEGIN
     'tenants', 'memberships', 'gst_registrations', 'parties', 'projects', 'boq_items',
     'catalog_items', 'attachments', 'document_series', 'documents', 'document_lines',
     'payments', 'allocations', 'expenses', 'retention_releases', 'tds_certificates', 'exports',
-    'email_invitations']
+    'email_invitations', 'payment_reminders']
   LOOP
     EXECUTE format(
       'CREATE TRIGGER audit AFTER INSERT OR UPDATE OR DELETE ON %I FOR EACH ROW EXECUTE FUNCTION audit_row_change()', t);
@@ -954,7 +976,8 @@ BEGIN
   FOREACH t IN ARRAY ARRAY[
     'gst_registrations', 'parties', 'projects', 'boq_items', 'catalog_items', 'attachments',
     'document_series', 'documents', 'document_lines', 'payments', 'allocations', 'expenses',
-    'retention_releases', 'tds_certificates', 'idempotency_keys', 'exports', 'email_invitations']
+    'retention_releases', 'tds_certificates', 'idempotency_keys', 'exports', 'email_invitations',
+    'payment_reminders']
   LOOP
     EXECUTE format('ALTER TABLE %I ENABLE ROW LEVEL SECURITY', t);
     EXECUTE format('ALTER TABLE %I FORCE ROW LEVEL SECURITY', t);
@@ -1128,6 +1151,21 @@ END $$;
 REVOKE ALL ON FUNCTION purge_old_exports(integer) FROM PUBLIC;
 GRANT EXECUTE ON FUNCTION purge_old_exports(integer) TO billing_app;
 
+-- The daily payment-reminder job (W.2) visits each active tenant in turn and
+-- works inside that tenant's context; across tenants it may see only their
+-- ids and time zones (each tenant's "today").
+CREATE POLICY housekeeping_reminders ON tenants FOR SELECT
+  USING (status = 'ACTIVE'
+         AND current_user = (SELECT pg_get_userbyid(relowner) FROM pg_class
+                              WHERE oid = 'tenants'::regclass));
+
+CREATE FUNCTION active_tenants() RETURNS TABLE (tenant_id uuid, time_zone text)
+LANGUAGE sql STABLE SECURITY DEFINER SET search_path = public, pg_temp AS $$
+  SELECT id, timezone FROM tenants WHERE status = 'ACTIVE' ORDER BY id
+$$;
+REVOKE ALL ON FUNCTION active_tenants() FROM PUBLIC;
+GRANT EXECUTE ON FUNCTION active_tenants() TO billing_app;
+
 -- =============================================================================
 -- 9. Reporting views
 --    security_invoker = true is REQUIRED: a normal view runs with its owner's
@@ -1252,5 +1290,7 @@ GRANT UPDATE (status, doc_type, gst_registration_id, series_id, doc_number, doc_
 REVOKE UPDATE ON retention_releases FROM billing_app;
 GRANT UPDATE (status, cancelled_at, cancelled_by, cancel_reason, version, updated_at)
   ON retention_releases TO billing_app;
+-- Payment reminders are a log: written once, never changed.
+REVOKE UPDATE ON payment_reminders FROM billing_app;
 
 COMMIT;

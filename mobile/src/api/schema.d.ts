@@ -801,6 +801,32 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/documents/{document_id}/reminders": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * @description Permission by action name (docs/01-architecture.md §3): `read_action`
+         *     for GET/HEAD/OPTIONS, `write_action` for everything else. Generic, so list
+         *     endpoints get pagination and filtering from the DRF defaults.
+         */
+        get: operations["documents_reminders_retrieve"];
+        put?: never;
+        /**
+         * @description Permission by action name (docs/01-architecture.md §3): `read_action`
+         *     for GET/HEAD/OPTIONS, `write_action` for everything else. Generic, so list
+         *     endpoints get pagination and filtering from the DRF defaults.
+         */
+        post: operations["documents_reminders_create"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/documents:preview-totals": {
         parameters: {
             query?: never;
@@ -2801,6 +2827,7 @@ export interface components {
             billing_address: unknown | null;
             readonly email: string | null;
             readonly phone: string | null;
+            readonly reminders_enabled: boolean;
             readonly is_active: boolean;
             readonly version: number;
             /** Format: date-time */
@@ -2846,6 +2873,11 @@ export interface components {
             /** Format: email */
             email?: string | null;
             phone?: string | null;
+            /**
+             * @description Email automatic payment reminders for unpaid bills.
+             * @default true
+             */
+            reminders_enabled?: boolean;
             /** @default true */
             is_active?: boolean;
         };
@@ -2999,6 +3031,11 @@ export interface components {
             /** Format: email */
             email?: string | null;
             phone?: string | null;
+            /**
+             * @description Email automatic payment reminders for unpaid bills.
+             * @default true
+             */
+            reminders_enabled?: boolean;
             /** @default true */
             is_active?: boolean;
         };
@@ -3171,6 +3208,23 @@ export interface components {
          * @enum {string}
          */
         PaymentModeEnum: "BANK_TRANSFER" | "UPI" | "CHEQUE" | "CASH" | "CARD" | "OTHER";
+        PaymentReminder: {
+            /** Format: uuid */
+            readonly id: string;
+            /** Format: uuid */
+            document_id: string;
+            stage: components["schemas"]["StageEnum"];
+            readonly sent_to: string;
+            /** Format: decimal */
+            amount_due: string;
+            /** @description null: the daily job. */
+            readonly sent_by_name: string | null;
+            /** Format: date-time */
+            readonly sent_at: string;
+        };
+        PaymentReminderList: {
+            results: components["schemas"]["PaymentReminder"][];
+        };
         PdfLink: {
             /**
              * Format: uri
@@ -3580,6 +3634,16 @@ export interface components {
             full_name: string;
             business_name: string;
         };
+        /**
+         * @description * `BEFORE_DUE` - Before Due
+         *     * `ON_DUE` - On Due
+         *     * `OVERDUE_7` - Overdue 7
+         *     * `OVERDUE_15` - Overdue 15
+         *     * `OVERDUE_30` - Overdue 30
+         *     * `MANUAL` - Manual
+         * @enum {string}
+         */
+        StageEnum: "BEFORE_DUE" | "ON_DUE" | "OVERDUE_7" | "OVERDUE_15" | "OVERDUE_30" | "MANUAL";
         /**
          * @description * `01` - Jammu and Kashmir
          *     * `02` - Himachal Pradesh
@@ -5714,6 +5778,48 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content?: never;
+            };
+        };
+    };
+    documents_reminders_retrieve: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                document_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PaymentReminderList"];
+                };
+            };
+        };
+    };
+    documents_reminders_create: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                document_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PaymentReminder"];
+                };
             };
         };
     };

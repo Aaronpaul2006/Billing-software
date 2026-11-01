@@ -53,6 +53,7 @@ class PartySerializer(serializers.ModelSerializer[Party]):
             "billing_address",
             "email",
             "phone",
+            "reminders_enabled",
             "is_active",
             "version",
             "created_at",
@@ -76,6 +77,9 @@ class PartyWriteSerializer(serializers.Serializer[Any]):
     billing_address = PartyAddressSerializer(required=False, allow_null=True)
     email = serializers.EmailField(max_length=254, required=False, allow_null=True)
     phone = serializers.RegexField(r"^\+?[0-9]{10,15}$", required=False, allow_null=True)
+    reminders_enabled = serializers.BooleanField(
+        default=True, help_text="Email automatic payment reminders for unpaid bills."
+    )
     is_active = serializers.BooleanField(default=True)
 
     def validate_gstin(self, value: str | None) -> str | None:

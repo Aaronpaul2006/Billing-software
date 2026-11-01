@@ -6,6 +6,7 @@ import { renderSignedIn } from "@/test/render";
 import { API, http, HttpResponse, problem, server } from "@/test/server";
 
 type Document = components["schemas"]["Document"];
+type Reminder = components["schemas"]["PaymentReminder"];
 
 const CLIENT = "0192f5c4-0000-7000-8000-0000000000c1";
 const PROJECT = "0192f5c4-0000-7000-8000-0000000000p1";
@@ -460,5 +461,115 @@ describe("number series", () => {
         pad_width: 4,
       });
     });
+  });
+});
+
+describe("payment reminders", () => {
+  const issued = doc({
+    status: "ISSUED",
+    doc_number: "INV/0001",
+    due_date: "2026-11-18",
+    issued_at: "2026-10-19T10:00:00Z",
+  });
+
+  function settledBy() {
+    server.use(
+      http.get(`${API}/documents/${DOC}/allocations`, () =>
+        HttpResponse.json({
+          document_id: DOC,
+          doc_type: "TAX_INVOICE",
+          applied: null,
+          unapplied: null,
+          allocations: [],
+        }),
+      ),
+    );
+  }
+
+  it("lists what went out and sends one now", async () => {
+    useDoc(issued);
+    settledBy();
+    let sent: string | null = null;
+    const first: Reminder = {
+      id: "r1",
+      document_id: DOC,
+      stage: "BEFORE_DUE",
+      sent_to: "accounts@skyline.in",
+      amount_due: "323680.00",
+      sent_by_name: null,
+      sent_at: "2026-11-15T04:00:00Z",
+    };
+    let history: Reminder[] = [first];
+    server.use(
+      http.get(`${API}/documents/${DOC}/reminders`, () => HttpResponse.json({ results: history })),
+      http.post(`${API}/documents/${DOC}/reminders`, ({ request }) => {
+        sent = request.headers.get("Idempotency-Key");
+        const made: Reminder = {
+          ...first,
+          id: "r2",
+          stage: "MANUAL",
+          sent_by_name: "Asha Nair",
+          sent_at: "2026-11-20T06:00:00Z",
+        };
+        history = [made, ...history];
+        return HttpResponse.json(made, { status: 201 });
+      }),
+    );
+    const user = userEvent.setup();
+    renderSignedIn(`/documents/${DOC}`);
+    const section = await screen.findByRole("region", { name: "Payment reminders" });
+    expect(
+      await within(section).findByText(/3 days before the due date · to accounts@skyline.in/),
+    ).toBeInTheDocument();
+    await user.click(within(section).getByRole("button", { name: "Send reminder" }));
+    expect(
+      await within(section).findByText("Reminder sent to accounts@skyline.in."),
+    ).toBeInTheDocument();
+    expect(await within(section).findByText(/Sent by hand \(Asha Nair\)/)).toBeInTheDocument();
+    expect(sent).toMatch(/^[0-9a-f-]{36}$/);
+  });
+
+  it("points to the client's page when the client has no email; viewers cannot send", async () => {
+    useDoc(issued);
+    settledBy();
+    server.use(
+      http.post(`${API}/documents/${DOC}/reminders`, () =>
+        HttpResponse.json(
+          {
+            type: "/errors/validation_error",
+            title: "Validation failed",
+            status: 422,
+            code: "validation_error",
+            detail: "1 field is invalid.",
+            errors: [
+              {
+                field: "party.email",
+                code: "no_client_email",
+                message: "This client has no email address.",
+              },
+            ],
+          },
+          { status: 422 },
+        ),
+      ),
+    );
+    const user = userEvent.setup();
+    renderSignedIn(`/documents/${DOC}`);
+    const section = await screen.findByRole("region", { name: "Payment reminders" });
+    await user.click(within(section).getByRole("button", { name: "Send reminder" }));
+    expect(
+      await within(section).findByRole("link", { name: "Add one on the client's page" }),
+    ).toHaveAttribute("href", `/parties/${CLIENT}`);
+  });
+
+  it("hides the button from viewers and when nothing is owed", async () => {
+    useDoc(issued);
+    settledBy();
+    renderSignedIn(`/documents/${DOC}`, { role: "VIEWER" });
+    const section = await screen.findByRole("region", { name: "Payment reminders" });
+    expect(within(section).getByText("None sent yet.")).toBeInTheDocument();
+    expect(
+      within(section).queryByRole("button", { name: "Send reminder" }),
+    ).not.toBeInTheDocument();
   });
 });

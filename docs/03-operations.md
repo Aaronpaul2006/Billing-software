@@ -10,7 +10,7 @@ stack under `https://localhost:8443`, a full backup → wipe → restore cycle).
  browser / phone ──HTTPS──▶  Caddy (TLS, headers, web app)  ──▶  api (gunicorn, Django)
                                                                    │
                      worker (Celery: PDFs, emails, upload checks, exports)
-                     beat   (hourly housekeeping)                  │
+                     beat   (housekeeping; reminders 09:30 IST)    │
                      backup (nightly, encrypted)                   │
                                                                    ▼
           one server ── Postgres 17 · Redis · ClamAV  (Docker volumes)

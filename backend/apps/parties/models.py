@@ -45,6 +45,7 @@ class Party(TenantScoped):
     billing_address = models.JSONField(null=True)
     email = CITextField(null=True)
     phone = models.TextField(null=True)  # noqa: DJ001
+    reminders_enabled = models.BooleanField(default=True, db_default=True)
     is_active = models.BooleanField(default=True, db_default=True)
     version = models.IntegerField(default=1, db_default=1)
     created_by = ref("accounts.User", db_column="created_by")

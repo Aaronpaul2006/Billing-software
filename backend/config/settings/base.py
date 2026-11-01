@@ -9,6 +9,7 @@ from datetime import timedelta
 from pathlib import Path
 
 import environ
+from celery.schedules import crontab
 
 BACKEND_DIR = Path(__file__).resolve().parents[2]
 REPO_ROOT = BACKEND_DIR.parent
@@ -44,6 +45,7 @@ INSTALLED_APPS = [
     "apps.reports",
     "apps.tds",
     "apps.exports",
+    "apps.reminders",
 ]
 
 MIDDLEWARE = [
@@ -147,6 +149,11 @@ CELERY_BEAT_SCHEDULE = {
     },
     "purge-stale-uploads": {"task": "apps.files.tasks.purge_stale_uploads", "schedule": 3600.0},
     "purge-old-exports": {"task": "apps.exports.tasks.purge_old_exports", "schedule": 3600.0},
+    # 04:00 UTC = 09:30 in India; each tenant's "today" follows its own time zone
+    "payment-reminders": {
+        "task": "apps.reminders.tasks.send_due_reminders",
+        "schedule": crontab(hour=4, minute=0),
+    },
 }
 RENDER_PDF_ON_ISSUE = True
 

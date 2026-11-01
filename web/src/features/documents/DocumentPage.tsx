@@ -30,6 +30,7 @@ import { placeName } from "@/lib/india";
 import { errorMessage } from "@/lib/errors";
 import { formatInr, formatQty } from "@/lib/money";
 import { DocumentSettlement } from "@/features/payments/DocumentSettlement";
+import { DocumentReminders } from "@/features/reminders/DocumentReminders";
 
 import {
   DOC_TYPE_LABELS,
@@ -588,6 +589,13 @@ export function DocumentPage() {
         </div>
         {(receivable || (doc.doc_type === "CREDIT_NOTE" && doc.status === "ISSUED")) && (
           <DocumentSettlement documentId={doc.id} partyId={doc.party_id} />
+        )}
+        {receivable && (
+          <DocumentReminders
+            documentId={doc.id}
+            partyId={doc.party_id}
+            outstanding={doc.totals.outstanding}
+          />
         )}
       </div>
     </>

@@ -53,6 +53,7 @@ const formSchema = z
     is_vendor: z.boolean(),
     email: z.string(),
     phone: z.string(),
+    reminders_enabled: z.boolean(),
     billing_address: z.object({
       line1: z.string(),
       line2: z.string(),
@@ -84,6 +85,7 @@ const FIELDS = [
   "is_vendor",
   "email",
   "phone",
+  "reminders_enabled",
   "billing_address.line1",
   "billing_address.line2",
   "billing_address.city",
@@ -103,6 +105,7 @@ const EMPTY: FormValues = {
   is_vendor: false,
   email: "",
   phone: "",
+  reminders_enabled: true,
   billing_address: { line1: "", line2: "", city: "", state_code: "", pincode: "", country: "IN" },
 };
 
@@ -119,6 +122,7 @@ function toForm(p: Party): FormValues {
     is_vendor: p.is_vendor,
     email: p.email ?? "",
     phone: p.phone ?? "",
+    reminders_enabled: p.reminders_enabled,
     billing_address: {
       line1: a.line1 ?? "",
       line2: a.line2 ?? "",
@@ -147,6 +151,7 @@ function toApi(v: FormValues): PartyWrite {
     is_vendor: v.is_vendor,
     email: blankToNull(v.email),
     phone: blankToNull(v.phone),
+    reminders_enabled: v.reminders_enabled,
     billing_address: hasAddress
       ? {
           line1: a.line1.trim(),
@@ -372,6 +377,16 @@ export function PartyFormPage() {
               error={errors.phone?.message}
               registration={register("phone")}
             />
+            <label className="flex items-start gap-2 text-sm sm:col-span-2">
+              <input type="checkbox" className="mt-1" {...register("reminders_enabled")} />
+              <span>
+                Email automatic payment reminders for unpaid bills
+                <span className="text-muted-foreground block text-xs">
+                  3 days before the due date, on it, and 7, 15 and 30 days after (needs the email
+                  above).
+                </span>
+              </span>
+            </label>
           </CardContent>
         </Card>
 

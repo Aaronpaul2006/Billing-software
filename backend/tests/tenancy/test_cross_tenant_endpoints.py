@@ -753,6 +753,20 @@ def test_statement_rejects_other_tenant_party(world: World, masters: dict[str, s
 OBJECT_ROUTES["party-statement"] = lambda w: None  # test_statement_rejects_other_tenant_party
 
 
+# --- W.2 payment reminders --------------------------------------------------------------
+
+
+def test_reminders_reject_other_tenant_document(world: World, a_document: str) -> None:
+    api, b = world.api, world.as_b()
+    url = f"/api/v1/documents/{a_document}/reminders"
+    assert api.get(url, **b).status_code == 404
+    r = api.post(url, {}, format="json", HTTP_IDEMPOTENCY_KEY=str(uuid.uuid4()), **b)
+    assert r.status_code == 404
+
+
+OBJECT_ROUTES["document-reminders"] = lambda w: None  # test_reminders_reject_other_tenant_document
+
+
 # --- Phase 3.1 BOQ import ------------------------------------------------------------
 
 

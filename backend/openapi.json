@@ -1990,6 +1990,78 @@
                 }
             }
         },
+        "/api/v1/documents/{document_id}/reminders": {
+            "get": {
+                "operationId": "documents_reminders_retrieve",
+                "description": "Permission by action name (docs/01-architecture.md §3): `read_action`\nfor GET/HEAD/OPTIONS, `write_action` for everything else. Generic, so list\nendpoints get pagination and filtering from the DRF defaults.",
+                "parameters": [
+                    {
+                        "in": "path",
+                        "name": "document_id",
+                        "schema": {
+                            "type": "string",
+                            "format": "uuid"
+                        },
+                        "required": true
+                    }
+                ],
+                "tags": [
+                    "reminders"
+                ],
+                "security": [
+                    {
+                        "bearerAuth": []
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/PaymentReminderList"
+                                }
+                            }
+                        },
+                        "description": ""
+                    }
+                }
+            },
+            "post": {
+                "operationId": "documents_reminders_create",
+                "description": "Permission by action name (docs/01-architecture.md §3): `read_action`\nfor GET/HEAD/OPTIONS, `write_action` for everything else. Generic, so list\nendpoints get pagination and filtering from the DRF defaults.",
+                "parameters": [
+                    {
+                        "in": "path",
+                        "name": "document_id",
+                        "schema": {
+                            "type": "string",
+                            "format": "uuid"
+                        },
+                        "required": true
+                    }
+                ],
+                "tags": [
+                    "reminders"
+                ],
+                "security": [
+                    {
+                        "bearerAuth": []
+                    }
+                ],
+                "responses": {
+                    "201": {
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/PaymentReminder"
+                                }
+                            }
+                        },
+                        "description": ""
+                    }
+                }
+            }
+        },
         "/api/v1/documents:preview-totals": {
             "post": {
                 "operationId": "documents:preview_totals_create",
@@ -8238,6 +8310,10 @@
                         ],
                         "readOnly": true
                     },
+                    "reminders_enabled": {
+                        "type": "boolean",
+                        "readOnly": true
+                    },
                     "is_active": {
                         "type": "boolean",
                         "readOnly": true
@@ -8271,6 +8347,7 @@
                     "legal_name",
                     "pan",
                     "phone",
+                    "reminders_enabled",
                     "state_code",
                     "state_name",
                     "updated_at",
@@ -8397,6 +8474,11 @@
                             "null"
                         ],
                         "pattern": "^\\+?[0-9]{10,15}$"
+                    },
+                    "reminders_enabled": {
+                        "type": "boolean",
+                        "default": true,
+                        "description": "Email automatic payment reminders for unpaid bills."
                     },
                     "is_active": {
                         "type": "boolean",
@@ -8904,6 +8986,11 @@
                         ],
                         "pattern": "^\\+?[0-9]{10,15}$"
                     },
+                    "reminders_enabled": {
+                        "type": "boolean",
+                        "default": true,
+                        "description": "Email automatic payment reminders for unpaid bills."
+                    },
                     "is_active": {
                         "type": "boolean",
                         "default": true
@@ -9302,6 +9389,68 @@
                 ],
                 "type": "string",
                 "description": "* `BANK_TRANSFER` - Bank Transfer\n* `UPI` - Upi\n* `CHEQUE` - Cheque\n* `CASH` - Cash\n* `CARD` - Card\n* `OTHER` - Other"
+            },
+            "PaymentReminder": {
+                "type": "object",
+                "properties": {
+                    "id": {
+                        "type": "string",
+                        "format": "uuid",
+                        "readOnly": true
+                    },
+                    "document_id": {
+                        "type": "string",
+                        "format": "uuid"
+                    },
+                    "stage": {
+                        "$ref": "#/components/schemas/StageEnum"
+                    },
+                    "sent_to": {
+                        "type": "string",
+                        "readOnly": true
+                    },
+                    "amount_due": {
+                        "type": "string",
+                        "format": "decimal",
+                        "pattern": "^-?\\d{0,12}(?:\\.\\d{0,2})?$"
+                    },
+                    "sent_by_name": {
+                        "type": [
+                            "string",
+                            "null"
+                        ],
+                        "readOnly": true,
+                        "description": "null: the daily job."
+                    },
+                    "sent_at": {
+                        "type": "string",
+                        "format": "date-time",
+                        "readOnly": true
+                    }
+                },
+                "required": [
+                    "amount_due",
+                    "document_id",
+                    "id",
+                    "sent_at",
+                    "sent_by_name",
+                    "sent_to",
+                    "stage"
+                ]
+            },
+            "PaymentReminderList": {
+                "type": "object",
+                "properties": {
+                    "results": {
+                        "type": "array",
+                        "items": {
+                            "$ref": "#/components/schemas/PaymentReminder"
+                        }
+                    }
+                },
+                "required": [
+                    "results"
+                ]
             },
             "PdfLink": {
                 "type": "object",
@@ -10404,6 +10553,18 @@
                     "full_name",
                     "password"
                 ]
+            },
+            "StageEnum": {
+                "enum": [
+                    "BEFORE_DUE",
+                    "ON_DUE",
+                    "OVERDUE_7",
+                    "OVERDUE_15",
+                    "OVERDUE_30",
+                    "MANUAL"
+                ],
+                "type": "string",
+                "description": "* `BEFORE_DUE` - Before Due\n* `ON_DUE` - On Due\n* `OVERDUE_7` - Overdue 7\n* `OVERDUE_15` - Overdue 15\n* `OVERDUE_30` - Overdue 30\n* `MANUAL` - Manual"
             },
             "StateCodeEnum": {
                 "enum": [

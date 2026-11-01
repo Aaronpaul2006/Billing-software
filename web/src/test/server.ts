@@ -60,6 +60,7 @@ export const server = setupServer(
   http.post(`${API}/auth/token/refresh`, () => problem(401, "invalid_refresh_token")),
   http.get(`${API}/invitations`, () => HttpResponse.json({ results: [] })),
   http.get(`${API}/email-invitations`, () => HttpResponse.json({ results: [] })),
+  http.get(`${API}/documents/:id/reminders`, () => HttpResponse.json({ results: [] })),
 );
 
 export { http, HttpResponse };
