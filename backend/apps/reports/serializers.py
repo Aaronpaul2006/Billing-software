@@ -246,3 +246,80 @@ class StatementSerializer(serializers.Serializer[Any]):
         fields = super().get_fields()
         fields["from"] = fields.pop("from_")  # `from` is a Python keyword
         return fields
+
+
+# --- the main dashboard (W.6) ------------------------------------------------------------
+
+
+class DashboardTotalsSerializer(serializers.Serializer[Any]):
+    billed = MoneyField(help_text="Issued in the period, with GST; credit notes subtract.")
+    collected = MoneyField(help_text="Payments received in the period.")
+    outstanding = MoneyField(help_text="Owed to you today.")
+    overdue = MoneyField(help_text="The part of `outstanding` past its due date.")
+    expenses = MoneyField(help_text="Recorded in the period, with GST.")
+    margin = MoneyField(
+        help_text="Billed taxable value less cost (expense GST counts unless ITC is claimable)."
+    )
+
+
+class DashboardMonthSerializer(serializers.Serializer[Any]):
+    month = serializers.DateField(help_text="First day of the month.")
+    billed = MoneyField()
+    collected = MoneyField()
+
+
+class DashboardOverdueRowSerializer(serializers.Serializer[Any]):
+    document_id = serializers.UUIDField()
+    doc_type = serializers.CharField()
+    doc_number = serializers.CharField()
+    party_id = serializers.UUIDField()
+    party_name = serializers.CharField()
+    due_date = serializers.DateField()
+    days_overdue = serializers.IntegerField()
+    outstanding = MoneyField()
+    party_has_email = serializers.BooleanField(help_text="False: a reminder cannot be emailed.")
+    last_reminder_at = serializers.DateTimeField(allow_null=True)
+
+
+class DashboardOverdueSerializer(serializers.Serializer[Any]):
+    count = serializers.IntegerField(help_text="All overdue bills; `results` has the 10 oldest.")
+    results = DashboardOverdueRowSerializer(many=True)
+
+
+class DashboardProjectSerializer(serializers.Serializer[Any]):
+    project_id = serializers.UUIDField()
+    code = serializers.CharField()
+    name = serializers.CharField()
+    billed_taxable = MoneyField()
+    cost = MoneyField()
+    margin = MoneyField()
+
+
+class DashboardDraftRowSerializer(serializers.Serializer[Any]):
+    id = serializers.UUIDField()
+    doc_type = serializers.CharField()
+    doc_date = serializers.DateField()
+    party_name = serializers.CharField()
+    grand_total = MoneyField()
+    updated_at = serializers.DateTimeField()
+
+
+class DashboardDraftsSerializer(serializers.Serializer[Any]):
+    count = serializers.IntegerField()
+    results = DashboardDraftRowSerializer(many=True, help_text="The 5 waiting longest.")
+
+
+class DashboardSerializer(serializers.Serializer[Any]):
+    book = serializers.CharField()
+    period = serializers.DictField(child=serializers.DateField())
+    previous_period = serializers.DictField(child=serializers.DateField())
+    totals = DashboardTotalsSerializer()
+    previous = DashboardTotalsSerializer(
+        help_text="The same figures for the period before (outstanding / overdue: today's)."
+    )
+    months = DashboardMonthSerializer(many=True, help_text="12 months up to `to`, oldest first.")
+    overdue = DashboardOverdueSerializer()
+    losing_projects = DashboardProjectSerializer(
+        many=True, help_text="Costs so far exceed billing (at most 5, worst first)."
+    )
+    drafts = DashboardDraftsSerializer()

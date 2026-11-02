@@ -1859,6 +1859,23 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/reports/dashboard": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** @description The main dashboard (W.6), in one request. */
+        get: operations["reports_dashboard_retrieve"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/reports/gst-summary": {
         parameters: {
             query?: never;
@@ -2420,6 +2437,119 @@ export interface components {
              * @description Date of the new document (explicit: no time zone guessing).
              */
             doc_date: string;
+        };
+        Dashboard: {
+            book: string;
+            period: {
+                [key: string]: string;
+            };
+            previous_period: {
+                [key: string]: string;
+            };
+            totals: components["schemas"]["DashboardTotals"];
+            /** @description The same figures for the period before (outstanding / overdue: today's). */
+            previous: components["schemas"]["DashboardTotals"];
+            /** @description 12 months up to `to`, oldest first. */
+            months: components["schemas"]["DashboardMonth"][];
+            overdue: components["schemas"]["DashboardOverdue"];
+            /** @description Costs so far exceed billing (at most 5, worst first). */
+            losing_projects: components["schemas"]["DashboardProject"][];
+            drafts: components["schemas"]["DashboardDrafts"];
+        };
+        DashboardDraftRow: {
+            /** Format: uuid */
+            id: string;
+            doc_type: string;
+            /** Format: date */
+            doc_date: string;
+            party_name: string;
+            /** Format: decimal */
+            grand_total: string;
+            /** Format: date-time */
+            updated_at: string;
+        };
+        DashboardDrafts: {
+            count: number;
+            /** @description The 5 waiting longest. */
+            results: components["schemas"]["DashboardDraftRow"][];
+        };
+        DashboardMonth: {
+            /**
+             * Format: date
+             * @description First day of the month.
+             */
+            month: string;
+            /** Format: decimal */
+            billed: string;
+            /** Format: decimal */
+            collected: string;
+        };
+        DashboardOverdue: {
+            /** @description All overdue bills; `results` has the 10 oldest. */
+            count: number;
+            results: components["schemas"]["DashboardOverdueRow"][];
+        };
+        DashboardOverdueRow: {
+            /** Format: uuid */
+            document_id: string;
+            doc_type: string;
+            doc_number: string;
+            /** Format: uuid */
+            party_id: string;
+            party_name: string;
+            /** Format: date */
+            due_date: string;
+            days_overdue: number;
+            /** Format: decimal */
+            outstanding: string;
+            /** @description False: a reminder cannot be emailed. */
+            party_has_email: boolean;
+            /** Format: date-time */
+            last_reminder_at: string | null;
+        };
+        DashboardProject: {
+            /** Format: uuid */
+            project_id: string;
+            code: string;
+            name: string;
+            /** Format: decimal */
+            billed_taxable: string;
+            /** Format: decimal */
+            cost: string;
+            /** Format: decimal */
+            margin: string;
+        };
+        DashboardTotals: {
+            /**
+             * Format: decimal
+             * @description Issued in the period, with GST; credit notes subtract.
+             */
+            billed: string;
+            /**
+             * Format: decimal
+             * @description Payments received in the period.
+             */
+            collected: string;
+            /**
+             * Format: decimal
+             * @description Owed to you today.
+             */
+            outstanding: string;
+            /**
+             * Format: decimal
+             * @description The part of `outstanding` past its due date.
+             */
+            overdue: string;
+            /**
+             * Format: decimal
+             * @description Recorded in the period, with GST.
+             */
+            expenses: string;
+            /**
+             * Format: decimal
+             * @description Billed taxable value less cost (expense GST counts unless ITC is claimable).
+             */
+            margin: string;
         };
         /**
          * @description * `QUOTATION` - Quotation
@@ -8253,6 +8383,31 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["Months"];
+                };
+            };
+        };
+    };
+    reports_dashboard_retrieve: {
+        parameters: {
+            query?: {
+                book?: "ALL" | "GST" | "NON_GST";
+                /** @description YYYY-MM-DD; default 1 April of this FY */
+                from?: string;
+                /** @description YYYY-MM-DD; default today */
+                to?: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Dashboard"];
                 };
             };
         };

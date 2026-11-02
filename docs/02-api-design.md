@@ -673,6 +673,23 @@ Same API, same permissions.
 
 ---
 
+### Main dashboard (W.6, 2026-11-02)
+
+`GET /reports/dashboard?from=&to=&book=` (reports.view; `from`/`to`/`book` as
+for `/reports/summary`) answers the dashboard in one request:
+
+* `totals` / `previous` (the period before, as in the summary): `billed`,
+  `collected`, `expenses` and `margin` (billed taxable value less cost; expense
+  GST counts as cost unless input tax credit is claimable, as in the project
+  report) for the period; `outstanding` and `overdue` (past due date) are today's.
+* `months`: billed and collected for the 12 months up to `to` (empty months
+  included, oldest first).
+* `overdue`: `count` of past-due bills and the 10 oldest (number, client,
+  due date, `days_overdue`, `outstanding`, `party_has_email`,
+  `last_reminder_at`); remind with `POST /documents/{id}/reminders` (W.2).
+* `losing_projects`: at most 5 projects whose cost exceeds billed taxable value.
+* `drafts`: `count` and the 5 waiting longest.
+
 ### Exports (E.1, 2026-10-22)
 
 `POST /exports {kind, format, params}` → `202` with the export (`PENDING`); a

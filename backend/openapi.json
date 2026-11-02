@@ -5213,6 +5213,62 @@
                 }
             }
         },
+        "/api/v1/reports/dashboard": {
+            "get": {
+                "operationId": "reports_dashboard_retrieve",
+                "description": "The main dashboard (W.6), in one request.",
+                "parameters": [
+                    {
+                        "in": "query",
+                        "name": "book",
+                        "schema": {
+                            "type": "string",
+                            "enum": [
+                                "ALL",
+                                "GST",
+                                "NON_GST"
+                            ]
+                        }
+                    },
+                    {
+                        "in": "query",
+                        "name": "from",
+                        "schema": {
+                            "type": "string"
+                        },
+                        "description": "YYYY-MM-DD; default 1 April of this FY"
+                    },
+                    {
+                        "in": "query",
+                        "name": "to",
+                        "schema": {
+                            "type": "string"
+                        },
+                        "description": "YYYY-MM-DD; default today"
+                    }
+                ],
+                "tags": [
+                    "reports"
+                ],
+                "security": [
+                    {
+                        "bearerAuth": []
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/Dashboard"
+                                }
+                            }
+                        },
+                        "description": ""
+                    }
+                }
+            }
+        },
         "/api/v1/reports/gst-summary": {
             "get": {
                 "operationId": "reports_gst_summary_retrieve",
@@ -6819,6 +6875,313 @@
                 "required": [
                     "doc_date",
                     "to"
+                ]
+            },
+            "Dashboard": {
+                "type": "object",
+                "properties": {
+                    "book": {
+                        "type": "string"
+                    },
+                    "period": {
+                        "type": "object",
+                        "additionalProperties": {
+                            "type": "string",
+                            "format": "date"
+                        }
+                    },
+                    "previous_period": {
+                        "type": "object",
+                        "additionalProperties": {
+                            "type": "string",
+                            "format": "date"
+                        }
+                    },
+                    "totals": {
+                        "$ref": "#/components/schemas/DashboardTotals"
+                    },
+                    "previous": {
+                        "allOf": [
+                            {
+                                "$ref": "#/components/schemas/DashboardTotals"
+                            }
+                        ],
+                        "description": "The same figures for the period before (outstanding / overdue: today's)."
+                    },
+                    "months": {
+                        "type": "array",
+                        "items": {
+                            "$ref": "#/components/schemas/DashboardMonth"
+                        },
+                        "description": "12 months up to `to`, oldest first."
+                    },
+                    "overdue": {
+                        "$ref": "#/components/schemas/DashboardOverdue"
+                    },
+                    "losing_projects": {
+                        "type": "array",
+                        "items": {
+                            "$ref": "#/components/schemas/DashboardProject"
+                        },
+                        "description": "Costs so far exceed billing (at most 5, worst first)."
+                    },
+                    "drafts": {
+                        "$ref": "#/components/schemas/DashboardDrafts"
+                    }
+                },
+                "required": [
+                    "book",
+                    "drafts",
+                    "losing_projects",
+                    "months",
+                    "overdue",
+                    "period",
+                    "previous",
+                    "previous_period",
+                    "totals"
+                ]
+            },
+            "DashboardDraftRow": {
+                "type": "object",
+                "properties": {
+                    "id": {
+                        "type": "string",
+                        "format": "uuid"
+                    },
+                    "doc_type": {
+                        "type": "string"
+                    },
+                    "doc_date": {
+                        "type": "string",
+                        "format": "date"
+                    },
+                    "party_name": {
+                        "type": "string"
+                    },
+                    "grand_total": {
+                        "type": "string",
+                        "format": "decimal",
+                        "pattern": "^-?\\d{0,12}(?:\\.\\d{0,2})?$"
+                    },
+                    "updated_at": {
+                        "type": "string",
+                        "format": "date-time"
+                    }
+                },
+                "required": [
+                    "doc_date",
+                    "doc_type",
+                    "grand_total",
+                    "id",
+                    "party_name",
+                    "updated_at"
+                ]
+            },
+            "DashboardDrafts": {
+                "type": "object",
+                "properties": {
+                    "count": {
+                        "type": "integer"
+                    },
+                    "results": {
+                        "type": "array",
+                        "items": {
+                            "$ref": "#/components/schemas/DashboardDraftRow"
+                        },
+                        "description": "The 5 waiting longest."
+                    }
+                },
+                "required": [
+                    "count",
+                    "results"
+                ]
+            },
+            "DashboardMonth": {
+                "type": "object",
+                "properties": {
+                    "month": {
+                        "type": "string",
+                        "format": "date",
+                        "description": "First day of the month."
+                    },
+                    "billed": {
+                        "type": "string",
+                        "format": "decimal",
+                        "pattern": "^-?\\d{0,12}(?:\\.\\d{0,2})?$"
+                    },
+                    "collected": {
+                        "type": "string",
+                        "format": "decimal",
+                        "pattern": "^-?\\d{0,12}(?:\\.\\d{0,2})?$"
+                    }
+                },
+                "required": [
+                    "billed",
+                    "collected",
+                    "month"
+                ]
+            },
+            "DashboardOverdue": {
+                "type": "object",
+                "properties": {
+                    "count": {
+                        "type": "integer",
+                        "description": "All overdue bills; `results` has the 10 oldest."
+                    },
+                    "results": {
+                        "type": "array",
+                        "items": {
+                            "$ref": "#/components/schemas/DashboardOverdueRow"
+                        }
+                    }
+                },
+                "required": [
+                    "count",
+                    "results"
+                ]
+            },
+            "DashboardOverdueRow": {
+                "type": "object",
+                "properties": {
+                    "document_id": {
+                        "type": "string",
+                        "format": "uuid"
+                    },
+                    "doc_type": {
+                        "type": "string"
+                    },
+                    "doc_number": {
+                        "type": "string"
+                    },
+                    "party_id": {
+                        "type": "string",
+                        "format": "uuid"
+                    },
+                    "party_name": {
+                        "type": "string"
+                    },
+                    "due_date": {
+                        "type": "string",
+                        "format": "date"
+                    },
+                    "days_overdue": {
+                        "type": "integer"
+                    },
+                    "outstanding": {
+                        "type": "string",
+                        "format": "decimal",
+                        "pattern": "^-?\\d{0,12}(?:\\.\\d{0,2})?$"
+                    },
+                    "party_has_email": {
+                        "type": "boolean",
+                        "description": "False: a reminder cannot be emailed."
+                    },
+                    "last_reminder_at": {
+                        "type": [
+                            "string",
+                            "null"
+                        ],
+                        "format": "date-time"
+                    }
+                },
+                "required": [
+                    "days_overdue",
+                    "doc_number",
+                    "doc_type",
+                    "document_id",
+                    "due_date",
+                    "last_reminder_at",
+                    "outstanding",
+                    "party_has_email",
+                    "party_id",
+                    "party_name"
+                ]
+            },
+            "DashboardProject": {
+                "type": "object",
+                "properties": {
+                    "project_id": {
+                        "type": "string",
+                        "format": "uuid"
+                    },
+                    "code": {
+                        "type": "string"
+                    },
+                    "name": {
+                        "type": "string"
+                    },
+                    "billed_taxable": {
+                        "type": "string",
+                        "format": "decimal",
+                        "pattern": "^-?\\d{0,12}(?:\\.\\d{0,2})?$"
+                    },
+                    "cost": {
+                        "type": "string",
+                        "format": "decimal",
+                        "pattern": "^-?\\d{0,12}(?:\\.\\d{0,2})?$"
+                    },
+                    "margin": {
+                        "type": "string",
+                        "format": "decimal",
+                        "pattern": "^-?\\d{0,12}(?:\\.\\d{0,2})?$"
+                    }
+                },
+                "required": [
+                    "billed_taxable",
+                    "code",
+                    "cost",
+                    "margin",
+                    "name",
+                    "project_id"
+                ]
+            },
+            "DashboardTotals": {
+                "type": "object",
+                "properties": {
+                    "billed": {
+                        "type": "string",
+                        "format": "decimal",
+                        "pattern": "^-?\\d{0,12}(?:\\.\\d{0,2})?$",
+                        "description": "Issued in the period, with GST; credit notes subtract."
+                    },
+                    "collected": {
+                        "type": "string",
+                        "format": "decimal",
+                        "pattern": "^-?\\d{0,12}(?:\\.\\d{0,2})?$",
+                        "description": "Payments received in the period."
+                    },
+                    "outstanding": {
+                        "type": "string",
+                        "format": "decimal",
+                        "pattern": "^-?\\d{0,12}(?:\\.\\d{0,2})?$",
+                        "description": "Owed to you today."
+                    },
+                    "overdue": {
+                        "type": "string",
+                        "format": "decimal",
+                        "pattern": "^-?\\d{0,12}(?:\\.\\d{0,2})?$",
+                        "description": "The part of `outstanding` past its due date."
+                    },
+                    "expenses": {
+                        "type": "string",
+                        "format": "decimal",
+                        "pattern": "^-?\\d{0,12}(?:\\.\\d{0,2})?$",
+                        "description": "Recorded in the period, with GST."
+                    },
+                    "margin": {
+                        "type": "string",
+                        "format": "decimal",
+                        "pattern": "^-?\\d{0,12}(?:\\.\\d{0,2})?$",
+                        "description": "Billed taxable value less cost (expense GST counts unless ITC is claimable)."
+                    }
+                },
+                "required": [
+                    "billed",
+                    "collected",
+                    "expenses",
+                    "margin",
+                    "outstanding",
+                    "overdue"
                 ]
             },
             "DocTypeEnum": {

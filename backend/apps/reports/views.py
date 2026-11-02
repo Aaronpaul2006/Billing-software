@@ -19,8 +19,9 @@ from apps.core.queries import get_or_404
 from apps.parties.models import Party
 from apps.projects.models import Project
 
-from . import queries
+from . import dashboard, queries
 from .serializers import (
+    DashboardSerializer,
     GstPeriodSerializer,
     GstRowSerializer,
     GstSummaryReportSerializer,
@@ -78,6 +79,19 @@ class SummaryView(ReportView):
                 "previous": ReportTotalsSerializer(previous).data,
             }
         )
+
+
+class DashboardView(ReportView):
+    """The main dashboard (W.6), in one request."""
+
+    @extend_schema(parameters=PERIOD_PARAMS, responses={200: DashboardSerializer}, tags=["reports"])
+    def get(self, request: Request) -> Response:
+        p = self.period(request)
+        previous = previous_period(p["start"], p["end"])
+        data = dashboard.dashboard(
+            self.principal.tenant_id, p["start"], p["end"], p["book"], previous
+        )
+        return Response(DashboardSerializer(data).data)
 
 
 class BillingByMonthView(ReportView):

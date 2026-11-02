@@ -1142,3 +1142,6 @@ for _name in (
 for _name in ("portal-documents", "portal-payments", "portal-projects", "portal-statement"):
     COLLECTION_ROUTES[_name] = lambda w: None
 NOT_TENANT_DATA["portal-me"] = "the caller's own client and business (tests/portal)"
+
+# --- W.6 main dashboard: tests/reports/test_dashboard.py::test_another_tenant_sees_only_its_own
+COLLECTION_ROUTES["report-dashboard"] = lambda w: None
