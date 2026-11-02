@@ -10,6 +10,7 @@ from apps.core.fields import MoneyField
 from apps.documents.models import Document, DocumentLine
 from apps.documents.serializers import LineOutSerializer, TotalsSerializer
 from apps.payments.models import Allocation, Payment
+from apps.payments.serializers import payment_allocations
 
 
 class PortalBusinessSerializer(serializers.Serializer[Any]):
@@ -109,12 +110,7 @@ class PortalAllocationSerializer(serializers.ModelSerializer[Allocation]):
         read_only_fields = fields
 
     def get_doc_number(self, obj: Allocation) -> str | None:
-        if obj.document_id is None:
-            return None
-        number: str | None = (
-            Document.objects.filter(pk=obj.document_id).values_list("doc_number", flat=True).first()
-        )
-        return number
+        return obj.document.doc_number if obj.document_id else None
 
 
 class PortalPaymentSerializer(serializers.ModelSerializer[Payment]):
@@ -139,8 +135,7 @@ class PortalPaymentSerializer(serializers.ModelSerializer[Payment]):
 
     @extend_schema_field(PortalAllocationSerializer(many=True))
     def get_allocations(self, obj: Payment) -> list[dict[str, Any]]:
-        rows = Allocation.objects.filter(payment_id=obj.pk).order_by("created_at")
-        return list(PortalAllocationSerializer(rows, many=True).data)
+        return list(PortalAllocationSerializer(payment_allocations(obj), many=True).data)
 
 
 class PortalProjectSerializer(serializers.Serializer[Any]):

@@ -11,7 +11,7 @@ from datetime import date
 from typing import Any
 
 from django.db import transaction
-from django.db.models import Model, QuerySet
+from django.db.models import Model, Prefetch, QuerySet
 
 from apps.core.errors import Conflict, Forbidden, NotFound
 from apps.core.queries import get_or_404
@@ -19,7 +19,7 @@ from apps.core.tenancy import Principal
 from apps.documents.models import Document
 from apps.documents.services import lifecycle
 from apps.parties.models import Party
-from apps.payments.models import Payment
+from apps.payments.models import Allocation, Payment
 from apps.projects.models import Project
 from apps.projects.services import boq_progress_rows
 from apps.reminders.services import tenant_today
@@ -78,8 +78,12 @@ def respond_to_quotation(
 
 
 def payments(principal: Principal) -> QuerySet[Payment]:
-    return Payment.objects.filter(party_id=_party_id(principal), status="RECORDED").select_related(
-        "project"
+    return (
+        Payment.objects.filter(party_id=_party_id(principal), status="RECORDED")
+        .select_related("project")
+        .prefetch_related(
+            Prefetch("allocations", queryset=Allocation.objects.select_related("document"))
+        )
     )
 
 

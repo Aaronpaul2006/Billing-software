@@ -5,6 +5,7 @@ from decimal import Decimal
 from typing import Any
 
 import django_filters
+from django.db.models import Prefetch
 from drf_spectacular.utils import extend_schema
 from rest_framework.request import Request
 from rest_framework.response import Response
@@ -13,7 +14,7 @@ from apps.core.api import ActionAPIView, detail_response, list_response, version
 from apps.core.idempotency import idempotent
 
 from . import retention, services
-from .models import Payment, RetentionRelease
+from .models import Allocation, Payment, RetentionRelease
 from .serializers import (
     AllocateSerializer,
     CancelReleaseSerializer,
@@ -48,7 +49,10 @@ class PaymentListView(ActionAPIView):
     ordering_fields = ("payment_date", "amount")
 
     def get_queryset(self) -> Any:
-        return Payment.objects.select_related("party", "project")  # names, one query
+        # names, and the page's allocations with their bills: a fixed number of queries
+        return Payment.objects.select_related("party", "project").prefetch_related(
+            Prefetch("allocations", queryset=Allocation.objects.select_related("document"))
+        )
 
     @extend_schema(responses={200: PaymentSerializer(many=True)}, tags=["payments"])
     def get(self, request: Request) -> Response:

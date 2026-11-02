@@ -60,6 +60,17 @@ LANGUAGE sql STABLE AS $$
   SELECT NULLIF(current_setting('app.party_id', true), '')::uuid
 $$;
 
+-- True in a client-portal session. PL/pgSQL on purpose: the planner cannot
+-- see inside it, so `NOT app_portal_session() OR <scope>` in the client_scope
+-- policies gets an ordinary row estimate. Written as `app_current_party() IS
+-- NULL` it was guessed at 0.5 % of rows, and staff reports chose nested loops
+-- that took seconds on a large company (W.7 speed check).
+CREATE FUNCTION app_portal_session() RETURNS boolean
+LANGUAGE plpgsql STABLE AS $$
+BEGIN
+  RETURN NULLIF(current_setting('app.party_id', true), '') IS NOT NULL;
+END $$;
+
 -- India's financial year starts 1 April: 2026-05-10 → 2026, 2027-02-01 → 2026.
 CREATE FUNCTION fy_start_year(d date) RETURNS smallint
 LANGUAGE sql IMMUTABLE PARALLEL SAFE AS $$
@@ -1163,46 +1174,46 @@ BEGIN
     'tds_certificates', 'email_invitations', 'payment_reminders', 'document_templates', 'audit_log']
   LOOP
     EXECUTE format(
-      'CREATE POLICY client_scope ON %I AS RESTRICTIVE USING (app_current_party() IS NULL)', t);
+      'CREATE POLICY client_scope ON %I AS RESTRICTIVE USING (NOT app_portal_session())', t);
   END LOOP;
 END $$;
 CREATE POLICY client_scope ON parties AS RESTRICTIVE
-  USING (app_current_party() IS NULL OR id = app_current_party());
+  USING (NOT app_portal_session() OR id = app_current_party());
 CREATE POLICY client_scope ON projects AS RESTRICTIVE
-  USING (app_current_party() IS NULL OR client_party_id = app_current_party());
+  USING (NOT app_portal_session() OR client_party_id = app_current_party());
 CREATE POLICY client_scope ON boq_items AS RESTRICTIVE
-  USING (app_current_party() IS NULL
+  USING (NOT app_portal_session()
          OR EXISTS (SELECT 1 FROM projects p
                      WHERE p.tenant_id = boq_items.tenant_id AND p.id = boq_items.project_id));
 CREATE POLICY client_scope ON documents AS RESTRICTIVE
-  USING (app_current_party() IS NULL OR (party_id = app_current_party() AND status <> 'DRAFT'));
+  USING (NOT app_portal_session() OR (party_id = app_current_party() AND status <> 'DRAFT'));
 CREATE POLICY client_scope ON document_lines AS RESTRICTIVE
-  USING (app_current_party() IS NULL
+  USING (NOT app_portal_session()
          OR EXISTS (SELECT 1 FROM documents d
                      WHERE d.tenant_id = document_lines.tenant_id AND d.id = document_lines.document_id));
 CREATE POLICY client_scope ON payments AS RESTRICTIVE
-  USING (app_current_party() IS NULL OR (party_id = app_current_party() AND status = 'RECORDED'));
+  USING (NOT app_portal_session() OR (party_id = app_current_party() AND status = 'RECORDED'));
 CREATE POLICY client_scope ON retention_releases AS RESTRICTIVE
-  USING (app_current_party() IS NULL OR (party_id = app_current_party() AND status = 'RELEASED'));
+  USING (NOT app_portal_session() OR (party_id = app_current_party() AND status = 'RELEASED'));
 CREATE POLICY client_scope ON allocations AS RESTRICTIVE
-  USING (app_current_party() IS NULL
+  USING (NOT app_portal_session()
          OR EXISTS (SELECT 1 FROM documents d
                      WHERE d.tenant_id = allocations.tenant_id AND d.id = allocations.document_id)
          OR EXISTS (SELECT 1 FROM retention_releases r
                      WHERE r.tenant_id = allocations.tenant_id AND r.id = allocations.retention_release_id));
 CREATE POLICY client_scope ON attachments AS RESTRICTIVE
-  USING (app_current_party() IS NULL
+  USING (NOT app_portal_session()
          OR EXISTS (SELECT 1 FROM documents d
                      WHERE d.tenant_id = attachments.tenant_id AND d.pdf_attachment_id = attachments.id));
 CREATE POLICY client_scope ON idempotency_keys AS RESTRICTIVE
-  USING (app_current_party() IS NULL OR user_id = app_current_user_id());
+  USING (NOT app_portal_session() OR user_id = app_current_user_id());
 CREATE POLICY client_scope ON exports AS RESTRICTIVE
-  USING (app_current_party() IS NULL OR requested_by = app_current_user_id());
+  USING (NOT app_portal_session() OR requested_by = app_current_user_id());
 CREATE POLICY client_scope ON memberships AS RESTRICTIVE
-  USING (app_current_party() IS NULL OR user_id = app_current_user_id());
+  USING (NOT app_portal_session() OR user_id = app_current_user_id());
 -- The client may read the business's own row (its name), never change it.
 CREATE POLICY client_scope ON tenants AS RESTRICTIVE FOR UPDATE
-  USING (app_current_party() IS NULL);
+  USING (NOT app_portal_session());
 
 -- users and auth_sessions have no tenant; the app only ever reads them by
 -- primary key, email or token hash, and never lists them across tenants.

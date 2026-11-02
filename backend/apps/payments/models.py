@@ -173,7 +173,7 @@ class Allocation(TenantScoped):
     tenant = tenant_ref()
     document = ref("documents.Document", null=True)  # the invoice / debit note being settled
     retention_release = ref("payments.RetentionRelease", null=True)  # or the release
-    payment = ref("payments.Payment", null=True)
+    payment = ref("payments.Payment", null=True, related_name="allocations")
     credit_note = ref("documents.Document", null=True)
     amount = models.DecimalField(max_digits=14, decimal_places=2)
     created_by = ref("accounts.User", db_column="created_by")

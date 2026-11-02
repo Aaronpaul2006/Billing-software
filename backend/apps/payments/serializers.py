@@ -5,10 +5,15 @@ from drf_spectacular.utils import extend_schema_field
 from rest_framework import serializers
 
 from apps.core.fields import MoneyField
-from apps.documents.models import Document
 
 from .models import Allocation, Payment, PaymentMode, RetentionBook, RetentionRelease
-from .services import allocated_total
+
+
+def payment_allocations(payment: Payment) -> list[Allocation]:
+    """The payment's allocations, oldest first: from prefetch_related when the
+    list view loaded them for the whole page (no query per payment)."""
+    return sorted(payment.allocations.all(), key=lambda a: (a.created_at, a.pk))
+
 
 PAISA = Decimal("0.01")
 
@@ -72,12 +77,8 @@ class AllocationOutSerializer(serializers.ModelSerializer[Allocation]):
         read_only_fields = fields
 
     def get_doc_number(self, obj: Allocation) -> str | None:
-        if obj.document_id is None:
-            return None
-        number: str | None = (
-            Document.objects.filter(pk=obj.document_id).values_list("doc_number", flat=True).first()
-        )
-        return number
+        # select_related("document") in lists; otherwise one query, as before
+        return obj.document.doc_number if obj.document_id else None
 
 
 class PaymentSerializer(serializers.ModelSerializer[Payment]):
@@ -116,17 +117,17 @@ class PaymentSerializer(serializers.ModelSerializer[Payment]):
         read_only_fields = fields
 
     def get_allocated(self, obj: Payment) -> str:
-        return f"{allocated_total(obj.pk):.2f}"
+        return f"{sum((a.amount for a in payment_allocations(obj)), Decimal('0.00')):.2f}"
 
     def get_unallocated(self, obj: Payment) -> str:
         if obj.status != "RECORDED":
             return "0.00"
-        return f"{obj.amount - allocated_total(obj.pk):.2f}"
+        allocated = sum((a.amount for a in payment_allocations(obj)), Decimal("0.00"))
+        return f"{obj.amount - allocated:.2f}"
 
     @extend_schema_field(AllocationOutSerializer(many=True))
     def get_allocations(self, obj: Payment) -> list[dict[str, Any]]:
-        rows = Allocation.objects.filter(payment_id=obj.pk).order_by("created_at")
-        return list(AllocationOutSerializer(rows, many=True).data)
+        return list(AllocationOutSerializer(payment_allocations(obj), many=True).data)
 
 
 class DocumentAllocationsSerializer(serializers.Serializer[Any]):

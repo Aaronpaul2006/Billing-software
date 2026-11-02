@@ -153,6 +153,19 @@ df -h; docker system df       # disk
 A user who reports an error can quote the `request_id` shown in the error; it
 appears in the `api` log lines of that request.
 
+### Database statistics and the speed check (W.7)
+
+Report pages rely on PostgreSQL's table statistics. Autovacuum keeps them
+current (leave it on, the default). After a bulk import or restore, run
+`ANALYZE` as the table owner (`billing_owner`); as the app role it is silently
+skipped. Without statistics the planner guesses one row per table and a
+report on a large company takes seconds instead of milliseconds.
+
+To check speed against a large company (500 clients, about 11,000 bills,
+8,000 payments): `PERF=1 uv run pytest tests/perf -s` in `backend/`
+(`PERF_EXPLAIN=1` also prints the plan of any slow page's slowest query).
+Budget: 500 ms and 25 queries per request.
+
 ## 8. Backups
 
 * Nightly at `BACKUP_HOUR` (UTC; default 21:00 = 02:30 IST): the database is
