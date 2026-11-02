@@ -7,6 +7,7 @@ import { z } from "zod";
 
 import { ApiError } from "@/api/problem";
 import { useAuth } from "@/auth/context";
+import type { MfaMethod } from "@/auth/context";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -25,13 +26,15 @@ const mfaCode = z.object({
     .regex(/^(\d{6}|[A-Za-z0-9-]{8,20})$/, "Enter the 6-digit code or a recovery code."),
 });
 
-function message(error: unknown): string {
+function message(error: unknown, method: MfaMethod | null = null): string {
   if (error instanceof ApiError) {
     switch (error.code) {
       case "invalid_credentials":
         return "Email or password is wrong.";
       case "invalid_mfa_code":
-        return "That code did not work. Check the time on your phone and try again.";
+        return method === "email"
+          ? "That code did not work. Use the latest email we sent, or sign in again for a new code."
+          : "That code did not work. Check the time on your phone and try again.";
       case "invalid_mfa_token":
         return "The sign-in took too long. Start again.";
       case "no_active_membership":
@@ -48,6 +51,7 @@ export function LoginPage() {
   const navigate = useNavigate();
   const location = useLocation();
   const [mfaToken, setMfaToken] = useState<string | null>(null);
+  const [method, setMethod] = useState<MfaMethod>("totp");
   const [error, setError] = useState<string | null>(null);
   const from = (location.state as { from?: string } | null)?.from ?? "/";
 
@@ -66,8 +70,10 @@ export function LoginPage() {
     setError(null);
     try {
       const outcome = await login(email, password);
-      if (outcome.kind === "mfa") setMfaToken(outcome.mfaToken);
-      else void navigate(from, { replace: true });
+      if (outcome.kind === "mfa") {
+        setMethod(outcome.method);
+        setMfaToken(outcome.mfaToken);
+      } else void navigate(from, { replace: true });
     } catch (e) {
       setError(message(e));
     }
@@ -75,13 +81,17 @@ export function LoginPage() {
 
   const onMfa = mfaForm.handleSubmit(async ({ code }) => {
     if (!mfaToken) return;
+    if (method === "email" && !/^\d{6}$/.test(code)) {
+      mfaForm.setError("code", { message: "Enter the 6-digit code from the email." });
+      return;
+    }
     setError(null);
     try {
       await verifyMfa(mfaToken, /^\d{6}$/.test(code) ? { code } : { recovery_code: code });
       void navigate(from, { replace: true });
     } catch (e) {
       if (e instanceof ApiError && e.code === "invalid_mfa_token") setMfaToken(null);
-      setError(message(e));
+      setError(message(e, method));
     }
   });
 
@@ -93,9 +103,11 @@ export function LoginPage() {
             <h1 className="text-xl">{mfaToken ? "Two-step verification" : "Sign in"}</h1>
           </CardTitle>
           <CardDescription>
-            {mfaToken
-              ? "Enter the 6-digit code from your authenticator app, or a recovery code."
-              : "Construction billing"}
+            {!mfaToken
+              ? "Construction billing"
+              : method === "email"
+                ? "We emailed you a 6-digit code. Enter it to finish signing in (it works for 10 minutes)."
+                : "Enter the 6-digit code from your authenticator app, or a recovery code."}
           </CardDescription>
         </CardHeader>
         <CardContent className="grid gap-4">

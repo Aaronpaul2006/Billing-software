@@ -26,6 +26,7 @@ const schema = z.object({
 type Values = z.infer<typeof schema>;
 
 function roleName(role: string): string {
+  if (role === "CLIENT") return "a client, to see your bills and payments online";
   return role.replace("_", " ").toLowerCase();
 }
 

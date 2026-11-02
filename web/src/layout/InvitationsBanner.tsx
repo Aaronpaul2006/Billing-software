@@ -34,7 +34,10 @@ export function InvitationsBanner() {
           <MailOpen className="size-4" aria-hidden />
           <span>
             {inv.invited_by_name ?? "Someone"} invited you to <strong>{inv.legal_name}</strong> as{" "}
-            {inv.role.toLowerCase().replace("_", " ")}.
+            {inv.role === "CLIENT"
+              ? "a client (the client portal)"
+              : inv.role.toLowerCase().replace("_", " ")}
+            .
           </span>
           <Button
             size="sm"

@@ -9,6 +9,7 @@ import { z } from "zod";
 import { api, newIdempotencyKey, unwrap } from "@/api/client";
 import { ApiError } from "@/api/problem";
 import type { components } from "@/api/schema";
+import { useSession } from "@/auth/context";
 import { ErrorState } from "@/components/ErrorState";
 import { Field, TextField } from "@/components/FormField";
 import { PageHeader } from "@/components/PageHeader";
@@ -19,6 +20,8 @@ import { NativeSelect } from "@/components/ui/native-select";
 import { Skeleton } from "@/components/ui/skeleton";
 import { applyServerErrors, blankToNull, ifMatch } from "@/lib/forms";
 import { STATE_OPTIONS } from "@/lib/india";
+
+import { PortalAccess } from "./PortalAccess";
 
 type Party = components["schemas"]["Party"];
 type PartyWrite = components["schemas"]["PartyWrite"];
@@ -176,6 +179,8 @@ export function PartyFormPage() {
   const queryClient = useQueryClient();
   const [message, setMessage] = useState<{ kind: "error" | "saved"; text: string } | null>(null);
   const [idempotencyKey, setIdempotencyKey] = useState(newIdempotencyKey);
+  const { role } = useSession();
+  const manages = role === "OWNER" || role === "ADMIN";
 
   const party = useQuery({
     queryKey: ["party", partyId],
@@ -517,6 +522,12 @@ export function PartyFormPage() {
           </Button>
         </div>
       </form>
+
+      {!isNew && manages && party.data?.is_customer && (
+        <div className="mt-6 max-w-3xl">
+          <PortalAccess partyId={party.data.id} partyName={party.data.display_name} />
+        </div>
+      )}
     </>
   );
 }

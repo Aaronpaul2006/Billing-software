@@ -12,6 +12,8 @@ function lazyPage<M>(load: () => Promise<M>, pick: (module: M) => ComponentType)
 
 const projects = () => import("@/features/projects/ProjectLayout");
 const documents = () => import("@/features/documents/DocumentPage");
+const portalShell = () => import("@/features/portal/PortalShell");
+const portalPages = () => import("@/features/portal/PortalPages");
 
 export const routes: RouteObject[] = [
   {
@@ -72,6 +74,32 @@ export const routes: RouteObject[] = [
           () => import("@/pages/MfaSetupPage"),
           (m) => m.MfaSetupPage,
         ),
+      },
+    ],
+  },
+  {
+    // The client portal (W.5): people at a client, signed in with role CLIENT.
+    path: "/portal",
+    element: <RequireAuth portal />,
+    children: [
+      {
+        lazy: lazyPage(portalShell, (m) => m.PortalShell),
+        children: [
+          { index: true, lazy: lazyPage(portalPages, (m) => m.PortalHomePage) },
+          { path: "bills", lazy: lazyPage(portalPages, (m) => m.PortalDocumentsPage) },
+          {
+            path: "bills/:documentId",
+            lazy: lazyPage(
+              () => import("@/features/portal/PortalDocumentPage"),
+              (m) => m.PortalDocumentPage,
+            ),
+          },
+          { path: "payments", lazy: lazyPage(portalPages, (m) => m.PortalPaymentsPage) },
+          { path: "statement", lazy: lazyPage(portalPages, (m) => m.PortalStatementPage) },
+          { path: "projects", lazy: lazyPage(portalPages, (m) => m.PortalProjectsPage) },
+          { path: "projects/:projectId", lazy: lazyPage(portalPages, (m) => m.PortalProjectPage) },
+          { path: "*", element: <NotFoundPage /> },
+        ],
       },
     ],
   },

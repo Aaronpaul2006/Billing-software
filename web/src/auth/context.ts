@@ -5,7 +5,11 @@ import type { Tokens } from "./session";
 export type AuthState =
   { status: "loading" } | { status: "signed_out" } | { status: "signed_in"; session: Tokens };
 
-export type LoginOutcome = { kind: "signed_in" } | { kind: "mfa"; mfaToken: string };
+/** "totp": a code from the authenticator app; "email": a code we just emailed (client portal). */
+export type MfaMethod = "totp" | "email";
+
+export type LoginOutcome =
+  { kind: "signed_in" } | { kind: "mfa"; mfaToken: string; method: MfaMethod };
 
 export interface SignupInput {
   full_name: string;

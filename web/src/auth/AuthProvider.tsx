@@ -49,7 +49,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       const result = unwrap(
         await api.POST("/api/v1/auth/login", { body: { email, password, client: "web" } }),
       );
-      if (isChallenge(result)) return { kind: "mfa", mfaToken: result.mfa_token };
+      if (isChallenge(result)) {
+        return { kind: "mfa", mfaToken: result.mfa_token, method: result.mfa_method };
+      }
       adopt(result);
       return { kind: "signed_in" };
     },
