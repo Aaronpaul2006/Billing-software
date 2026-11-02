@@ -4,7 +4,7 @@ from typing import Any
 from django.utils import timezone
 from rest_framework import serializers
 
-from .models import Role
+from .models import STAFF_ROLES
 
 CLIENTS = ["web", "mobile"]
 
@@ -88,6 +88,10 @@ class TokensSerializer(serializers.Serializer[Any]):
 class MfaChallengeSerializer(serializers.Serializer[Any]):
     mfa_required = serializers.BooleanField()
     mfa_token = serializers.CharField(help_text="Send to /auth/mfa/verify with a code.")
+    mfa_method = serializers.ChoiceField(
+        choices=["totp", "email"],
+        help_text="totp: a code from the authenticator app; email: the code we just emailed.",
+    )
 
 
 class MfaEnabledSerializer(TokensSerializer):
@@ -176,7 +180,7 @@ class MeSerializer(serializers.Serializer[Any]):
 
 
 class MemberRoleSerializer(serializers.Serializer[Any]):
-    role = serializers.ChoiceField(choices=Role.values)
+    role = serializers.ChoiceField(choices=STAFF_ROLES)
 
 
 class MemberSerializer(serializers.Serializer[Any]):
@@ -196,7 +200,7 @@ class MemberListSerializer(serializers.Serializer[Any]):
 
 class InviteSerializer(serializers.Serializer[Any]):
     email = serializers.EmailField(max_length=254)
-    role = serializers.ChoiceField(choices=Role.values)
+    role = serializers.ChoiceField(choices=STAFF_ROLES)
 
 
 class InvitationSerializer(serializers.Serializer[Any]):
@@ -212,12 +216,36 @@ class InvitationListSerializer(serializers.Serializer[Any]):
     results = InvitationSerializer(many=True)
 
 
+# --- client-portal users (W.5) ---------------------------------------------------------
+
+
+class PortalInviteSerializer(serializers.Serializer[Any]):
+    email = serializers.EmailField(max_length=254)
+
+
+class PortalUserSerializer(serializers.Serializer[Any]):
+    id = serializers.UUIDField()
+    kind = serializers.ChoiceField(
+        choices=["MEMBER", "EMAIL_INVITATION"],
+        help_text="MEMBER: has an account; EMAIL_INVITATION: signs up through the emailed link.",
+    )
+    email = serializers.EmailField()
+    full_name = serializers.CharField(allow_null=True)
+    status = serializers.ChoiceField(choices=["ACTIVE", "INVITED", "PENDING"])
+    created_at = serializers.DateTimeField()
+    expires_at = serializers.DateTimeField(allow_null=True)
+
+
+class PortalUserListSerializer(serializers.Serializer[Any]):
+    results = PortalUserSerializer(many=True)
+
+
 # --- invitations by email (K.2) -------------------------------------------------------
 
 
 class EmailInviteSerializer(serializers.Serializer[Any]):
     email = serializers.EmailField(max_length=254)
-    role = serializers.ChoiceField(choices=Role.values)
+    role = serializers.ChoiceField(choices=STAFF_ROLES)
 
 
 class EmailInvitationSerializer(serializers.Serializer[Any]):

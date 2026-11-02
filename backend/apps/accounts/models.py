@@ -24,6 +24,15 @@ class Role(models.TextChoices):
     ACCOUNTANT = "ACCOUNTANT"
     SITE_ENGINEER = "SITE_ENGINEER"
     VIEWER = "VIEWER"
+    # A person at a client (party) using the client portal (W.5): sees only
+    # that party's issued bills, payments and BOQ progress (db/schema.sql §8).
+    CLIENT = "CLIENT"
+
+
+# Roles a member of the business can have (the members API offers these).
+# CLIENT, with its party, is set up through portal invitations only;
+# CHECK ((role = 'CLIENT') = (party_id IS NOT NULL)) is in db/schema.sql.
+STAFF_ROLES = [r for r in Role.values if r != Role.CLIENT]
 
 
 class UserStatus(models.TextChoices):
@@ -51,6 +60,10 @@ class User(models.Model):
         db_default=SQLDefault("'{}'::text[]", ArrayField(models.TextField())),
     )
     mfa_last_used_step = models.BigIntegerField(null=True)  # TOTP replay protection
+    # Sign-in code emailed to client-portal users without TOTP (SHA-256 hex).
+    email_code_hash = models.TextField(null=True)  # noqa: DJ001 - NULL = no code pending
+    email_code_expires_at = models.DateTimeField(null=True)
+    email_code_attempts = models.IntegerField(default=0, db_default=0)
     status = models.TextField(
         choices=Status, default=UserStatus.ACTIVE, db_default=UserStatus.ACTIVE
     )
@@ -74,6 +87,9 @@ class User(models.Model):
                 condition=Q(mfa_enabled=False) | Q(mfa_secret_enc__isnull=False),
                 name="users_mfa_secret_check",
             ),
+            models.CheckConstraint(
+                condition=Q(email_code_attempts__gte=0), name="users_email_code_attempts_check"
+            ),
         ]
 
     def __str__(self) -> str:
@@ -94,6 +110,7 @@ class Membership(models.Model):
     tenant = tenant_ref()
     user = ref("accounts.User")
     role = models.TextField(choices=Role)
+    party = ref("parties.Party", null=True)  # the client a CLIENT member belongs to
     status = models.TextField(
         choices=Status, default=MembershipStatus.ACTIVE, db_default=MembershipStatus.ACTIVE
     )
@@ -128,6 +145,7 @@ class EmailInvitation(TenantScoped):
     tenant = tenant_ref()
     email = CITextField()
     role = models.TextField(choices=Role)
+    party = ref("parties.Party", null=True)  # CLIENT invitations: the client
     status = models.TextField(
         choices=EmailInvitationStatus,
         default=EmailInvitationStatus.PENDING,
@@ -180,6 +198,12 @@ class AuthSession(models.Model):
     expires_at = models.DateTimeField()
     rotated_at = models.DateTimeField(null=True)
     revoked_at = models.DateTimeField(null=True)
+    # How the user signed in ("pwd", "otp", "email"), kept across refreshes.
+    amr = ArrayField(
+        models.TextField(),
+        default=list,
+        db_default=SQLDefault("'{}'::text[]", ArrayField(models.TextField())),
+    )
 
     class Meta:
         db_table = "auth_sessions"

@@ -142,6 +142,20 @@ nothing else of it; accepting goes through the database function
 `respond_to_invitation()`, the only path that may update a membership of a
 tenant the user is not signed in to, and it changes nothing but the status.
 
+**Client-portal users (W.5).** Role `CLIENT` belongs to a person at one of the
+business's clients: the membership names that party (`party_id`, a composite
+foreign key into the same tenant; `CHECK ((role = 'CLIENT') = (party_id IS NOT
+NULL))`). CLIENT is in no row of the table above, so every staff endpoint
+refuses it (`tests/accounts/test_client_portal.py` sends a client token to
+every route). The database narrows such sessions too: the token's `pid`
+becomes `app.party_id`, and a RESTRICTIVE `client_scope` policy on every table
+with RLS lets a client session see only that party, its projects and their
+BOQ, its issued (not draft) documents with their lines and PDFs, its recorded
+payments, released retention and their allocations, and its own membership,
+idempotency keys and exports; nothing else (registrations, series, catalog,
+expenses, audit log, …). Staff sessions leave `app.party_id` unset and pass
+unchanged. Signing in needs a second step: TOTP, or a code emailed each time.
+
 Later: project-level scoping (site engineers see only assigned projects) via a
 `project_members` table plus an extra RLS predicate.
 

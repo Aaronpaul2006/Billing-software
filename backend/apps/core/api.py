@@ -30,7 +30,10 @@ class ActionAPIView(GenericAPIView):  # type: ignore[type-arg]
     write_action: ClassVar[str]
 
     def get_permissions(self) -> list[BasePermission]:
-        action = self.read_action if self.request.method in SAFE_METHODS else self.write_action
+        # A read-only view has no write_action: other methods are then checked
+        # like reads and answered 405, not a server error.
+        write = getattr(self, "write_action", self.read_action)
+        action = self.read_action if self.request.method in SAFE_METHODS else write
         return [IsAuthenticated(), MfaSatisfied(), HasAction(action)()]
 
     @property

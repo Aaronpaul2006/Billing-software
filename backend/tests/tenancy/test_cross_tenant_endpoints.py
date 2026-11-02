@@ -1120,3 +1120,10 @@ def test_email_invitation_routes_reject_other_tenant(world: World) -> None:
 OBJECT_ROUTES["email-invitation-detail"] = lambda w: None  # test_email_invitation_routes_...
 OBJECT_ROUTES["email-invitation-resend"] = lambda w: None  # same test
 COLLECTION_ROUTES["email-invitations"] = lambda w: None  # same test
+
+
+# --- W.5a client-portal users ----------------------------------------------------------
+
+# tests/accounts/test_client_portal.py::test_portal_user_routes_reject_another_tenants_client
+OBJECT_ROUTES["portal-users"] = lambda w: None
+OBJECT_ROUTES["portal-user-detail"] = lambda w: None

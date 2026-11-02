@@ -56,5 +56,6 @@ class TenantContextMiddleware:
             principal.tenant_id,
             principal.user_id,
             request_id=getattr(request, "request_id", None),
+            party_id=principal.party_id,
         ):
             return self.get_response(request)

@@ -37,6 +37,7 @@ class Kind(StrEnum):
     PASSWORD_CHANGED = "password_changed"  # noqa: S105
     CONFIRM_EMAIL_CHANGE = "confirm_email_change"
     EMAIL_CHANGED = "email_changed"
+    SIGN_IN_CODE = "sign_in_code"
 
 
 class LinkInvalid(Invalid):
@@ -120,7 +121,8 @@ def _link(page: str, token: str | None = None) -> str:
 
 def send(kind: Kind, user_id: uuid.UUID, extra: dict[str, str] | None = None) -> bool:
     """Build and send one email. False when there is nothing to send.
-    `extra`: the addresses of an email change (`new_email`, `old_email`)."""
+    `extra`: the addresses of an email change (`new_email`, `old_email`), or
+    the sign-in `code`."""
     user = User.objects.filter(pk=user_id, status=UserStatus.ACTIVE).first()
     if user is None:
         return False
@@ -142,6 +144,11 @@ def send(kind: Kind, user_id: uuid.UUID, extra: dict[str, str] | None = None) ->
         subject = "Confirm your new email address"
         context["link"] = _link("confirm-email", make_email_change_token(user, to))
         context["hours"] = settings.EMAIL_CHANGE_MAX_AGE // 3600
+    elif kind is Kind.SIGN_IN_CODE:
+        subject = f"Your sign-in code: {extra['code']}"
+        context["code"] = extra["code"]
+        context["minutes"] = int(settings.EMAIL_CODE_TTL.total_seconds()) // 60
+        context["link"] = _link("forgot-password")
     elif kind is Kind.EMAIL_CHANGED:
         to = extra["old_email"]
         subject = "Your sign-in email was changed"

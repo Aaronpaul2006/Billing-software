@@ -1,0 +1,8 @@
+{% autoescape off %}Hello {{ name }},
+
+Your sign-in code is {{ code }}. It works once, for {{ minutes }} minutes.
+
+If you did not just sign in, someone has your password: reset it now.
+
+{{ link }}
+{% endautoescape %}

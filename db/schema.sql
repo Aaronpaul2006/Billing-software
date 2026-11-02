@@ -54,6 +54,12 @@ LANGUAGE sql STABLE AS $$
   SELECT NULLIF(current_setting('app.user_id', true), '')::uuid
 $$;
 
+-- Client-portal sessions (role CLIENT) only: the client (party) they belong to.
+CREATE FUNCTION app_current_party() RETURNS uuid
+LANGUAGE sql STABLE AS $$
+  SELECT NULLIF(current_setting('app.party_id', true), '')::uuid
+$$;
+
 -- India's financial year starts 1 April: 2026-05-10 → 2026, 2027-02-01 → 2026.
 CREATE FUNCTION fy_start_year(d date) RETURNS smallint
 LANGUAGE sql IMMUTABLE PARALLEL SAFE AS $$
@@ -75,6 +81,10 @@ CREATE TABLE users (
   mfa_secret_enc     bytea,                               -- TOTP secret, envelope-encrypted by the app
   mfa_recovery_codes text[] NOT NULL DEFAULT '{}',        -- SHA-256 (hex) of unused one-time recovery codes
   mfa_last_used_step bigint,                              -- last accepted TOTP time step (no code replay)
+  -- Client-portal sign-in: a 6-digit code emailed after the password (W.5).
+  email_code_hash       text,                             -- HMAC of the pending code; NULL = none
+  email_code_expires_at timestamptz,
+  email_code_attempts   integer NOT NULL DEFAULT 0 CHECK (email_code_attempts >= 0),
   status             text NOT NULL DEFAULT 'ACTIVE' CHECK (status IN ('ACTIVE', 'LOCKED', 'DISABLED')),
   failed_login_count integer NOT NULL DEFAULT 0 CHECK (failed_login_count >= 0),
   locked_until       timestamptz,
@@ -98,16 +108,20 @@ CREATE TABLE tenants (
 );
 
 -- A user can belong to several tenants (e.g. an accountant serving many firms).
+-- Role CLIENT is a person at one of the tenant's clients using the client
+-- portal (W.5): party_id names that client (foreign key after parties, §3).
 CREATE TABLE memberships (
   id          uuid PRIMARY KEY DEFAULT gen_random_uuid(),
   tenant_id   uuid NOT NULL REFERENCES tenants (id),
   user_id     uuid NOT NULL REFERENCES users (id),
-  role        text NOT NULL CHECK (role IN ('OWNER', 'ADMIN', 'ACCOUNTANT', 'SITE_ENGINEER', 'VIEWER')),
+  role        text NOT NULL CHECK (role IN ('OWNER', 'ADMIN', 'ACCOUNTANT', 'SITE_ENGINEER', 'VIEWER', 'CLIENT')),
+  party_id    uuid,
   status      text NOT NULL DEFAULT 'ACTIVE' CHECK (status IN ('INVITED', 'ACTIVE', 'REVOKED')),
   invited_by  uuid REFERENCES users (id),
   created_at  timestamptz NOT NULL DEFAULT now(),
   updated_at  timestamptz NOT NULL DEFAULT now(),
-  UNIQUE (tenant_id, user_id)
+  UNIQUE (tenant_id, user_id),
+  CHECK ((role = 'CLIENT') = (party_id IS NOT NULL))
 );
 CREATE INDEX memberships_user_idx ON memberships (user_id);
 
@@ -122,7 +136,8 @@ CREATE TABLE email_invitations (
   id           uuid PRIMARY KEY DEFAULT gen_random_uuid(),
   tenant_id    uuid NOT NULL REFERENCES tenants (id),
   email        citext NOT NULL CHECK (char_length(email) <= 254),
-  role         text NOT NULL CHECK (role IN ('OWNER', 'ADMIN', 'ACCOUNTANT', 'SITE_ENGINEER', 'VIEWER')),
+  role         text NOT NULL CHECK (role IN ('OWNER', 'ADMIN', 'ACCOUNTANT', 'SITE_ENGINEER', 'VIEWER', 'CLIENT')),
+  party_id     uuid,                                     -- CLIENT: the client (FK after parties)
   status       text NOT NULL DEFAULT 'PENDING' CHECK (status IN ('PENDING', 'ACCEPTED', 'REVOKED')),
   invited_by   uuid NOT NULL REFERENCES users (id),
   accepted_by  uuid REFERENCES users (id),
@@ -130,7 +145,8 @@ CREATE TABLE email_invitations (
   created_at   timestamptz NOT NULL DEFAULT now(),
   updated_at   timestamptz NOT NULL DEFAULT now(),
   UNIQUE (tenant_id, id),
-  CHECK ((status = 'ACCEPTED') = (accepted_by IS NOT NULL))
+  CHECK ((status = 'ACCEPTED') = (accepted_by IS NOT NULL)),
+  CHECK ((role = 'CLIENT') = (party_id IS NOT NULL))
 );
 CREATE UNIQUE INDEX email_invitations_pending_uq ON email_invitations (tenant_id, email) WHERE status = 'PENDING';
 
@@ -146,7 +162,8 @@ CREATE TABLE auth_sessions (
   created_at          timestamptz NOT NULL DEFAULT now(),
   expires_at          timestamptz NOT NULL,
   rotated_at          timestamptz,
-  revoked_at          timestamptz
+  revoked_at          timestamptz,
+  amr                 text[] NOT NULL DEFAULT '{}'         -- how the user signed in, kept across refreshes
 );
 CREATE INDEX auth_sessions_user_idx ON auth_sessions (user_id) WHERE revoked_at IS NULL;
 CREATE INDEX auth_sessions_family_idx ON auth_sessions (family_id);
@@ -215,6 +232,12 @@ CREATE TABLE parties (
 CREATE INDEX parties_tenant_name_idx ON parties (tenant_id, display_name);
 CREATE INDEX parties_name_trgm_idx ON parties USING gin (display_name gin_trgm_ops);
 CREATE INDEX parties_gstin_idx ON parties (tenant_id, gstin) WHERE gstin IS NOT NULL;
+
+-- Client-portal users and invitations name a client of their own tenant.
+ALTER TABLE memberships
+  ADD FOREIGN KEY (tenant_id, party_id) REFERENCES parties (tenant_id, id);
+ALTER TABLE email_invitations
+  ADD FOREIGN KEY (tenant_id, party_id) REFERENCES parties (tenant_id, id);
 
 CREATE TABLE projects (
   id                    uuid PRIMARY KEY DEFAULT gen_random_uuid(),
@@ -1106,13 +1129,13 @@ DECLARE
   prev    text := current_setting('app.tenant_id', true);
 BEGIN
   SELECT email INTO address FROM users WHERE id = p_user_id;
-  FOR r IN SELECT id, tenant_id, role, invited_by FROM email_invitations
+  FOR r IN SELECT id, tenant_id, role, party_id, invited_by FROM email_invitations
             WHERE email = address AND status = 'PENDING' AND expires_at > now()
             FOR UPDATE
   LOOP
     PERFORM set_config('app.tenant_id', r.tenant_id::text, true);
-    INSERT INTO memberships (tenant_id, user_id, role, status, invited_by)
-      VALUES (r.tenant_id, p_user_id, r.role, 'INVITED', r.invited_by)
+    INSERT INTO memberships (tenant_id, user_id, role, party_id, status, invited_by)
+      VALUES (r.tenant_id, p_user_id, r.role, r.party_id, 'INVITED', r.invited_by)
       ON CONFLICT (tenant_id, user_id) DO NOTHING;
     UPDATE email_invitations SET status = 'ACCEPTED', accepted_by = p_user_id, updated_at = now()
      WHERE id = r.id;
@@ -1124,6 +1147,62 @@ END $$;
 
 REVOKE ALL ON FUNCTION claim_email_invitations(uuid) FROM PUBLIC;
 GRANT EXECUTE ON FUNCTION claim_email_invitations(uuid) TO billing_app;
+
+-- Client portal (W.5). A CLIENT session also sets app.party_id; these
+-- RESTRICTIVE policies are ANDed with the tenant policies above and narrow
+-- every table to that client's own, issued rows. Staff sessions (party
+-- unset) pass them unchanged. The EXISTS forms rely on the RLS of the table
+-- they read (documents, projects, retention_releases), so "the client's
+-- issued documents" is written once. A new tenant table must get one too
+-- (tests/db/test_roles_and_rls.py checks).
+DO $$
+DECLARE t text;
+BEGIN
+  FOREACH t IN ARRAY ARRAY[
+    'gst_registrations', 'catalog_items', 'catalog_item_variants', 'document_series', 'expenses',
+    'tds_certificates', 'email_invitations', 'payment_reminders', 'document_templates', 'audit_log']
+  LOOP
+    EXECUTE format(
+      'CREATE POLICY client_scope ON %I AS RESTRICTIVE USING (app_current_party() IS NULL)', t);
+  END LOOP;
+END $$;
+CREATE POLICY client_scope ON parties AS RESTRICTIVE
+  USING (app_current_party() IS NULL OR id = app_current_party());
+CREATE POLICY client_scope ON projects AS RESTRICTIVE
+  USING (app_current_party() IS NULL OR client_party_id = app_current_party());
+CREATE POLICY client_scope ON boq_items AS RESTRICTIVE
+  USING (app_current_party() IS NULL
+         OR EXISTS (SELECT 1 FROM projects p
+                     WHERE p.tenant_id = boq_items.tenant_id AND p.id = boq_items.project_id));
+CREATE POLICY client_scope ON documents AS RESTRICTIVE
+  USING (app_current_party() IS NULL OR (party_id = app_current_party() AND status <> 'DRAFT'));
+CREATE POLICY client_scope ON document_lines AS RESTRICTIVE
+  USING (app_current_party() IS NULL
+         OR EXISTS (SELECT 1 FROM documents d
+                     WHERE d.tenant_id = document_lines.tenant_id AND d.id = document_lines.document_id));
+CREATE POLICY client_scope ON payments AS RESTRICTIVE
+  USING (app_current_party() IS NULL OR (party_id = app_current_party() AND status = 'RECORDED'));
+CREATE POLICY client_scope ON retention_releases AS RESTRICTIVE
+  USING (app_current_party() IS NULL OR (party_id = app_current_party() AND status = 'RELEASED'));
+CREATE POLICY client_scope ON allocations AS RESTRICTIVE
+  USING (app_current_party() IS NULL
+         OR EXISTS (SELECT 1 FROM documents d
+                     WHERE d.tenant_id = allocations.tenant_id AND d.id = allocations.document_id)
+         OR EXISTS (SELECT 1 FROM retention_releases r
+                     WHERE r.tenant_id = allocations.tenant_id AND r.id = allocations.retention_release_id));
+CREATE POLICY client_scope ON attachments AS RESTRICTIVE
+  USING (app_current_party() IS NULL
+         OR EXISTS (SELECT 1 FROM documents d
+                     WHERE d.tenant_id = attachments.tenant_id AND d.pdf_attachment_id = attachments.id));
+CREATE POLICY client_scope ON idempotency_keys AS RESTRICTIVE
+  USING (app_current_party() IS NULL OR user_id = app_current_user_id());
+CREATE POLICY client_scope ON exports AS RESTRICTIVE
+  USING (app_current_party() IS NULL OR requested_by = app_current_user_id());
+CREATE POLICY client_scope ON memberships AS RESTRICTIVE
+  USING (app_current_party() IS NULL OR user_id = app_current_user_id());
+-- The client may read the business's own row (its name), never change it.
+CREATE POLICY client_scope ON tenants AS RESTRICTIVE FOR UPDATE
+  USING (app_current_party() IS NULL);
 
 -- users and auth_sessions have no tenant; the app only ever reads them by
 -- primary key, email or token hash, and never lists them across tenants.

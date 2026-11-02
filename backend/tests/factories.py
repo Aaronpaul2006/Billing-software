@@ -97,6 +97,26 @@ def add_member(t: TenantFixture, role: str, *, with_mfa: bool = True) -> Member:
     return Member(user.id, membership.id, tokens.access_token, tokens.refresh_token)
 
 
+def add_client(t: TenantFixture, party: Party) -> Member:
+    """A client-portal user of `party` with a live session (signed in with the emailed code)."""
+    from apps.accounts.services import ClientInfo, _start_session
+
+    user = make_user("Client Person")
+    with tenant_context(t.tenant_id, t.user_id):
+        membership = Membership.objects.create(
+            tenant_id=t.tenant_id, user=user, role=Role.CLIENT, party=party, invited_by_id=t.user_id
+        )
+    tokens = _start_session(
+        user_id=user.id,
+        tenant_id=t.tenant_id,
+        role=Role.CLIENT,
+        amr=frozenset({"pwd", "email"}),
+        client=ClientInfo(),
+        party_id=party.pk,
+    )
+    return Member(user.id, membership.id, tokens.access_token, tokens.refresh_token)
+
+
 def owner_member(t: TenantFixture) -> Member:
     """A session for the tenant's founding OWNER (from make_tenant)."""
     from apps.accounts.services import ClientInfo, _start_session

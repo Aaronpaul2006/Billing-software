@@ -11,6 +11,9 @@ request that reuses a pooled connection (docs/01-architecture.md §2.4).
 
     with user_context(user_id):                  # login: before a tenant is chosen
         Membership.objects.filter(user_id=...)    # only the user's own memberships
+
+A client-portal session (role CLIENT) also sets `app.party_id`: restrictive
+policies then narrow every table to that client's rows (db/schema.sql §8).
 """
 
 import uuid
@@ -28,7 +31,8 @@ class Principal:
 
     Never built from client-controlled input: the tenant is the token's
     `tid` claim, not a URL or header. `amr` lists how the user proved who
-    they are ("pwd", "otp").
+    they are ("pwd", "otp", "email"). `party_id` is set for role CLIENT only
+    (the token's `pid` claim): the client whose portal this is.
     """
 
     user_id: uuid.UUID
@@ -36,6 +40,7 @@ class Principal:
     role: str
     session_id: uuid.UUID | None = None
     amr: frozenset[str] = field(default_factory=frozenset)
+    party_id: uuid.UUID | None = None
 
 
 @dataclass(frozen=True)
@@ -43,6 +48,7 @@ class TenantContext:
     tenant_id: uuid.UUID | None  # None: user context only (see user_context)
     user_id: uuid.UUID | None = None
     request_id: str | None = None
+    party_id: uuid.UUID | None = None  # client portal: only this party's rows
 
 
 class TenantContextError(RuntimeError):
@@ -71,11 +77,13 @@ def _set_db_context(ctx: TenantContext | None, using: str) -> None:
         cursor.execute(
             "SELECT set_config('app.tenant_id', %s, true),"
             "       set_config('app.user_id', %s, true),"
-            "       set_config('app.request_id', %s, true)",
+            "       set_config('app.request_id', %s, true),"
+            "       set_config('app.party_id', %s, true)",
             [
                 text(ctx and ctx.tenant_id),
                 text(ctx and ctx.user_id),
                 text(ctx and ctx.request_id),
+                text(ctx and ctx.party_id),
             ],
         )
 
@@ -88,7 +96,11 @@ def _as_uuid(value: uuid.UUID | str | None) -> uuid.UUID | None:
 def _context(ctx: TenantContext, using: str) -> Iterator[TenantContext]:
     active = _current.get()
     if active is not None:
-        if (active.tenant_id, active.user_id) != (ctx.tenant_id, ctx.user_id):
+        if (active.tenant_id, active.user_id, active.party_id) != (
+            ctx.tenant_id,
+            ctx.user_id,
+            ctx.party_id,
+        ):
             raise TenantContextError("a different context is already active; finish it first")
         yield active
         return
@@ -114,15 +126,17 @@ def tenant_context(
     user_id: uuid.UUID | str | None = None,
     *,
     request_id: str | None = None,
+    party_id: uuid.UUID | str | None = None,
     using: str = DEFAULT_DB_ALIAS,
 ) -> Iterator[TenantContext]:
-    """Run the block in one transaction scoped to `tenant_id`.
+    """Run the block in one transaction scoped to `tenant_id` (and, for a
+    client-portal session, to `party_id` within it).
 
-    Re-entering for the same tenant and user is a no-op; switching to a
-    different one while a context is active raises, so code can never mix
+    Re-entering for the same tenant, user and party is a no-op; switching to
+    a different one while a context is active raises, so code can never mix
     two tenants' data in one transaction by accident.
     """
-    ctx = TenantContext(_as_uuid(tenant_id), _as_uuid(user_id), request_id)
+    ctx = TenantContext(_as_uuid(tenant_id), _as_uuid(user_id), request_id, _as_uuid(party_id))
     with _context(ctx, using) as active:
         yield active
 

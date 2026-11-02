@@ -24,6 +24,7 @@ from django.core.exceptions import ValidationError as DjangoValidationError
 from django.db import IntegrityError, transaction
 from django.db.models import F, Func, Max, Min, OuterRef, Q, Subquery, Value
 from django.utils import timezone
+from django.utils.crypto import salted_hmac
 
 from apps.core.errors import Conflict, Forbidden, Invalid, NotFound, Unauthenticated
 from apps.core.tenancy import Principal, tenant_context, user_context
@@ -34,6 +35,8 @@ from .crypto import decrypt_secret, encrypt_secret
 from .emails import Kind
 from .models import AuthSession, Membership, MembershipStatus, Role, User, UserStatus
 from .tokens import (
+    EMAIL,
+    TOTP,
     InvalidToken,
     hash_refresh_token,
     issue_access_token,
@@ -82,6 +85,7 @@ class SessionTokens:
 @dataclass(frozen=True)
 class MfaChallenge:
     mfa_token: str
+    method: str = TOTP  # "totp": authenticator app; "email": a code we just emailed
 
 
 class InvalidCredentials(Unauthenticated):
@@ -152,6 +156,7 @@ def _start_session(
     amr: frozenset[str],
     client: ClientInfo,
     family_id: uuid.UUID | None = None,
+    party_id: uuid.UUID | None = None,
 ) -> SessionTokens:
     refresh_token, digest = new_refresh_token()
     family_id = family_id or uuid.uuid7()
@@ -165,9 +170,15 @@ def _start_session(
         ip=client.ip,
         user_agent=(client.user_agent or "")[:500] or None,
         expires_at=refresh_expires_at,
+        amr=sorted(amr),
     )
     access_token, access_expires_at = issue_access_token(
-        user_id=user_id, tenant_id=tenant_id, role=role, session_id=family_id, amr=amr
+        user_id=user_id,
+        tenant_id=tenant_id,
+        role=role,
+        session_id=family_id,
+        amr=amr,
+        party_id=party_id,
     )
     return SessionTokens(
         access_token=access_token,
@@ -456,7 +467,62 @@ def login(
 
     if user.mfa_enabled:
         return MfaChallenge(mfa_token=issue_mfa_challenge(user.pk))
+    if _is_portal_user(user.pk):
+        _send_email_code(user)
+        return MfaChallenge(mfa_token=issue_mfa_challenge(user.pk, EMAIL), method=EMAIL)
     return _complete_login(user, frozenset({"pwd"}), tenant_id, client)
+
+
+# --- sign-in codes by email (client-portal users without TOTP) -------------------
+
+
+def _is_portal_user(user_id: uuid.UUID) -> bool:
+    """Has an active CLIENT membership: signs in with password + emailed code."""
+    with user_context(user_id):
+        return any(m.role == Role.CLIENT for m, _ in active_memberships(user_id))
+
+
+def _email_code_hash(user_id: uuid.UUID, code: str) -> str:
+    return salted_hmac("accounts.email-code", f"{user_id}:{code}").hexdigest()
+
+
+def _send_email_code(user: User) -> None:
+    """A fresh 6-digit code (10 minutes, 5 tries); any earlier one stops working."""
+    code = f"{secrets.randbelow(1_000_000):06d}"
+    with transaction.atomic():
+        User.objects.filter(pk=user.pk).update(
+            email_code_hash=_email_code_hash(user.pk, code),
+            email_code_expires_at=timezone.now() + settings.EMAIL_CODE_TTL,
+            email_code_attempts=0,
+        )
+        _email_after_commit(Kind.SIGN_IN_CODE, user.pk, {"code": code})
+    security_log.info("email_code_sent user=%s", user.pk)
+
+
+def _consume_email_code(user_id: uuid.UUID, code: str | None) -> bool:
+    """Check the emailed code and use it up. A wrong code counts against its
+    5 tries (committed even though sign-in then fails); the 5th wrong one, or
+    an expired code, needs a new sign-in."""
+    with transaction.atomic():
+        user = User.objects.select_for_update().get(pk=user_id)
+        live = (
+            user.email_code_hash is not None
+            and user.email_code_expires_at is not None
+            and user.email_code_expires_at > timezone.now()
+            and user.email_code_attempts < settings.EMAIL_CODE_MAX_ATTEMPTS
+        )
+        ok = (
+            live
+            and code is not None
+            and hmac.compare_digest(user.email_code_hash or "", _email_code_hash(user.pk, code))
+        )
+        if ok or not live:
+            User.objects.filter(pk=user.pk).update(
+                email_code_hash=None, email_code_expires_at=None, email_code_attempts=0
+            )
+        else:
+            User.objects.filter(pk=user.pk).update(email_code_attempts=F("email_code_attempts") + 1)
+    return bool(ok)
 
 
 def verify_mfa_login(
@@ -468,12 +534,19 @@ def verify_mfa_login(
     client: ClientInfo,
 ) -> SessionTokens:
     try:
-        user_id = verify_mfa_challenge(mfa_token)
+        user_id, method = verify_mfa_challenge(mfa_token)
     except InvalidToken as exc:
         raise Unauthenticated(
             "The sign-in attempt expired. Sign in again.", code="invalid_mfa_token"
         ) from exc
     user = User.objects.filter(pk=user_id, status=UserStatus.ACTIVE).first()
+    if method == EMAIL:
+        if user is None or _is_locked(user) or not _consume_email_code(user.pk, code):
+            if user is not None:
+                _register_failure(user.pk)
+            raise InvalidMfaCode
+        _reset_failures(user)
+        return _complete_login(user, frozenset({"pwd", "email"}), tenant_id, client)
     if user is None or not user.mfa_enabled or _is_locked(user):
         raise InvalidMfaCode
     if not _consume_second_factor(user, code=code, recovery_code=recovery_code):
@@ -506,6 +579,7 @@ def _complete_login(
             role=membership.role,
             amr=amr,
             client=client,
+            party_id=membership.party_id,
         )
         User.objects.filter(pk=user.pk).update(last_login_at=timezone.now())
     security_log.info("login_succeeded user=%s amr=%s", user.pk, ",".join(sorted(amr)))
@@ -522,6 +596,15 @@ def _with_tenants(tokens: SessionTokens, tenants: list[TenantSummary]) -> Sessio
 class RefreshTokenReused(InvalidRefreshToken):
     code = "refresh_token_reused"
     detail = "This sign-in was ended for security reasons. Sign in again."
+
+
+def _refreshed_amr(session: AuthSession, user: User) -> frozenset[str]:
+    """How the user signed in, kept across refreshes ("otp" only while TOTP
+    is still on). Sessions from before amr was stored: derived as before."""
+    if not session.amr:
+        return frozenset({"pwd", "otp"} if user.mfa_enabled else {"pwd"})
+    amr = frozenset(session.amr)
+    return amr if user.mfa_enabled else amr - {"otp"}
 
 
 def refresh(token: str, client: ClientInfo) -> SessionTokens:
@@ -569,9 +652,10 @@ def refresh(token: str, client: ClientInfo) -> SessionTokens:
                     user_id=user.pk,
                     tenant_id=membership.tenant_id,
                     role=membership.role,  # role re-checked at every refresh
-                    amr=frozenset({"pwd", "otp"} if user.mfa_enabled else {"pwd"}),
+                    amr=_refreshed_amr(session, user),
                     client=ClientInfo(client.ip, client.user_agent, session.device_label),
                     family_id=session.family_id,
+                    party_id=membership.party_id,
                 )
     if isinstance(outcome, SessionTokens):
         return outcome
@@ -593,6 +677,7 @@ def switch_tenant(principal: Principal, tenant_id: uuid.UUID, client: ClientInfo
             role=membership.role,
             amr=principal.amr,
             client=client,
+            party_id=membership.party_id,
         )
     return _with_tenants(tokens, [TenantSummary(t.id, t.legal_name, m.role) for m, t in available])
 
@@ -765,6 +850,7 @@ def mfa_enable(
             role=principal.role,
             amr=frozenset({"pwd", "otp"}),
             client=client,
+            party_id=principal.party_id,
         )
     security_log.info("mfa_enabled user=%s", user.pk)
     return [f"{c[:5]}-{c[5:]}" for c in codes], tokens

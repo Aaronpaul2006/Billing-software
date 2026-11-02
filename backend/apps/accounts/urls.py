@@ -58,6 +58,16 @@ urlpatterns = [
         name="email-invitation-resend",
     ),
     path("members", member_views.MemberListView.as_view(), name="members"),
+    path(
+        "parties/<uuid:party_id>/portal-users",
+        member_views.PortalUserListView.as_view(),
+        name="portal-users",
+    ),
+    path(
+        "parties/<uuid:party_id>/portal-users/<uuid:portal_user_id>",
+        member_views.PortalUserDetailView.as_view(),
+        name="portal-user-detail",
+    ),
     path("invitations", member_views.InvitationListView.as_view(), name="invitations"),
     path(
         "invitations/<uuid:membership_id>/accept",

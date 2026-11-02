@@ -134,7 +134,9 @@ class LoginView(PublicAuthView):
             client=_client(request, v),
         )
         if isinstance(result, MfaChallenge):
-            return Response({"mfa_required": True, "mfa_token": result.mfa_token})
+            return Response(
+                {"mfa_required": True, "mfa_token": result.mfa_token, "mfa_method": result.method}
+            )
         return _tokens_response(result, v["client"])
 
 

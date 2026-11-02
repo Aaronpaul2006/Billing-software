@@ -23,6 +23,9 @@ OWNER, ADMIN, ACCOUNTANT, SITE_ENGINEER, VIEWER = (
 )
 ALL_ROLES = (OWNER, ADMIN, ACCOUNTANT, SITE_ENGINEER, VIEWER)
 MFA_REQUIRED_ROLES = frozenset({OWNER, ADMIN})
+# Client-portal users (W.5). In no ACTIONS set below, so every staff endpoint
+# refuses them; the portal endpoints check for this role instead.
+CLIENT = "CLIENT"
 
 # action → roles allowed (docs/01-architecture.md §3, row by row)
 ACTIONS: dict[str, frozenset[str]] = {
@@ -86,7 +89,8 @@ def HasAction(action: str) -> type[BasePermission]:  # noqa: N802 - reads like a
 
 
 class MfaSatisfied(BasePermission):
-    """OWNER and ADMIN must have passed TOTP (amr contains "otp").
+    """OWNER and ADMIN must have passed TOTP (amr contains "otp"); a CLIENT
+    must have passed TOTP or a code emailed at sign-in ("email").
 
     A default permission, so it applies everywhere; only the endpoints needed
     to enrol (MFA setup, /me, sessions, logout) opt out.
@@ -99,4 +103,21 @@ class MfaSatisfied(BasePermission):
         principal = request.auth
         if not isinstance(principal, Principal):
             return True  # unauthenticated: IsAuthenticated decides
+        if principal.role == CLIENT:
+            return bool({"otp", "email"} & principal.amr)
         return principal.role not in MFA_REQUIRED_ROLES or "otp" in principal.amr
+
+
+class IsClient(BasePermission):
+    """Client-portal endpoints: role CLIENT, which names its party."""
+
+    message = "This is for client-portal users."
+    code = "permission_denied"
+
+    def has_permission(self, request: Request, view: Any) -> bool:
+        principal = request.auth
+        return (
+            isinstance(principal, Principal)
+            and principal.role == CLIENT
+            and principal.party_id is not None
+        )

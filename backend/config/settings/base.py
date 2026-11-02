@@ -214,6 +214,9 @@ JWT_KEY_ID: str = env("JWT_KEY_ID", default="k1")
 JWT_ISSUER: str = env("JWT_ISSUER", default="billing-api")
 ACCESS_TOKEN_TTL = timedelta(minutes=10)
 MFA_CHALLENGE_TTL = timedelta(minutes=5)
+# Client-portal sign-in: a 6-digit code emailed after the password (W.5).
+EMAIL_CODE_TTL = timedelta(minutes=10)
+EMAIL_CODE_MAX_ATTEMPTS = 5
 # Refresh tokens: opaque, stored as SHA-256, rotated on every use.
 REFRESH_TOKEN_TTL = timedelta(days=30)
 REFRESH_COOKIE_NAME = "refresh_token"

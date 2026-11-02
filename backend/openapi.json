@@ -3814,6 +3814,126 @@
                 }
             }
         },
+        "/api/v1/parties/{party_id}/portal-users": {
+            "get": {
+                "operationId": "parties_portal_users_retrieve",
+                "description": "A client's portal users (W.5): who can sign in to see this client's\nbills, payments and BOQ progress, and invitations not yet accepted.",
+                "parameters": [
+                    {
+                        "in": "path",
+                        "name": "party_id",
+                        "schema": {
+                            "type": "string",
+                            "format": "uuid"
+                        },
+                        "required": true
+                    }
+                ],
+                "tags": [
+                    "members"
+                ],
+                "security": [
+                    {
+                        "bearerAuth": []
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/PortalUserList"
+                                }
+                            }
+                        },
+                        "description": ""
+                    }
+                }
+            },
+            "post": {
+                "operationId": "parties_portal_users_create",
+                "description": "A client's portal users (W.5): who can sign in to see this client's\nbills, payments and BOQ progress, and invitations not yet accepted.",
+                "parameters": [
+                    {
+                        "in": "path",
+                        "name": "party_id",
+                        "schema": {
+                            "type": "string",
+                            "format": "uuid"
+                        },
+                        "required": true
+                    }
+                ],
+                "tags": [
+                    "members"
+                ],
+                "requestBody": {
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/PortalInvite"
+                            }
+                        }
+                    },
+                    "required": true
+                },
+                "security": [
+                    {
+                        "bearerAuth": []
+                    }
+                ],
+                "responses": {
+                    "201": {
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/PortalUser"
+                                }
+                            }
+                        },
+                        "description": ""
+                    }
+                }
+            }
+        },
+        "/api/v1/parties/{party_id}/portal-users/{portal_user_id}": {
+            "delete": {
+                "operationId": "parties_portal_users_destroy",
+                "parameters": [
+                    {
+                        "in": "path",
+                        "name": "party_id",
+                        "schema": {
+                            "type": "string",
+                            "format": "uuid"
+                        },
+                        "required": true
+                    },
+                    {
+                        "in": "path",
+                        "name": "portal_user_id",
+                        "schema": {
+                            "type": "string",
+                            "format": "uuid"
+                        },
+                        "required": true
+                    }
+                ],
+                "tags": [
+                    "members"
+                ],
+                "security": [
+                    {
+                        "bearerAuth": []
+                    }
+                ],
+                "responses": {
+                    "204": {
+                        "description": "No response body"
+                    }
+                }
+            }
+        },
         "/api/v1/parties/{party_id}/statement": {
             "get": {
                 "operationId": "parties_statement_retrieve",
@@ -8350,9 +8470,18 @@
                     "mfa_token": {
                         "type": "string",
                         "description": "Send to /auth/mfa/verify with a code."
+                    },
+                    "mfa_method": {
+                        "allOf": [
+                            {
+                                "$ref": "#/components/schemas/MfaMethodEnum"
+                            }
+                        ],
+                        "description": "totp: a code from the authenticator app; email: the code we just emailed.\n\n* `totp` - totp\n* `email` - email"
                     }
                 },
                 "required": [
+                    "mfa_method",
                     "mfa_required",
                     "mfa_token"
                 ]
@@ -8466,6 +8595,14 @@
                     "token_type",
                     "user_id"
                 ]
+            },
+            "MfaMethodEnum": {
+                "enum": [
+                    "totp",
+                    "email"
+                ],
+                "type": "string",
+                "description": "* `totp` - totp\n* `email` - email"
             },
             "MfaSetupResponse": {
                 "type": "object",
@@ -10181,6 +10318,100 @@
                     "expires_in",
                     "url"
                 ]
+            },
+            "PortalInvite": {
+                "type": "object",
+                "properties": {
+                    "email": {
+                        "type": "string",
+                        "format": "email",
+                        "maxLength": 254
+                    }
+                },
+                "required": [
+                    "email"
+                ]
+            },
+            "PortalUser": {
+                "type": "object",
+                "properties": {
+                    "id": {
+                        "type": "string",
+                        "format": "uuid"
+                    },
+                    "kind": {
+                        "allOf": [
+                            {
+                                "$ref": "#/components/schemas/PortalUserKindEnum"
+                            }
+                        ],
+                        "description": "MEMBER: has an account; EMAIL_INVITATION: signs up through the emailed link.\n\n* `MEMBER` - MEMBER\n* `EMAIL_INVITATION` - EMAIL_INVITATION"
+                    },
+                    "email": {
+                        "type": "string",
+                        "format": "email"
+                    },
+                    "full_name": {
+                        "type": [
+                            "string",
+                            "null"
+                        ]
+                    },
+                    "status": {
+                        "$ref": "#/components/schemas/PortalUserStatusEnum"
+                    },
+                    "created_at": {
+                        "type": "string",
+                        "format": "date-time"
+                    },
+                    "expires_at": {
+                        "type": [
+                            "string",
+                            "null"
+                        ],
+                        "format": "date-time"
+                    }
+                },
+                "required": [
+                    "created_at",
+                    "email",
+                    "expires_at",
+                    "full_name",
+                    "id",
+                    "kind",
+                    "status"
+                ]
+            },
+            "PortalUserKindEnum": {
+                "enum": [
+                    "MEMBER",
+                    "EMAIL_INVITATION"
+                ],
+                "type": "string",
+                "description": "* `MEMBER` - MEMBER\n* `EMAIL_INVITATION` - EMAIL_INVITATION"
+            },
+            "PortalUserList": {
+                "type": "object",
+                "properties": {
+                    "results": {
+                        "type": "array",
+                        "items": {
+                            "$ref": "#/components/schemas/PortalUser"
+                        }
+                    }
+                },
+                "required": [
+                    "results"
+                ]
+            },
+            "PortalUserStatusEnum": {
+                "enum": [
+                    "ACTIVE",
+                    "INVITED",
+                    "PENDING"
+                ],
+                "type": "string",
+                "description": "* `ACTIVE` - ACTIVE\n* `INVITED` - INVITED\n* `PENDING` - PENDING"
             },
             "Preview": {
                 "type": "object",

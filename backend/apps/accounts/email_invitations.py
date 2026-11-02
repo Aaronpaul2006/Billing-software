@@ -95,7 +95,11 @@ def send_invitation_email(invitation_id: uuid.UUID) -> bool:
         {
             "inviter": inviter.full_name,
             "company": tenant.legal_name,
-            "role": invitation.role.replace("_", " ").lower(),
+            "role": (
+                "a client, to see your bills and payments online"
+                if invitation.party_id
+                else invitation.role.replace("_", " ").lower()
+            ),
             "link": emails._link("join", make_token(invitation)),
             "days": settings.EMAIL_INVITATION_MAX_AGE // 86400,
         },
@@ -144,8 +148,11 @@ def create(principal: Principal, email: str, role: str) -> EmailInvitation:
 
 
 def pending(principal: Principal) -> list[EmailInvitation]:
+    """Staff invitations; client-portal ones are listed under their client."""
     require(principal, "members.manage")
-    return list(EmailInvitation.objects.filter(status=PENDING).order_by("created_at"))
+    return list(
+        EmailInvitation.objects.filter(status=PENDING, party__isnull=True).order_by("created_at")
+    )
 
 
 def _pending(principal: Principal, invitation_id: uuid.UUID) -> EmailInvitation:
@@ -249,6 +256,7 @@ def join(token: str, *, full_name: str, password: str, client: ClientInfo) -> Se
                     tenant_id=tenant_id,
                     user=user,
                     role=invitation.role,
+                    party_id=invitation.party_id,
                     status=MembershipStatus.ACTIVE,
                     invited_by_id=invitation.invited_by_id,
                 )
@@ -261,8 +269,10 @@ def join(token: str, *, full_name: str, password: str, client: ClientInfo) -> Se
                 user_id=user.pk,
                 tenant_id=tenant_id,
                 role=invitation.role,
-                amr=frozenset({"pwd"}),
+                # The link proved the inbox: as good as the emailed sign-in code.
+                amr=frozenset({"pwd", "email"} if invitation.party_id else {"pwd"}),
                 client=client,
+                party_id=invitation.party_id,
             )
     except IntegrityError as exc:  # the address was taken a moment ago
         raise Conflict(

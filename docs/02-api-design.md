@@ -135,8 +135,8 @@ lockout still guards passwords).
 | `POST /auth/signup` | Create user + first tenant (the user becomes OWNER). Email verification required before issuing documents. |
 | `POST /auth/verify-email` | `{token}` from the emailed link → `204`. No sign-in needed. |
 | `POST /auth/verify-email/resend` | Signed in: email a new link (no-op once verified) → `204` |
-| `POST /auth/login` | `{email, password}` → either `{mfa_required: true, mfa_token}` or `{tenants: [...], ...tokens}` |
-| `POST /auth/mfa/verify` | `{mfa_token, code}` → tokens |
+| `POST /auth/login` | `{email, password}` → either `{mfa_required: true, mfa_token, mfa_method}` or `{tenants: [...], ...tokens}` |
+| `POST /auth/mfa/verify` | `{mfa_token, code}` → tokens (`code`: from the authenticator app, or the emailed one when `mfa_method` is `email`) |
 | `POST /auth/token/refresh` | Rotates the refresh token (cookie for web, body for mobile) → new access + refresh |
 | `POST /auth/switch-tenant` | `{tenant_id}` → new tokens scoped to that tenant (membership checked) |
 | `POST /auth/logout` | Revoke the current session |
@@ -149,8 +149,18 @@ lockout still guards passwords).
 | `POST /auth/password/change` | `{current_password, new_password}` while signed in; other devices signed out (K.1) |
 
 Access token claims: `sub` (user), `tid` (tenant), `role`, `sid` (session
-family), `amr` (`["pwd"]` or `["otp","pwd"]`), `iss`, `iat`, `exp` (10 min),
-`typ`. HS256 only, `kid` in the header for key rotation.
+family), `amr` (`["pwd"]`, `["otp","pwd"]` or `["email","pwd"]`), `iss`,
+`iat`, `exp` (10 min), `typ`; `pid` (the client) for role CLIENT and only
+then. HS256 only, `kid` in the header for key rotation.
+
+**Client-portal sign-in (W.5a, 2026-11-02).** Someone with an active CLIENT
+membership and no authenticator app gets `mfa_method: "email"` from login: a
+6-digit code is emailed (10 minutes, one use, 5 tries; a new login sends a
+new one and the old stops working) and goes to `/auth/mfa/verify` as `code`
+→ tokens with `amr ["email","pwd"]`. Wrong codes count towards the login
+lockout. Users with TOTP keep `mfa_method: "totp"`. A CLIENT token without
+`otp` or `email` gets `403 mfa_enrollment_required`. Sessions keep their
+`amr` across refreshes (stored on the session).
 
 Implemented (Phase 0.5) as of 2026-10-19:
 
@@ -209,6 +219,7 @@ Implemented (Phase 0.5) as of 2026-10-19:
 | `GET /invitations` · `POST /invitations/{id}/accept` · `POST /invitations/{id}/decline` | Any signed-in user: their own pending invitations (business name, role, inviter). Accept → ACTIVE (then `switch-tenant`); decline → REVOKED. Someone else's or an already answered invitation → `404` |
 | `GET/POST /email-invitations` · `DELETE /email-invitations/{id}` · `POST /email-invitations/{id}/resend` | People with no account yet (K.2): `POST {email, role}` emails a signed link to `/join` (7 days). `422 has_account` (invite them as a member instead), `409 already_invited`, `403 owner_protected` (an ADMIN inviting an OWNER); 30 per hour. The list shows pending ones with `expired`; resend renews the 7 days; withdraw → REVOKED (`409 not_pending` once answered) |
 | `GET /auth/join?token=` · `POST /auth/join` | Public, from the email: the invitation (email, company, role, inviter); `{token, full_name, password, client}` creates the account (email confirmed: the link proves the inbox), joins with the invited role (ACTIVE) and signs in (`201` tokens). `422 link_invalid` / `link_expired`, `weak_password`, `409 account_exists`. Someone who signs up the normal way instead finds their pending email invitations as INVITED memberships (database function `claim_email_invitations()`) |
+| `GET/POST /parties/{id}/portal-users` · `DELETE /parties/{id}/portal-users/{portal_user_id}` | Client portal (W.5a): who may sign in to see this client's bills, payments and BOQ progress. `POST {email}`: an account holder gets an INVITED CLIENT membership (`kind: MEMBER`, accepted from `/invitations`); anyone else an email invitation to `/join` (`kind: EMAIL_INVITATION`, 7 days, resend / withdraw also via `/email-invitations/{id}`). `409 already_member` (staff of this business), `other_client` (portal user of another client), `already_invited`; `422 not_a_client` (a vendor-only party), `account_inactive`; 30 per hour. The list shows ACTIVE / INVITED members and PENDING email invitations. `DELETE` → REVOKED and signs them out at once (idempotent; `404` unknown). OWNER / ADMIN; another tenant's party `404`. Portal users never appear in `/members` (`404` there) or `/email-invitations`, and `CLIENT` is not a role `/members` accepts |
 | `GET/POST /gst-registrations` · `GET/PATCH /gst-registrations/{id}` | Our GSTINs. GSTIN validated incl. check digit (`invalid_gstin`), state taken from it, address must be in that state, GSTIN must carry the business PAN (`pan_mismatch`), unique (`gstin_taken`). GSTIN / type / state cannot change. Exactly one default (`409 default_required`) |
 | `GET/POST /document-series` · `GET/PATCH /document-series/{id}` | Number series per registration, doc type and FY (`?doc_type=A,B&gst_registration_id=&fy_start_year=&is_active=`). One active series per registration/type/year (`409 active_series_exists`). Once anything was issued, `prefix`, `pad_width` and `next_number` are locked (`409 series_in_use`). Non-REGULAR registrations cannot hold TAX_INVOICE / CREDIT_NOTE / DEBIT_NOTE series (`422 doc_type_not_allowed`). Responses include `next_doc_number` |
 | `GET /audit-log?table=documents&row_id=...` | Change history (OWNER/ADMIN) |

@@ -1392,6 +1392,46 @@ export interface paths {
         patch: operations["parties_partial_update"];
         trace?: never;
     };
+    "/api/v1/parties/{party_id}/portal-users": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * @description A client's portal users (W.5): who can sign in to see this client's
+         *     bills, payments and BOQ progress, and invitations not yet accepted.
+         */
+        get: operations["parties_portal_users_retrieve"];
+        put?: never;
+        /**
+         * @description A client's portal users (W.5): who can sign in to see this client's
+         *     bills, payments and BOQ progress, and invitations not yet accepted.
+         */
+        post: operations["parties_portal_users_create"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/parties/{party_id}/portal-users/{portal_user_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        delete: operations["parties_portal_users_destroy"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/parties/{party_id}/statement": {
         parameters: {
             query?: never;
@@ -2885,6 +2925,13 @@ export interface components {
             mfa_required: boolean;
             /** @description Send to /auth/mfa/verify with a code. */
             mfa_token: string;
+            /**
+             * @description totp: a code from the authenticator app; email: the code we just emailed.
+             *
+             *     * `totp` - totp
+             *     * `email` - email
+             */
+            mfa_method: components["schemas"]["MfaMethodEnum"];
         };
         MfaDisable: {
             code: string;
@@ -2919,6 +2966,12 @@ export interface components {
             /** @description Shown once. Each works one time. */
             recovery_codes: string[];
         };
+        /**
+         * @description * `totp` - totp
+         *     * `email` - email
+         * @enum {string}
+         */
+        MfaMethodEnum: "totp" | "email";
         MfaSetupResponse: {
             secret: string;
             otpauth_uri: string;
@@ -3461,6 +3514,45 @@ export interface components {
             /** @description Seconds the link stays valid. */
             expires_in: number;
         };
+        PortalInvite: {
+            /** Format: email */
+            email: string;
+        };
+        PortalUser: {
+            /** Format: uuid */
+            id: string;
+            /**
+             * @description MEMBER: has an account; EMAIL_INVITATION: signs up through the emailed link.
+             *
+             *     * `MEMBER` - MEMBER
+             *     * `EMAIL_INVITATION` - EMAIL_INVITATION
+             */
+            kind: components["schemas"]["PortalUserKindEnum"];
+            /** Format: email */
+            email: string;
+            full_name: string | null;
+            status: components["schemas"]["PortalUserStatusEnum"];
+            /** Format: date-time */
+            created_at: string;
+            /** Format: date-time */
+            expires_at: string | null;
+        };
+        /**
+         * @description * `MEMBER` - MEMBER
+         *     * `EMAIL_INVITATION` - EMAIL_INVITATION
+         * @enum {string}
+         */
+        PortalUserKindEnum: "MEMBER" | "EMAIL_INVITATION";
+        PortalUserList: {
+            results: components["schemas"]["PortalUser"][];
+        };
+        /**
+         * @description * `ACTIVE` - ACTIVE
+         *     * `INVITED` - INVITED
+         *     * `PENDING` - PENDING
+         * @enum {string}
+         */
+        PortalUserStatusEnum: "ACTIVE" | "INVITED" | "PENDING";
         Preview: {
             place_of_supply: string;
             supply_type: string;
@@ -7108,6 +7200,73 @@ export interface operations {
                 content: {
                     "application/json": components["schemas"]["Party"];
                 };
+            };
+        };
+    };
+    parties_portal_users_retrieve: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                party_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PortalUserList"];
+                };
+            };
+        };
+    };
+    parties_portal_users_create: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                party_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["PortalInvite"];
+            };
+        };
+        responses: {
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PortalUser"];
+                };
+            };
+        };
+    };
+    parties_portal_users_destroy: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                party_id: string;
+                portal_user_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description No response body */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
             };
         };
     };

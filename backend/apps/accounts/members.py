@@ -57,7 +57,9 @@ def _info(membership: Membership, user: User) -> MemberInfo:
 def list_members(principal: Principal) -> list[MemberInfo]:
     require(principal, "members.manage")
     memberships = list(
-        Membership.objects.filter(tenant_id=principal.tenant_id).order_by("created_at")
+        Membership.objects.filter(tenant_id=principal.tenant_id, party__isnull=True).order_by(
+            "created_at"
+        )
     )
     users = User.objects.in_bulk([m.user_id for m in memberships])
     return [_info(m, users[m.user_id]) for m in memberships]
@@ -65,10 +67,11 @@ def list_members(principal: Principal) -> list[MemberInfo]:
 
 def _locked_member(principal: Principal, membership_id: uuid.UUID) -> Membership:
     # RLS already limits this to the principal's tenant; the explicit filter
-    # documents it. Another tenant's membership is simply not found (404).
+    # documents it. Another tenant's membership is simply not found (404), and
+    # so is a client-portal user (managed under their client instead).
     membership = (
         Membership.objects.select_for_update()
-        .filter(id=membership_id, tenant_id=principal.tenant_id)
+        .filter(id=membership_id, tenant_id=principal.tenant_id, party__isnull=True)
         .first()
     )
     if membership is None:
@@ -165,11 +168,14 @@ def invite(principal: Principal, email: str, role: str) -> MemberInfo:
                 raise Conflict("This person is already a member.", code="already_member")
             elif membership.status == MembershipStatus.INVITED:
                 raise Conflict("This person has already been invited.", code="already_invited")
-            else:  # REVOKED earlier: invite again
+            else:  # REVOKED earlier (perhaps as a client-portal user): invite again
                 membership.status = MembershipStatus.INVITED
                 membership.role = role
+                membership.party_id = None
                 membership.invited_by_id = principal.user_id
-                membership.save(update_fields=["status", "role", "invited_by", "updated_at"])
+                membership.save(
+                    update_fields=["status", "role", "party", "invited_by", "updated_at"]
+                )
     except IntegrityError as exc:  # a concurrent invite created it first
         raise Conflict("This person has already been invited.", code="already_invited") from exc
     security_log.info(

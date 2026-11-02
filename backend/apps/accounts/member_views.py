@@ -13,7 +13,7 @@ from apps.core import ratelimit
 from apps.core.api import principal_of
 from apps.core.permissions import HasAction, MfaSatisfied
 
-from . import email_invitations, members
+from . import email_invitations, members, portal_users
 from .serializers import (
     EmailInvitationListSerializer,
     EmailInvitationSerializer,
@@ -23,6 +23,9 @@ from .serializers import (
     MemberListSerializer,
     MemberRoleSerializer,
     MemberSerializer,
+    PortalInviteSerializer,
+    PortalUserListSerializer,
+    PortalUserSerializer,
     TenantSummarySerializer,
 )
 
@@ -145,3 +148,35 @@ class EmailInvitationResendView(APIView):
         ratelimit.enforce(request, "invite_user", str(principal.user_id))
         invitation = email_invitations.resend(principal, invitation_id)
         return Response(EmailInvitationSerializer(invitation).data)
+
+
+class PortalUserListView(APIView):
+    """A client's portal users (W.5): who can sign in to see this client's
+    bills, payments and BOQ progress, and invitations not yet accepted."""
+
+    permission_classes = MANAGE_MEMBERS
+
+    @extend_schema(responses={200: PortalUserListSerializer}, tags=["members"])
+    def get(self, request: Request, party_id: uuid.UUID) -> Response:
+        rows = portal_users.list_portal_users(principal_of(request), party_id)
+        return Response({"results": [asdict(r) for r in rows]})
+
+    @extend_schema(
+        request=PortalInviteSerializer, responses={201: PortalUserSerializer}, tags=["members"]
+    )
+    def post(self, request: Request, party_id: uuid.UUID) -> Response:
+        principal = principal_of(request)
+        ratelimit.enforce(request, "invite_user", str(principal.user_id))
+        data = PortalInviteSerializer(data=request.data)
+        data.is_valid(raise_exception=True)
+        row = portal_users.invite(principal, party_id, data.validated_data["email"])
+        return Response(asdict(row), status=201)
+
+
+class PortalUserDetailView(APIView):
+    permission_classes = MANAGE_MEMBERS
+
+    @extend_schema(responses={204: None}, tags=["members"])
+    def delete(self, request: Request, party_id: uuid.UUID, portal_user_id: uuid.UUID) -> Response:
+        portal_users.revoke(principal_of(request), party_id, portal_user_id)
+        return Response(status=204)
