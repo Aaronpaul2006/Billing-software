@@ -729,3 +729,26 @@ lists the caller's latest 20. Rows and files are deleted after 7 days.
 | `GET /healthz` | Liveness (no dependencies) |
 | `GET /readyz` | Database + Redis reachable |
 | `GET /api/v1/schema/` | OpenAPI document (auth required outside dev) |
+
+---
+
+## 10. Client portal (W.5b, 2026-11-02)
+
+For people at a client, signed in with role `CLIENT` (portal users, §3;
+password + emailed code, §2). Staff tokens get `403` here; client tokens get
+`403` on every staff endpoint. Everything is the client's own, and the
+database enforces it too (RLS `client_scope`): another client's or another
+tenant's id is `404`. Responses leave out our internals (registrations,
+series, catalog references, notes, who did what).
+
+| Method & path | |
+|---|---|
+| `GET /portal/me` | `{business: {legal_name, trade_name}, client: {id, display_name, gstin}}` |
+| `GET /portal/documents` | Issued, cancelled, accepted and declined documents (never drafts), cursor-paginated, newest first; `?doc_type=A,B&status=&project_id=&ordering=` (`doc_date`, `doc_number`). Rows: number, dates, `valid_until`, project, RA sequence, `totals` (incl. `amount_settled`, `outstanding`) |
+| `GET /portal/documents/{id}` | With `lines`, `place_of_supply` and `terms`; `ETag` |
+| `GET /portal/documents/{id}/pdf` | `302` to a short-lived link, `?as=link` → `200 {url, expires_in}`; `202` while it is being made |
+| `POST /portal/documents/{id}/accept` · `/decline` | A quotation, with `If-Match` (`428` / `412`): → ACCEPTED / DECLINED (the audit log records who). `409 quotation_expired` (after `valid_until`, the business's date), `not_issued` (already answered or cancelled), `not_a_quotation` |
+| `GET /portal/payments` | Recorded payments (not voided), cursor-paginated: date, amount, mode, reference, project and the bills each settled |
+| `GET /portal/statement?from=&to=` | The statement of account, the same as the business's (§8, W.1) |
+| `GET /portal/projects` · `GET /portal/projects/{id}/boq-progress` | The client's projects; contract vs billed per BOQ item (the same as `/projects/{id}/boq-progress`) |
+

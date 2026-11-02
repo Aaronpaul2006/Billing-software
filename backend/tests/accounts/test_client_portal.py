@@ -213,8 +213,8 @@ def test_every_staff_route_refuses_a_client_session(
     }
     leaks = []
     for route, name in api_routes():
-        if name in CLIENT_MAY_USE:
-            continue
+        if name in CLIENT_MAY_USE or route.startswith("api/v1/portal/"):
+            continue  # the portal itself: tests/portal/test_portal.py
         # The client's own party where a route names one (so a missing permission
         # check would answer 200), a random id elsewhere.
         own = str(party.pk) if route.startswith("api/v1/parties/") else None

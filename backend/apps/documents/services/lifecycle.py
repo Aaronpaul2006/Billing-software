@@ -199,6 +199,13 @@ def respond_to_quotation(
     principal: Principal, doc_id: uuid.UUID, expected: int, *, accept: bool
 ) -> Document:
     require(principal, "documents.issue")
+    record_quotation_response(doc_id, expected, accept=accept)
+    return get_or_404(Document, doc_id)
+
+
+def record_quotation_response(doc_id: uuid.UUID, expected: int, *, accept: bool) -> None:
+    """ISSUED quotation → ACCEPTED / DECLINED. Callers check who may answer:
+    staff with documents.issue, or the client in the portal (apps.portal)."""
     with transaction.atomic():
         doc = _locked(doc_id, expected)
         if doc.doc_type != "QUOTATION":
@@ -208,7 +215,6 @@ def respond_to_quotation(
         update_versioned(
             Document.objects, doc.pk, expected, status="ACCEPTED" if accept else "DECLINED"
         )
-    return get_or_404(Document, doc_id)
 
 
 def convert(principal: Principal, doc_id: uuid.UUID, to: str, doc_date: date) -> Document:

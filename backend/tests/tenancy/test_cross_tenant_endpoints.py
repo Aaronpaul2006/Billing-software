@@ -1127,3 +1127,18 @@ COLLECTION_ROUTES["email-invitations"] = lambda w: None  # same test
 # tests/accounts/test_client_portal.py::test_portal_user_routes_reject_another_tenants_client
 OBJECT_ROUTES["portal-users"] = lambda w: None
 OBJECT_ROUTES["portal-user-detail"] = lambda w: None
+
+
+# --- W.5b client portal: tests/portal/test_portal.py::test_another_tenants_client_sees_none_of_it
+
+for _name in (
+    "portal-document-detail",
+    "portal-document-pdf",
+    "portal-document-accept",
+    "portal-document-decline",
+    "portal-boq-progress",
+):
+    OBJECT_ROUTES[_name] = lambda w: None
+for _name in ("portal-documents", "portal-payments", "portal-projects", "portal-statement"):
+    COLLECTION_ROUTES[_name] = lambda w: None
+NOT_TENANT_DATA["portal-me"] = "the caller's own client and business (tests/portal)"

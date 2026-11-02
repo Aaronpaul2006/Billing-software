@@ -4267,6 +4267,448 @@
                 }
             }
         },
+        "/api/v1/portal/documents": {
+            "get": {
+                "operationId": "portal_documents_list",
+                "description": "The client's bills, RA bills, notes and quotations (never drafts), newest first.",
+                "parameters": [
+                    {
+                        "name": "cursor",
+                        "required": false,
+                        "in": "query",
+                        "description": "The pagination cursor value.",
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    {
+                        "in": "query",
+                        "name": "doc_type",
+                        "schema": {
+                            "type": "array",
+                            "items": {
+                                "type": "string"
+                            }
+                        },
+                        "description": "Multiple values may be separated by commas.",
+                        "explode": false,
+                        "style": "form"
+                    },
+                    {
+                        "name": "limit",
+                        "required": false,
+                        "in": "query",
+                        "description": "Number of results to return per page.",
+                        "schema": {
+                            "type": "integer"
+                        }
+                    },
+                    {
+                        "name": "ordering",
+                        "required": false,
+                        "in": "query",
+                        "description": "Which field to use when ordering the results.",
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    {
+                        "in": "query",
+                        "name": "project_id",
+                        "schema": {
+                            "type": "string",
+                            "format": "uuid"
+                        }
+                    },
+                    {
+                        "in": "query",
+                        "name": "status",
+                        "schema": {
+                            "type": "array",
+                            "items": {
+                                "type": "string"
+                            }
+                        },
+                        "description": "Multiple values may be separated by commas.",
+                        "explode": false,
+                        "style": "form"
+                    }
+                ],
+                "tags": [
+                    "portal"
+                ],
+                "security": [
+                    {
+                        "bearerAuth": []
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/PaginatedPortalDocumentList"
+                                }
+                            }
+                        },
+                        "description": ""
+                    }
+                }
+            }
+        },
+        "/api/v1/portal/documents/{document_id}": {
+            "get": {
+                "operationId": "portal_documents_retrieve",
+                "parameters": [
+                    {
+                        "in": "path",
+                        "name": "document_id",
+                        "schema": {
+                            "type": "string",
+                            "format": "uuid"
+                        },
+                        "required": true
+                    }
+                ],
+                "tags": [
+                    "portal"
+                ],
+                "security": [
+                    {
+                        "bearerAuth": []
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/PortalDocumentDetail"
+                                }
+                            }
+                        },
+                        "description": ""
+                    }
+                }
+            }
+        },
+        "/api/v1/portal/documents/{document_id}/accept": {
+            "post": {
+                "operationId": "portal_documents_accept_create",
+                "description": "Accept or decline a quotation (needs If-Match; 409 once expired or answered).",
+                "parameters": [
+                    {
+                        "in": "path",
+                        "name": "document_id",
+                        "schema": {
+                            "type": "string",
+                            "format": "uuid"
+                        },
+                        "required": true
+                    }
+                ],
+                "tags": [
+                    "portal"
+                ],
+                "security": [
+                    {
+                        "bearerAuth": []
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/PortalDocumentDetail"
+                                }
+                            }
+                        },
+                        "description": ""
+                    }
+                }
+            }
+        },
+        "/api/v1/portal/documents/{document_id}/decline": {
+            "post": {
+                "operationId": "portal_documents_decline_create",
+                "description": "Accept or decline a quotation (needs If-Match; 409 once expired or answered).",
+                "parameters": [
+                    {
+                        "in": "path",
+                        "name": "document_id",
+                        "schema": {
+                            "type": "string",
+                            "format": "uuid"
+                        },
+                        "required": true
+                    }
+                ],
+                "tags": [
+                    "portal"
+                ],
+                "security": [
+                    {
+                        "bearerAuth": []
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/PortalDocumentDetail"
+                                }
+                            }
+                        },
+                        "description": ""
+                    }
+                }
+            }
+        },
+        "/api/v1/portal/documents/{document_id}/pdf": {
+            "get": {
+                "operationId": "portal_documents_pdf_retrieve",
+                "description": "302 to a short-lived link to the issued PDF (202 while it is being made).",
+                "parameters": [
+                    {
+                        "in": "query",
+                        "name": "as",
+                        "schema": {
+                            "type": "string",
+                            "enum": [
+                                "link"
+                            ]
+                        },
+                        "description": "`link`: answer 200 {url, expires_in} instead of a 302 (browsers)."
+                    },
+                    {
+                        "in": "path",
+                        "name": "document_id",
+                        "schema": {
+                            "type": "string",
+                            "format": "uuid"
+                        },
+                        "required": true
+                    }
+                ],
+                "tags": [
+                    "portal"
+                ],
+                "security": [
+                    {
+                        "bearerAuth": []
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/PdfLink"
+                                }
+                            }
+                        },
+                        "description": ""
+                    },
+                    "302": {
+                        "description": "No response body"
+                    },
+                    "202": {
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object",
+                                    "properties": {
+                                        "status": {
+                                            "type": "string"
+                                        }
+                                    }
+                                }
+                            }
+                        },
+                        "description": ""
+                    }
+                }
+            }
+        },
+        "/api/v1/portal/me": {
+            "get": {
+                "operationId": "portal_me_retrieve",
+                "tags": [
+                    "portal"
+                ],
+                "security": [
+                    {
+                        "bearerAuth": []
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/PortalMe"
+                                }
+                            }
+                        },
+                        "description": ""
+                    }
+                }
+            }
+        },
+        "/api/v1/portal/payments": {
+            "get": {
+                "operationId": "portal_payments_list",
+                "description": "Payments received from the client (voided ones are not shown), newest first.",
+                "parameters": [
+                    {
+                        "name": "cursor",
+                        "required": false,
+                        "in": "query",
+                        "description": "The pagination cursor value.",
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    {
+                        "name": "limit",
+                        "required": false,
+                        "in": "query",
+                        "description": "Number of results to return per page.",
+                        "schema": {
+                            "type": "integer"
+                        }
+                    }
+                ],
+                "tags": [
+                    "portal"
+                ],
+                "security": [
+                    {
+                        "bearerAuth": []
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/PaginatedPortalPaymentList"
+                                }
+                            }
+                        },
+                        "description": ""
+                    }
+                }
+            }
+        },
+        "/api/v1/portal/projects": {
+            "get": {
+                "operationId": "portal_projects_retrieve",
+                "tags": [
+                    "portal"
+                ],
+                "security": [
+                    {
+                        "bearerAuth": []
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/PortalProjectList"
+                                }
+                            }
+                        },
+                        "description": ""
+                    }
+                }
+            }
+        },
+        "/api/v1/portal/projects/{project_id}/boq-progress": {
+            "get": {
+                "operationId": "portal_projects_boq_progress_retrieve",
+                "description": "Contract vs billed per BOQ item of one of the client's projects.",
+                "parameters": [
+                    {
+                        "in": "path",
+                        "name": "project_id",
+                        "schema": {
+                            "type": "string",
+                            "format": "uuid"
+                        },
+                        "required": true
+                    }
+                ],
+                "tags": [
+                    "portal"
+                ],
+                "security": [
+                    {
+                        "bearerAuth": []
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/BoqProgress"
+                                }
+                            }
+                        },
+                        "description": ""
+                    }
+                }
+            }
+        },
+        "/api/v1/portal/statement": {
+            "get": {
+                "operationId": "portal_statement_retrieve",
+                "description": "The client's statement of account between `from` and `to` (default: this FY to today).",
+                "parameters": [
+                    {
+                        "in": "query",
+                        "name": "from",
+                        "schema": {
+                            "type": "string"
+                        },
+                        "description": "YYYY-MM-DD; default 1 April of this FY"
+                    },
+                    {
+                        "in": "query",
+                        "name": "to",
+                        "schema": {
+                            "type": "string"
+                        },
+                        "description": "YYYY-MM-DD; default today"
+                    }
+                ],
+                "tags": [
+                    "portal"
+                ],
+                "security": [
+                    {
+                        "bearerAuth": []
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/Statement"
+                                }
+                            }
+                        },
+                        "description": ""
+                    }
+                }
+            }
+        },
         "/api/v1/projects": {
             "get": {
                 "operationId": "projects_list",
@@ -8912,6 +9354,50 @@
                     }
                 }
             },
+            "PaginatedPortalDocumentList": {
+                "type": "object",
+                "required": [
+                    "results",
+                    "next_cursor"
+                ],
+                "properties": {
+                    "results": {
+                        "type": "array",
+                        "items": {
+                            "$ref": "#/components/schemas/PortalDocument"
+                        }
+                    },
+                    "next_cursor": {
+                        "type": [
+                            "string",
+                            "null"
+                        ],
+                        "description": "Pass as ?cursor="
+                    }
+                }
+            },
+            "PaginatedPortalPaymentList": {
+                "type": "object",
+                "required": [
+                    "results",
+                    "next_cursor"
+                ],
+                "properties": {
+                    "results": {
+                        "type": "array",
+                        "items": {
+                            "$ref": "#/components/schemas/PortalPayment"
+                        }
+                    },
+                    "next_cursor": {
+                        "type": [
+                            "string",
+                            "null"
+                        ],
+                        "description": "Pass as ?cursor="
+                    }
+                }
+            },
             "PaginatedProjectList": {
                 "type": "object",
                 "required": [
@@ -10319,6 +10805,335 @@
                     "url"
                 ]
             },
+            "PortalAllocation": {
+                "type": "object",
+                "properties": {
+                    "document_id": {
+                        "type": [
+                            "string",
+                            "null"
+                        ],
+                        "format": "uuid"
+                    },
+                    "doc_number": {
+                        "type": [
+                            "string",
+                            "null"
+                        ],
+                        "readOnly": true
+                    },
+                    "retention_release_id": {
+                        "type": [
+                            "string",
+                            "null"
+                        ],
+                        "format": "uuid"
+                    },
+                    "amount": {
+                        "type": "string",
+                        "format": "decimal",
+                        "pattern": "^-?\\d{0,12}(?:\\.\\d{0,2})?$"
+                    }
+                },
+                "required": [
+                    "amount",
+                    "doc_number",
+                    "document_id",
+                    "retention_release_id"
+                ]
+            },
+            "PortalBusiness": {
+                "type": "object",
+                "properties": {
+                    "legal_name": {
+                        "type": "string"
+                    },
+                    "trade_name": {
+                        "type": [
+                            "string",
+                            "null"
+                        ]
+                    }
+                },
+                "required": [
+                    "legal_name",
+                    "trade_name"
+                ]
+            },
+            "PortalClient": {
+                "type": "object",
+                "properties": {
+                    "id": {
+                        "type": "string",
+                        "format": "uuid"
+                    },
+                    "display_name": {
+                        "type": "string"
+                    },
+                    "gstin": {
+                        "type": [
+                            "string",
+                            "null"
+                        ]
+                    }
+                },
+                "required": [
+                    "display_name",
+                    "gstin",
+                    "id"
+                ]
+            },
+            "PortalDocument": {
+                "type": "object",
+                "properties": {
+                    "id": {
+                        "type": "string",
+                        "format": "uuid",
+                        "readOnly": true
+                    },
+                    "version": {
+                        "type": "integer",
+                        "readOnly": true
+                    },
+                    "doc_type": {
+                        "allOf": [
+                            {
+                                "$ref": "#/components/schemas/DocTypeEnum"
+                            }
+                        ],
+                        "readOnly": true
+                    },
+                    "status": {
+                        "allOf": [
+                            {
+                                "$ref": "#/components/schemas/DocumentStatusEnum"
+                            }
+                        ],
+                        "readOnly": true
+                    },
+                    "doc_number": {
+                        "type": [
+                            "string",
+                            "null"
+                        ],
+                        "readOnly": true
+                    },
+                    "doc_date": {
+                        "type": "string",
+                        "format": "date",
+                        "readOnly": true
+                    },
+                    "due_date": {
+                        "type": [
+                            "string",
+                            "null"
+                        ],
+                        "format": "date",
+                        "readOnly": true
+                    },
+                    "valid_until": {
+                        "type": [
+                            "string",
+                            "null"
+                        ],
+                        "format": "date",
+                        "readOnly": true
+                    },
+                    "project_id": {
+                        "type": [
+                            "string",
+                            "null"
+                        ],
+                        "format": "uuid"
+                    },
+                    "project_name": {
+                        "type": [
+                            "string",
+                            "null"
+                        ],
+                        "readOnly": true
+                    },
+                    "is_gst_document": {
+                        "type": "boolean",
+                        "readOnly": true
+                    },
+                    "is_ra_bill": {
+                        "type": "boolean",
+                        "readOnly": true
+                    },
+                    "ra_sequence": {
+                        "type": [
+                            "integer",
+                            "null"
+                        ],
+                        "readOnly": true
+                    },
+                    "totals": {
+                        "$ref": "#/components/schemas/Totals"
+                    },
+                    "issued_at": {
+                        "type": [
+                            "string",
+                            "null"
+                        ],
+                        "format": "date-time",
+                        "readOnly": true
+                    }
+                },
+                "required": [
+                    "doc_date",
+                    "doc_number",
+                    "doc_type",
+                    "due_date",
+                    "id",
+                    "is_gst_document",
+                    "is_ra_bill",
+                    "issued_at",
+                    "project_id",
+                    "project_name",
+                    "ra_sequence",
+                    "status",
+                    "totals",
+                    "valid_until",
+                    "version"
+                ]
+            },
+            "PortalDocumentDetail": {
+                "type": "object",
+                "properties": {
+                    "id": {
+                        "type": "string",
+                        "format": "uuid",
+                        "readOnly": true
+                    },
+                    "version": {
+                        "type": "integer",
+                        "readOnly": true
+                    },
+                    "doc_type": {
+                        "allOf": [
+                            {
+                                "$ref": "#/components/schemas/DocTypeEnum"
+                            }
+                        ],
+                        "readOnly": true
+                    },
+                    "status": {
+                        "allOf": [
+                            {
+                                "$ref": "#/components/schemas/DocumentStatusEnum"
+                            }
+                        ],
+                        "readOnly": true
+                    },
+                    "doc_number": {
+                        "type": [
+                            "string",
+                            "null"
+                        ],
+                        "readOnly": true
+                    },
+                    "doc_date": {
+                        "type": "string",
+                        "format": "date",
+                        "readOnly": true
+                    },
+                    "due_date": {
+                        "type": [
+                            "string",
+                            "null"
+                        ],
+                        "format": "date",
+                        "readOnly": true
+                    },
+                    "valid_until": {
+                        "type": [
+                            "string",
+                            "null"
+                        ],
+                        "format": "date",
+                        "readOnly": true
+                    },
+                    "project_id": {
+                        "type": [
+                            "string",
+                            "null"
+                        ],
+                        "format": "uuid"
+                    },
+                    "project_name": {
+                        "type": [
+                            "string",
+                            "null"
+                        ],
+                        "readOnly": true
+                    },
+                    "is_gst_document": {
+                        "type": "boolean",
+                        "readOnly": true
+                    },
+                    "is_ra_bill": {
+                        "type": "boolean",
+                        "readOnly": true
+                    },
+                    "ra_sequence": {
+                        "type": [
+                            "integer",
+                            "null"
+                        ],
+                        "readOnly": true
+                    },
+                    "totals": {
+                        "$ref": "#/components/schemas/Totals"
+                    },
+                    "issued_at": {
+                        "type": [
+                            "string",
+                            "null"
+                        ],
+                        "format": "date-time",
+                        "readOnly": true
+                    },
+                    "place_of_supply": {
+                        "type": "string",
+                        "readOnly": true
+                    },
+                    "terms": {
+                        "type": [
+                            "string",
+                            "null"
+                        ],
+                        "readOnly": true
+                    },
+                    "lines": {
+                        "type": "array",
+                        "items": {
+                            "$ref": "#/components/schemas/PortalLine"
+                        },
+                        "readOnly": true
+                    }
+                },
+                "required": [
+                    "doc_date",
+                    "doc_number",
+                    "doc_type",
+                    "due_date",
+                    "id",
+                    "is_gst_document",
+                    "is_ra_bill",
+                    "issued_at",
+                    "lines",
+                    "place_of_supply",
+                    "project_id",
+                    "project_name",
+                    "ra_sequence",
+                    "status",
+                    "terms",
+                    "totals",
+                    "valid_until",
+                    "version"
+                ]
+            },
             "PortalInvite": {
                 "type": "object",
                 "properties": {
@@ -10330,6 +11145,283 @@
                 },
                 "required": [
                     "email"
+                ]
+            },
+            "PortalLine": {
+                "type": "object",
+                "description": "A bill line without our catalog references.",
+                "properties": {
+                    "line_no": {
+                        "type": "integer",
+                        "readOnly": true
+                    },
+                    "boq_item_id": {
+                        "type": [
+                            "string",
+                            "null"
+                        ],
+                        "format": "uuid"
+                    },
+                    "description": {
+                        "type": "string",
+                        "readOnly": true
+                    },
+                    "sac_hsn": {
+                        "type": [
+                            "string",
+                            "null"
+                        ],
+                        "readOnly": true
+                    },
+                    "unit": {
+                        "type": [
+                            "string",
+                            "null"
+                        ],
+                        "readOnly": true
+                    },
+                    "quantity": {
+                        "type": "string",
+                        "format": "decimal",
+                        "pattern": "^-?\\d{0,11}(?:\\.\\d{0,3})?$",
+                        "description": "RA bill: the quantity in this bill."
+                    },
+                    "prev_cumulative_qty": {
+                        "type": [
+                            "string",
+                            "null"
+                        ],
+                        "format": "decimal",
+                        "pattern": "^-?\\d{0,11}(?:\\.\\d{0,3})?$",
+                        "description": "RA bill: billed before this bill (snapshot at issue)."
+                    },
+                    "up_to_date_qty": {
+                        "type": [
+                            "string",
+                            "null"
+                        ],
+                        "readOnly": true,
+                        "description": "RA bill: previous + this bill."
+                    },
+                    "rate": {
+                        "type": "string",
+                        "format": "decimal",
+                        "pattern": "^-?\\d{0,12}(?:\\.\\d{0,2})?$"
+                    },
+                    "discount_amount": {
+                        "type": "string",
+                        "format": "decimal",
+                        "pattern": "^-?\\d{0,12}(?:\\.\\d{0,2})?$"
+                    },
+                    "taxable_value": {
+                        "type": "string",
+                        "format": "decimal",
+                        "pattern": "^-?\\d{0,12}(?:\\.\\d{0,2})?$"
+                    },
+                    "gst_rate": {
+                        "type": "string",
+                        "format": "decimal",
+                        "pattern": "^-?\\d{0,3}(?:\\.\\d{0,2})?$"
+                    },
+                    "cgst_amount": {
+                        "type": "string",
+                        "format": "decimal",
+                        "pattern": "^-?\\d{0,12}(?:\\.\\d{0,2})?$"
+                    },
+                    "sgst_amount": {
+                        "type": "string",
+                        "format": "decimal",
+                        "pattern": "^-?\\d{0,12}(?:\\.\\d{0,2})?$"
+                    },
+                    "igst_amount": {
+                        "type": "string",
+                        "format": "decimal",
+                        "pattern": "^-?\\d{0,12}(?:\\.\\d{0,2})?$"
+                    },
+                    "cess_amount": {
+                        "type": "string",
+                        "format": "decimal",
+                        "pattern": "^-?\\d{0,12}(?:\\.\\d{0,2})?$"
+                    },
+                    "line_total": {
+                        "type": "string",
+                        "format": "decimal",
+                        "pattern": "^-?\\d{0,12}(?:\\.\\d{0,2})?$"
+                    }
+                },
+                "required": [
+                    "boq_item_id",
+                    "cess_amount",
+                    "cgst_amount",
+                    "description",
+                    "discount_amount",
+                    "gst_rate",
+                    "igst_amount",
+                    "line_no",
+                    "line_total",
+                    "prev_cumulative_qty",
+                    "quantity",
+                    "rate",
+                    "sac_hsn",
+                    "sgst_amount",
+                    "taxable_value",
+                    "unit",
+                    "up_to_date_qty"
+                ]
+            },
+            "PortalMe": {
+                "type": "object",
+                "properties": {
+                    "business": {
+                        "allOf": [
+                            {
+                                "$ref": "#/components/schemas/PortalBusiness"
+                            }
+                        ],
+                        "description": "Whose portal this is: the contractor."
+                    },
+                    "client": {
+                        "allOf": [
+                            {
+                                "$ref": "#/components/schemas/PortalClient"
+                            }
+                        ],
+                        "description": "The client the signed-in person belongs to."
+                    }
+                },
+                "required": [
+                    "business",
+                    "client"
+                ]
+            },
+            "PortalPayment": {
+                "type": "object",
+                "properties": {
+                    "id": {
+                        "type": "string",
+                        "format": "uuid",
+                        "readOnly": true
+                    },
+                    "payment_date": {
+                        "type": "string",
+                        "format": "date",
+                        "readOnly": true
+                    },
+                    "amount": {
+                        "type": "string",
+                        "format": "decimal",
+                        "pattern": "^-?\\d{0,12}(?:\\.\\d{0,2})?$"
+                    },
+                    "mode": {
+                        "allOf": [
+                            {
+                                "$ref": "#/components/schemas/PaymentModeEnum"
+                            }
+                        ],
+                        "readOnly": true
+                    },
+                    "reference": {
+                        "type": [
+                            "string",
+                            "null"
+                        ],
+                        "readOnly": true
+                    },
+                    "project_id": {
+                        "type": [
+                            "string",
+                            "null"
+                        ],
+                        "format": "uuid"
+                    },
+                    "project_name": {
+                        "type": [
+                            "string",
+                            "null"
+                        ],
+                        "readOnly": true
+                    },
+                    "allocations": {
+                        "type": "array",
+                        "items": {
+                            "$ref": "#/components/schemas/PortalAllocation"
+                        },
+                        "readOnly": true,
+                        "description": "The bills this payment settled."
+                    }
+                },
+                "required": [
+                    "allocations",
+                    "amount",
+                    "id",
+                    "mode",
+                    "payment_date",
+                    "project_id",
+                    "project_name",
+                    "reference"
+                ]
+            },
+            "PortalProject": {
+                "type": "object",
+                "properties": {
+                    "id": {
+                        "type": "string",
+                        "format": "uuid"
+                    },
+                    "code": {
+                        "type": "string"
+                    },
+                    "name": {
+                        "type": "string"
+                    },
+                    "status": {
+                        "type": "string"
+                    },
+                    "contract_value": {
+                        "type": [
+                            "string",
+                            "null"
+                        ],
+                        "format": "decimal",
+                        "pattern": "^-?\\d{0,12}(?:\\.\\d{0,2})?$"
+                    },
+                    "start_date": {
+                        "type": [
+                            "string",
+                            "null"
+                        ],
+                        "format": "date"
+                    },
+                    "end_date": {
+                        "type": [
+                            "string",
+                            "null"
+                        ],
+                        "format": "date"
+                    }
+                },
+                "required": [
+                    "code",
+                    "contract_value",
+                    "end_date",
+                    "id",
+                    "name",
+                    "start_date",
+                    "status"
+                ]
+            },
+            "PortalProjectList": {
+                "type": "object",
+                "properties": {
+                    "results": {
+                        "type": "array",
+                        "items": {
+                            "$ref": "#/components/schemas/PortalProject"
+                        }
+                    }
+                },
+                "required": [
+                    "results"
                 ]
             },
             "PortalUser": {

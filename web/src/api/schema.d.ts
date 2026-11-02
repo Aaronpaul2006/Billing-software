@@ -1538,6 +1538,173 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/portal/documents": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** @description The client's bills, RA bills, notes and quotations (never drafts), newest first. */
+        get: operations["portal_documents_list"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/portal/documents/{document_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["portal_documents_retrieve"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/portal/documents/{document_id}/accept": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** @description Accept or decline a quotation (needs If-Match; 409 once expired or answered). */
+        post: operations["portal_documents_accept_create"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/portal/documents/{document_id}/decline": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** @description Accept or decline a quotation (needs If-Match; 409 once expired or answered). */
+        post: operations["portal_documents_decline_create"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/portal/documents/{document_id}/pdf": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** @description 302 to a short-lived link to the issued PDF (202 while it is being made). */
+        get: operations["portal_documents_pdf_retrieve"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/portal/me": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["portal_me_retrieve"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/portal/payments": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** @description Payments received from the client (voided ones are not shown), newest first. */
+        get: operations["portal_payments_list"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/portal/projects": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["portal_projects_retrieve"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/portal/projects/{project_id}/boq-progress": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** @description Contract vs billed per BOQ item of one of the client's projects. */
+        get: operations["portal_projects_boq_progress_retrieve"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/portal/statement": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** @description The client's statement of account between `from` and `to` (default: this FY to today). */
+        get: operations["portal_statement_retrieve"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/projects": {
         parameters: {
             query?: never;
@@ -3049,6 +3216,16 @@ export interface components {
             /** @description Pass as ?cursor= */
             next_cursor: string | null;
         };
+        PaginatedPortalDocumentList: {
+            results: components["schemas"]["PortalDocument"][];
+            /** @description Pass as ?cursor= */
+            next_cursor: string | null;
+        };
+        PaginatedPortalPaymentList: {
+            results: components["schemas"]["PortalPayment"][];
+            /** @description Pass as ?cursor= */
+            next_cursor: string | null;
+        };
         PaginatedProjectList: {
             results: components["schemas"]["Project"][];
             /** @description Pass as ?cursor= */
@@ -3514,9 +3691,153 @@ export interface components {
             /** @description Seconds the link stays valid. */
             expires_in: number;
         };
+        PortalAllocation: {
+            /** Format: uuid */
+            document_id: string | null;
+            readonly doc_number: string | null;
+            /** Format: uuid */
+            retention_release_id: string | null;
+            /** Format: decimal */
+            amount: string;
+        };
+        PortalBusiness: {
+            legal_name: string;
+            trade_name: string | null;
+        };
+        PortalClient: {
+            /** Format: uuid */
+            id: string;
+            display_name: string;
+            gstin: string | null;
+        };
+        PortalDocument: {
+            /** Format: uuid */
+            readonly id: string;
+            readonly version: number;
+            readonly doc_type: components["schemas"]["DocTypeEnum"];
+            readonly status: components["schemas"]["DocumentStatusEnum"];
+            readonly doc_number: string | null;
+            /** Format: date */
+            readonly doc_date: string;
+            /** Format: date */
+            readonly due_date: string | null;
+            /** Format: date */
+            readonly valid_until: string | null;
+            /** Format: uuid */
+            project_id: string | null;
+            readonly project_name: string | null;
+            readonly is_gst_document: boolean;
+            readonly is_ra_bill: boolean;
+            readonly ra_sequence: number | null;
+            totals: components["schemas"]["Totals"];
+            /** Format: date-time */
+            readonly issued_at: string | null;
+        };
+        PortalDocumentDetail: {
+            /** Format: uuid */
+            readonly id: string;
+            readonly version: number;
+            readonly doc_type: components["schemas"]["DocTypeEnum"];
+            readonly status: components["schemas"]["DocumentStatusEnum"];
+            readonly doc_number: string | null;
+            /** Format: date */
+            readonly doc_date: string;
+            /** Format: date */
+            readonly due_date: string | null;
+            /** Format: date */
+            readonly valid_until: string | null;
+            /** Format: uuid */
+            project_id: string | null;
+            readonly project_name: string | null;
+            readonly is_gst_document: boolean;
+            readonly is_ra_bill: boolean;
+            readonly ra_sequence: number | null;
+            totals: components["schemas"]["Totals"];
+            /** Format: date-time */
+            readonly issued_at: string | null;
+            readonly place_of_supply: string;
+            readonly terms: string | null;
+            readonly lines: components["schemas"]["PortalLine"][];
+        };
         PortalInvite: {
             /** Format: email */
             email: string;
+        };
+        /** @description A bill line without our catalog references. */
+        PortalLine: {
+            readonly line_no: number;
+            /** Format: uuid */
+            boq_item_id: string | null;
+            readonly description: string;
+            readonly sac_hsn: string | null;
+            readonly unit: string | null;
+            /**
+             * Format: decimal
+             * @description RA bill: the quantity in this bill.
+             */
+            quantity: string;
+            /**
+             * Format: decimal
+             * @description RA bill: billed before this bill (snapshot at issue).
+             */
+            prev_cumulative_qty: string | null;
+            /** @description RA bill: previous + this bill. */
+            readonly up_to_date_qty: string | null;
+            /** Format: decimal */
+            rate: string;
+            /** Format: decimal */
+            discount_amount: string;
+            /** Format: decimal */
+            taxable_value: string;
+            /** Format: decimal */
+            gst_rate: string;
+            /** Format: decimal */
+            cgst_amount: string;
+            /** Format: decimal */
+            sgst_amount: string;
+            /** Format: decimal */
+            igst_amount: string;
+            /** Format: decimal */
+            cess_amount: string;
+            /** Format: decimal */
+            line_total: string;
+        };
+        PortalMe: {
+            /** @description Whose portal this is: the contractor. */
+            business: components["schemas"]["PortalBusiness"];
+            /** @description The client the signed-in person belongs to. */
+            client: components["schemas"]["PortalClient"];
+        };
+        PortalPayment: {
+            /** Format: uuid */
+            readonly id: string;
+            /** Format: date */
+            readonly payment_date: string;
+            /** Format: decimal */
+            amount: string;
+            readonly mode: components["schemas"]["PaymentModeEnum"];
+            readonly reference: string | null;
+            /** Format: uuid */
+            project_id: string | null;
+            readonly project_name: string | null;
+            /** @description The bills this payment settled. */
+            readonly allocations: components["schemas"]["PortalAllocation"][];
+        };
+        PortalProject: {
+            /** Format: uuid */
+            id: string;
+            code: string;
+            name: string;
+            status: string;
+            /** Format: decimal */
+            contract_value: string | null;
+            /** Format: date */
+            start_date: string | null;
+            /** Format: date */
+            end_date: string | null;
+        };
+        PortalProjectList: {
+            results: components["schemas"]["PortalProject"][];
         };
         PortalUser: {
             /** Format: uuid */
@@ -7430,6 +7751,248 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["Payment"];
+                };
+            };
+        };
+    };
+    portal_documents_list: {
+        parameters: {
+            query?: {
+                /** @description The pagination cursor value. */
+                cursor?: string;
+                /** @description Multiple values may be separated by commas. */
+                doc_type?: string[];
+                /** @description Number of results to return per page. */
+                limit?: number;
+                /** @description Which field to use when ordering the results. */
+                ordering?: string;
+                project_id?: string;
+                /** @description Multiple values may be separated by commas. */
+                status?: string[];
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PaginatedPortalDocumentList"];
+                };
+            };
+        };
+    };
+    portal_documents_retrieve: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                document_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PortalDocumentDetail"];
+                };
+            };
+        };
+    };
+    portal_documents_accept_create: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                document_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PortalDocumentDetail"];
+                };
+            };
+        };
+    };
+    portal_documents_decline_create: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                document_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PortalDocumentDetail"];
+                };
+            };
+        };
+    };
+    portal_documents_pdf_retrieve: {
+        parameters: {
+            query?: {
+                /** @description `link`: answer 200 {url, expires_in} instead of a 302 (browsers). */
+                as?: "link";
+            };
+            header?: never;
+            path: {
+                document_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PdfLink"];
+                };
+            };
+            202: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        status?: string;
+                    };
+                };
+            };
+            /** @description No response body */
+            302: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    portal_me_retrieve: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PortalMe"];
+                };
+            };
+        };
+    };
+    portal_payments_list: {
+        parameters: {
+            query?: {
+                /** @description The pagination cursor value. */
+                cursor?: string;
+                /** @description Number of results to return per page. */
+                limit?: number;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PaginatedPortalPaymentList"];
+                };
+            };
+        };
+    };
+    portal_projects_retrieve: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PortalProjectList"];
+                };
+            };
+        };
+    };
+    portal_projects_boq_progress_retrieve: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                project_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["BoqProgress"];
+                };
+            };
+        };
+    };
+    portal_statement_retrieve: {
+        parameters: {
+            query?: {
+                /** @description YYYY-MM-DD; default 1 April of this FY */
+                from?: string;
+                /** @description YYYY-MM-DD; default today */
+                to?: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Statement"];
                 };
             };
         };
