@@ -390,6 +390,18 @@ their own endpoints (Phase 1.6), RA bills below (Phase 3.2). Example response:
 }
 ```
 
+### Measurement sheets (B.9)
+
+A line may carry `measurements` (up to 100 rows: `description`, `nos`
+(default 1), `length`, `breadth`, `height`, `deduct`). Each row's quantity is
+nos × length × breadth × height (empty sizes count as 1), rounded half up to 3
+decimals; the line's `quantity` is the total, deduct rows taken off (a
+`quantity` sent with them is ignored; `422 measurements_total` when the total
+is zero or less). Lines without rows still need `quantity`. Rows come back on
+each line (with `row_no` and `quantity`), go through edits, conversions and
+copies with their line, print under the line on the PDF, and, like lines,
+cannot change once the bill is issued (database trigger).
+
 ### Last rate for a client (B.8)
 
 `GET /parties/{id}/last-rates` (any member): per catalog item and variant,
