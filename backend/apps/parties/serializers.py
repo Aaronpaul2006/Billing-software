@@ -134,3 +134,13 @@ class PartyWriteSerializer(serializers.Serializer[Any]):
                 code="no_role",
             )
         return attrs
+
+
+class PartyImportResultSerializer(serializers.Serializer[Any]):
+    dry_run = serializers.BooleanField()
+    count = serializers.IntegerField()
+    skipped_rows = serializers.ListField(child=serializers.IntegerField())
+    ignored_columns = serializers.ListField(child=serializers.CharField())
+    parties = PartySerializer(
+        many=True, help_text="In a dry run, a preview: id, created_at and updated_at are null."
+    )

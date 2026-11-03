@@ -1,4 +1,4 @@
-import { screen, waitFor } from "@testing-library/react";
+import { screen, waitFor, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 
 import type { components } from "@/api/schema";
@@ -177,5 +177,56 @@ describe("party form", () => {
     expect(await screen.findByText("Archived.")).toBeInTheDocument();
     expect(screen.getByRole("button", { name: "Restore" })).toBeInTheDocument();
     expect(bodies).toEqual([{ is_active: false }]);
+  });
+});
+
+describe("client import", () => {
+  it("imports clients after a check, showing their GST type in words", async () => {
+    // Node's File, not jsdom's: Node's fetch cannot read a jsdom File (see projects.test.tsx)
+    const nodeBuffer = "node:buffer";
+    const { File: NodeFile } = (await import(/* @vite-ignore */ nodeBuffer)) as {
+      File: typeof File;
+    };
+    const calls: string[] = [];
+    server.use(
+      http.get(`${API}/parties`, () => HttpResponse.json({ results: [], next_cursor: null })),
+      http.post(`${API}/parties:import`, async ({ request }) => {
+        const dryRun = (await request.formData()).get("dry_run") as string;
+        calls.push(dryRun);
+        return HttpResponse.json(
+          {
+            dry_run: dryRun === "true",
+            count: 1,
+            skipped_rows: [],
+            ignored_columns: [],
+            parties: [party({ id: null as unknown as string, display_name: "Kurian Homes" })],
+          },
+          { status: dryRun === "true" ? 200 : 201 },
+        );
+      }),
+    );
+    const user = userEvent.setup();
+    renderSignedIn("/parties");
+    await user.click(await screen.findByRole("button", { name: "Import from Excel" }));
+    const region = screen.getByRole("region", { name: "Import clients" });
+    await user.upload(
+      within(region).getByLabelText("Clients file (CSV or Excel)"),
+      new NodeFile(["Name\nKurian Homes\n"], "clients.csv", { type: "text/csv" }),
+    );
+    await user.click(within(region).getByRole("button", { name: "Check file" }));
+    expect(await within(region).findByText("Kurian Homes")).toBeInTheDocument();
+    expect(within(region).getByText("Registered business (has GSTIN)")).toBeInTheDocument();
+    await user.click(within(region).getByRole("button", { name: "Import 1 client" }));
+    expect(await within(region).findByText("Imported 1 client.")).toBeInTheDocument();
+    expect(calls).toEqual(["true", "false"]);
+  });
+
+  it("is not offered to roles that cannot add clients", async () => {
+    server.use(
+      http.get(`${API}/parties`, () => HttpResponse.json({ results: [], next_cursor: null })),
+    );
+    renderSignedIn("/parties", { role: "SITE_ENGINEER" });
+    expect(await screen.findByRole("heading", { name: "Parties" })).toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: "Import from Excel" })).not.toBeInTheDocument();
   });
 });

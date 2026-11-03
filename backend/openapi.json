@@ -4092,6 +4092,95 @@
                 }
             }
         },
+        "/api/v1/parties:import": {
+            "post": {
+                "operationId": "parties:import_create",
+                "description": "Add clients from a CSV / XLSX file, all or nothing (B.3).",
+                "tags": [
+                    "parties"
+                ],
+                "requestBody": {
+                    "content": {
+                        "multipart/form-data": {
+                            "schema": {
+                                "$ref": "#/components/schemas/ImportRequest"
+                            }
+                        }
+                    },
+                    "required": true
+                },
+                "security": [
+                    {
+                        "bearerAuth": []
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/PartyImportResult"
+                                }
+                            }
+                        },
+                        "description": ""
+                    },
+                    "201": {
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/PartyImportResult"
+                                }
+                            }
+                        },
+                        "description": ""
+                    }
+                }
+            }
+        },
+        "/api/v1/parties:import-sample": {
+            "get": {
+                "operationId": "parties:import_sample_retrieve",
+                "description": "A sample file to fill in: the columns the client import reads.",
+                "parameters": [
+                    {
+                        "in": "query",
+                        "name": "type",
+                        "schema": {
+                            "enum": [
+                                "xlsx",
+                                "csv"
+                            ],
+                            "type": "string",
+                            "default": "xlsx",
+                            "minLength": 1
+                        },
+                        "description": "* `xlsx` - xlsx\n* `csv` - csv"
+                    }
+                ],
+                "tags": [
+                    "parties"
+                ],
+                "security": [
+                    {
+                        "bearerAuth": []
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "content": {
+                            "application/octet-stream": {
+                                "schema": {
+                                    "type": "string",
+                                    "format": "binary"
+                                }
+                            }
+                        },
+                        "description": ""
+                    }
+                }
+            }
+        },
         "/api/v1/payments": {
             "get": {
                 "operationId": "payments_list",
@@ -10219,6 +10308,43 @@
                 ],
                 "type": "string",
                 "description": "* `REGISTERED` - Registered\n* `COMPOSITION` - Composition\n* `UNREGISTERED` - Unregistered\n* `CONSUMER` - Consumer\n* `SEZ` - Sez\n* `OVERSEAS` - Overseas"
+            },
+            "PartyImportResult": {
+                "type": "object",
+                "properties": {
+                    "dry_run": {
+                        "type": "boolean"
+                    },
+                    "count": {
+                        "type": "integer"
+                    },
+                    "skipped_rows": {
+                        "type": "array",
+                        "items": {
+                            "type": "integer"
+                        }
+                    },
+                    "ignored_columns": {
+                        "type": "array",
+                        "items": {
+                            "type": "string"
+                        }
+                    },
+                    "parties": {
+                        "type": "array",
+                        "items": {
+                            "$ref": "#/components/schemas/Party"
+                        },
+                        "description": "In a dry run, a preview: id, created_at and updated_at are null."
+                    }
+                },
+                "required": [
+                    "count",
+                    "dry_run",
+                    "ignored_columns",
+                    "parties",
+                    "skipped_rows"
+                ]
             },
             "PartyWrite": {
                 "type": "object",

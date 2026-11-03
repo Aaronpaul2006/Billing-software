@@ -1,9 +1,10 @@
 import { useInfiniteQuery } from "@tanstack/react-query";
-import { Plus, Search } from "lucide-react";
+import { FileUp, Plus, Search } from "lucide-react";
 import { useDeferredValue, useState } from "react";
 import { Link } from "react-router";
 
 import { api, unwrap } from "@/api/client";
+import { useSession } from "@/auth/context";
 import { ErrorState } from "@/components/ErrorState";
 import { PageHeader } from "@/components/PageHeader";
 import { Badge } from "@/components/ui/badge";
@@ -19,6 +20,9 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
+import { MAY_ADD_MASTERS } from "@/features/documents/items";
+
+import { PartyImport } from "./PartyImport";
 
 type Role = "all" | "customers" | "vendors";
 
@@ -32,6 +36,8 @@ export function PartiesPage() {
   const [search, setSearch] = useState("");
   const [role, setRole] = useState<Role>("all");
   const [archived, setArchived] = useState(false);
+  const [importing, setImporting] = useState(false);
+  const mayImport = MAY_ADD_MASTERS.has(useSession().role);
   const q = useDeferredValue(search.trim());
 
   const parties = useInfiniteQuery({
@@ -62,13 +68,34 @@ export function PartiesPage() {
         title="Parties"
         description="Clients you bill and vendors you buy from."
         actions={
-          <Button asChild>
-            <Link to="/parties/new">
-              <Plus aria-hidden /> New party
-            </Link>
-          </Button>
+          <>
+            {mayImport && !importing && (
+              <Button
+                variant="outline"
+                onClick={() => {
+                  setImporting(true);
+                }}
+              >
+                <FileUp aria-hidden /> Import from Excel
+              </Button>
+            )}
+            <Button asChild>
+              <Link to="/parties/new">
+                <Plus aria-hidden /> New party
+              </Link>
+            </Button>
+          </>
         }
       />
+      {importing && (
+        <div className="mb-4 max-w-4xl">
+          <PartyImport
+            onDone={() => {
+              setImporting(false);
+            }}
+          />
+        </div>
+      )}
       <div className="mb-4 flex flex-wrap items-center gap-2">
         <div className="relative min-w-60 flex-1">
           <Search className="text-muted-foreground absolute top-2.5 left-2.5 size-4" aria-hidden />

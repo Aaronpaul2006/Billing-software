@@ -1475,6 +1475,40 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/parties:import": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** @description Add clients from a CSV / XLSX file, all or nothing (B.3). */
+        post: operations["parties:import_create"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/parties:import-sample": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** @description A sample file to fill in: the columns the client import reads. */
+        get: operations["parties:import_sample_retrieve"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/payments": {
         parameters: {
             query?: never;
@@ -3490,6 +3524,14 @@ export interface components {
          * @enum {string}
          */
         PartyGstTreatmentEnum: "REGISTERED" | "COMPOSITION" | "UNREGISTERED" | "CONSUMER" | "SEZ" | "OVERSEAS";
+        PartyImportResult: {
+            dry_run: boolean;
+            count: number;
+            skipped_rows: number[];
+            ignored_columns: string[];
+            /** @description In a dry run, a preview: id, created_at and updated_at are null. */
+            parties: components["schemas"]["Party"][];
+        };
         PartyWrite: {
             display_name: string;
             legal_name?: string | null;
@@ -7885,6 +7927,62 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["Statement"];
+                };
+            };
+        };
+    };
+    "parties:import_create": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "multipart/form-data": components["schemas"]["ImportRequest"];
+            };
+        };
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PartyImportResult"];
+                };
+            };
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PartyImportResult"];
+                };
+            };
+        };
+    };
+    "parties:import_sample_retrieve": {
+        parameters: {
+            query?: {
+                /**
+                 * @description * `xlsx` - xlsx
+                 *     * `csv` - csv
+                 */
+                type?: "xlsx" | "csv";
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/octet-stream": string;
                 };
             };
         };

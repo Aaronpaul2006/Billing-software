@@ -130,7 +130,7 @@ describe("catalog search and import", () => {
         HttpResponse.json({ results: [item([])], next_cursor: null }),
       ),
       http.post(`${API}/catalog-items:import`, async ({ request }) => {
-        const dryRun = String((await request.formData()).get("dry_run"));
+        const dryRun = (await request.formData()).get("dry_run") as string;
         calls.push(dryRun);
         attempt += 1;
         if (attempt === 1) {

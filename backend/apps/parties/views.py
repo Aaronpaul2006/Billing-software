@@ -5,16 +5,24 @@ from typing import Any
 
 import django_filters
 from django.db.models import Q, QuerySet
+from django.http import HttpResponse
 from drf_spectacular.utils import extend_schema
+from rest_framework.parsers import MultiPartParser
 from rest_framework.request import Request
 from rest_framework.response import Response
 
 from apps.core.api import ActionAPIView, detail_response, list_response, versioned_patch
-from apps.core.idempotency import idempotent_if_keyed
+from apps.core.idempotency import idempotent, idempotent_if_keyed
+from apps.core.imports import (
+    ImportRequestSerializer,
+    SampleQuerySerializer,
+    sample_response,
+    upload_bytes,
+)
 
-from . import services
+from . import importer, services
 from .models import Party
-from .serializers import PartySerializer, PartyWriteSerializer
+from .serializers import PartyImportResultSerializer, PartySerializer, PartyWriteSerializer
 
 EDIT = "masters.edit"
 
@@ -52,6 +60,44 @@ class PartyListView(ActionAPIView):
         data.is_valid(raise_exception=True)
         party = services.create_party(self.principal, data.validated_data)
         return detail_response(party, PartySerializer, status=201)
+
+
+class PartyImportView(ActionAPIView):
+    """Add clients from a CSV / XLSX file, all or nothing (B.3)."""
+
+    write_action = EDIT
+    parser_classes = (MultiPartParser,)
+
+    @extend_schema(
+        request={"multipart/form-data": ImportRequestSerializer},
+        responses={200: PartyImportResultSerializer, 201: PartyImportResultSerializer},
+        tags=["parties"],
+    )
+    @idempotent
+    def post(self, request: Request) -> Response:
+        params = ImportRequestSerializer(data=request.data)
+        params.is_valid(raise_exception=True)
+        dry_run = params.validated_data["dry_run"]
+        result = importer.import_parties(
+            self.principal, upload_bytes(params.validated_data["file"]), dry_run=dry_run
+        )
+        return Response(PartyImportResultSerializer(result).data, status=200 if dry_run else 201)
+
+
+class PartyImportSampleView(ActionAPIView):
+    """A sample file to fill in: the columns the client import reads."""
+
+    read_action = EDIT
+
+    @extend_schema(
+        parameters=[SampleQuerySerializer],
+        responses={(200, "application/octet-stream"): bytes},
+        tags=["parties"],
+    )
+    def get(self, request: Request) -> HttpResponse:
+        q = SampleQuerySerializer(data=request.query_params)
+        q.is_valid(raise_exception=True)
+        return sample_response(importer.LAYOUT, q.validated_data["type"], "clients-sample")
 
 
 class PartyDetailView(ActionAPIView):

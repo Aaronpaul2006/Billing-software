@@ -251,6 +251,20 @@ catalog (any case, archived too) is `item_exists`, a name twice in the file
 `GET /catalog-items:import-sample?type=xlsx|csv` downloads a sample to fill in
 (`type`, not `format`: DRF keeps `?format=` for renderers).
 
+### Client import (B.3)
+
+`POST /parties:import`, the same rules as the item import; permission
+`masters.edit`. Columns in plain words: name (`Client`, `Customer`, `Party`;
+required), legal name, GSTIN, GST type (`registered`, `composition`, `SEZ`,
+`unregistered`, `consumer`, `overseas`; without it a GSTIN means registered
+and no GSTIN unregistered), state (a name such as `Kerala` or a code; read
+from the GSTIN when there is one), PAN, email, phone (spaces and dashes
+dropped), address, city, PIN code (together the billing address). Each row
+then passes the checks of `POST /parties`. A name (any case) or GSTIN already
+among the parties is `party_exists` / `gstin_exists`; twice in the file
+`duplicate_name` / `duplicate_gstin`. Imported parties are customers.
+`GET /parties:import-sample?type=xlsx|csv`.
+
 ### BOQ import
 
 `POST /projects/{id}/boq-items:import`, `multipart/form-data`: `file` (CSV in

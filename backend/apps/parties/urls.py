@@ -4,5 +4,9 @@ from . import views
 
 urlpatterns = [
     path("parties", views.PartyListView.as_view(), name="parties"),
+    path("parties:import", views.PartyImportView.as_view(), name="party-import"),
+    path(
+        "parties:import-sample", views.PartyImportSampleView.as_view(), name="party-import-sample"
+    ),
     path("parties/<uuid:party_id>", views.PartyDetailView.as_view(), name="party-detail"),
 ]
