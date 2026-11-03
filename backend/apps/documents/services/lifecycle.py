@@ -217,6 +217,32 @@ def record_quotation_response(doc_id: uuid.UUID, expected: int, *, accept: bool)
         )
 
 
+DUPLICABLE = frozenset({"QUOTATION", "PROFORMA", "TAX_INVOICE", "BILL_OF_SUPPLY"})
+
+
+def duplicate(principal: Principal, doc_id: uuid.UUID, doc_date: date) -> Document:
+    """A new draft copied from any bill or quotation (B.10), dated `doc_date`:
+    same type, client, project, lines and measurements; the due date comes
+    from the client's terms again; a quotation keeps its validity length."""
+    require(principal, "documents.draft")
+    source = get_or_404(Document, doc_id)
+    if source.doc_type not in DUPLICABLE:
+        raise Conflict(
+            "A credit or debit note belongs to its bill: make a new one from the bill.",
+            code="not_duplicable",
+        )
+    valid_until = None
+    if source.doc_type == "QUOTATION" and source.valid_until:
+        valid_until = doc_date + (source.valid_until - source.doc_date)
+    data = {
+        **drafts.current_state(source),
+        "doc_date": doc_date,
+        "due_date": None,
+        "valid_until": valid_until,
+    }
+    return drafts._create(principal, data)
+
+
 def convert(principal: Principal, doc_id: uuid.UUID, to: str, doc_date: date) -> Document:
     """A new draft copied from an issued / accepted quotation or proforma."""
     require(principal, "documents.draft")

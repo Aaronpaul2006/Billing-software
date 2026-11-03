@@ -324,6 +324,12 @@ class CancelSerializer(serializers.Serializer[Any]):
     reason = serializers.CharField(min_length=3, max_length=500)
 
 
+class DuplicateSerializer(serializers.Serializer[Any]):
+    doc_date = serializers.DateField(
+        help_text="Date of the copy (explicit: no time zone guessing)."
+    )
+
+
 class ConvertSerializer(serializers.Serializer[Any]):
     to = serializers.ChoiceField(choices=["PROFORMA", "TAX_INVOICE", "BILL_OF_SUPPLY"])
     doc_date = serializers.DateField(

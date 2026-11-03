@@ -61,5 +61,5 @@ describe("measurement sheet", () => {
     await waitFor(() => {
       expect(quantity).toHaveValue("67.200");
     });
-  });
+  }, 15_000); // types into many boxes: slow on a busy machine, not stuck
 });

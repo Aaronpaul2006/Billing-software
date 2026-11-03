@@ -390,6 +390,15 @@ their own endpoints (Phase 1.6), RA bills below (Phase 3.2). Example response:
 }
 ```
 
+### Duplicate (B.10)
+
+`POST /documents/{id}/duplicate` `{doc_date}` (permission `documents.draft`,
+`Idempotency-Key`): a new draft copied from a tax invoice, bill of supply,
+proforma or quotation, in any status: same type, client, project, lines and
+measurements, dated `doc_date`; the due date comes from the client's terms
+again; a quotation keeps its validity length. Credit and debit notes:
+`409 not_duplicable` (they belong to their bill). Another tenant's: `404`.
+
 ### Measurement sheets (B.9)
 
 A line may carry `measurements` (up to 100 rows: `description`, `nos`

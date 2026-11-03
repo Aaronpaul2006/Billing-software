@@ -1163,3 +1163,6 @@ NOT_TENANT_DATA["document-lines-sample"] = "a fixed sample file"
 
 # --- B.8 last rates: tests/documents/test_last_rates.py::test_another_tenants_client_is_not_found
 OBJECT_ROUTES["party-last-rates"] = lambda w: None
+
+# --- B.10 duplicate: tests/documents/test_duplicate.py::test_another_tenants_bill_is_not_found
+OBJECT_ROUTES["document-duplicate"] = lambda w: None

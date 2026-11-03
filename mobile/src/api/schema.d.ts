@@ -921,6 +921,23 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/documents/{document_id}/duplicate": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** @description A new draft copied from a bill or quotation (B.10). */
+        post: operations["documents_duplicate_create"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/documents/{document_id}/issue": {
         parameters: {
             query?: never;
@@ -2890,6 +2907,13 @@ export interface components {
          * @enum {string}
          */
         DraftableDocTypeEnum: "QUOTATION" | "PROFORMA" | "TAX_INVOICE" | "BILL_OF_SUPPLY";
+        Duplicate: {
+            /**
+             * Format: date
+             * @description Date of the copy (explicit: no time zone guessing).
+             */
+            doc_date: string;
+        };
         EmailChange: {
             /** Format: email */
             new_email: string;
@@ -7132,6 +7156,31 @@ export interface operations {
         requestBody?: never;
         responses: {
             200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Document"];
+                };
+            };
+        };
+    };
+    documents_duplicate_create: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                document_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["Duplicate"];
+            };
+        };
+        responses: {
+            201: {
                 headers: {
                     [name: string]: unknown;
                 };

@@ -362,7 +362,7 @@ describe("document page", () => {
     );
     const user = userEvent.setup();
     renderSignedIn(`/documents/${DOC}`);
-    await user.click(await screen.findByRole("button", { name: "Cancel document…" }));
+    await user.click(await screen.findByRole("button", { name: "Alter…" }));
     const form = screen.getByRole("form", { name: "Cancel document" });
     expect(within(form).getByRole("button", { name: "Cancel document" })).toBeDisabled();
     await user.type(within(form).getByLabelText("Reason"), "Wrong rate");
@@ -396,9 +396,8 @@ describe("document page", () => {
     );
     const user = userEvent.setup();
     const router = renderSignedIn(`/documents/${DOC}`);
-    await user.click(await screen.findByRole("button", { name: "Convert…" }));
-    const form = screen.getByRole("form", { name: "Convert document" });
-    await user.click(within(form).getByRole("button", { name: "Create draft" }));
+    // one click: a tax invoice dated today
+    await user.click(await screen.findByRole("button", { name: "Make tax invoice" }));
     await waitFor(() => {
       expect(router.state.location.pathname).toBe("/documents/inv-draft/edit");
     });

@@ -1,5 +1,5 @@
 import { useMutation, useQueryClient } from "@tanstack/react-query";
-import { AlertCircle, ArrowLeft, FileDown, Pencil } from "lucide-react";
+import { AlertCircle, ArrowLeft, Copy, FileDown, Pencil } from "lucide-react";
 import { useState } from "react";
 import type { ReactNode } from "react";
 import { Link, useNavigate, useParams } from "react-router";
@@ -155,7 +155,17 @@ function Lines({ doc }: { doc: Document }) {
   );
 }
 
-type Panel = "none" | "cancel" | "convert";
+type Panel = "none" | "cancel" | "convert" | "alter";
+
+/** Bills and quotations can be copied into a new draft; notes belong to their bill. */
+const DUPLICABLE: ReadonlySet<DocType> = new Set([
+  "QUOTATION",
+  "PROFORMA",
+  "TAX_INVOICE",
+  "BILL_OF_SUPPLY",
+]);
+/** Issued bills are altered (credit / debit note, or cancel and copy), never edited. */
+const ALTERABLE: ReadonlySet<DocType> = new Set(["TAX_INVOICE", "BILL_OF_SUPPLY"]);
 
 function Actions({ doc }: { doc: Document }) {
   const queryClient = useQueryClient();
@@ -167,6 +177,7 @@ function Actions({ doc }: { doc: Document }) {
   );
   const [convertDate, setConvertDate] = useState(() => isoDate(new Date()));
   const [key, setKey] = useState(newIdempotencyKey); // one per action, renewed after it succeeds
+  const [copyKey, setCopyKey] = useState(newIdempotencyKey); // the copy after a cancel
   const [notice, setNotice] = useState<ReactNode>(null);
   const path = { document_id: doc.id };
   const versioned = { "If-Match": ifMatch(doc.version), "Idempotency-Key": key };
@@ -233,9 +244,18 @@ function Actions({ doc }: { doc: Document }) {
   });
   /** Convert, credit note, debit note: each makes a new draft to finish and issue. */
   const derive = useMutation({
-    mutationFn: async (kind: "convert" | "credit" | "debit") => {
+    mutationFn: async (kind: "convert" | "credit" | "debit" | "duplicate") => {
       const headers = { "Idempotency-Key": key };
       const today = isoDate(new Date());
+      if (kind === "duplicate") {
+        return unwrap(
+          await api.POST("/api/v1/documents/{document_id}/duplicate", {
+            params: { path },
+            body: { doc_date: today },
+            headers,
+          }),
+        );
+      }
       if (kind === "convert") {
         return unwrap(
           await api.POST("/api/v1/documents/{document_id}/convert", {
@@ -265,6 +285,37 @@ function Actions({ doc }: { doc: Document }) {
       void navigate(`/documents/${created.id}/edit`);
     },
     onError: failed,
+  });
+
+  /** "Start again": cancel with the reason, then copy into a new draft to correct and issue. */
+  const reissue = useMutation({
+    mutationFn: async () => {
+      unwrap(
+        await api.POST("/api/v1/documents/{document_id}/cancel", {
+          params: { path },
+          body: { reason: reason.trim() },
+          headers: versioned,
+        }),
+      );
+      return unwrap(
+        await api.POST("/api/v1/documents/{document_id}/duplicate", {
+          params: { path },
+          body: { doc_date: isoDate(new Date()) },
+          headers: { "Idempotency-Key": copyKey },
+        }),
+      );
+    },
+    onSuccess: (copy) => {
+      setKey(newIdempotencyKey());
+      setCopyKey(newIdempotencyKey());
+      void queryClient.invalidateQueries({ queryKey: ["documents"] });
+      void queryClient.invalidateQueries({ queryKey: documentKey(doc.id) });
+      void navigate(`/documents/${copy.id}/edit`);
+    },
+    onError: (e) => {
+      void queryClient.invalidateQueries({ queryKey: documentKey(doc.id) }); // maybe cancelled
+      failed(e);
+    },
   });
 
   const openPdf = async () => {
@@ -301,7 +352,8 @@ function Actions({ doc }: { doc: Document }) {
     cancel.isPending ||
     respond.isPending ||
     remove.isPending ||
-    derive.isPending;
+    derive.isPending ||
+    reissue.isPending;
   const issued = doc.status === "ISSUED";
   const convertible = CONVERT_TO[doc.doc_type] && (issued || doc.status === "ACCEPTED");
 
@@ -356,39 +408,52 @@ function Actions({ doc }: { doc: Document }) {
           </>
         )}
         {convertible && (
+          <>
+            <Button
+              disabled={busy}
+              onClick={() => {
+                derive.mutate("convert"); // the first choice, dated today
+              }}
+            >
+              Make {DOC_TYPE_LABELS[CONVERT_TO[doc.doc_type]?.[0] ?? "TAX_INVOICE"].toLowerCase()}
+            </Button>
+            {(CONVERT_TO[doc.doc_type]?.length ?? 0) > 1 && (
+              <Button
+                variant="outline"
+                disabled={busy}
+                onClick={() => {
+                  setPanel("convert");
+                }}
+              >
+                Other conversion…
+              </Button>
+            )}
+          </>
+        )}
+        {DUPLICABLE.has(doc.doc_type) && (
           <Button
             variant="outline"
             disabled={busy}
             onClick={() => {
-              setPanel("convert");
+              derive.mutate("duplicate");
             }}
           >
-            Convert…
+            <Copy aria-hidden /> Duplicate
           </Button>
         )}
-        {doc.doc_type === "TAX_INVOICE" && issued && (
-          <>
-            <Button
-              variant="outline"
-              disabled={busy}
-              onClick={() => {
-                derive.mutate("credit");
-              }}
-            >
-              Credit note
-            </Button>
-            <Button
-              variant="outline"
-              disabled={busy}
-              onClick={() => {
-                derive.mutate("debit");
-              }}
-            >
-              Debit note
-            </Button>
-          </>
+        {issued && ALTERABLE.has(doc.doc_type) && (
+          <Button
+            variant="outline"
+            disabled={busy}
+            aria-expanded={panel === "alter"}
+            onClick={() => {
+              setPanel(panel === "alter" ? "none" : "alter");
+            }}
+          >
+            Alter…
+          </Button>
         )}
-        {issued && (
+        {issued && !ALTERABLE.has(doc.doc_type) && (
           <Button
             variant="ghost"
             disabled={busy}
@@ -417,6 +482,95 @@ function Actions({ doc }: { doc: Document }) {
           <AlertCircle aria-hidden />
           <AlertDescription>{notice}</AlertDescription>
         </Alert>
+      )}
+
+      {panel === "alter" && (
+        <section
+          aria-label="Alter this bill"
+          className="bg-muted/40 grid max-w-2xl gap-4 rounded-lg border p-4 text-sm"
+        >
+          <p>
+            An issued bill cannot be changed: the law keeps it as it was sent. Choose what you need:
+          </p>
+          {doc.doc_type === "TAX_INVOICE" && (
+            <div className="grid gap-3 sm:grid-cols-2">
+              <div className="grid content-start gap-2 rounded-md border p-3">
+                <h3 className="font-medium">Reduce the amount</h3>
+                <p className="text-muted-foreground">
+                  Less work was done, the rate was too high, or material came back: a credit note
+                  takes the difference off this bill.
+                </p>
+                <Button
+                  variant="outline"
+                  disabled={busy}
+                  onClick={() => {
+                    derive.mutate("credit");
+                  }}
+                >
+                  Make a credit note
+                </Button>
+              </div>
+              <div className="grid content-start gap-2 rounded-md border p-3">
+                <h3 className="font-medium">Increase the amount</h3>
+                <p className="text-muted-foreground">
+                  More work was done or the rate was too low: a debit note adds the extra to this
+                  bill.
+                </p>
+                <Button
+                  variant="outline"
+                  disabled={busy}
+                  onClick={() => {
+                    derive.mutate("debit");
+                  }}
+                >
+                  Make a debit note
+                </Button>
+              </div>
+            </div>
+          )}
+          <form
+            aria-label="Cancel document"
+            className="grid gap-2 rounded-md border p-3"
+            onSubmit={(e) => {
+              e.preventDefault();
+              cancel.mutate();
+            }}
+          >
+            <h3 className="font-medium">Start again</h3>
+            <p className="text-muted-foreground">
+              The bill is wrong (wrong client, wrong items) or should not have been issued: cancel
+              it with a reason. Its number stays used and the bill is kept, marked cancelled. A
+              corrected copy can be made as a new draft in the same step. Bills that have been paid
+              against cannot be cancelled.
+            </p>
+            <Label htmlFor="cancel-reason">Reason</Label>
+            <Input
+              id="cancel-reason"
+              value={reason}
+              onChange={(e) => {
+                setReason(e.target.value);
+              }}
+            />
+            <div className="flex flex-wrap gap-2">
+              <Button
+                type="button"
+                disabled={busy || reason.trim().length < 3}
+                onClick={() => {
+                  reissue.mutate();
+                }}
+              >
+                Cancel and make a corrected copy
+              </Button>
+              <Button
+                type="submit"
+                variant="destructive"
+                disabled={busy || reason.trim().length < 3}
+              >
+                Cancel document
+              </Button>
+            </div>
+          </form>
+        </section>
       )}
 
       {panel === "cancel" && (

@@ -38,6 +38,11 @@ urlpatterns = [
         name="document-decline",
     ),
     path(
+        "documents/<uuid:document_id>/duplicate",
+        views.DuplicateView.as_view(),
+        name="document-duplicate",
+    ),
+    path(
         "documents/<uuid:document_id>/convert",
         views.ConvertView.as_view(),
         name="document-convert",

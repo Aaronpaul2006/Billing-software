@@ -33,6 +33,7 @@ from .serializers import (
     DocumentListSerializer,
     DocumentSerializer,
     DocumentWriteSerializer,
+    DuplicateSerializer,
     LastRateSerializer,
     LastRatesSerializer,
     NoteSerializer,
@@ -325,6 +326,22 @@ class ConvertView(ActionAPIView):
         draft = lifecycle.convert(
             self.principal, document_id, data.validated_data["to"], data.validated_data["doc_date"]
         )
+        return detail_response(draft, DocumentSerializer, status=201)
+
+
+class DuplicateView(ActionAPIView):
+    """A new draft copied from a bill or quotation (B.10)."""
+
+    write_action = DRAFT
+
+    @extend_schema(
+        request=DuplicateSerializer, responses={201: DocumentSerializer}, tags=["documents"]
+    )
+    @idempotent
+    def post(self, request: Request, document_id: uuid.UUID) -> Response:
+        data = DuplicateSerializer(data=request.data)
+        data.is_valid(raise_exception=True)
+        draft = lifecycle.duplicate(self.principal, document_id, data.validated_data["doc_date"])
         return detail_response(draft, DocumentSerializer, status=201)
 
 

@@ -2429,6 +2429,53 @@
                 }
             }
         },
+        "/api/v1/documents/{document_id}/duplicate": {
+            "post": {
+                "operationId": "documents_duplicate_create",
+                "description": "A new draft copied from a bill or quotation (B.10).",
+                "parameters": [
+                    {
+                        "in": "path",
+                        "name": "document_id",
+                        "schema": {
+                            "type": "string",
+                            "format": "uuid"
+                        },
+                        "required": true
+                    }
+                ],
+                "tags": [
+                    "documents"
+                ],
+                "requestBody": {
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/Duplicate"
+                            }
+                        }
+                    },
+                    "required": true
+                },
+                "security": [
+                    {
+                        "bearerAuth": []
+                    }
+                ],
+                "responses": {
+                    "201": {
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/Document"
+                                }
+                            }
+                        },
+                        "description": ""
+                    }
+                }
+            }
+        },
         "/api/v1/documents/{document_id}/issue": {
             "post": {
                 "operationId": "documents_issue_create",
@@ -8269,6 +8316,19 @@
                 ],
                 "type": "string",
                 "description": "* `QUOTATION` - QUOTATION\n* `PROFORMA` - PROFORMA\n* `TAX_INVOICE` - TAX_INVOICE\n* `BILL_OF_SUPPLY` - BILL_OF_SUPPLY"
+            },
+            "Duplicate": {
+                "type": "object",
+                "properties": {
+                    "doc_date": {
+                        "type": "string",
+                        "format": "date",
+                        "description": "Date of the copy (explicit: no time zone guessing)."
+                    }
+                },
+                "required": [
+                    "doc_date"
+                ]
             },
             "EmailChange": {
                 "type": "object",
