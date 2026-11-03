@@ -6,10 +6,23 @@ from rest_framework import serializers
 
 from apps.core.fields import MoneyField, PercentField, QuantityField
 
-from .models import Document, DocumentLine, SupplyCategory
+from .models import Document, DocumentLine, DocumentLineMeasurement, SupplyCategory
 from .services.drafts import DRAFTABLE_TYPES
 
 # --- input ---------------------------------------------------------------------------------
+
+
+class MeasurementInSerializer(serializers.Serializer[Any]):
+    """A measurement-sheet row (B.9). Empty sizes count as 1."""
+
+    description = serializers.CharField(
+        max_length=500, required=False, allow_null=True, allow_blank=True
+    )
+    nos = QuantityField(min_value=Decimal("0.001"), default=Decimal("1"))
+    length = QuantityField(min_value=Decimal("0.001"), required=False, allow_null=True)
+    breadth = QuantityField(min_value=Decimal("0.001"), required=False, allow_null=True)
+    height = QuantityField(min_value=Decimal("0.001"), required=False, allow_null=True)
+    deduct = serializers.BooleanField(default=False, help_text="An opening: taken off.")
 
 
 class LineInSerializer(serializers.Serializer[Any]):
@@ -26,7 +39,17 @@ class LineInSerializer(serializers.Serializer[Any]):
     description = serializers.CharField(max_length=2000, required=False)
     sac_hsn = serializers.RegexField(r"^[0-9]{4,8}$", required=False, allow_null=True)
     unit = serializers.CharField(max_length=20, required=False, allow_null=True)
-    quantity = QuantityField(min_value=Decimal("0.001"))
+    quantity = QuantityField(
+        min_value=Decimal("0.001"),
+        required=False,
+        help_text="Needed unless the line has measurements: then it is their total.",
+    )
+    measurements: serializers.ListSerializer[Any] = serializers.ListSerializer(
+        child=MeasurementInSerializer(),
+        required=False,
+        max_length=100,
+        help_text="A measurement sheet (B.9): the line's quantity is the total of the rows.",
+    )
     rate = MoneyField(required=False, min_value=Decimal("0"))
     discount_amount = MoneyField(required=False, min_value=Decimal("0"))
     discount_pct = PercentField(
@@ -37,6 +60,11 @@ class LineInSerializer(serializers.Serializer[Any]):
         "discount_amount (rounded to the paisa) and wins over a discount_amount sent with it.",
     )
     gst_rate = PercentField(required=False, max_value=Decimal("50"))
+
+    def validate(self, attrs: dict[str, Any]) -> dict[str, Any]:
+        if not attrs.get("measurements") and attrs.get("quantity") is None:
+            raise serializers.ValidationError({"quantity": "Required."}, code="required")
+        return attrs
 
 
 class DocumentWriteSerializer(serializers.Serializer[Any]):
@@ -93,6 +121,38 @@ class DocumentWriteSerializer(serializers.Serializer[Any]):
 # --- output --------------------------------------------------------------------------------
 
 
+def with_measurements(lines: list[DocumentLine]) -> list[DocumentLine]:
+    """Attach each line's measurement rows, with one query for all the lines."""
+    by_line: dict[Any, list[DocumentLineMeasurement]] = {ln.pk: [] for ln in lines}
+    for row in DocumentLineMeasurement.objects.filter(line_id__in=list(by_line)).order_by("row_no"):
+        by_line[row.line_id].append(row)
+    for ln in lines:
+        ln.loaded_measurements = by_line[ln.pk]  # type: ignore[attr-defined]
+    return lines
+
+
+class MeasurementOutSerializer(serializers.ModelSerializer[DocumentLineMeasurement]):
+    nos = QuantityField()
+    length = QuantityField(allow_null=True)
+    breadth = QuantityField(allow_null=True)
+    height = QuantityField(allow_null=True)
+    quantity = QuantityField(help_text="This row: nos x length x breadth x height.")
+
+    class Meta:
+        model = DocumentLineMeasurement
+        fields = (
+            "row_no",
+            "description",
+            "nos",
+            "length",
+            "breadth",
+            "height",
+            "deduct",
+            "quantity",
+        )
+        read_only_fields = fields
+
+
 class LineOutSerializer(serializers.ModelSerializer[DocumentLine]):
     catalog_item_id = serializers.UUIDField(allow_null=True)
     catalog_variant_id = serializers.UUIDField(allow_null=True)
@@ -102,6 +162,7 @@ class LineOutSerializer(serializers.ModelSerializer[DocumentLine]):
         allow_null=True, help_text="RA bill: billed before this bill (snapshot at issue)."
     )
     up_to_date_qty = serializers.SerializerMethodField(help_text="RA bill: previous + this bill.")
+    measurements = serializers.SerializerMethodField()
     rate = MoneyField()
     discount_amount = MoneyField()
     discount_pct = PercentField(allow_null=True)
@@ -129,6 +190,7 @@ class LineOutSerializer(serializers.ModelSerializer[DocumentLine]):
             "rate",
             "discount_amount",
             "discount_pct",
+            "measurements",
             "taxable_value",
             "gst_rate",
             "cgst_amount",
@@ -138,6 +200,13 @@ class LineOutSerializer(serializers.ModelSerializer[DocumentLine]):
             "line_total",
         )
         read_only_fields = fields
+
+    @extend_schema_field(MeasurementOutSerializer(many=True))
+    def get_measurements(self, obj: DocumentLine) -> list[dict[str, Any]]:
+        rows = getattr(obj, "loaded_measurements", None)  # set by the document's serializer
+        if rows is None:
+            rows = DocumentLineMeasurement.objects.filter(line_id=obj.pk).order_by("row_no")
+        return list(MeasurementOutSerializer(rows, many=True).data)
 
     def get_up_to_date_qty(self, obj: DocumentLine) -> str | None:
         if obj.prev_cumulative_qty is None:
@@ -224,7 +293,9 @@ class DocumentSerializer(DocumentListSerializer):
 
     @extend_schema_field(LineOutSerializer(many=True))
     def get_lines(self, obj: Document) -> list[dict[str, Any]]:
-        lines = DocumentLine.objects.filter(document_id=obj.pk).order_by("line_no")
+        lines = with_measurements(
+            list(DocumentLine.objects.filter(document_id=obj.pk).order_by("line_no"))
+        )
         return list(LineOutSerializer(lines, many=True).data)
 
 

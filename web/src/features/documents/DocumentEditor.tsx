@@ -14,6 +14,7 @@ import {
 import { useEffect, useMemo, useRef, useState } from "react";
 import type { KeyboardEvent as ReactKeyboardEvent } from "react";
 import { Controller, useFieldArray, useForm, useWatch } from "react-hook-form";
+import type { UseFormRegister } from "react-hook-form";
 import { Link, useNavigate, useParams, useSearchParams } from "react-router";
 
 import { api, newIdempotencyKey, unwrap } from "@/api/client";
@@ -35,6 +36,8 @@ import { isoDate } from "@/features/dashboard/periods";
 import { applyServerErrors, blankToNull, formPath, ifMatch } from "@/lib/forms";
 import { placeName } from "@/lib/india";
 import { cleanMoneyInput, formatInr, formatQty, toPaise } from "@/lib/money";
+import { measuredTotal, rowQuantity } from "@/lib/quantity";
+import type { MeasureRow } from "@/lib/quantity";
 import { useDebounced } from "@/lib/useDebounced";
 
 import { DOC_TYPE_LABELS, documentKey, DRAFTABLE, supplyNote, useDocument } from "./api";
@@ -66,7 +69,22 @@ interface LineForm {
   discount_amount: string;
   discount_mode: "amount" | "pct";
   gst_rate: string;
+  /** B.9: a measurement sheet; when it has rows, the quantity is their total. */
+  measurements: MeasureForm[];
 }
+
+interface MeasureForm extends MeasureRow {
+  description: string;
+}
+
+const EMPTY_ROW: MeasureForm = {
+  description: "",
+  nos: "",
+  length: "",
+  breadth: "",
+  height: "",
+  deduct: false,
+};
 
 interface FormValues {
   doc_type: DraftableType;
@@ -101,6 +119,7 @@ const EMPTY_LINE: LineForm = {
   discount_amount: "",
   discount_mode: "amount",
   gst_rate: "",
+  measurements: [],
 };
 
 function toForm(doc: Document | undefined, type: DraftableType): FormValues {
@@ -156,6 +175,14 @@ function toForm(doc: Document | undefined, type: DraftableType): FormValues {
             : l.discount_amount,
       discount_mode: l.discount_pct !== null ? "pct" : "amount",
       gst_rate: l.gst_rate,
+      measurements: l.measurements.map((m) => ({
+        description: m.description ?? "",
+        nos: m.nos,
+        length: m.length ?? "",
+        breadth: m.breadth ?? "",
+        height: m.height ?? "",
+        deduct: m.deduct,
+      })),
     })),
   };
 }
@@ -179,6 +206,18 @@ function apiLine(l: LineForm): LineIn {
     ...(discount && l.discount_mode === "pct" ? { discount_pct: discount } : {}),
     ...(discount && l.discount_mode === "amount" ? { discount_amount: discount } : {}),
     ...(l.gst_rate.trim() ? { gst_rate: l.gst_rate.trim() } : {}),
+    ...(l.measurements.length
+      ? {
+          measurements: l.measurements.map((m) => ({
+            ...(m.description.trim() ? { description: m.description.trim() } : {}),
+            nos: m.nos.trim() || "1",
+            ...(m.length.trim() ? { length: m.length.trim() } : {}),
+            ...(m.breadth.trim() ? { breadth: m.breadth.trim() } : {}),
+            ...(m.height.trim() ? { height: m.height.trim() } : {}),
+            deduct: m.deduct,
+          })),
+        }
+      : {}),
   };
 }
 
@@ -235,7 +274,7 @@ function saveable(body: DocumentWrite): boolean {
     (body.lines ?? []).length > 0 && // not an empty draft the moment a client is chosen
     (body.lines ?? []).every(
       (l) =>
-        QTY.test(l.quantity) &&
+        QTY.test(l.quantity ?? "") &&
         Number(l.quantity) > 0 &&
         (l.rate === undefined || /^\d{1,12}(\.\d{1,2})?$/.test(l.rate)),
     )
@@ -285,6 +324,102 @@ function useAllBoqItems(projectId: string) {
     enabled: projectId !== "",
     staleTime: 60_000,
   });
+}
+
+/** The rows of a line's measurement sheet (B.9); totals are exact (lib/quantity). */
+function MeasurementSheet({
+  line,
+  rows,
+  register,
+  onChange,
+}: {
+  line: number;
+  rows: MeasureForm[];
+  register: UseFormRegister<FormValues>;
+  onChange: (rows: MeasureForm[]) => void;
+}) {
+  const n = String(line + 1);
+  const total = measuredTotal(rows);
+  return (
+    <div
+      role="group"
+      aria-label={`Measurement sheet of line ${n}`}
+      className="bg-muted/40 grid gap-2 rounded-md border p-2 text-sm"
+    >
+      <div className="text-muted-foreground grid grid-cols-12 gap-2 text-xs font-medium">
+        <span className="col-span-4">Description</span>
+        <span className="col-span-1">Nos</span>
+        <span className="col-span-1">Length</span>
+        <span className="col-span-1">Breadth</span>
+        <span className="col-span-1">Height</span>
+        <span className="col-span-1">Deduct</span>
+        <span className="col-span-2 text-right">Quantity</span>
+      </div>
+      {rows.map((row, j) => {
+        const r = String(j + 1);
+        const q = rowQuantity(row);
+        const at = `lines.${line}.measurements.${j}` as const;
+        return (
+          <div key={j} className="grid grid-cols-12 items-center gap-2">
+            <Input
+              aria-label={`Row ${r} description`}
+              className="col-span-4"
+              {...register(`${at}.description`)}
+            />
+            {(["nos", "length", "breadth", "height"] as const).map((size) => (
+              <Input
+                key={size}
+                aria-label={`Row ${r} ${size}`}
+                inputMode="decimal"
+                className="col-span-1"
+                {...register(`${at}.${size}`)}
+              />
+            ))}
+            <input
+              type="checkbox"
+              aria-label={`Row ${r} is a deduction`}
+              className="col-span-1 justify-self-center"
+              {...register(`${at}.deduct`)}
+            />
+            <span className="col-span-1 text-right tabular-nums">
+              {q === null ? "—" : `${row.deduct ? "−" : ""}${formatQty(q)}`}
+            </span>
+            <Button
+              type="button"
+              variant="ghost"
+              size="icon"
+              className="col-span-1 justify-self-end"
+              aria-label={`Remove row ${r} of line ${n}`}
+              onClick={() => {
+                onChange(rows.filter((_, k) => k !== j));
+              }}
+            >
+              <Trash2 aria-hidden />
+            </Button>
+          </div>
+        );
+      })}
+      <div className="flex flex-wrap items-center justify-between gap-2">
+        <Button
+          type="button"
+          variant="outline"
+          size="sm"
+          onClick={() => {
+            onChange([...rows, { ...EMPTY_ROW }]);
+          }}
+        >
+          <Plus aria-hidden /> Add row
+        </Button>
+        <span className="font-medium tabular-nums">
+          {total === null
+            ? "Check the rows: each needs numbers like 10.5"
+            : Number(total) <= 0
+              ? "The rows add up to zero or less"
+              : `Quantity: ${formatQty(total)}`}
+        </span>
+      </div>
+    </div>
+  );
 }
 
 type BulkField = "rate" | "discount_pct" | "gst_rate";
@@ -414,7 +549,7 @@ function Editor({ doc }: { doc?: Document }) {
     payload.party_id !== "" &&
     payload.lines !== undefined &&
     payload.lines.length > 0 &&
-    payload.lines.every((l) => QTY.test(l.quantity) && Number(l.quantity) > 0);
+    payload.lines.every((l) => QTY.test(l.quantity ?? "") && Number(l.quantity) > 0);
   const debounced = useDebounced(JSON.stringify(payload), 400);
   const preview = useQuery({
     queryKey: ["preview-totals", debounced],
@@ -707,6 +842,18 @@ function Editor({ doc }: { doc?: Document }) {
     if (target?.kind === "field") target.to.focus();
     else if (target?.kind === "new-line") addLine();
   };
+
+  // B.9: a line with measurement rows takes their total as its quantity.
+  useEffect(() => {
+    values.lines.forEach((l, i) => {
+      if (!l.measurements.length) return;
+      const total = measuredTotal(l.measurements);
+      if (total !== null && total !== l.quantity) {
+        setValue(`lines.${i}.quantity`, total, { shouldDirty: true });
+      }
+    });
+  }, [values.lines, setValue]);
+  const [measuring, setMeasuring] = useState<Set<string>>(() => new Set());
 
   // A client chosen: their only project, or the one on their last bill.
   const projectFor = useRef<string | null>(null);
@@ -1081,6 +1228,7 @@ function Editor({ doc }: { doc?: Document }) {
               const lineErrors = errors.lines?.[i];
               const previewLine = preview.data?.lines[i];
               const problem = lineError(i);
+              const rows = values.lines[i]?.measurements ?? [];
               const box = (
                 name: "quantity" | "unit" | "rate" | "gst_rate" | "sac_hsn",
                 label: string,
@@ -1098,6 +1246,12 @@ function Editor({ doc }: { doc?: Document }) {
                     id={`line-${n}-${name}`}
                     inputMode={mode}
                     aria-invalid={!!lineErrors?.[name]}
+                    readOnly={name === "quantity" && rows.length > 0}
+                    title={
+                      name === "quantity" && rows.length > 0
+                        ? "The total of the measurement sheet below"
+                        : undefined
+                    }
                     {...register(`lines.${i}.${name}`)}
                   />
                   {lineErrors?.[name] && (
@@ -1268,6 +1422,33 @@ function Editor({ doc }: { doc?: Document }) {
                         <Trash2 aria-hidden />
                       </Button>
                     </div>
+                  </div>
+                  <div className="sm:order-last sm:col-span-12">
+                    {rows.length === 0 && !measuring.has(field.id) ? (
+                      <Button
+                        type="button"
+                        variant="link"
+                        size="sm"
+                        className="h-auto p-0 text-xs"
+                        onClick={() => {
+                          setMeasuring(new Set(measuring).add(field.id));
+                          setValue(`lines.${i}.measurements`, [{ ...EMPTY_ROW }], {
+                            shouldDirty: true,
+                          });
+                        }}
+                      >
+                        Add a measurement sheet (number × length × breadth × height)
+                      </Button>
+                    ) : (
+                      <MeasurementSheet
+                        line={i}
+                        rows={rows}
+                        register={register}
+                        onChange={(next) => {
+                          setValue(`lines.${i}.measurements`, next, { shouldDirty: true });
+                        }}
+                      />
+                    )}
                   </div>
                   {problem && <p className="text-destructive text-sm sm:col-span-12">{problem}</p>}
                 </fieldset>

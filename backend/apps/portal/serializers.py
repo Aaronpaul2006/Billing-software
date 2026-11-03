@@ -72,6 +72,7 @@ class PortalLineSerializer(LineOutSerializer):
             "quantity",
             "prev_cumulative_qty",
             "up_to_date_qty",
+            "measurements",
             "rate",
             "discount_amount",
             "taxable_value",

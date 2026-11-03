@@ -385,3 +385,56 @@ class DocumentLine(TenantScoped):
                 name="document_lines_catalog_idx",
             ),
         ]
+
+
+class DocumentLineMeasurement(TenantScoped):
+    """A measurement-sheet row of a bill line (B.9): number x length x breadth x
+    height (empty sizes count as 1), rounded half up to 3 decimals; a "deduct"
+    row (an opening, say) takes its quantity off. The line's quantity is the
+    total. Rows change with their line, so only while the bill is a draft (the
+    document_lines_guard trigger, on this table too)."""
+
+    id = uuid7_pk()
+    tenant = tenant_ref()
+    # rows go with their line or draft (also ON DELETE CASCADE in the database)
+    document = ref("documents.Document", on_delete=models.CASCADE)
+    line = ref("documents.DocumentLine", related_name="measurements", on_delete=models.CASCADE)
+    row_no = models.SmallIntegerField()
+    description = models.TextField(null=True)  # noqa: DJ001 - mirrors schema
+    nos = models.DecimalField(max_digits=14, decimal_places=3, default=1, db_default=1)
+    length = models.DecimalField(max_digits=14, decimal_places=3, null=True)
+    breadth = models.DecimalField(max_digits=14, decimal_places=3, null=True)
+    height = models.DecimalField(max_digits=14, decimal_places=3, null=True)
+    deduct = models.BooleanField(default=False, db_default=False)
+    quantity = models.DecimalField(max_digits=14, decimal_places=3)
+
+    class Meta:
+        db_table = "document_line_measurements"
+        constraints = [
+            models.CheckConstraint(
+                condition=Q(row_no__gt=0), name="document_line_measurements_row_no_check"
+            ),
+            models.CheckConstraint(
+                condition=Q(description__char_length__lte=500),
+                name="document_line_measurements_description_check",
+            ),
+            models.CheckConstraint(
+                condition=Q(nos__gt=0), name="document_line_measurements_nos_check"
+            ),
+            models.CheckConstraint(
+                condition=Q(length__gt=0), name="document_line_measurements_length_check"
+            ),
+            models.CheckConstraint(
+                condition=Q(breadth__gt=0), name="document_line_measurements_breadth_check"
+            ),
+            models.CheckConstraint(
+                condition=Q(height__gt=0), name="document_line_measurements_height_check"
+            ),
+            models.CheckConstraint(
+                condition=Q(quantity__gt=0), name="document_line_measurements_quantity_check"
+            ),
+            models.UniqueConstraint(
+                fields=["line", "row_no"], name="document_line_measurements_line_id_row_no_key"
+            ),
+        ]
+        indexes = [models.Index(fields=["tenant", "line"], name="line_measurements_line_idx")]

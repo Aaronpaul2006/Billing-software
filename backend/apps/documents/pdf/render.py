@@ -18,7 +18,7 @@ from apps.parties.models import Party
 from apps.projects.models import BoqItem, Project
 from apps.tenants.models import GstRegistration
 
-from ..models import Document, DocumentLine
+from ..models import Document, DocumentLine, DocumentLineMeasurement
 from .words import rupees_in_words
 
 TITLES = {
@@ -94,6 +94,9 @@ def build_context(doc: Document) -> dict[str, Any]:
     else:
         supplier, party = doc.supplier_snapshot or {}, doc.party_snapshot or {}
     lines = list(DocumentLine.objects.filter(document_id=doc.pk).order_by("line_no"))
+    measured: dict[Any, list[DocumentLineMeasurement]] = {ln.pk: [] for ln in lines}
+    for m in DocumentLineMeasurement.objects.filter(document_id=doc.pk).order_by("row_no"):
+        measured[m.line_id].append(m)
 
     by_rate: dict[Decimal, dict[str, Decimal]] = defaultdict(
         lambda: {"taxable": Decimal(0), "cgst": Decimal(0), "sgst": Decimal(0), "igst": Decimal(0)}
@@ -158,6 +161,17 @@ def build_context(doc: Document) -> dict[str, Any]:
                 "taxable": inr(ln.taxable_value),
                 "gst_rate": f"{ln.gst_rate.normalize():f}",
                 "total": inr(ln.line_total),
+                # B.9: the measurement sheet, printed under the line
+                "measurements": [
+                    {
+                        "description": m.description or "",
+                        "sizes": " \u00d7 ".join(  # the multiplication sign
+                            _qty(v) for v in (m.nos, m.length, m.breadth, m.height) if v is not None
+                        ),
+                        "quantity": ("less " if m.deduct else "") + _qty(m.quantity),
+                    }
+                    for m in measured[ln.pk]
+                ],
             }
             for ln in lines
         ],

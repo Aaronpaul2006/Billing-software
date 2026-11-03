@@ -9388,7 +9388,15 @@
                     "quantity": {
                         "type": "string",
                         "format": "decimal",
-                        "pattern": "^-?\\d{0,11}(?:\\.\\d{0,3})?$"
+                        "pattern": "^-?\\d{0,11}(?:\\.\\d{0,3})?$",
+                        "description": "Needed unless the line has measurements: then it is their total."
+                    },
+                    "measurements": {
+                        "type": "array",
+                        "items": {
+                            "$ref": "#/components/schemas/MeasurementIn"
+                        },
+                        "description": "A measurement sheet (B.9): the line's quantity is the total of the rows."
                     },
                     "rate": {
                         "type": "string",
@@ -9414,10 +9422,7 @@
                         "format": "decimal",
                         "pattern": "^-?\\d{0,3}(?:\\.\\d{0,2})?$"
                     }
-                },
-                "required": [
-                    "quantity"
-                ]
+                }
             },
             "LineOut": {
                 "type": "object",
@@ -9506,6 +9511,13 @@
                         "format": "decimal",
                         "pattern": "^-?\\d{0,3}(?:\\.\\d{0,2})?$"
                     },
+                    "measurements": {
+                        "type": "array",
+                        "items": {
+                            "$ref": "#/components/schemas/MeasurementOut"
+                        },
+                        "readOnly": true
+                    },
                     "taxable_value": {
                         "type": "string",
                         "format": "decimal",
@@ -9555,6 +9567,7 @@
                     "igst_amount",
                     "line_no",
                     "line_total",
+                    "measurements",
                     "prev_cumulative_qty",
                     "quantity",
                     "rate",
@@ -9664,6 +9677,119 @@
                     "phone",
                     "role",
                     "tenant_id"
+                ]
+            },
+            "MeasurementIn": {
+                "type": "object",
+                "description": "A measurement-sheet row (B.9). Empty sizes count as 1.",
+                "properties": {
+                    "description": {
+                        "type": [
+                            "string",
+                            "null"
+                        ],
+                        "maxLength": 500
+                    },
+                    "nos": {
+                        "type": "string",
+                        "format": "decimal",
+                        "pattern": "^-?\\d{0,11}(?:\\.\\d{0,3})?$",
+                        "default": "1.000"
+                    },
+                    "length": {
+                        "type": [
+                            "string",
+                            "null"
+                        ],
+                        "format": "decimal",
+                        "pattern": "^-?\\d{0,11}(?:\\.\\d{0,3})?$"
+                    },
+                    "breadth": {
+                        "type": [
+                            "string",
+                            "null"
+                        ],
+                        "format": "decimal",
+                        "pattern": "^-?\\d{0,11}(?:\\.\\d{0,3})?$"
+                    },
+                    "height": {
+                        "type": [
+                            "string",
+                            "null"
+                        ],
+                        "format": "decimal",
+                        "pattern": "^-?\\d{0,11}(?:\\.\\d{0,3})?$"
+                    },
+                    "deduct": {
+                        "type": "boolean",
+                        "default": false,
+                        "description": "An opening: taken off."
+                    }
+                }
+            },
+            "MeasurementOut": {
+                "type": "object",
+                "properties": {
+                    "row_no": {
+                        "type": "integer",
+                        "readOnly": true
+                    },
+                    "description": {
+                        "type": [
+                            "string",
+                            "null"
+                        ],
+                        "readOnly": true
+                    },
+                    "nos": {
+                        "type": "string",
+                        "format": "decimal",
+                        "pattern": "^-?\\d{0,11}(?:\\.\\d{0,3})?$"
+                    },
+                    "length": {
+                        "type": [
+                            "string",
+                            "null"
+                        ],
+                        "format": "decimal",
+                        "pattern": "^-?\\d{0,11}(?:\\.\\d{0,3})?$"
+                    },
+                    "breadth": {
+                        "type": [
+                            "string",
+                            "null"
+                        ],
+                        "format": "decimal",
+                        "pattern": "^-?\\d{0,11}(?:\\.\\d{0,3})?$"
+                    },
+                    "height": {
+                        "type": [
+                            "string",
+                            "null"
+                        ],
+                        "format": "decimal",
+                        "pattern": "^-?\\d{0,11}(?:\\.\\d{0,3})?$"
+                    },
+                    "deduct": {
+                        "type": "boolean",
+                        "readOnly": true
+                    },
+                    "quantity": {
+                        "type": "string",
+                        "format": "decimal",
+                        "pattern": "^-?\\d{0,11}(?:\\.\\d{0,3})?$",
+                        "description": "This row: nos x length x breadth x height."
+                    }
+                },
+                "required": [
+                    "breadth",
+                    "deduct",
+                    "description",
+                    "height",
+                    "length",
+                    "nos",
+                    "quantity",
+                    "row_no"
                 ]
             },
             "Member": {
@@ -12229,6 +12355,13 @@
                         "readOnly": true,
                         "description": "RA bill: previous + this bill."
                     },
+                    "measurements": {
+                        "type": "array",
+                        "items": {
+                            "$ref": "#/components/schemas/MeasurementOut"
+                        },
+                        "readOnly": true
+                    },
                     "rate": {
                         "type": "string",
                         "format": "decimal",
@@ -12285,6 +12418,7 @@
                     "igst_amount",
                     "line_no",
                     "line_total",
+                    "measurements",
                     "prev_cumulative_qty",
                     "quantity",
                     "rate",

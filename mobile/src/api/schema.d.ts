@@ -3287,8 +3287,13 @@ export interface components {
             description?: string;
             sac_hsn?: string | null;
             unit?: string | null;
-            /** Format: decimal */
-            quantity: string;
+            /**
+             * Format: decimal
+             * @description Needed unless the line has measurements: then it is their total.
+             */
+            quantity?: string;
+            /** @description A measurement sheet (B.9): the line's quantity is the total of the rows. */
+            measurements?: components["schemas"]["MeasurementIn"][];
             /** Format: decimal */
             rate?: string;
             /** Format: decimal */
@@ -3330,6 +3335,7 @@ export interface components {
             discount_amount: string;
             /** Format: decimal */
             discount_pct: string | null;
+            readonly measurements: components["schemas"]["MeasurementOut"][];
             /** Format: decimal */
             taxable_value: string;
             /** Format: decimal */
@@ -3370,6 +3376,44 @@ export interface components {
             tenant_id: string;
             role: string;
             memberships: components["schemas"]["MembershipSummary"][];
+        };
+        /** @description A measurement-sheet row (B.9). Empty sizes count as 1. */
+        MeasurementIn: {
+            description?: string | null;
+            /**
+             * Format: decimal
+             * @default 1.000
+             */
+            nos?: string;
+            /** Format: decimal */
+            length?: string | null;
+            /** Format: decimal */
+            breadth?: string | null;
+            /** Format: decimal */
+            height?: string | null;
+            /**
+             * @description An opening: taken off.
+             * @default false
+             */
+            deduct?: boolean;
+        };
+        MeasurementOut: {
+            readonly row_no: number;
+            readonly description: string | null;
+            /** Format: decimal */
+            nos: string;
+            /** Format: decimal */
+            length: string | null;
+            /** Format: decimal */
+            breadth: string | null;
+            /** Format: decimal */
+            height: string | null;
+            readonly deduct: boolean;
+            /**
+             * Format: decimal
+             * @description This row: nos x length x breadth x height.
+             */
+            quantity: string;
         };
         Member: {
             /** Format: uuid */
@@ -4135,6 +4179,7 @@ export interface components {
             prev_cumulative_qty: string | null;
             /** @description RA bill: previous + this bill. */
             readonly up_to_date_qty: string | null;
+            readonly measurements: components["schemas"]["MeasurementOut"][];
             /** Format: decimal */
             rate: string;
             /** Format: decimal */

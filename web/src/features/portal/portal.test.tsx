@@ -60,6 +60,7 @@ function quote(over: Partial<PortalDocumentDetail> = {}): PortalDocumentDetail {
         quantity: "10.000",
         prev_cumulative_qty: null,
         up_to_date_qty: null,
+        measurements: [],
         rate: "10000.00",
         discount_amount: "0.00",
         taxable_value: "100000.00",

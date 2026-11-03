@@ -69,6 +69,7 @@ export function doc(overrides: Partial<Document> = {}): Document {
         quantity: "42.500",
         prev_cumulative_qty: null,
         up_to_date_qty: null,
+        measurements: [],
         rate: "6800.00",
         discount_amount: "0.00",
         discount_pct: null,

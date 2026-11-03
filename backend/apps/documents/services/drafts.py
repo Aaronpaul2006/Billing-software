@@ -37,7 +37,7 @@ from apps.parties.models import Party
 from apps.projects.models import BoqItem, Project
 from apps.tenants.models import GstRegistration
 
-from ..models import Document, DocumentLine
+from ..models import Document, DocumentLine, DocumentLineMeasurement
 from ..tax import Deductions, DocumentIn, DocumentOut, LineIn, LineOut, TaxError, compute
 from ..tax.engine import GST_DOC_TYPES, ZERO_RATED
 from . import ra_bills
@@ -47,6 +47,7 @@ NOTE_TYPES = frozenset({"CREDIT_NOTE", "DEBIT_NOTE"})  # created via their own e
 DEDUCTION_TYPES = frozenset({"PROFORMA", "TAX_INVOICE", "BILL_OF_SUPPLY"})
 ZERO = Decimal("0.00")
 CENT = Decimal("0.01")
+MILLI = Decimal("0.001")
 HUNDRED = Decimal("100")
 # B.5: bills that fall due; a new one without a due date takes the client's payment terms
 TERMS_TYPES = frozenset({"TAX_INVOICE", "BILL_OF_SUPPLY", "DEBIT_NOTE", "PROFORMA"})
@@ -170,6 +171,8 @@ def _line_inputs(lines: list[dict[str, Any]], project: Project | None) -> list[d
     filled = []
     for i, line in enumerate(lines):
         line = dict(line)
+        if line.get("measurements"):
+            line["measurements"], line["quantity"] = _measured(line["measurements"], i)
         source: CatalogItem | BoqItem | None = None
         if line.get("boq_item_id"):
             source = get_or_invalid(
@@ -245,6 +248,31 @@ def _line_inputs(lines: list[dict[str, Any]], project: Project | None) -> list[d
         line.setdefault("gst_rate", ZERO)
         filled.append(line)
     return filled
+
+
+def _measured(rows: list[dict[str, Any]], i: int) -> tuple[list[dict[str, Any]], Decimal]:
+    """Each row's quantity (nos x L x B x H, empty sizes 1, half up to 3 decimals) and
+    the line's: the rows' total, deduct rows taken off."""
+    out, total = [], Decimal("0")
+    for row in rows:
+        q = row.get("nos") or Decimal("1")
+        for size in ("length", "breadth", "height"):
+            if row.get(size) is not None:
+                q *= row[size]
+        q = q.quantize(MILLI, ROUND_HALF_UP)
+        if q <= 0:
+            raise Invalid(
+                f"lines[{i}].measurements", "A row measures less than 0.001.", code="too_small"
+            )
+        out.append({**row, "description": row.get("description") or None, "quantity": q})
+        total += -q if row.get("deduct") else q
+    if total <= 0:
+        raise Invalid(
+            f"lines[{i}].measurements",
+            "The measurements add up to zero or less.",
+            code="measurements_total",
+        )
+    return out, total
 
 
 def _advance_outstanding(project: Project, exclude: uuid.UUID | None) -> Decimal:
@@ -363,7 +391,7 @@ def _header(c: Computed, data: dict[str, Any]) -> dict[str, Any]:
 
 
 def _write_lines(doc: Document, c: Computed) -> None:
-    DocumentLine.objects.bulk_create(
+    lines = [
         DocumentLine(
             tenant_id=doc.tenant_id,
             document=doc,
@@ -383,6 +411,24 @@ def _write_lines(doc: Document, c: Computed) -> None:
             **_line_amounts(out),
         )
         for i, (ln, out) in enumerate(zip(c.lines, c.out.lines, strict=True), start=1)
+    ]
+    DocumentLine.objects.bulk_create(lines)
+    DocumentLineMeasurement.objects.bulk_create(
+        DocumentLineMeasurement(
+            tenant_id=doc.tenant_id,
+            document=doc,
+            line_id=line.pk,
+            row_no=n,
+            description=row["description"],
+            nos=row.get("nos") or Decimal("1"),
+            length=row.get("length"),
+            breadth=row.get("breadth"),
+            height=row.get("height"),
+            deduct=row.get("deduct", False),
+            quantity=row["quantity"],
+        )
+        for line, ln in zip(lines, c.lines, strict=True)
+        for n, row in enumerate(ln.get("measurements") or [], start=1)
     )
 
 
@@ -397,26 +443,35 @@ def _line_amounts(out: LineOut) -> dict[str, Decimal]:
     }
 
 
+LINE_FIELDS = (
+    "catalog_item_id",
+    "catalog_variant_id",
+    "boq_item_id",
+    "description",
+    "sac_hsn",
+    "unit",
+    "quantity",
+    "rate",
+    "discount_amount",
+    "discount_pct",
+    "gst_rate",
+)
+MEASUREMENT_FIELDS = ("description", "nos", "length", "breadth", "height", "deduct")
+
+
 def _stored_lines(doc: Document) -> list[dict[str, Any]]:
-    return [
-        {
-            f: getattr(ln, f)
-            for f in (
-                "catalog_item_id",
-                "catalog_variant_id",
-                "boq_item_id",
-                "description",
-                "sac_hsn",
-                "unit",
-                "quantity",
-                "rate",
-                "discount_amount",
-                "discount_pct",
-                "gst_rate",
-            )
-        }
-        for ln in DocumentLine.objects.filter(document_id=doc.pk).order_by("line_no")
-    ]
+    """The stored lines as input, with their measurement rows (one query each)."""
+    lines = list(DocumentLine.objects.filter(document_id=doc.pk).order_by("line_no"))
+    rows: dict[Any, list[dict[str, Any]]] = {ln.pk: [] for ln in lines}
+    for m in DocumentLineMeasurement.objects.filter(document_id=doc.pk).order_by("row_no"):
+        rows[m.line_id].append({f: getattr(m, f) for f in MEASUREMENT_FIELDS})
+    stored = []
+    for ln in lines:
+        line = {f: getattr(ln, f) for f in LINE_FIELDS}
+        if rows[ln.pk]:
+            line["measurements"] = rows[ln.pk]
+        stored.append(line)
+    return stored
 
 
 def current_state(doc: Document) -> dict[str, Any]:

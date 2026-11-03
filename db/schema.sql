@@ -569,6 +569,30 @@ CREATE INDEX document_lines_boq_idx ON document_lines (tenant_id, boq_item_id) W
 -- An item's last use and the rate last charged to a client (B.1, B.8).
 CREATE INDEX document_lines_catalog_idx ON document_lines (tenant_id, catalog_item_id) WHERE catalog_item_id IS NOT NULL;
 
+-- Measurement sheets (B.9): how a line's quantity was measured. Each row is
+-- number x length x breadth x height (empty sizes count as 1), rounded half up
+-- to 3 decimals; a deduct row (an opening) takes its quantity off. The line's
+-- quantity is the total. Rows go with their line (cascade) and, like lines,
+-- change only while the bill is a draft (document_lines_guard, section 7b).
+CREATE TABLE document_line_measurements (
+  id           uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+  tenant_id    uuid NOT NULL REFERENCES tenants (id),
+  document_id  uuid NOT NULL,
+  line_id      uuid NOT NULL,
+  row_no       smallint NOT NULL CHECK (row_no > 0),
+  description  text CHECK (char_length(description) <= 500),
+  nos          numeric(14,3) NOT NULL DEFAULT 1 CHECK (nos > 0),
+  length       numeric(14,3) CHECK (length > 0),
+  breadth      numeric(14,3) CHECK (breadth > 0),
+  height       numeric(14,3) CHECK (height > 0),
+  deduct       boolean NOT NULL DEFAULT false,
+  quantity     numeric(14,3) NOT NULL CHECK (quantity > 0),
+  UNIQUE (line_id, row_no),
+  FOREIGN KEY (tenant_id, document_id) REFERENCES documents (tenant_id, id) ON DELETE CASCADE,
+  FOREIGN KEY (tenant_id, line_id)     REFERENCES document_lines (tenant_id, id) ON DELETE CASCADE
+);
+CREATE INDEX line_measurements_line_idx ON document_line_measurements (tenant_id, line_id);
+
 -- =============================================================================
 -- 5. Money in: payments and allocations
 --    (Payables / vendor bills are a later phase; expenses track their own
@@ -928,6 +952,9 @@ END $$;
 CREATE TRIGGER document_lines_guard
   BEFORE INSERT OR UPDATE OR DELETE ON document_lines
   FOR EACH ROW EXECUTE FUNCTION document_lines_guard();
+CREATE TRIGGER document_line_measurements_guard
+  BEFORE INSERT OR UPDATE OR DELETE ON document_line_measurements
+  FOR EACH ROW EXECUTE FUNCTION document_lines_guard();
 
 -- 7c. Allocations keep documents.amount_settled in step. Updating the document
 --     row locks it, so concurrent allocations serialize, and the CHECK
@@ -1043,7 +1070,8 @@ BEGIN
     'tenants', 'memberships', 'gst_registrations', 'parties', 'projects', 'boq_items',
     'catalog_items', 'attachments', 'document_series', 'documents', 'document_lines',
     'payments', 'allocations', 'expenses', 'retention_releases', 'tds_certificates', 'exports',
-    'email_invitations', 'payment_reminders', 'document_templates', 'catalog_item_variants']
+    'email_invitations', 'payment_reminders', 'document_templates', 'catalog_item_variants',
+    'document_line_measurements']
   LOOP
     EXECUTE format(
       'CREATE TRIGGER audit AFTER INSERT OR UPDATE OR DELETE ON %I FOR EACH ROW EXECUTE FUNCTION audit_row_change()', t);
@@ -1063,7 +1091,7 @@ BEGIN
     'gst_registrations', 'parties', 'projects', 'boq_items', 'catalog_items', 'attachments',
     'document_series', 'documents', 'document_lines', 'payments', 'allocations', 'expenses',
     'retention_releases', 'tds_certificates', 'idempotency_keys', 'exports', 'email_invitations',
-    'payment_reminders', 'document_templates', 'catalog_item_variants']
+    'payment_reminders', 'document_templates', 'catalog_item_variants', 'document_line_measurements']
   LOOP
     EXECUTE format('ALTER TABLE %I ENABLE ROW LEVEL SECURITY', t);
     EXECUTE format('ALTER TABLE %I FORCE ROW LEVEL SECURITY', t);
@@ -1195,6 +1223,11 @@ CREATE POLICY client_scope ON document_lines AS RESTRICTIVE
   USING (NOT app_portal_session()
          OR EXISTS (SELECT 1 FROM documents d
                      WHERE d.tenant_id = document_lines.tenant_id AND d.id = document_lines.document_id));
+CREATE POLICY client_scope ON document_line_measurements AS RESTRICTIVE
+  USING (NOT app_portal_session()
+         OR EXISTS (SELECT 1 FROM documents d
+                     WHERE d.tenant_id = document_line_measurements.tenant_id
+                       AND d.id = document_line_measurements.document_id));
 CREATE POLICY client_scope ON payments AS RESTRICTIVE
   USING (NOT app_portal_session() OR (party_id = app_current_party() AND status = 'RECORDED'));
 CREATE POLICY client_scope ON retention_releases AS RESTRICTIVE
@@ -1412,7 +1445,8 @@ GRANT SELECT, INSERT, UPDATE ON ALL TABLES IN SCHEMA public TO billing_app;
 -- allocations, editable masters, housekeeping). Everything else is
 -- cancelled / voided / archived instead.
 GRANT DELETE ON documents, document_lines, allocations, boq_items, catalog_items, tds_certificates,
-                idempotency_keys, auth_sessions, document_templates, catalog_item_variants TO billing_app;
+                idempotency_keys, auth_sessions, document_templates, catalog_item_variants,
+                document_line_measurements TO billing_app;
 -- Audit rows are written only by the trigger.
 REVOKE INSERT, UPDATE, DELETE ON audit_log FROM billing_app;
 REVOKE INSERT, UPDATE ON v_billing_summary, v_receivables, v_project_billing FROM billing_app;

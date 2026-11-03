@@ -20,6 +20,7 @@
   .totals td:first-child { color: #333; }
   .grand td { font-weight: bold; font-size: 10pt; }
   .words { margin-top: 3mm; font-style: italic; }
+  tr.measure td { font-size: 7.5pt; color: #555; border-top: none; padding-top: 0; }
   .sign { margin-top: 14mm; text-align: right; }
   .watermark { position: fixed; top: 38%; left: 8%; font-size: 90pt; color: rgba(200, 0, 0, .12); transform: rotate(-30deg); font-weight: bold; }
 </style>
@@ -80,6 +81,13 @@
       <td class="num">{{ ln.rate }}</td>{% if show_discount %}<td class="num">{{ ln.discount }}</td>{% endif %}<td class="num">{{ ln.taxable }}</td>
       <td class="num">{{ ln.gst_rate }}</td><td class="num">{{ ln.total }}</td>
     </tr>
+    {% for m in ln.measurements %}
+    <tr class="measure">
+      <td></td>{% if ra_sequence %}<td></td>{% endif %}<td colspan="3">{{ m.description }} {{ m.sizes }}</td>
+      <td class="num">{{ m.quantity }}</td>
+      <td colspan="{% if ra_sequence %}{% if show_discount %}7{% else %}6{% endif %}{% else %}{% if show_discount %}5{% else %}4{% endif %}{% endif %}"></td>
+    </tr>
+    {% endfor %}
   {% endfor %}
   </tbody>
 </table>
