@@ -2476,6 +2476,43 @@
                 }
             }
         },
+        "/api/v1/documents/{document_id}/history": {
+            "get": {
+                "operationId": "documents_history_retrieve",
+                "description": "Who changed what on a bill, and when, in plain words (B.11). Anyone who\ncan see the bill sees its history.",
+                "parameters": [
+                    {
+                        "in": "path",
+                        "name": "document_id",
+                        "schema": {
+                            "type": "string",
+                            "format": "uuid"
+                        },
+                        "required": true
+                    }
+                ],
+                "tags": [
+                    "documents"
+                ],
+                "security": [
+                    {
+                        "bearerAuth": []
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/History"
+                                }
+                            }
+                        },
+                        "description": ""
+                    }
+                }
+            }
+        },
         "/api/v1/documents/{document_id}/issue": {
             "post": {
                 "operationId": "documents_issue_create",
@@ -9191,6 +9228,72 @@
                     "sgst",
                     "taxable_value"
                 ]
+            },
+            "History": {
+                "type": "object",
+                "properties": {
+                    "results": {
+                        "type": "array",
+                        "items": {
+                            "$ref": "#/components/schemas/HistoryEntry"
+                        }
+                    }
+                },
+                "required": [
+                    "results"
+                ]
+            },
+            "HistoryEntry": {
+                "type": "object",
+                "description": "One change to a bill, in plain words (B.11).",
+                "properties": {
+                    "at": {
+                        "type": "string",
+                        "format": "date-time"
+                    },
+                    "actor_name": {
+                        "type": [
+                            "string",
+                            "null"
+                        ],
+                        "description": "Who; null: the system."
+                    },
+                    "kind": {
+                        "$ref": "#/components/schemas/HistoryEntryKindEnum"
+                    },
+                    "summary": {
+                        "type": "string"
+                    },
+                    "details": {
+                        "type": "array",
+                        "items": {
+                            "type": "string"
+                        }
+                    }
+                },
+                "required": [
+                    "actor_name",
+                    "at",
+                    "details",
+                    "kind",
+                    "summary"
+                ]
+            },
+            "HistoryEntryKindEnum": {
+                "enum": [
+                    "created",
+                    "edited",
+                    "issued",
+                    "cancelled",
+                    "accepted",
+                    "declined",
+                    "payment",
+                    "note",
+                    "converted",
+                    "reminder"
+                ],
+                "type": "string",
+                "description": "* `created` - created\n* `edited` - edited\n* `issued` - issued\n* `cancelled` - cancelled\n* `accepted` - accepted\n* `declined` - declined\n* `payment` - payment\n* `note` - note\n* `converted` - converted\n* `reminder` - reminder"
             },
             "ImportRequest": {
                 "type": "object",

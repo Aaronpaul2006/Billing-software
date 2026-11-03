@@ -938,6 +938,26 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/documents/{document_id}/history": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * @description Who changed what on a bill, and when, in plain words (B.11). Anyone who
+         *     can see the bill sees its history.
+         */
+        get: operations["documents_history_retrieve"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/documents/{document_id}/issue": {
         parameters: {
             query?: never;
@@ -3229,6 +3249,33 @@ export interface components {
             /** Format: decimal */
             cess: string;
         };
+        History: {
+            results: components["schemas"]["HistoryEntry"][];
+        };
+        /** @description One change to a bill, in plain words (B.11). */
+        HistoryEntry: {
+            /** Format: date-time */
+            at: string;
+            /** @description Who; null: the system. */
+            actor_name: string | null;
+            kind: components["schemas"]["HistoryEntryKindEnum"];
+            summary: string;
+            details: string[];
+        };
+        /**
+         * @description * `created` - created
+         *     * `edited` - edited
+         *     * `issued` - issued
+         *     * `cancelled` - cancelled
+         *     * `accepted` - accepted
+         *     * `declined` - declined
+         *     * `payment` - payment
+         *     * `note` - note
+         *     * `converted` - converted
+         *     * `reminder` - reminder
+         * @enum {string}
+         */
+        HistoryEntryKindEnum: "created" | "edited" | "issued" | "cancelled" | "accepted" | "declined" | "payment" | "note" | "converted" | "reminder";
         ImportRequest: {
             /**
              * Format: uri
@@ -7186,6 +7233,27 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["Document"];
+                };
+            };
+        };
+    };
+    documents_history_retrieve: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                document_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["History"];
                 };
             };
         };

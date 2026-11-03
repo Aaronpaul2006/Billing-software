@@ -390,6 +390,30 @@ their own endpoints (Phase 1.6), RA bills below (Phase 3.2). Example response:
 }
 ```
 
+### Change history (B.11)
+
+`GET /documents/{id}/history` (permission `tenant.read`: everyone who can see
+the bill sees its history; another tenant's bill: `404`) returns
+`{results: [{at, actor_name, kind, summary, details[]}]}`, newest first, in
+plain English: `kind` is one of `created`, `edited`, `issued`, `cancelled`,
+`accepted`, `declined`, `payment`, `note`, `converted`, `reminder`.
+
+- Read from the audit trail (the bill's row and its lines, found through the
+  partial index `audit_log_line_doc_idx`), plus payments and credit notes
+  settled against the bill, credit / debit notes issued against it,
+  conversions made from it, and reminders sent. Their times come from the
+  audit trail too, so the order is the order things happened.
+- Draft saves by one person less than 30 minutes apart are one "Edited the
+  draft" entry: the net change, from before the first save to after the last
+  (autosave would otherwise fill the list).
+- Lines are written afresh on each save, so they are matched by description,
+  then by position: removing line 2 is one change. Shown fields: description,
+  quantity, unit, rate, discount, GST rate, HSN/SAC; bill fields: date, due
+  date, validity, client, project, place of supply, reverse charge, notes,
+  terms and the total (deductions follow from the lines and are not listed).
+- Numbers are read from the trail as exact decimals and shown in Indian
+  grouping (`₹3,41,020.00`); the strings are for display only.
+
 ### Duplicate (B.10)
 
 `POST /documents/{id}/duplicate` `{doc_date}` (permission `documents.draft`,

@@ -44,6 +44,7 @@ import {
   useDocument,
 } from "./api";
 import type { DocType, Document } from "./api";
+import { DocumentHistory } from "./DocumentHistory";
 import { TotalsPanel } from "./TotalsPanel";
 
 const CONVERT_TO: Partial<Record<DocType, DocType[]>> = {
@@ -753,6 +754,7 @@ export function DocumentPage() {
             outstanding={doc.totals.outstanding}
           />
         )}
+        <DocumentHistory documentId={doc.id} />
       </div>
     </>
   );

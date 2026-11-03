@@ -34,6 +34,8 @@ from .serializers import (
     DocumentSerializer,
     DocumentWriteSerializer,
     DuplicateSerializer,
+    HistoryEntrySerializer,
+    HistorySerializer,
     LastRateSerializer,
     LastRatesSerializer,
     NoteSerializer,
@@ -43,7 +45,7 @@ from .serializers import (
     PreviewSerializer,
     TotalsSerializer,
 )
-from .services import drafts, lifecycle, line_import, pdfs, rates
+from .services import drafts, history, lifecycle, line_import, pdfs, rates
 
 DRAFT = "documents.draft"
 
@@ -198,6 +200,19 @@ class LastRatesView(ActionAPIView):
     def get(self, request: Request, party_id: uuid.UUID) -> Response:
         rows = rates.last_rates(self.principal, party_id)
         return Response({"results": LastRateSerializer(rows, many=True).data})
+
+
+class DocumentHistoryView(ActionAPIView):
+    """Who changed what on a bill, and when, in plain words (B.11). Anyone who
+    can see the bill sees its history."""
+
+    pagination_class = None
+    filter_backends = ()
+
+    @extend_schema(responses={200: HistorySerializer}, tags=["documents"])
+    def get(self, request: Request, document_id: uuid.UUID) -> Response:
+        rows = history.document_history(self.principal, document_id)
+        return Response({"results": HistoryEntrySerializer(rows, many=True).data})
 
 
 class LinesSampleView(ActionAPIView):

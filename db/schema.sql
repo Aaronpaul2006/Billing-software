@@ -830,6 +830,11 @@ CREATE TABLE audit_log (
 );
 CREATE INDEX audit_log_row_idx    ON audit_log (tenant_id, table_name, row_id, occurred_at);
 CREATE INDEX audit_log_tenant_idx ON audit_log (tenant_id, occurred_at DESC);
+-- A bill's line changes (its history): lines are written afresh on every save,
+-- so they are found by the bill they belong to.
+CREATE INDEX audit_log_line_doc_idx ON audit_log
+  (tenant_id, (COALESCE(new_data ->> 'document_id', old_data ->> 'document_id')))
+  WHERE table_name = 'document_lines';
 
 -- =============================================================================
 -- 7. Integrity triggers

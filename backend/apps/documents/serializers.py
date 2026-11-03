@@ -324,6 +324,33 @@ class CancelSerializer(serializers.Serializer[Any]):
     reason = serializers.CharField(min_length=3, max_length=500)
 
 
+class HistoryEntrySerializer(serializers.Serializer[Any]):
+    """One change to a bill, in plain words (B.11)."""
+
+    at = serializers.DateTimeField()
+    actor_name = serializers.CharField(allow_null=True, help_text="Who; null: the system.")
+    kind = serializers.ChoiceField(
+        choices=[
+            "created",
+            "edited",
+            "issued",
+            "cancelled",
+            "accepted",
+            "declined",
+            "payment",
+            "note",
+            "converted",
+            "reminder",
+        ]
+    )
+    summary = serializers.CharField()
+    details = serializers.ListField(child=serializers.CharField())
+
+
+class HistorySerializer(serializers.Serializer[Any]):
+    results = HistoryEntrySerializer(many=True)
+
+
 class DuplicateSerializer(serializers.Serializer[Any]):
     doc_date = serializers.DateField(
         help_text="Date of the copy (explicit: no time zone guessing)."

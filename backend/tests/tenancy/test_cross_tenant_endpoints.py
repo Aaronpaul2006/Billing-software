@@ -1166,3 +1166,5 @@ OBJECT_ROUTES["party-last-rates"] = lambda w: None
 
 # --- B.10 duplicate: tests/documents/test_duplicate.py::test_another_tenants_bill_is_not_found
 OBJECT_ROUTES["document-duplicate"] = lambda w: None
+# --- B.11 history: tests/documents/test_history.py::test_another_tenants_bill_is_not_found
+OBJECT_ROUTES["document-history"] = lambda w: None

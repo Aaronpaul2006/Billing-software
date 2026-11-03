@@ -1,4 +1,7 @@
 from django.db import models
+from django.db.models import F, Q
+from django.db.models.fields.json import KT
+from django.db.models.functions import Coalesce
 
 from apps.core.db import SQLDefault, one_of
 
@@ -40,4 +43,12 @@ class AuditLog(models.Model):
                 name="audit_log_row_idx",
             ),
             models.Index(fields=["tenant_id", "-occurred_at"], name="audit_log_tenant_idx"),
+            # A bill's line changes (its history, B.11): lines are written afresh on
+            # every save, so they are found by the bill they belong to.
+            models.Index(
+                F("tenant_id"),
+                Coalesce(KT("new_data__document_id"), KT("old_data__document_id")),
+                condition=Q(table_name="document_lines"),
+                name="audit_log_line_doc_idx",
+            ),
         ]
