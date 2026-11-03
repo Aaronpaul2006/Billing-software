@@ -519,6 +519,40 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/catalog-items:import": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** @description Add catalog items from a CSV / XLSX file, all or nothing (B.2). */
+        post: operations["catalog_items:import_create"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/catalog-items:import-sample": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** @description A sample file to fill in: the columns the item import reads, three example rows. */
+        get: operations["catalog_items:import_sample_retrieve"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/catalog-variants/{variant_id}": {
         parameters: {
             query?: never;
@@ -2356,6 +2390,14 @@ export interface components {
         CancelRelease: {
             reason: string;
         };
+        CatalogImportResult: {
+            dry_run: boolean;
+            count: number;
+            skipped_rows: number[];
+            ignored_columns: string[];
+            /** @description In a dry run, a preview: id, created_at and updated_at are null. */
+            items: components["schemas"]["CatalogItem"][];
+        };
         CatalogItem: {
             /** Format: uuid */
             readonly id: string;
@@ -3077,6 +3119,18 @@ export interface components {
             igst: string;
             /** Format: decimal */
             cess: string;
+        };
+        ImportRequest: {
+            /**
+             * Format: uri
+             * @description CSV (UTF-8) or .xlsx, at most 5 MB and 5,000 rows.
+             */
+            file: string;
+            /**
+             * @description Validate and preview; save nothing.
+             * @default false
+             */
+            dry_run?: boolean;
         };
         Invitation: {
             /** Format: uuid */
@@ -6192,6 +6246,62 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["CatalogVariant"];
+                };
+            };
+        };
+    };
+    "catalog_items:import_create": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "multipart/form-data": components["schemas"]["ImportRequest"];
+            };
+        };
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CatalogImportResult"];
+                };
+            };
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CatalogImportResult"];
+                };
+            };
+        };
+    };
+    "catalog_items:import_sample_retrieve": {
+        parameters: {
+            query?: {
+                /**
+                 * @description * `xlsx` - xlsx
+                 *     * `csv` - csv
+                 */
+                type?: "xlsx" | "csv";
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/octet-stream": string;
                 };
             };
         };

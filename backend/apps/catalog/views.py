@@ -5,17 +5,26 @@ from typing import Any
 
 import django_filters
 from django.db.models import Max, OuterRef, Prefetch, Q, QuerySet, Subquery
+from django.http import HttpResponse
 from drf_spectacular.utils import extend_schema
+from rest_framework.parsers import MultiPartParser
 from rest_framework.request import Request
 from rest_framework.response import Response
 
 from apps.core.api import ActionAPIView, detail_response, list_response, versioned_patch
-from apps.core.idempotency import idempotent_if_keyed
+from apps.core.idempotency import idempotent, idempotent_if_keyed
+from apps.core.imports import (
+    ImportRequestSerializer,
+    SampleQuerySerializer,
+    sample_response,
+    upload_bytes,
+)
 from apps.documents.models import DocumentLine
 
-from . import services
+from . import importer, services
 from .models import CatalogItem, CatalogItemVariant
 from .serializers import (
+    CatalogImportResultSerializer,
     CatalogItemSerializer,
     CatalogItemWriteSerializer,
     CatalogVariantListSerializer,
@@ -97,6 +106,44 @@ class CatalogItemListView(ActionAPIView):
         data.is_valid(raise_exception=True)
         item = services.create_item(self.principal, data.validated_data)
         return detail_response(item, CatalogItemSerializer, status=201)
+
+
+class CatalogImportView(ActionAPIView):
+    """Add catalog items from a CSV / XLSX file, all or nothing (B.2)."""
+
+    write_action = EDIT
+    parser_classes = (MultiPartParser,)
+
+    @extend_schema(
+        request={"multipart/form-data": ImportRequestSerializer},
+        responses={200: CatalogImportResultSerializer, 201: CatalogImportResultSerializer},
+        tags=["catalog"],
+    )
+    @idempotent
+    def post(self, request: Request) -> Response:
+        params = ImportRequestSerializer(data=request.data)
+        params.is_valid(raise_exception=True)
+        dry_run = params.validated_data["dry_run"]
+        result = importer.import_items(
+            self.principal, upload_bytes(params.validated_data["file"]), dry_run=dry_run
+        )
+        return Response(CatalogImportResultSerializer(result).data, status=200 if dry_run else 201)
+
+
+class CatalogImportSampleView(ActionAPIView):
+    """A sample file to fill in: the columns the item import reads, three example rows."""
+
+    read_action = EDIT
+
+    @extend_schema(
+        parameters=[SampleQuerySerializer],
+        responses={(200, "application/octet-stream"): bytes},
+        tags=["catalog"],
+    )
+    def get(self, request: Request) -> HttpResponse:
+        q = SampleQuerySerializer(data=request.query_params)
+        q.is_valid(raise_exception=True)
+        return sample_response(importer.LAYOUT, q.validated_data["type"], "items-sample")
 
 
 class CatalogItemDetailView(ActionAPIView):

@@ -1,5 +1,5 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { AlertCircle, Plus, Trash2 } from "lucide-react";
+import { AlertCircle, FileUp, Plus, Trash2 } from "lucide-react";
 import { useState } from "react";
 
 import { api, newIdempotencyKey, unwrap } from "@/api/client";
@@ -17,6 +17,9 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { errorMessage } from "@/lib/errors";
 import { ifMatch } from "@/lib/forms";
 import { cleanMoneyInput, formatInr, MONEY_INPUT, sumMoney } from "@/lib/money";
+import { useDebounced } from "@/lib/useDebounced";
+
+import { CatalogImport } from "./CatalogImport";
 
 type Item = components["schemas"]["CatalogItem"];
 type Variant = components["schemas"]["CatalogVariant"];
@@ -359,34 +362,71 @@ function Variants({ item, canEdit }: { item: Item; canEdit: boolean }) {
 export function CatalogPage() {
   const session = useSession();
   const canEdit = CAN_EDIT.has(session.role);
-  const [panel, setPanel] = useState<string | null>(null); // "new", "edit:<id>", "variants:<id>"
-  const items = useQuery({
-    queryKey: ["catalog-items", "all"],
+  // "new", "import", "edit:<id>", "variants:<id>"
+  const [panel, setPanel] = useState<string | null>(null);
+  const [search, setSearch] = useState("");
+  const q = useDebounced(search.trim(), 300);
+  const page = useQuery({
+    queryKey: ["catalog-items", "all", q],
     queryFn: async () =>
       unwrap(
         await api.GET("/api/v1/catalog-items", {
-          params: { query: { limit: 100, ordering: "name" } },
+          params: { query: { limit: 100, ordering: "name", ...(q ? { q } : {}) } },
         }),
-      ).results,
+      ),
   });
+  const items = { error: page.error, data: page.data?.results };
   return (
     <>
       <PageHeader
         title="Catalog"
         description="Items and rates you put on bills. Variants (brand, grade, size) add to or take off the item's rate."
         actions={
-          canEdit &&
-          panel !== "new" && (
-            <Button
-              onClick={() => {
-                setPanel("new");
-              }}
-            >
-              <Plus aria-hidden /> Add item
-            </Button>
+          canEdit && (
+            <>
+              {panel !== "import" && (
+                <Button
+                  variant="outline"
+                  onClick={() => {
+                    setPanel("import");
+                  }}
+                >
+                  <FileUp aria-hidden /> Import from Excel
+                </Button>
+              )}
+              {panel !== "new" && (
+                <Button
+                  onClick={() => {
+                    setPanel("new");
+                  }}
+                >
+                  <Plus aria-hidden /> Add item
+                </Button>
+              )}
+            </>
           )
         }
       />
+      {panel === "import" && (
+        <div className="mb-4 max-w-4xl">
+          <CatalogImport
+            onDone={() => {
+              setPanel(null);
+            }}
+          />
+        </div>
+      )}
+      <div className="mb-4 max-w-4xl">
+        <Input
+          type="search"
+          aria-label="Search items"
+          placeholder="Search by name, brand or HSN/SAC"
+          value={search}
+          onChange={(e) => {
+            setSearch(e.target.value);
+          }}
+        />
+      </div>
       {panel === "new" && (
         <div className="mb-4 max-w-4xl">
           <ItemForm
@@ -401,7 +441,9 @@ export function CatalogPage() {
       ) : !items.data ? (
         <Skeleton className="h-24 w-full" />
       ) : items.data.length === 0 ? (
-        <p className="text-muted-foreground py-8 text-center text-sm">No items yet.</p>
+        <p className="text-muted-foreground py-8 text-center text-sm">
+          {q ? "No item matches." : "No items yet."}
+        </p>
       ) : (
         <ul className="grid max-w-4xl gap-3">
           {items.data.map((item) => (

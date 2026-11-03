@@ -3,6 +3,12 @@ from django.urls import path
 from . import views
 
 urlpatterns = [
+    path("catalog-items:import", views.CatalogImportView.as_view(), name="catalog-import"),
+    path(
+        "catalog-items:import-sample",
+        views.CatalogImportSampleView.as_view(),
+        name="catalog-import-sample",
+    ),
     path("catalog-items", views.CatalogItemListView.as_view(), name="catalog-items"),
     path(
         "catalog-items/<uuid:item_id>",

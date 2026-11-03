@@ -85,3 +85,13 @@ class CatalogItemWriteSerializer(serializers.Serializer[Any]):
     default_rate = MoneyField(required=False, allow_null=True, min_value=Decimal("0"))
     gst_rate = PercentField(default=Decimal("18"), max_value=Decimal("50"))
     is_active = serializers.BooleanField(default=True)
+
+
+class CatalogImportResultSerializer(serializers.Serializer[Any]):
+    dry_run = serializers.BooleanField()
+    count = serializers.IntegerField()
+    skipped_rows = serializers.ListField(child=serializers.IntegerField())
+    ignored_columns = serializers.ListField(child=serializers.CharField())
+    items = CatalogItemSerializer(
+        many=True, help_text="In a dry run, a preview: id, created_at and updated_at are null."
+    )

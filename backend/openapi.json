@@ -1125,6 +1125,95 @@
                 }
             }
         },
+        "/api/v1/catalog-items:import": {
+            "post": {
+                "operationId": "catalog_items:import_create",
+                "description": "Add catalog items from a CSV / XLSX file, all or nothing (B.2).",
+                "tags": [
+                    "catalog"
+                ],
+                "requestBody": {
+                    "content": {
+                        "multipart/form-data": {
+                            "schema": {
+                                "$ref": "#/components/schemas/ImportRequest"
+                            }
+                        }
+                    },
+                    "required": true
+                },
+                "security": [
+                    {
+                        "bearerAuth": []
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/CatalogImportResult"
+                                }
+                            }
+                        },
+                        "description": ""
+                    },
+                    "201": {
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/CatalogImportResult"
+                                }
+                            }
+                        },
+                        "description": ""
+                    }
+                }
+            }
+        },
+        "/api/v1/catalog-items:import-sample": {
+            "get": {
+                "operationId": "catalog_items:import_sample_retrieve",
+                "description": "A sample file to fill in: the columns the item import reads, three example rows.",
+                "parameters": [
+                    {
+                        "in": "query",
+                        "name": "type",
+                        "schema": {
+                            "enum": [
+                                "xlsx",
+                                "csv"
+                            ],
+                            "type": "string",
+                            "default": "xlsx",
+                            "minLength": 1
+                        },
+                        "description": "* `xlsx` - xlsx\n* `csv` - csv"
+                    }
+                ],
+                "tags": [
+                    "catalog"
+                ],
+                "security": [
+                    {
+                        "bearerAuth": []
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "content": {
+                            "application/octet-stream": {
+                                "schema": {
+                                    "type": "string",
+                                    "format": "binary"
+                                }
+                            }
+                        },
+                        "description": ""
+                    }
+                }
+            }
+        },
         "/api/v1/catalog-variants/{variant_id}": {
             "get": {
                 "operationId": "catalog_variants_retrieve",
@@ -6643,6 +6732,43 @@
                     "reason"
                 ]
             },
+            "CatalogImportResult": {
+                "type": "object",
+                "properties": {
+                    "dry_run": {
+                        "type": "boolean"
+                    },
+                    "count": {
+                        "type": "integer"
+                    },
+                    "skipped_rows": {
+                        "type": "array",
+                        "items": {
+                            "type": "integer"
+                        }
+                    },
+                    "ignored_columns": {
+                        "type": "array",
+                        "items": {
+                            "type": "string"
+                        }
+                    },
+                    "items": {
+                        "type": "array",
+                        "items": {
+                            "$ref": "#/components/schemas/CatalogItem"
+                        },
+                        "description": "In a dry run, a preview: id, created_at and updated_at are null."
+                    }
+                },
+                "required": [
+                    "count",
+                    "dry_run",
+                    "ignored_columns",
+                    "items",
+                    "skipped_rows"
+                ]
+            },
             "CatalogItem": {
                 "type": "object",
                 "properties": {
@@ -8795,6 +8921,24 @@
                     "igst",
                     "sgst",
                     "taxable_value"
+                ]
+            },
+            "ImportRequest": {
+                "type": "object",
+                "properties": {
+                    "file": {
+                        "type": "string",
+                        "format": "uri",
+                        "description": "CSV (UTF-8) or .xlsx, at most 5 MB and 5,000 rows."
+                    },
+                    "dry_run": {
+                        "type": "boolean",
+                        "default": false,
+                        "description": "Validate and preview; save nothing."
+                    }
+                },
+                "required": [
+                    "file"
                 ]
             },
             "Invitation": {

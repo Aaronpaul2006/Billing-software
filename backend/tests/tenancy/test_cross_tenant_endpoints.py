@@ -1148,3 +1148,7 @@ COLLECTION_ROUTES["report-dashboard"] = lambda w: None
 
 # --- H.2 setup checklist: tests/tenants/test_setup.py::test_another_tenant_is_not_counted
 COLLECTION_ROUTES["tenant-setup"] = lambda w: None
+
+# --- B.2 catalog import: tests/catalog/test_import.py::test_imports_stay_in_the_tenant
+COLLECTION_ROUTES["catalog-import"] = lambda w: None
+NOT_TENANT_DATA["catalog-import-sample"] = "a fixed sample file"

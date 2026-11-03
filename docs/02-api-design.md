@@ -237,6 +237,20 @@ Implemented (Phase 0.5) as of 2026-10-19:
 | `GET /projects/{id}/boq-progress` | Per BOQ item: contract vs billed quantity and value, balance, progress %; plus totals. All items, not paginated. |
 | `GET/POST /catalog-items` · `PATCH/DELETE /catalog-items/{id}` | Reusable items and rates. Search (B.1): `?q=` (every word must match the name, description or a variant's value; or the start of the HSN/SAC), `is_active`, `sac_hsn`; `?used=true&ordering=-last_used_at` lists the items used most recently on a bill (`last_used_at` in each row) |
 
+### Catalog item import (B.2)
+
+`POST /catalog-items:import` (`multipart/form-data`: `file`, `dry_run`), the
+same rules as the BOQ import below (CSV UTF-8 or `.xlsx`, 5 MB, 5,000 rows,
+header found in the top 20 rows, `Idempotency-Key`, all or nothing, errors as
+`rows[<spreadsheet row>].<field>`); permission `masters.edit`. Columns: item
+name (`Item`, `Material`, `Particulars`; required), description, unit
+(`UOM`), HSN/SAC, rate (`Price`), GST % (18 when empty). A name already in the
+catalog (any case, archived too) is `item_exists`, a name twice in the file
+`duplicate_name`: an import never updates or duplicates items. Response:
+`dry_run`, `count`, `skipped_rows`, `ignored_columns`, `items`.
+`GET /catalog-items:import-sample?type=xlsx|csv` downloads a sample to fill in
+(`type`, not `format`: DRF keeps `?format=` for renderers).
+
 ### BOQ import
 
 `POST /projects/{id}/boq-items:import`, `multipart/form-data`: `file` (CSV in

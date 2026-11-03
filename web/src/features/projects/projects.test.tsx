@@ -295,8 +295,8 @@ describe("project page", () => {
     await user.upload(input, new NodeFile(["item_code,..."], "boq.csv", { type: "text/csv" }));
     await user.click(screen.getByRole("button", { name: "Check file" }));
     expect(await screen.findByText("Fix these rows and upload again")).toBeInTheDocument();
-    expect(screen.getByText("Row 6 · rate")).toBeInTheDocument();
-    expect(screen.getByText("Row 9 · item_code")).toBeInTheDocument();
+    expect(screen.getByText("Row 6 · Rate")).toBeInTheDocument();
+    expect(screen.getByText("Row 9 · Item code")).toBeInTheDocument();
 
     await user.upload(input, new NodeFile(["fixed"], "boq-fixed.csv", { type: "text/csv" }));
     await user.click(screen.getByRole("button", { name: "Check file" }));

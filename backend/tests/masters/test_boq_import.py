@@ -10,6 +10,7 @@ import pytest
 from django.core.files.uploadedfile import SimpleUploadedFile
 from rest_framework.test import APIClient
 
+from apps.core import sheets
 from apps.core.tenancy import tenant_context
 from apps.projects import boq_import
 from apps.projects.models import BoqItem
@@ -169,14 +170,14 @@ def test_unreadable_files(w: Boq, content: Any, code: str) -> None:
 
 
 def test_limits(w: Boq, monkeypatch: pytest.MonkeyPatch) -> None:
-    monkeypatch.setattr(boq_import, "MAX_ROWS", 2)
+    monkeypatch.setattr(sheets, "MAX_ROWS", 2)  # the shared reader's limits
     assert problem(w.upload(CSV))[1][0] == ("file", "too_many_rows")
     monkeypatch.setattr(boq_import, "MAX_BYTES", 100)
     assert problem(w.upload(CSV))[1][0] == ("file", "file_too_large")
 
 
 def test_zip_bomb_is_refused_before_parsing(w: Boq, monkeypatch: pytest.MonkeyPatch) -> None:
-    monkeypatch.setattr(boq_import, "MAX_UNCOMPRESSED", 1000)
+    monkeypatch.setattr(sheets, "MAX_UNCOMPRESSED", 1000)
     out = io.BytesIO()
     with zipfile.ZipFile(out, "w", zipfile.ZIP_DEFLATED) as z:
         z.writestr("xl/worksheets/sheet1.xml", "0" * 100_000)  # compresses to ~200 bytes

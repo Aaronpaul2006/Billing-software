@@ -98,3 +98,112 @@ describe("catalog", () => {
     expect(screen.queryByRole("form", { name: /Add a variant/ })).not.toBeInTheDocument();
   });
 });
+
+describe("catalog search and import", () => {
+  it("searches by what is typed", async () => {
+    const seen: (string | null)[] = [];
+    server.use(
+      http.get(`${API}/catalog-items`, ({ request }) => {
+        const q = new URL(request.url).searchParams.get("q");
+        seen.push(q);
+        return HttpResponse.json({ results: q ? [] : [item([])], next_cursor: null });
+      }),
+    );
+    const user = userEvent.setup();
+    renderSignedIn("/catalog");
+    await screen.findByText(/₹380.00 per bag/);
+    await user.type(screen.getByRole("searchbox", { name: "Search items" }), "ultratech");
+    expect(await screen.findByText("No item matches.")).toBeInTheDocument();
+    expect(seen.at(-1)).toBe("ultratech");
+  });
+
+  it("checks a file, shows row errors in plain words, then imports", async () => {
+    // Node's File, not jsdom's: Node's fetch cannot read a jsdom File (see projects.test.tsx)
+    const nodeBuffer = "node:buffer";
+    const { File: NodeFile } = (await import(/* @vite-ignore */ nodeBuffer)) as {
+      File: typeof File;
+    };
+    const calls: string[] = [];
+    let attempt = 0;
+    server.use(
+      http.get(`${API}/catalog-items`, () =>
+        HttpResponse.json({ results: [item([])], next_cursor: null }),
+      ),
+      http.post(`${API}/catalog-items:import`, async ({ request }) => {
+        const dryRun = String((await request.formData()).get("dry_run"));
+        calls.push(dryRun);
+        attempt += 1;
+        if (attempt === 1) {
+          return HttpResponse.json(
+            {
+              type: "/errors/validation_error",
+              title: "Invalid",
+              status: 422,
+              code: "validation_error",
+              detail: "Check the rows.",
+              request_id: null,
+              errors: [
+                { field: "rows[3].sac_hsn", code: "invalid", message: "Use 4 to 8 digits." },
+              ],
+            },
+            { status: 422, headers: { "Content-Type": "application/problem+json" } },
+          );
+        }
+        const body = {
+          dry_run: dryRun === "true",
+          count: 2,
+          skipped_rows: [],
+          ignored_columns: [],
+          items: [
+            { ...item([]), id: null, name: "Wall putty", default_rate: "1250.50" },
+            { ...item([]), id: null, name: "M-sand" },
+          ],
+        };
+        return HttpResponse.json(body, { status: dryRun === "true" ? 200 : 201 });
+      }),
+    );
+    const user = userEvent.setup();
+    renderSignedIn("/catalog");
+    await user.click(await screen.findByRole("button", { name: "Import from Excel" }));
+    const region = screen.getByRole("region", { name: "Import items" });
+    const input = within(region).getByLabelText("Items file (CSV or Excel)");
+    await user.upload(input, new NodeFile(["Item name\n"], "items.csv", { type: "text/csv" }));
+    await user.click(within(region).getByRole("button", { name: "Check file" }));
+    expect(await within(region).findByText("Row 3 · HSN/SAC")).toBeInTheDocument();
+
+    await user.upload(input, new NodeFile(["fixed"], "items-fixed.csv", { type: "text/csv" }));
+    await user.click(within(region).getByRole("button", { name: "Check file" }));
+    expect(await within(region).findByText("Wall putty")).toBeInTheDocument();
+    expect(within(region).getByText("₹1,250.50")).toBeInTheDocument();
+    await user.click(within(region).getByRole("button", { name: "Import 2 items" }));
+    expect(await within(region).findByText("Imported 2 items.")).toBeInTheDocument();
+    expect(calls).toEqual(["true", "true", "false"]);
+  });
+
+  it("downloads the sample file", async () => {
+    const asked: string[] = [];
+    server.use(
+      http.get(`${API}/catalog-items`, () =>
+        HttpResponse.json({ results: [item([])], next_cursor: null }),
+      ),
+      http.get(`${API}/catalog-items:import-sample`, ({ request }) => {
+        asked.push(new URL(request.url).searchParams.get("type") ?? "");
+        return new HttpResponse("Item name\n", { headers: { "Content-Type": "text/csv" } });
+      }),
+    );
+    const created = vi.fn(() => "blob:sample");
+    Object.assign(URL, { createObjectURL: created, revokeObjectURL: vi.fn() });
+    const click = vi
+      .spyOn(HTMLAnchorElement.prototype, "click")
+      .mockImplementation(() => undefined);
+    const user = userEvent.setup();
+    renderSignedIn("/catalog");
+    await user.click(await screen.findByRole("button", { name: "Import from Excel" }));
+    await user.click(screen.getByRole("button", { name: "CSV" }));
+    await waitFor(() => {
+      expect(click).toHaveBeenCalled();
+    });
+    expect(asked).toEqual(["csv"]);
+    expect(created).toHaveBeenCalled();
+  });
+});
