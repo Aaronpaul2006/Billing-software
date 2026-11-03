@@ -5,6 +5,7 @@ import {
   ArrowLeft,
   ArrowUp,
   CheckCircle2,
+  FileUp,
   Keyboard,
   ListPlus,
   Plus,
@@ -38,7 +39,9 @@ import { useDebounced } from "@/lib/useDebounced";
 
 import { DOC_TYPE_LABELS, documentKey, DRAFTABLE, supplyNote, useDocument } from "./api";
 import { ItemPicker } from "./ItemPicker";
-import { catalogChoices, MAY_ADD_MASTERS } from "./items";
+import { catalogChoices, LINE_FIELD_LABELS, MAY_ADD_MASTERS } from "./items";
+import { LinesImport } from "./LinesImport";
+import type { ParsedLine } from "./LinesImport";
 import type { PickedItem } from "./items";
 import { AUTOSAVE } from "./autosave";
 import { enterTarget, SHORTCUTS } from "./keyboard";
@@ -85,18 +88,6 @@ interface FormValues {
 const QTY = /^\d{1,11}(\.\d{1,3})?$/;
 /** Roles that may see reports (the client's balance), docs/01-architecture.md §3. */
 const REPORT_ROLES: ReadonlySet<string> = new Set(["OWNER", "ADMIN", "ACCOUNTANT", "VIEWER"]);
-const LINE_LABELS: Record<string, string> = {
-  description: "Description",
-  quantity: "Quantity",
-  unit: "Unit",
-  rate: "Rate",
-  discount_amount: "Discount",
-  gst_rate: "GST %",
-  sac_hsn: "HSN/SAC",
-  boq_item_id: "BOQ item",
-  catalog_item_id: "Item",
-  catalog_variant_id: "Item",
-};
 const RA_TYPES: ReadonlySet<string> = new Set(["TAX_INVOICE", "BILL_OF_SUPPLY", "PROFORMA"]);
 const NOTE_TYPES: ReadonlySet<string> = new Set(["CREDIT_NOTE", "DEBIT_NOTE"]);
 const EMPTY_LINE: LineForm = {
@@ -189,6 +180,34 @@ function apiLine(l: LineForm): LineIn {
     ...(discount && l.discount_mode === "amount" ? { discount_amount: discount } : {}),
     ...(l.gst_rate.trim() ? { gst_rate: l.gst_rate.trim() } : {}),
   };
+}
+
+function fromParsed(l: ParsedLine): LineForm {
+  return {
+    ...EMPTY_LINE,
+    description: l.description,
+    sac_hsn: l.sac_hsn ?? "",
+    unit: l.unit ?? "",
+    quantity: l.quantity,
+    rate: l.rate,
+    discount_amount: l.discount_pct ?? l.discount_amount ?? "",
+    discount_mode: l.discount_pct ? "pct" : "amount",
+    gst_rate: l.gst_rate ?? "",
+  };
+}
+
+function isEmptyLine(l: LineForm): boolean {
+  return [l.item, l.description, l.quantity, l.rate, l.unit, l.sac_hsn, l.discount_amount].every(
+    (x) => x.trim() === "",
+  );
+}
+
+/** "rows[3].rate" -> "Row 3 · Rate". */
+function rowName(field: string | null | undefined): string {
+  const m = /^rows\[(\d+)\]\.?(.*)$/.exec(field ?? "");
+  if (!m) return "Pasted cells";
+  const name = m[2] ?? "";
+  return `Row ${m[1] ?? ""}${name ? ` · ${LINE_FIELD_LABELS[name] ?? name}` : ""}`;
 }
 
 /** A line with text but no quantity or item: not sent to the server yet (toApi leaves it out). */
@@ -351,6 +370,8 @@ function Editor({ doc }: { doc?: Document }) {
   const [showKeys, setShowKeys] = useState(false);
   /** Lines chosen for a bulk edit, by their field id (stable across moves). */
   const [selected, setSelected] = useState<Set<string>>(() => new Set());
+  const [importingLines, setImportingLines] = useState(false);
+  const [pasteProblem, setPasteProblem] = useState<string[] | null>(null);
   const [savedAt, setSavedAt] = useState<string | null>(null);
   /** A new bill once it is saved: later saves update it (the page is not reloaded). */
   const [created, setCreated] = useState<Document | null>(null);
@@ -408,7 +429,7 @@ function Editor({ doc }: { doc?: Document }) {
           formPath(e.field ?? "")
             .split(".")
             .pop() ?? "";
-        return `${LINE_LABELS[name] ?? name}: ${e.message}`;
+        return `${LINE_FIELD_LABELS[name] ?? name}: ${e.message}`;
       })
       .join(" ");
   const headerErrors = previewErrors.filter((e) => !e.field?.startsWith("lines["));
@@ -568,6 +589,45 @@ function Editor({ doc }: { doc?: Document }) {
     set("sac_hsn", picked.fill.sac_hsn);
     set("rate", picked.fill.rate);
     set("gst_rate", picked.fill.gst_rate);
+  };
+
+  /** Lines from a file or pasted cells: in place of an empty line at `at`, else after it. */
+  const putLines = (parsed: ParsedLine[], at?: number) => {
+    const forms = parsed.map(fromParsed);
+    const current = getValues("lines");
+    const index = at ?? current.length - 1;
+    const here = current[index];
+    const empty = here !== undefined && isEmptyLine(here);
+    if (empty) {
+      lines.remove(index);
+      lines.insert(index, forms, { shouldFocus: false });
+    } else {
+      lines.insert(index + 1, forms, { shouldFocus: false });
+    }
+  };
+
+  /** Several cells pasted from Excel into a line make lines; one value pastes as usual. */
+  const onLinesPaste = (e: React.ClipboardEvent<HTMLDivElement>) => {
+    const text = e.clipboardData.getData("text/plain");
+    if (!/\t|\n.*\S/.test(text.trim())) return;
+    const fieldset = (e.target as HTMLElement).closest("fieldset[data-line]");
+    const all = Array.from(e.currentTarget.querySelectorAll("fieldset[data-line]"));
+    const at = fieldset ? all.indexOf(fieldset) : undefined;
+    e.preventDefault();
+    setPasteProblem(null);
+    void (async () => {
+      try {
+        const parsed = unwrap(await api.POST("/api/v1/documents:parse-lines", { body: { text } }));
+        putLines(parsed.lines, at === -1 ? undefined : at);
+      } catch (err) {
+        const problem = err instanceof ApiError ? err.problem : null;
+        setPasteProblem(
+          problem?.errors?.length
+            ? problem.errors.map((x) => `${rowName(x.field)}: ${x.message}`)
+            : [problem?.detail ?? "Could not read the pasted cells."],
+        );
+      }
+    })();
   };
 
   const addLine = (at?: number) => {
@@ -904,12 +964,47 @@ function Editor({ doc }: { doc?: Document }) {
         </Card>
 
         <Card>
-          <CardHeader>
+          <CardHeader className="flex flex-row flex-wrap items-center justify-between gap-2">
             <CardTitle>
               <h2>Lines</h2>
             </CardTitle>
+            {!importingLines && !ra && (
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                onClick={() => {
+                  setImportingLines(true);
+                }}
+              >
+                <FileUp aria-hidden /> Import lines from Excel
+              </Button>
+            )}
           </CardHeader>
-          <CardContent className="grid gap-3">
+          <CardContent className="grid gap-3" onPaste={onLinesPaste}>
+            {importingLines && (
+              <LinesImport
+                onLines={(parsed) => {
+                  putLines(parsed);
+                }}
+                onDone={() => {
+                  setImportingLines(false);
+                }}
+              />
+            )}
+            {pasteProblem && (
+              <Alert variant="destructive">
+                <AlertCircle aria-hidden />
+                <AlertDescription>
+                  The pasted rows were not added. Fix these and paste again:
+                  <ul className="mt-1 grid gap-0.5">
+                    {pasteProblem.map((m) => (
+                      <li key={m}>{m}</li>
+                    ))}
+                  </ul>
+                </AlertDescription>
+              </Alert>
+            )}
             {ra && (
               <p className="text-muted-foreground text-sm">
                 RA bill: every line bills a BOQ item, once; the quantity is this bill&apos;s.

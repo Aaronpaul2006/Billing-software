@@ -2657,6 +2657,89 @@
                 }
             }
         },
+        "/api/v1/documents:lines-sample": {
+            "get": {
+                "operationId": "documents:lines_sample_retrieve",
+                "description": "A sample file of bill lines to fill in.",
+                "parameters": [
+                    {
+                        "in": "query",
+                        "name": "type",
+                        "schema": {
+                            "enum": [
+                                "xlsx",
+                                "csv"
+                            ],
+                            "type": "string",
+                            "default": "xlsx",
+                            "minLength": 1
+                        },
+                        "description": "* `xlsx` - xlsx\n* `csv` - csv"
+                    }
+                ],
+                "tags": [
+                    "documents"
+                ],
+                "security": [
+                    {
+                        "bearerAuth": []
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "content": {
+                            "application/octet-stream": {
+                                "schema": {
+                                    "type": "string",
+                                    "format": "binary"
+                                }
+                            }
+                        },
+                        "description": ""
+                    }
+                }
+            }
+        },
+        "/api/v1/documents:parse-lines": {
+            "post": {
+                "operationId": "documents:parse_lines_create",
+                "description": "Lines for a draft from a CSV / XLSX file or pasted cells (B.7): checked, not saved.",
+                "tags": [
+                    "documents"
+                ],
+                "requestBody": {
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/ParseLinesRequest"
+                            }
+                        },
+                        "multipart/form-data": {
+                            "schema": {
+                                "$ref": "#/components/schemas/ParseLinesRequest"
+                            }
+                        }
+                    }
+                },
+                "security": [
+                    {
+                        "bearerAuth": []
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ParseLinesResult"
+                                }
+                            }
+                        },
+                        "description": ""
+                    }
+                }
+            }
+        },
         "/api/v1/documents:preview-totals": {
             "post": {
                 "operationId": "documents:preview_totals_create",
@@ -10151,6 +10234,125 @@
                         "description": "Pass as ?cursor="
                     }
                 }
+            },
+            "ParseLinesRequest": {
+                "type": "object",
+                "properties": {
+                    "file": {
+                        "type": [
+                            "string",
+                            "null"
+                        ],
+                        "format": "uri",
+                        "description": "CSV (UTF-8) or .xlsx (multipart/form-data)."
+                    },
+                    "text": {
+                        "type": "string",
+                        "description": "Cells copied from a spreadsheet: rows on lines, cells separated by tabs.",
+                        "maxLength": 200000
+                    }
+                }
+            },
+            "ParseLinesResult": {
+                "type": "object",
+                "properties": {
+                    "dry_run": {
+                        "type": "boolean",
+                        "description": "Always true: nothing is saved."
+                    },
+                    "count": {
+                        "type": "integer"
+                    },
+                    "skipped_rows": {
+                        "type": "array",
+                        "items": {
+                            "type": "integer"
+                        }
+                    },
+                    "ignored_columns": {
+                        "type": "array",
+                        "items": {
+                            "type": "string"
+                        }
+                    },
+                    "lines": {
+                        "type": "array",
+                        "items": {
+                            "$ref": "#/components/schemas/ParsedLine"
+                        }
+                    }
+                },
+                "required": [
+                    "count",
+                    "dry_run",
+                    "ignored_columns",
+                    "lines",
+                    "skipped_rows"
+                ]
+            },
+            "ParsedLine": {
+                "type": "object",
+                "properties": {
+                    "description": {
+                        "type": "string"
+                    },
+                    "sac_hsn": {
+                        "type": [
+                            "string",
+                            "null"
+                        ]
+                    },
+                    "unit": {
+                        "type": [
+                            "string",
+                            "null"
+                        ]
+                    },
+                    "quantity": {
+                        "type": "string",
+                        "format": "decimal",
+                        "pattern": "^-?\\d{0,11}(?:\\.\\d{0,3})?$"
+                    },
+                    "rate": {
+                        "type": "string",
+                        "format": "decimal",
+                        "pattern": "^-?\\d{0,12}(?:\\.\\d{0,2})?$"
+                    },
+                    "discount_amount": {
+                        "type": [
+                            "string",
+                            "null"
+                        ],
+                        "format": "decimal",
+                        "pattern": "^-?\\d{0,12}(?:\\.\\d{0,2})?$"
+                    },
+                    "discount_pct": {
+                        "type": [
+                            "string",
+                            "null"
+                        ],
+                        "format": "decimal",
+                        "pattern": "^-?\\d{0,3}(?:\\.\\d{0,2})?$"
+                    },
+                    "gst_rate": {
+                        "type": [
+                            "string",
+                            "null"
+                        ],
+                        "format": "decimal",
+                        "pattern": "^-?\\d{0,3}(?:\\.\\d{0,2})?$"
+                    }
+                },
+                "required": [
+                    "description",
+                    "discount_amount",
+                    "discount_pct",
+                    "gst_rate",
+                    "quantity",
+                    "rate",
+                    "sac_hsn",
+                    "unit"
+                ]
             },
             "Party": {
                 "type": "object",

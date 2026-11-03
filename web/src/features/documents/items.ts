@@ -66,3 +66,18 @@ export function boqChoices(items: BoqItem[]): PickedItem[] {
 
 /** Roles that may add items and clients (masters.edit, docs/01-architecture.md §3). */
 export const MAY_ADD_MASTERS: ReadonlySet<string> = new Set(["OWNER", "ADMIN", "ACCOUNTANT"]);
+
+/** Plain names of a bill line's fields, for error messages. */
+export const LINE_FIELD_LABELS: Record<string, string> = {
+  description: "Description",
+  quantity: "Quantity",
+  unit: "Unit",
+  rate: "Rate",
+  discount_amount: "Discount",
+  discount_pct: "Discount %",
+  gst_rate: "GST %",
+  sac_hsn: "HSN/SAC",
+  boq_item_id: "BOQ item",
+  catalog_item_id: "Item",
+  catalog_variant_id: "Item",
+};

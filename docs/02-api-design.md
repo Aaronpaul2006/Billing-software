@@ -390,6 +390,20 @@ their own endpoints (Phase 1.6), RA bills below (Phase 3.2). Example response:
 }
 ```
 
+### Lines from a spreadsheet or pasted cells (B.7)
+
+`POST /documents:parse-lines` (permission `documents.draft`) takes either a
+`file` (multipart, CSV / XLSX, the import rules above) or `text` (JSON: cells
+copied from a spreadsheet, rows on lines, cells separated by tabs). It saves
+nothing: it returns the lines, each checked like a line typed on the screen
+(`description`, `quantity`, `unit`, `rate`, `discount_amount` /
+`discount_pct`, `gst_rate`, `sac_hsn`), for the bill screen to add. Columns by
+name (description and quantity needed; a rate on every row); cells without a
+header row are read as description, quantity, unit, rate, GST %, HSN/SAC.
+Rows without a quantity (headings, totals) are skipped. A bad row is
+`rows[<n>].<field>` and no line is returned. At most 500 lines.
+`GET /documents:lines-sample?type=xlsx|csv`.
+
 ### Discount as a percentage, due date from payment terms (B.5)
 
 A line may send `discount_pct` (0–100) instead of `discount_amount`: the

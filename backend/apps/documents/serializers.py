@@ -273,3 +273,44 @@ class NoteSerializer(serializers.Serializer[Any]):
 class PdfLinkSerializer(serializers.Serializer[Any]):
     url = serializers.URLField(help_text="Short-lived link to the stored PDF.")
     expires_in = serializers.IntegerField(help_text="Seconds the link stays valid.")
+
+
+# --- lines from a spreadsheet or pasted cells (B.7) ----------------------------------------
+
+
+class ParseLinesRequestSerializer(serializers.Serializer[Any]):
+    file = serializers.FileField(
+        required=False, help_text="CSV (UTF-8) or .xlsx (multipart/form-data)."
+    )
+    text = serializers.CharField(
+        required=False,
+        max_length=200_000,
+        trim_whitespace=False,
+        help_text="Cells copied from a spreadsheet: rows on lines, cells separated by tabs.",
+    )
+
+    def validate(self, attrs: dict[str, Any]) -> dict[str, Any]:
+        if ("file" in attrs) == ("text" in attrs):
+            raise serializers.ValidationError(
+                {"file": "Send a file or pasted text."}, code="required"
+            )
+        return attrs
+
+
+class ParsedLineSerializer(serializers.Serializer[Any]):
+    description = serializers.CharField()
+    sac_hsn = serializers.CharField(allow_null=True)
+    unit = serializers.CharField(allow_null=True)
+    quantity = QuantityField()
+    rate = MoneyField()
+    discount_amount = MoneyField(allow_null=True)
+    discount_pct = PercentField(allow_null=True)
+    gst_rate = PercentField(allow_null=True)
+
+
+class ParseLinesResultSerializer(serializers.Serializer[Any]):
+    dry_run = serializers.BooleanField(help_text="Always true: nothing is saved.")
+    count = serializers.IntegerField()
+    skipped_rows = serializers.ListField(child=serializers.IntegerField())
+    ignored_columns = serializers.ListField(child=serializers.CharField())
+    lines = ParsedLineSerializer(many=True)

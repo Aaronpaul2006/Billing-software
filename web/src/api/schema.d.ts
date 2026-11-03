@@ -1009,6 +1009,40 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/documents:lines-sample": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** @description A sample file of bill lines to fill in. */
+        get: operations["documents:lines_sample_retrieve"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/documents:parse-lines": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** @description Lines for a draft from a CSV / XLSX file or pasted cells (B.7): checked, not saved. */
+        post: operations["documents:parse_lines_create"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/documents:preview-totals": {
         parameters: {
             query?: never;
@@ -3484,6 +3518,38 @@ export interface components {
             results: components["schemas"]["Template"][];
             /** @description Pass as ?cursor= */
             next_cursor: string | null;
+        };
+        ParseLinesRequest: {
+            /**
+             * Format: uri
+             * @description CSV (UTF-8) or .xlsx (multipart/form-data).
+             */
+            file?: string | null;
+            /** @description Cells copied from a spreadsheet: rows on lines, cells separated by tabs. */
+            text?: string;
+        };
+        ParseLinesResult: {
+            /** @description Always true: nothing is saved. */
+            dry_run: boolean;
+            count: number;
+            skipped_rows: number[];
+            ignored_columns: string[];
+            lines: components["schemas"]["ParsedLine"][];
+        };
+        ParsedLine: {
+            description: string;
+            sac_hsn: string | null;
+            unit: string | null;
+            /** Format: decimal */
+            quantity: string;
+            /** Format: decimal */
+            rate: string;
+            /** Format: decimal */
+            discount_amount: string | null;
+            /** Format: decimal */
+            discount_pct: string | null;
+            /** Format: decimal */
+            gst_rate: string | null;
         };
         Party: {
             /** Format: uuid */
@@ -7122,6 +7188,55 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["Template"];
+                };
+            };
+        };
+    };
+    "documents:lines_sample_retrieve": {
+        parameters: {
+            query?: {
+                /**
+                 * @description * `xlsx` - xlsx
+                 *     * `csv` - csv
+                 */
+                type?: "xlsx" | "csv";
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/octet-stream": string;
+                };
+            };
+        };
+    };
+    "documents:parse_lines_create": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: {
+            content: {
+                "application/json": components["schemas"]["ParseLinesRequest"];
+                "multipart/form-data": components["schemas"]["ParseLinesRequest"];
+            };
+        };
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ParseLinesResult"];
                 };
             };
         };

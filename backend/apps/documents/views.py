@@ -8,6 +8,7 @@ from django.db.models import F, Q, QuerySet
 from django.http import HttpResponse, HttpResponseRedirect
 from django.http.response import HttpResponseBase
 from drf_spectacular.utils import OpenApiParameter, extend_schema
+from rest_framework.parsers import JSONParser, MultiPartParser
 from rest_framework.request import Request
 from rest_framework.response import Response
 
@@ -20,6 +21,7 @@ from apps.core.api import (
 )
 from apps.core.errors import Invalid
 from apps.core.idempotency import idempotent
+from apps.core.imports import SampleQuerySerializer, sample_response, upload_bytes
 from apps.files import storage
 from apps.files.models import Attachment
 
@@ -32,11 +34,13 @@ from .serializers import (
     DocumentSerializer,
     DocumentWriteSerializer,
     NoteSerializer,
+    ParseLinesRequestSerializer,
+    ParseLinesResultSerializer,
     PdfLinkSerializer,
     PreviewSerializer,
     TotalsSerializer,
 )
-from .services import drafts, lifecycle, pdfs
+from .services import drafts, lifecycle, line_import, pdfs
 
 DRAFT = "documents.draft"
 
@@ -129,6 +133,72 @@ class DocumentDetailView(ActionAPIView):
     def delete(self, request: Request, document_id: uuid.UUID) -> Response:
         drafts.delete_draft(self.principal, document_id)
         return Response(status=204)
+
+
+class ParseLinesView(ActionAPIView):
+    """Lines for a draft from a CSV / XLSX file or pasted cells (B.7): checked, not saved."""
+
+    read_action = DRAFT
+    write_action = DRAFT
+    parser_classes = (JSONParser, MultiPartParser)
+
+    @extend_schema(
+        request={
+            "application/json": ParseLinesRequestSerializer,
+            "multipart/form-data": ParseLinesRequestSerializer,
+        },
+        responses={200: ParseLinesResultSerializer},
+        tags=["documents"],
+    )
+    def post(self, request: Request) -> Response:
+        params = ParseLinesRequestSerializer(data=request.data)
+        params.is_valid(raise_exception=True)
+        upload = params.validated_data.get("file")
+        lines, sheet = line_import.parse_lines(
+            self.principal,
+            data=upload_bytes(upload) if upload is not None else None,
+            text=params.validated_data.get("text"),
+        )
+        rows = [
+            {
+                "description": ln["description"],
+                "sac_hsn": ln.get("sac_hsn"),
+                "unit": ln.get("unit"),
+                "quantity": ln["quantity"],
+                "rate": ln["rate"],
+                "discount_amount": ln.get("discount_amount"),
+                "discount_pct": ln.get("discount_pct"),
+                "gst_rate": ln.get("gst_rate"),
+            }
+            for ln in lines
+        ]
+        return Response(
+            ParseLinesResultSerializer(
+                {
+                    "dry_run": True,
+                    "count": len(rows),
+                    "skipped_rows": sheet.skipped_rows,
+                    "ignored_columns": sheet.ignored_columns,
+                    "lines": rows,
+                }
+            ).data
+        )
+
+
+class LinesSampleView(ActionAPIView):
+    """A sample file of bill lines to fill in."""
+
+    read_action = DRAFT
+
+    @extend_schema(
+        parameters=[SampleQuerySerializer],
+        responses={(200, "application/octet-stream"): bytes},
+        tags=["documents"],
+    )
+    def get(self, request: Request) -> HttpResponseBase:
+        q = SampleQuerySerializer(data=request.query_params)
+        q.is_valid(raise_exception=True)
+        return sample_response(line_import.LAYOUT, q.validated_data["type"], "lines-sample")
 
 
 class PreviewTotalsView(ActionAPIView):

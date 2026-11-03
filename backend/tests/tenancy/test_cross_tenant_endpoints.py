@@ -1156,3 +1156,7 @@ NOT_TENANT_DATA["catalog-import-sample"] = "a fixed sample file"
 # --- B.3 client import: tests/masters/test_party_import.py::test_imports_stay_in_the_tenant
 COLLECTION_ROUTES["party-import"] = lambda w: None
 NOT_TENANT_DATA["party-import-sample"] = "a fixed sample file"
+
+# --- B.7 lines from a file or pasted cells: reads nothing stored
+NOT_TENANT_DATA["document-parse-lines"] = "checks the cells sent; reads and saves nothing"
+NOT_TENANT_DATA["document-lines-sample"] = "a fixed sample file"

@@ -4,6 +4,8 @@ from . import views
 
 urlpatterns = [
     path("documents", views.DocumentListView.as_view(), name="documents"),
+    path("documents:parse-lines", views.ParseLinesView.as_view(), name="document-parse-lines"),
+    path("documents:lines-sample", views.LinesSampleView.as_view(), name="document-lines-sample"),
     path(
         "documents:preview-totals",
         views.PreviewTotalsView.as_view(),
