@@ -4,7 +4,10 @@
 <meta charset="utf-8">
 <title>{{ title }} {{ doc.doc_number|default:"DRAFT" }}</title>
 <style>
-  @page { size: A4; margin: 14mm 12mm 16mm; @bottom-right { content: "Page " counter(page) " of " counter(pages); font-size: 8pt; color: #666; } }
+  {# doc_number is limited to A-Z a-z 0-9 / - by the database, so it is safe inside the CSS string #}
+  @page { size: A4; margin: 14mm 12mm 16mm;
+          @bottom-left { content: "{{ title }} {{ doc.doc_number|default:'(draft)' }}"; font-family: "DejaVu Sans", sans-serif; font-size: 8pt; color: #666; }
+          @bottom-right { content: "Page " counter(page) " of " counter(pages); font-family: "DejaVu Sans", sans-serif; font-size: 8pt; color: #666; } }
   * { box-sizing: border-box; }
   body { font-family: "DejaVu Sans", "Noto Sans", sans-serif; font-size: 9pt; color: #111; }
   h1 { font-size: 15pt; margin: 0 0 2mm; letter-spacing: .5px; }
@@ -12,7 +15,11 @@
   .row { display: flex; gap: 6mm; }
   .box { border: 1px solid #999; padding: 3mm; flex: 1; }
   .box h3 { margin: 0 0 1.5mm; font-size: 8pt; text-transform: uppercase; color: #555; }
+  .logo { max-height: 22mm; max-width: 55mm; margin-bottom: 2mm; }
+  .copy { text-align: right; font-size: 8pt; font-weight: bold; text-transform: uppercase; letter-spacing: .5px; margin-bottom: 1.5mm; }
   table { width: 100%; border-collapse: collapse; margin-top: 4mm; }
+  thead { display: table-header-group; }  /* repeated on every page */
+  tr { page-break-inside: avoid; }
   th, td { border: 1px solid #999; padding: 1.5mm 2mm; vertical-align: top; }
   th { background: #eee; font-size: 8pt; text-align: left; }
   .num { text-align: right; white-space: nowrap; }
@@ -21,15 +28,22 @@
   .grand td { font-weight: bold; font-size: 10pt; }
   .words { margin-top: 3mm; font-style: italic; }
   tr.measure td { font-size: 7.5pt; color: #555; border-top: none; padding-top: 0; }
-  .sign { margin-top: 14mm; text-align: right; }
+  .end { margin-top: 6mm; page-break-inside: avoid; align-items: flex-end; }
+  .pay { display: flex; gap: 4mm; align-items: flex-start; }
+  .pay img { width: 28mm; height: 28mm; }
+  .sign { flex: 1; text-align: right; }
+  .sign img { max-height: 20mm; max-width: 50mm; display: block; margin: 2mm 0 1mm auto; }
+  .sign .space { height: 16mm; }
   .watermark { position: fixed; top: 38%; left: 8%; font-size: 90pt; color: rgba(200, 0, 0, .12); transform: rotate(-30deg); font-weight: bold; }
 </style>
 </head>
 <body>
 {% if is_draft %}<div class="watermark">DRAFT</div>{% elif is_cancelled %}<div class="watermark">CANCELLED</div>{% endif %}
+{% if copy_label %}<div class="copy">{{ copy_label }}</div>{% endif %}
 
 <div class="row">
   <div style="flex: 2">
+    {% if logo %}<img class="logo" src="{{ logo }}" alt="">{% endif %}
     <h1>{{ title }}{% if ra_sequence %} &middot; RA Bill No. {{ ra_sequence }}{% endif %}</h1>
     <div><strong>{{ supplier.legal_name }}</strong>{% if supplier.trade_name %} ({{ supplier.trade_name }}){% endif %}</div>
     {% with a=supplier.address %}<div class="muted">{{ a.line1 }}{% if a.line2 %}, {{ a.line2 }}{% endif %}{% if a.city %}, {{ a.city }}{% endif %}{% if a.pincode %} - {{ a.pincode }}{% endif %}</div>{% endwith %}
@@ -55,6 +69,7 @@
     {% with a=party.billing_address %}{% if a %}<div class="muted">{{ a.line1 }}{% if a.line2 %}, {{ a.line2 }}{% endif %}{% if a.city %}, {{ a.city }}{% endif %}{% if a.pincode %} - {{ a.pincode }}{% endif %}</div>{% endif %}{% endwith %}
     {% if party.gstin %}<div>GSTIN: <strong>{{ party.gstin }}</strong></div>{% endif %}
     {% if party_state %}<div>State: {{ party_state }}</div>{% endif %}
+    {% if party.phone %}<div>Phone: {{ party.phone }}</div>{% endif %}
   </div>
   {% if project %}
   <div class="box">
@@ -65,7 +80,8 @@
   {% endif %}
 </div>
 
-<table>
+{% if detailed %}
+<table class="lines">
   <thead>
     <tr>
       <th>#</th>{% if ra_sequence %}<th>Item</th>{% endif %}<th>Description</th><th>HSN/SAC</th><th>Unit</th>
@@ -92,16 +108,28 @@
   </tbody>
 </table>
 
-{% if tax_summary %}
-<table style="width: 70%">
+{% if hsn_summary %}
+<table class="hsn" style="width: 80%">
   <thead>
-    <tr><th class="num">GST %</th><th class="num">Taxable value</th>
-    {% if intra_state %}<th class="num">CGST</th><th class="num">SGST</th>{% else %}<th class="num">IGST</th>{% endif %}</tr>
+    <tr><th>HSN/SAC</th><th class="num">GST %</th><th class="num">Taxable value</th>
+    {% if intra_state %}<th class="num">CGST</th><th class="num">SGST</th>{% else %}<th class="num">IGST</th>{% endif %}<th class="num">Total tax</th></tr>
   </thead>
   <tbody>
-  {% for t in tax_summary %}
-    <tr><td class="num">{{ t.rate }}</td><td class="num">{{ t.taxable }}</td>
-    {% if intra_state %}<td class="num">{{ t.cgst }}</td><td class="num">{{ t.sgst }}</td>{% else %}<td class="num">{{ t.igst }}</td>{% endif %}</tr>
+  {% for t in hsn_summary %}
+    <tr><td>{{ t.hsn|default:"–" }}</td><td class="num">{{ t.rate }}</td><td class="num">{{ t.taxable }}</td>
+    {% if intra_state %}<td class="num">{{ t.cgst }}</td><td class="num">{{ t.sgst }}</td>{% else %}<td class="num">{{ t.igst }}</td>{% endif %}<td class="num">{{ t.tax }}</td></tr>
+  {% endfor %}
+  </tbody>
+</table>
+{% endif %}
+{% else %}
+<table class="lines simple">
+  <thead>
+    <tr><th>#</th><th>Description</th><th>HSN/SAC</th><th class="num">Qty</th><th>Unit</th><th class="num">Rate</th><th class="num">Amount</th></tr>
+  </thead>
+  <tbody>
+  {% for ln in lines %}
+    <tr><td>{{ ln.no }}</td><td>{{ ln.description }}</td><td>{{ ln.sac_hsn }}</td><td class="num">{{ ln.quantity }}</td><td>{{ ln.unit }}</td><td class="num">{{ ln.rate }}</td><td class="num">{{ ln.taxable }}</td></tr>
   {% endfor %}
   </tbody>
 </table>
@@ -128,6 +156,30 @@
 {% if doc.notes %}<p><strong>Notes:</strong> {{ doc.notes|linebreaksbr }}</p>{% endif %}
 {% if doc.terms %}<p><strong>Terms:</strong> {{ doc.terms|linebreaksbr }}</p>{% endif %}
 
-<div class="sign">For <strong>{{ supplier.legal_name }}</strong><br><br><br>Authorised signatory</div>
+<div class="row end">
+  {% if bank or upi_qr %}
+  <div class="box pay">
+    {% if bank %}
+    <div class="bank">
+      <h3>Pay to</h3>
+      {% if bank.bank_account_name %}<div>{{ bank.bank_account_name }}</div>{% endif %}
+      {% if bank.bank_name %}<div>{{ bank.bank_name }}{% if bank.bank_branch %}, {{ bank.bank_branch }}{% endif %}</div>{% endif %}
+      {% if bank.bank_account_number %}<div>A/c No.: <strong>{{ bank.bank_account_number }}</strong></div>{% endif %}
+      {% if bank.bank_ifsc %}<div>IFSC: <strong>{{ bank.bank_ifsc }}</strong></div>{% endif %}
+      {% if upi_id %}<div>UPI: {{ upi_id }}</div>{% endif %}
+    </div>
+    {% endif %}
+    {% if upi_qr %}
+    <div class="qr">
+      <img src="{{ upi_qr }}" alt="UPI QR code">
+      <div class="muted">Scan to pay ₹{{ upi_amount }}</div>
+    </div>
+    {% endif %}
+  </div>
+  {% endif %}
+  <div class="sign">For <strong>{{ supplier.legal_name }}</strong>
+    {% if signature %}<img src="{{ signature }}" alt="">{% else %}<div class="space"></div>{% endif %}
+    Authorised signatory</div>
+</div>
 </body>
 </html>

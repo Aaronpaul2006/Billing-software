@@ -75,3 +75,22 @@ def default_terms(tenant_id: uuid.UUID) -> str | None:
         "default_terms", flat=True
     )
     return next(iter(found), None)
+
+
+def snapshot(tenant_id: uuid.UUID) -> dict[str, Any]:
+    """The settings as frozen into a bill when it is issued, so a reprint
+    looks like the original even after the settings change."""
+    s = current(tenant_id)
+    return {
+        "layout": s.layout,
+        "logo_attachment_id": str(s.logo_attachment_id) if s.logo_attachment_id else None,
+        "signature_attachment_id": (
+            str(s.signature_attachment_id) if s.signature_attachment_id else None
+        ),
+        "bank_account_name": s.bank_account_name,
+        "bank_name": s.bank_name,
+        "bank_account_number": s.bank_account_number,
+        "bank_ifsc": s.bank_ifsc,
+        "bank_branch": s.bank_branch,
+        "upi_id": s.upi_id,
+    }

@@ -413,6 +413,32 @@ supply, proformas and quotations created without a `terms` key get
 `default_terms`; `"terms": null` keeps them empty. The web bill screen fills
 them in on a new bill, where they can still be changed.
 
+### The complete PDF (B.13)
+
+`GET /documents/{id}/pdf?copy=original|duplicate|triplicate` draws a labelled
+copy on demand (never stored; `as=link` with `copy`: `422 copy`; another
+value: `422 invalid_choice`). Labels follow CGST rule 48: original for
+recipient; duplicate for transporter when a line has a goods HSN (not 99xx),
+otherwise duplicate for supplier; triplicate for supplier. Without `copy` the
+endpoint is unchanged (the stored, unlabelled PDF).
+
+The PDF carries the print settings (B.12), frozen into the bill's
+`supplier_snapshot.print` when it is issued (bills issued before then, and
+drafts, use the current settings):
+
+- logo (top left) and signature image (above "Authorised signatory"),
+  embedded as data URLs; an unreadable image leaves a gap, never a failure;
+- bank details and, for bills that ask to be paid (tax invoice, bill of
+  supply, debit note, proforma) once issued and not cancelled, a UPI QR code
+  for `upi://pay?pa=<upi id>&pn=<business>&am=<net receivable>&cu=INR&tn=<bill no>`
+  (drawn with `segno` as SVG);
+- detailed layout: every column, measurement rows and an HSN / SAC summary
+  (code × rate: taxable value, CGST + SGST or IGST, total tax); simple
+  layout: one table (description, HSN / SAC, quantity, unit, rate, amount);
+- both: GSTIN, client, place of supply, tax totals, deductions, amounts in
+  words, terms, the document number and "Page n of m" in the footer, table
+  headers repeated on every page.
+
 ### Change history (B.11)
 
 `GET /documents/{id}/history` (permission `tenant.read`: everyone who can see

@@ -26,7 +26,7 @@ from apps.files import storage
 from apps.files.models import Attachment
 
 from .models import Document
-from .pdf.render import render_pdf
+from .pdf.render import COPIES, render_pdf
 from .serializers import (
     CancelSerializer,
     ConvertSerializer,
@@ -390,7 +390,9 @@ class DebitNoteView(CreditNoteView):
 
 class DocumentPdfView(ActionAPIView):
     """Issued: 302 to a short-lived link (202 while it is being made).
-    Draft: rendered on demand with a DRAFT watermark, never stored."""
+    Draft: rendered on demand with a DRAFT watermark, never stored.
+    `copy`: a labelled copy (Original / Duplicate / Triplicate), rendered on
+    demand from the issued bill's frozen details (B.13)."""
 
     write_action = DRAFT
 
@@ -402,7 +404,15 @@ class DocumentPdfView(ActionAPIView):
                 enum=["link"],
                 description="`link`: answer 200 {url, expires_in} instead of a 302, for"
                 " clients that cannot read a cross-origin redirect (browsers). Issued only.",
-            )
+            ),
+            OpenApiParameter(
+                "copy",
+                str,
+                enum=list(COPIES),
+                description="Print this copy, labelled per CGST rule 48 (original for"
+                " recipient; duplicate for transporter (goods) or supplier (services);"
+                " triplicate for supplier). Rendered on demand, never stored.",
+            ),
         ],
         responses={
             (200, "application/pdf"): bytes,
@@ -415,13 +425,23 @@ class DocumentPdfView(ActionAPIView):
     def get(self, request: Request, document_id: uuid.UUID) -> HttpResponseBase:
         doc = drafts.get_document(self.principal, document_id)
         as_link = request.query_params.get("as") == "link"
+        copy = request.query_params.get("copy")
+        if copy is not None and copy not in COPIES:
+            raise Invalid(
+                "copy", "Choose original, duplicate or triplicate.", code="invalid_choice"
+            )
         if doc.status == "DRAFT" and as_link:
             raise Invalid("as", "Drafts are rendered on demand: ask without as=link.", code="draft")
-        if doc.status == "DRAFT":
+        if copy is not None and as_link:
+            raise Invalid("as", "Copies are rendered on demand: ask without as=link.", code="copy")
+        if doc.status == "DRAFT" or copy is not None:
+            name = pdfs.pdf_filename(doc)
+            if copy is not None:
+                name = name.removesuffix(".pdf") + f"-{copy}.pdf"
             return HttpResponse(
-                render_pdf(doc),
+                render_pdf(doc, copy),
                 content_type="application/pdf",
-                headers={"Content-Disposition": f'inline; filename="{pdfs.pdf_filename(doc)}"'},
+                headers={"Content-Disposition": f'inline; filename="{name}"'},
             )
         attachment = (
             Attachment.objects.filter(pk=doc.pdf_attachment_id, status="AVAILABLE").first()

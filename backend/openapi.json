@@ -2553,7 +2553,7 @@
         "/api/v1/documents/{document_id}/pdf": {
             "get": {
                 "operationId": "documents_pdf_retrieve",
-                "description": "Issued: 302 to a short-lived link (202 while it is being made).\nDraft: rendered on demand with a DRAFT watermark, never stored.",
+                "description": "Issued: 302 to a short-lived link (202 while it is being made).\nDraft: rendered on demand with a DRAFT watermark, never stored.\n`copy`: a labelled copy (Original / Duplicate / Triplicate), rendered on\ndemand from the issued bill's frozen details (B.13).",
                 "parameters": [
                     {
                         "in": "query",
@@ -2565,6 +2565,19 @@
                             ]
                         },
                         "description": "`link`: answer 200 {url, expires_in} instead of a 302, for clients that cannot read a cross-origin redirect (browsers). Issued only."
+                    },
+                    {
+                        "in": "query",
+                        "name": "copy",
+                        "schema": {
+                            "type": "string",
+                            "enum": [
+                                "duplicate",
+                                "original",
+                                "triplicate"
+                            ]
+                        },
+                        "description": "Print this copy, labelled per CGST rule 48 (original for recipient; duplicate for transporter (goods) or supplier (services); triplicate for supplier). Rendered on demand, never stored."
                     },
                     {
                         "in": "path",

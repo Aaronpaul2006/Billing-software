@@ -2,22 +2,19 @@
 
 import importlib.util
 import uuid
-from collections.abc import Callable, Iterator
+from collections.abc import Callable
 from decimal import Decimal
 from typing import Any
 from urllib.parse import parse_qs, urlparse
 
-import boto3
 import pytest
 from django.test import override_settings
-from moto import mock_aws
 from rest_framework.test import APIClient
 
 from apps.core.tenancy import tenant_context
 from apps.documents.models import Document
 from apps.documents.pdf import render
 from apps.documents.services import pdfs
-from apps.files import storage
 from apps.files.models import Attachment
 from apps.parties.models import Party
 from apps.tenants.models import DocumentSeries
@@ -140,24 +137,6 @@ def test_real_pdf_is_produced(w: World) -> None:
 
 
 @pytest.fixture
-def s3() -> Iterator[Any]:
-    with (
-        mock_aws(),
-        override_settings(
-            S3_ENDPOINT_URL=None,
-            S3_PUBLIC_ENDPOINT_URL=None,
-            S3_REGION="us-east-1",
-            S3_BUCKET="test-bucket",
-        ),
-    ):
-        storage._client.cache_clear()
-        client = boto3.client("s3", region_name="us-east-1")
-        client.create_bucket(Bucket="test-bucket")
-        yield client
-    storage._client.cache_clear()
-
-
-@pytest.fixture
 def fake_render(monkeypatch: pytest.MonkeyPatch) -> None:
     monkeypatch.setattr(pdfs, "render_pdf", lambda doc: FAKE_PDF)
 
@@ -213,7 +192,7 @@ def test_pdf_endpoint(w: World, s3: Any, monkeypatch: pytest.MonkeyPatch) -> Non
 def test_draft_pdf_is_rendered_on_demand(w: World, monkeypatch: pytest.MonkeyPatch) -> None:
     from apps.documents import views
 
-    monkeypatch.setattr(views, "render_pdf", lambda doc: FAKE_PDF)
+    monkeypatch.setattr(views, "render_pdf", lambda doc, copy=None: FAKE_PDF)
     draft = w.create().json()
     response = APIClient().get(f"/api/v1/documents/{draft['id']}/pdf", **w.h())
     assert response.status_code == 200

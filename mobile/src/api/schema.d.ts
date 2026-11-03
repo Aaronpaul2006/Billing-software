@@ -989,6 +989,8 @@ export interface paths {
         /**
          * @description Issued: 302 to a short-lived link (202 while it is being made).
          *     Draft: rendered on demand with a DRAFT watermark, never stored.
+         *     `copy`: a labelled copy (Original / Duplicate / Triplicate), rendered on
+         *     demand from the issued bill's frozen details (B.13).
          */
         get: operations["documents_pdf_retrieve"];
         put?: never;
@@ -7343,6 +7345,8 @@ export interface operations {
             query?: {
                 /** @description `link`: answer 200 {url, expires_in} instead of a 302, for clients that cannot read a cross-origin redirect (browsers). Issued only. */
                 as?: "link";
+                /** @description Print this copy, labelled per CGST rule 48 (original for recipient; duplicate for transporter (goods) or supplier (services); triplicate for supplier). Rendered on demand, never stored. */
+                copy?: "duplicate" | "original" | "triplicate";
             };
             header?: never;
             path: {

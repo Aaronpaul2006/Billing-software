@@ -27,6 +27,7 @@ from apps.core.versioning import update_versioned
 from apps.parties.models import Party
 from apps.payments import retention
 from apps.payments.models import Allocation
+from apps.tenants import printing
 from apps.tenants.models import DocumentSeries, GstRegistration, Tenant
 
 from ..models import Document, DocumentLine
@@ -59,6 +60,7 @@ def _supplier_snapshot(registration: GstRegistration, *, lut: bool) -> dict[str,
         "state_code": registration.state_code,
         "address": registration.address,
         "pan": tenant.pan,
+        "print": printing.snapshot(registration.tenant_id),  # logo, bank, UPI, layout (B.13)
     }
 
 

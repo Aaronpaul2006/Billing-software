@@ -351,6 +351,31 @@ describe("document page", () => {
     });
   });
 
+  it("prints a labelled copy, drawn on demand", async () => {
+    useDoc(doc({ status: "ISSUED", doc_number: "INV/0001" }));
+    const asked: string[] = [];
+    server.use(
+      http.get(`${API}/documents/${DOC}/pdf`, ({ request }) => {
+        asked.push(new URL(request.url).search);
+        return new HttpResponse("%PDF-1.7", { headers: { "Content-Type": "application/pdf" } });
+      }),
+    );
+    const tab = { location: { href: "" }, close: vi.fn() };
+    vi.spyOn(window, "open").mockReturnValue(tab as unknown as Window);
+    Object.assign(URL, { createObjectURL: vi.fn(() => "blob:copy"), revokeObjectURL: vi.fn() });
+    const user = userEvent.setup();
+    renderSignedIn(`/documents/${DOC}`);
+    await user.selectOptions(
+      await screen.findByRole("combobox", { name: "Copy to print" }),
+      "Original for recipient",
+    );
+    await user.click(screen.getByRole("button", { name: "PDF" }));
+    await waitFor(() => {
+      expect(tab.location.href).toBe("blob:copy");
+    });
+    expect(asked).toEqual(["?copy=original"]);
+  });
+
   it("cancels with a reason", async () => {
     let body: unknown = null;
     useDoc(doc({ status: "ISSUED", doc_number: "INV/0001" }));

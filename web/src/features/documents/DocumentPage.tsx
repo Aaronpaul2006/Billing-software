@@ -157,6 +157,7 @@ function Lines({ doc }: { doc: Document }) {
 }
 
 type Panel = "none" | "cancel" | "convert" | "alter";
+type PrintCopy = "original" | "duplicate" | "triplicate";
 
 /** Bills and quotations can be copied into a new draft; notes belong to their bill. */
 const DUPLICABLE: ReadonlySet<DocType> = new Set([
@@ -179,6 +180,8 @@ function Actions({ doc }: { doc: Document }) {
   const [convertDate, setConvertDate] = useState(() => isoDate(new Date()));
   const [key, setKey] = useState(newIdempotencyKey); // one per action, renewed after it succeeds
   const [copyKey, setCopyKey] = useState(newIdempotencyKey); // the copy after a cancel
+  /** Which printed copy (CGST rule 48), chosen at print: "" is the plain PDF. */
+  const [copy, setCopy] = useState<"" | PrintCopy>("");
   const [notice, setNotice] = useState<ReactNode>(null);
   const path = { document_id: doc.id };
   const versioned = { "If-Match": ifMatch(doc.version), "Idempotency-Key": key };
@@ -323,9 +326,10 @@ function Actions({ doc }: { doc: Document }) {
     setNotice(null);
     const tab = window.open("", "_blank"); // opened now, so pop-up blockers allow it
     try {
-      if (doc.status === "DRAFT") {
+      if (doc.status === "DRAFT" || copy) {
+        // drafts and labelled copies are drawn on demand
         const { data, response } = await api.GET("/api/v1/documents/{document_id}/pdf", {
-          params: { path },
+          params: { path, query: copy ? { copy } : {} },
           parseAs: "blob",
         });
         if (!response.ok || !(data instanceof Blob)) throw new Error("No PDF.");
@@ -386,6 +390,21 @@ function Actions({ doc }: { doc: Document }) {
         <Button variant="outline" disabled={busy} onClick={() => void openPdf()}>
           <FileDown aria-hidden /> {doc.status === "DRAFT" ? "Preview PDF" : "PDF"}
         </Button>
+        {doc.status !== "DRAFT" && (
+          <NativeSelect
+            aria-label="Copy to print"
+            className="w-auto"
+            value={copy}
+            onChange={(e) => {
+              setCopy(e.target.value as "" | PrintCopy);
+            }}
+          >
+            <option value="">No copy label</option>
+            <option value="original">Original for recipient</option>
+            <option value="duplicate">Duplicate</option>
+            <option value="triplicate">Triplicate for supplier</option>
+          </NativeSelect>
+        )}
         {doc.doc_type === "QUOTATION" && issued && (
           <>
             <Button
