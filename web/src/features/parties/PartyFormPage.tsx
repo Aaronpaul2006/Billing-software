@@ -21,22 +21,11 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { applyServerErrors, blankToNull, ifMatch } from "@/lib/forms";
 import { STATE_OPTIONS } from "@/lib/india";
 
+import { NEEDS_GSTIN, TREATMENTS } from "./gst";
 import { PortalAccess } from "./PortalAccess";
 
 type Party = components["schemas"]["Party"];
 type PartyWrite = components["schemas"]["PartyWrite"];
-type Treatment = PartyWrite["gst_treatment"];
-
-const TREATMENTS: { value: Treatment; label: string }[] = [
-  { value: "REGISTERED", label: "Registered business (has GSTIN)" },
-  { value: "COMPOSITION", label: "Composition dealer (has GSTIN)" },
-  { value: "SEZ", label: "SEZ unit (has GSTIN)" },
-  { value: "UNREGISTERED", label: "Unregistered business" },
-  { value: "CONSUMER", label: "Consumer (individual)" },
-  { value: "OVERSEAS", label: "Overseas" },
-];
-const NEEDS_GSTIN: ReadonlySet<Treatment> = new Set(["REGISTERED", "COMPOSITION", "SEZ"]);
-
 const formSchema = z
   .object({
     display_name: z.string().trim().min(1, "Enter a name."),

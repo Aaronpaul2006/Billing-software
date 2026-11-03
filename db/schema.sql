@@ -564,6 +564,8 @@ CREATE TABLE document_lines (
   CHECK (line_total = taxable_value + cgst_amount + sgst_amount + igst_amount + cess_amount)
 );
 CREATE INDEX document_lines_boq_idx ON document_lines (tenant_id, boq_item_id) WHERE boq_item_id IS NOT NULL;
+-- An item's last use and the rate last charged to a client (B.1, B.8).
+CREATE INDEX document_lines_catalog_idx ON document_lines (tenant_id, catalog_item_id) WHERE catalog_item_id IS NOT NULL;
 
 -- =============================================================================
 -- 5. Money in: payments and allocations

@@ -44,6 +44,9 @@ class CatalogItemSerializer(serializers.ModelSerializer[CatalogItem]):
     default_rate = MoneyField(allow_null=True)
     gst_rate = PercentField()
     variants = serializers.SerializerMethodField()
+    last_used_at = serializers.DateTimeField(
+        read_only=True, allow_null=True, help_text="Lists only: when a bill last used it."
+    )
 
     @extend_schema_field(CatalogVariantSerializer(many=True))
     def get_variants(self, obj: CatalogItem) -> list[dict[str, Any]]:
@@ -66,6 +69,7 @@ class CatalogItemSerializer(serializers.ModelSerializer[CatalogItem]):
             "gst_rate",
             "variants",
             "is_active",
+            "last_used_at",
             "version",
             "created_at",
             "updated_at",

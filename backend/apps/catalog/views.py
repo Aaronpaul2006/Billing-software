@@ -3,13 +3,15 @@
 import uuid
 from typing import Any
 
-from django.db.models import Prefetch
+import django_filters
+from django.db.models import Max, OuterRef, Prefetch, Q, QuerySet, Subquery
 from drf_spectacular.utils import extend_schema
 from rest_framework.request import Request
 from rest_framework.response import Response
 
 from apps.core.api import ActionAPIView, detail_response, list_response, versioned_patch
 from apps.core.idempotency import idempotent_if_keyed
+from apps.documents.models import DocumentLine
 
 from . import services
 from .models import CatalogItem, CatalogItemVariant
@@ -24,14 +26,57 @@ from .serializers import (
 EDIT = "masters.edit"
 
 
+class CatalogItemFilter(django_filters.FilterSet):
+    is_active = django_filters.BooleanFilter()
+    sac_hsn = django_filters.CharFilter()
+    q = django_filters.CharFilter(
+        method="search", label="Words of the name or description, a variant, or the HSN/SAC start"
+    )
+
+    used = django_filters.BooleanFilter(
+        method="filter_used", label="true: only items already used on a bill"
+    )
+
+    class Meta:
+        model = CatalogItem
+        fields: tuple[str, ...] = ()
+
+    def filter_used(
+        self, qs: QuerySet[CatalogItem], name: str, value: bool
+    ) -> QuerySet[CatalogItem]:
+        return qs.filter(**{"last_used_at__isnull": not value})  # an annotation (get_queryset)
+
+    def search(self, qs: QuerySet[CatalogItem], name: str, value: str) -> QuerySet[CatalogItem]:
+        match = Q()
+        for word in value.split()[:5]:  # every word must match somewhere
+            variant = CatalogItemVariant.objects.filter(
+                catalog_item_id=OuterRef("pk"), value__icontains=word
+            )
+            match &= (
+                Q(name__icontains=word)
+                | Q(description__icontains=word)
+                | Q(sac_hsn__startswith=word)
+                | Q(pk__in=variant.values("catalog_item_id"))
+            )
+        return qs.filter(match)
+
+
 class CatalogItemListView(ActionAPIView):
+    """Recent items for the bill screen: `used=true&ordering=-last_used_at`."""
+
     write_action = EDIT
     serializer_class = CatalogItemSerializer
-    filterset_fields = ("is_active", "sac_hsn")
-    ordering_fields = ("name",)
+    filterset_class = CatalogItemFilter
+    ordering_fields = ("name", "last_used_at")
 
     def get_queryset(self) -> Any:
-        return CatalogItem.objects.prefetch_related(
+        last_used = (
+            DocumentLine.objects.filter(catalog_item_id=OuterRef("pk"))
+            .values("catalog_item_id")
+            .annotate(at=Max("document__created_at"))
+            .values("at")
+        )
+        return CatalogItem.objects.annotate(last_used_at=Subquery(last_used)).prefetch_related(
             Prefetch(
                 "variants",
                 queryset=CatalogItemVariant.objects.order_by("attribute", "value"),

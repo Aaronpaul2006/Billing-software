@@ -235,7 +235,7 @@ Implemented (Phase 0.5) as of 2026-10-19:
 | `GET/POST /projects` · `GET/PATCH /projects/{id}` | `?status=ACTIVE&client_party_id=...&q=`; responses carry `client_name` |
 | `GET/POST /projects/{id}/boq-items` · `PATCH/DELETE /boq-items/{id}` | Bulk import: `POST /projects/{id}/boq-items:import` (CSV/XLSX, validated, all-or-nothing). Delete only if never billed; `contract_qty` cannot go below the quantity billed, nor `is_variation` be turned off once billed past it (`422 below_billed`). |
 | `GET /projects/{id}/boq-progress` | Per BOQ item: contract vs billed quantity and value, balance, progress %; plus totals. All items, not paginated. |
-| `GET/POST /catalog-items` · `PATCH/DELETE /catalog-items/{id}` | Reusable items and rates |
+| `GET/POST /catalog-items` · `PATCH/DELETE /catalog-items/{id}` | Reusable items and rates. Search (B.1): `?q=` (every word must match the name, description or a variant's value; or the start of the HSN/SAC), `is_active`, `sac_hsn`; `?used=true&ordering=-last_used_at` lists the items used most recently on a bill (`last_used_at` in each row) |
 
 ### BOQ import
 

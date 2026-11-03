@@ -2,7 +2,6 @@ import { keepPreviousData, useMutation, useQuery, useQueryClient } from "@tansta
 import { AlertCircle, ArrowLeft, Plus, Trash2 } from "lucide-react";
 import { useMemo, useState } from "react";
 import { Controller, useFieldArray, useForm, useWatch } from "react-hook-form";
-import type { UseFormSetValue } from "react-hook-form";
 import { Link, useNavigate, useParams, useSearchParams } from "react-router";
 
 import { api, newIdempotencyKey, unwrap } from "@/api/client";
@@ -11,6 +10,7 @@ import type { components } from "@/api/schema";
 import { ErrorState } from "@/components/ErrorState";
 import { Field, TextField } from "@/components/FormField";
 import { PageHeader } from "@/components/PageHeader";
+import { useSession } from "@/auth/context";
 import { PartyPicker } from "@/components/PartyPicker";
 import type { PickedParty } from "@/components/PartyPicker";
 import { Alert, AlertDescription } from "@/components/ui/alert";
@@ -22,20 +22,25 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { isoDate } from "@/features/dashboard/periods";
 import { applyServerErrors, blankToNull, formPath, ifMatch } from "@/lib/forms";
 import { placeName } from "@/lib/india";
-import { cleanMoneyInput, formatInr, formatQty, sumMoney } from "@/lib/money";
+import { cleanMoneyInput, formatInr, formatQty } from "@/lib/money";
 import { useDebounced } from "@/lib/useDebounced";
 
 import { DOC_TYPE_LABELS, documentKey, DRAFTABLE, supplyNote, useDocument } from "./api";
+import { ItemPicker } from "./ItemPicker";
+import { catalogChoices, MAY_ADD_MASTERS } from "./items";
+import type { PickedItem } from "./items";
+import { NewClientDialog, NewItemDialog } from "./QuickAdd";
 import type { Document, DraftableType } from "./api";
 import { TotalsPanel } from "./TotalsPanel";
 
 type DocumentWrite = components["schemas"]["DocumentWrite"];
 type LineIn = components["schemas"]["LineIn"];
 type BoqItem = components["schemas"]["BoqItem"];
-type CatalogItem = components["schemas"]["CatalogItem"];
 
 interface LineForm {
-  item: string; // "", "boq:<id>" or "cat:<id>"
+  item: string; // "", "boq:<id>", "cat:<id>" or "var:<item id>:<variant id>"
+  /** The chosen item's name, shown in the item box (not sent to the API). */
+  item_label: string;
   description: string;
   sac_hsn: string;
   unit: string;
@@ -67,6 +72,7 @@ const RA_TYPES: ReadonlySet<string> = new Set(["TAX_INVOICE", "BILL_OF_SUPPLY", 
 const NOTE_TYPES: ReadonlySet<string> = new Set(["CREDIT_NOTE", "DEBIT_NOTE"]);
 const EMPTY_LINE: LineForm = {
   item: "",
+  item_label: "",
   description: "",
   sac_hsn: "",
   unit: "",
@@ -115,6 +121,7 @@ function toForm(doc: Document | undefined, type: DraftableType): FormValues {
           : l.catalog_item_id
             ? `cat:${l.catalog_item_id}`
             : "",
+      item_label: l.boq_item_id || l.catalog_item_id ? l.description : "",
       description: l.description,
       sac_hsn: l.sac_hsn ?? "",
       unit: l.unit ?? "",
@@ -192,46 +199,6 @@ function useAllBoqItems(projectId: string) {
   });
 }
 
-function fillFromItem(
-  index: number,
-  value: string,
-  boq: BoqItem[],
-  catalog: CatalogItem[],
-  setValue: UseFormSetValue<FormValues>,
-) {
-  const [kind, id, variantId] = value.split(":");
-  const set = (field: keyof LineForm, v: string | null | undefined) => {
-    setValue(`lines.${index}.${field}`, v ?? "", { shouldDirty: true });
-  };
-  if (kind === "boq") {
-    const b = boq.find((x) => x.id === id);
-    if (!b) return;
-    set("description", b.description);
-    set("unit", b.unit);
-    set("sac_hsn", b.sac_hsn);
-    set("rate", b.rate);
-    set("gst_rate", b.gst_rate);
-  } else if (kind === "cat") {
-    const c = catalog.find((x) => x.id === id);
-    if (!c) return;
-    set("description", c.description ?? c.name);
-    set("unit", c.unit);
-    set("sac_hsn", c.sac_hsn);
-    set("rate", c.default_rate);
-    set("gst_rate", c.gst_rate);
-  } else if (kind === "var") {
-    const c = catalog.find((x) => x.id === id);
-    const v = c?.variants.find((x) => x.id === variantId);
-    if (!c || !v) return;
-    set("description", `${c.description ?? c.name} — ${v.attribute}: ${v.value}`);
-    set("unit", c.unit);
-    set("sac_hsn", c.sac_hsn);
-    // The item's rate plus the variant's change, added exactly (paise); the server does the same.
-    set("rate", c.default_rate ? sumMoney([c.default_rate, v.rate_delta]) : "");
-    set("gst_rate", c.gst_rate);
-  }
-}
-
 function Editor({ doc }: { doc?: Document }) {
   const isNew = doc === undefined;
   const isNote = doc !== undefined && NOTE_TYPES.has(doc.doc_type);
@@ -246,6 +213,11 @@ function Editor({ doc }: { doc?: Document }) {
   );
   const [message, setMessage] = useState<string | null>(null);
   const [key, setKey] = useState(newIdempotencyKey);
+  const { role } = useSession();
+  const mayAddMasters = MAY_ADD_MASTERS.has(role);
+  /** "New item" popup: for which line, starting with what was typed. */
+  const [newItem, setNewItem] = useState<{ line: number; name: string } | null>(null);
+  const [newClient, setNewClient] = useState(false);
 
   const form = useForm<FormValues>({ defaultValues: toForm(doc, startType) });
   const { register, handleSubmit, control, setValue, setError, formState } = form;
@@ -264,16 +236,6 @@ function Editor({ doc }: { doc?: Document }) {
     enabled: values.party_id !== "",
   });
   const boq = useAllBoqItems(values.project_id);
-  const catalog = useQuery({
-    queryKey: ["catalog-items", "active"],
-    queryFn: async () =>
-      unwrap(
-        await api.GET("/api/v1/catalog-items", {
-          params: { query: { is_active: true, limit: 100 } },
-        }),
-      ).results,
-    staleTime: 5 * 60_000,
-  });
 
   // Live totals: the server's tax engine, asked again 400 ms after typing stops.
   const payload = useMemo(() => toApi(values), [values]);
@@ -387,9 +349,23 @@ function Editor({ doc }: { doc?: Document }) {
     if (ok) save.mutate(v);
   });
 
+  /** Put a picked item on line `i`: its key, name and the values it fills in. */
+  const pickItem = (i: number, picked: PickedItem | null) => {
+    const set = (field: keyof LineForm, v: string | null | undefined) => {
+      setValue(`lines.${i}.${field}`, v ?? "", { shouldDirty: true });
+    };
+    set("item", picked?.key ?? "");
+    set("item_label", picked?.label ?? "");
+    if (!picked) return; // cleared: the line keeps its text, as free text
+    set("description", picked.fill.description);
+    set("unit", picked.fill.unit);
+    set("sac_hsn", picked.fill.sac_hsn);
+    set("rate", picked.fill.rate);
+    set("gst_rate", picked.fill.gst_rate);
+  };
+
   const ra = values.is_ra_bill && values.project_id !== "" && RA_TYPES.has(values.doc_type);
   const boqItems = boq.data ?? [];
-  const catalogItems = catalog.data ?? [];
   const title = isNew
     ? `New ${DOC_TYPE_LABELS[values.doc_type].toLowerCase()}`
     : `Edit draft ${DOC_TYPE_LABELS[doc.doc_type].toLowerCase()}`;
@@ -436,16 +412,31 @@ function Editor({ doc }: { doc?: Document }) {
                   control={control}
                   name="party_id"
                   render={({ field }) => (
-                    <PartyPicker
-                      id="party"
-                      value={party}
-                      invalid={!!errors.party_id}
-                      onChange={(picked) => {
-                        setParty(picked);
-                        field.onChange(picked?.id ?? "");
-                        setValue("project_id", "");
-                      }}
-                    />
+                    <div className="grid gap-1">
+                      <PartyPicker
+                        id="party"
+                        value={party}
+                        invalid={!!errors.party_id}
+                        onChange={(picked) => {
+                          setParty(picked);
+                          field.onChange(picked?.id ?? "");
+                          setValue("project_id", "");
+                        }}
+                      />
+                      {mayAddMasters && (
+                        <Button
+                          type="button"
+                          variant="link"
+                          size="sm"
+                          className="h-auto justify-start p-0"
+                          onClick={() => {
+                            setNewClient(true);
+                          }}
+                        >
+                          <Plus aria-hidden /> New client
+                        </Button>
+                      )}
+                    </div>
                   )}
                 />
               )}
@@ -558,42 +549,22 @@ function Editor({ doc }: { doc?: Document }) {
                     <label htmlFor={`line-${n}-item`} className="text-xs font-medium">
                       Item
                     </label>
-                    <NativeSelect
+                    <ItemPicker
                       id={`line-${n}-item`}
-                      {...register(`lines.${i}.item`, {
-                        onChange: (e: { target: { value: string } }) => {
-                          fillFromItem(i, e.target.value, boqItems, catalogItems, setValue);
-                        },
-                      })}
-                    >
-                      <option value="">{ra ? "Choose a BOQ item" : "Free text"}</option>
-                      {boqItems.length > 0 && (
-                        <optgroup label="BOQ">
-                          {boqItems.map((b) => (
-                            <option key={b.id} value={`boq:${b.id}`}>
-                              {b.item_code} · {b.description.slice(0, 60)}
-                            </option>
-                          ))}
-                        </optgroup>
-                      )}
-                      {!ra && catalogItems.length > 0 && (
-                        <optgroup label="Catalog">
-                          {catalogItems.flatMap((c) => [
-                            <option key={c.id} value={`cat:${c.id}`}>
-                              {c.name}
-                            </option>,
-                            ...c.variants
-                              .filter((v) => v.is_active)
-                              .map((v) => (
-                                <option key={v.id} value={`var:${c.id}:${v.id}`}>
-                                  {"\u00a0\u00a0"}
-                                  {c.name} — {v.attribute}: {v.value}
-                                </option>
-                              )),
-                          ])}
-                        </optgroup>
-                      )}
-                    </NativeSelect>
+                      label={values.lines[i]?.item_label ?? ""}
+                      boq={boqItems}
+                      boqOnly={ra}
+                      onPick={(picked) => {
+                        pickItem(i, picked);
+                      }}
+                      onCreate={
+                        mayAddMasters
+                          ? (name) => {
+                              setNewItem({ line: i, name });
+                            }
+                          : undefined
+                      }
+                    />
                   </div>
                   <div className="grid gap-1 sm:col-span-8">
                     <label htmlFor={`line-${n}-description`} className="text-xs font-medium">
@@ -736,6 +707,31 @@ function Editor({ doc }: { doc?: Document }) {
           </Button>
         </div>
       </form>
+      {newItem && (
+        <NewItemDialog
+          name={newItem.name}
+          onClose={() => {
+            setNewItem(null);
+          }}
+          onCreated={(item) => {
+            pickItem(newItem.line, catalogChoices([item])[0] ?? null);
+            setNewItem(null);
+          }}
+        />
+      )}
+      {newClient && (
+        <NewClientDialog
+          onClose={() => {
+            setNewClient(false);
+          }}
+          onCreated={(created) => {
+            setParty({ id: created.id, name: created.display_name });
+            setValue("party_id", created.id, { shouldDirty: true });
+            setValue("project_id", "");
+            setNewClient(false);
+          }}
+        />
+      )}
     </>
   );
 }

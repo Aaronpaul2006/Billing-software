@@ -375,4 +375,10 @@ class DocumentLine(TenantScoped):
                 condition=Q(boq_item__isnull=False),
                 name="document_lines_boq_idx",
             ),
+            # B.1 / B.8: an item's last use, and the rate last charged to a client
+            models.Index(
+                fields=["tenant", "catalog_item"],
+                condition=Q(catalog_item__isnull=False),
+                name="document_lines_catalog_idx",
+            ),
         ]

@@ -195,10 +195,9 @@ describe("document editor", () => {
     await user.click(await screen.findByRole("button", { name: /Skyline Developers/ }));
     await user.selectOptions(await screen.findByLabelText("Project"), PROJECT);
     const line = screen.getByRole("group", { name: "Line 1" });
-    await waitFor(() => {
-      expect(within(line).getAllByRole("option").length).toBeGreaterThan(1);
-    });
-    await user.selectOptions(within(line).getByLabelText("Item"), "boq:b1");
+    // type to find the BOQ item, by words of its description
+    await user.type(within(line).getByLabelText("Item"), "m25 slab");
+    await user.click(await within(line).findByRole("option", { name: /RCC M25 for slabs/ }));
     expect(within(line).getByLabelText("Description")).toHaveValue("RCC M25 for slabs");
     expect(within(line).getByLabelText("Rate (₹)")).toHaveValue("6800.00");
     await user.type(within(line).getByLabelText("Quantity"), "42.5");
@@ -333,17 +332,14 @@ describe("document editor", () => {
     await user.type(await screen.findByLabelText("Client"), "sky");
     await user.click(await screen.findByRole("button", { name: /Skyline Developers/ }));
     const line = screen.getByRole("group", { name: "Line 1" });
-    const item = within(line).getByLabelText("Item");
-    await waitFor(() => {
-      expect(
-        within(item)
-          .getAllByRole("option")
-          .map((o) => o.textContent),
-      ).toContain("  OPC 53 cement — Brand: UltraTech");
+    await user.type(within(line).getByLabelText("Item"), "cement");
+    const variant = await within(line).findByRole("option", {
+      name: /OPC 53 cement — Brand: UltraTech/,
     });
+    expect(variant).toHaveTextContent("₹400.00 / bag"); // item rate + the variant's change
     // archived variants are not offered
-    expect(within(item).queryByText(/Old stock/)).not.toBeInTheDocument();
-    await user.selectOptions(item, "var:c1:v1");
+    expect(within(line).queryByText(/Old stock/)).not.toBeInTheDocument();
+    await user.click(variant);
     expect(within(line).getByLabelText("Description")).toHaveValue(
       "OPC 53 cement — Brand: UltraTech",
     );

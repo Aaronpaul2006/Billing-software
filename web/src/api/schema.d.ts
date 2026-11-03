@@ -451,18 +451,10 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        /**
-         * @description Permission by action name (docs/01-architecture.md §3): `read_action`
-         *     for GET/HEAD/OPTIONS, `write_action` for everything else. Generic, so list
-         *     endpoints get pagination and filtering from the DRF defaults.
-         */
+        /** @description Recent items for the bill screen: `used=true&ordering=-last_used_at`. */
         get: operations["catalog_items_list"];
         put?: never;
-        /**
-         * @description Permission by action name (docs/01-architecture.md §3): `read_action`
-         *     for GET/HEAD/OPTIONS, `write_action` for everything else. Generic, so list
-         *     endpoints get pagination and filtering from the DRF defaults.
-         */
+        /** @description Recent items for the bill screen: `used=true&ordering=-last_used_at`. */
         post: operations["catalog_items_create"];
         delete?: never;
         options?: never;
@@ -2377,6 +2369,11 @@ export interface components {
             gst_rate: string;
             readonly variants: components["schemas"]["CatalogVariant"][];
             readonly is_active: boolean;
+            /**
+             * Format: date-time
+             * @description Lists only: when a bill last used it.
+             */
+            readonly last_used_at: string | null;
             readonly version: number;
             /** Format: date-time */
             readonly created_at: string;
@@ -6042,7 +6039,11 @@ export interface operations {
                 limit?: number;
                 /** @description Which field to use when ordering the results. */
                 ordering?: string;
+                /** @description Words of the name or description, a variant, or the HSN/SAC start */
+                q?: string;
                 sac_hsn?: string;
+                /** @description true: only items already used on a bill */
+                used?: boolean;
             };
             header?: never;
             path?: never;

@@ -818,7 +818,7 @@
         "/api/v1/catalog-items": {
             "get": {
                 "operationId": "catalog_items_list",
-                "description": "Permission by action name (docs/01-architecture.md §3): `read_action`\nfor GET/HEAD/OPTIONS, `write_action` for everything else. Generic, so list\nendpoints get pagination and filtering from the DRF defaults.",
+                "description": "Recent items for the bill screen: `used=true&ordering=-last_used_at`.",
                 "parameters": [
                     {
                         "name": "cursor",
@@ -856,10 +856,26 @@
                     },
                     {
                         "in": "query",
+                        "name": "q",
+                        "schema": {
+                            "type": "string"
+                        },
+                        "description": "Words of the name or description, a variant, or the HSN/SAC start"
+                    },
+                    {
+                        "in": "query",
                         "name": "sac_hsn",
                         "schema": {
                             "type": "string"
                         }
+                    },
+                    {
+                        "in": "query",
+                        "name": "used",
+                        "schema": {
+                            "type": "boolean"
+                        },
+                        "description": "true: only items already used on a bill"
                     }
                 ],
                 "tags": [
@@ -885,7 +901,7 @@
             },
             "post": {
                 "operationId": "catalog_items_create",
-                "description": "Permission by action name (docs/01-architecture.md §3): `read_action`\nfor GET/HEAD/OPTIONS, `write_action` for everything else. Generic, so list\nendpoints get pagination and filtering from the DRF defaults.",
+                "description": "Recent items for the bill screen: `used=true&ordering=-last_used_at`.",
                 "tags": [
                     "catalog"
                 ],
@@ -6684,6 +6700,15 @@
                         "type": "boolean",
                         "readOnly": true
                     },
+                    "last_used_at": {
+                        "type": [
+                            "string",
+                            "null"
+                        ],
+                        "format": "date-time",
+                        "readOnly": true,
+                        "description": "Lists only: when a bill last used it."
+                    },
                     "version": {
                         "type": "integer",
                         "readOnly": true
@@ -6706,6 +6731,7 @@
                     "gst_rate",
                     "id",
                     "is_active",
+                    "last_used_at",
                     "name",
                     "sac_hsn",
                     "unit",

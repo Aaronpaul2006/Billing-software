@@ -33,6 +33,7 @@ function item(variants: Variant[]): Item {
     default_rate: "380.00",
     gst_rate: "28.00",
     variants,
+    last_used_at: null,
     is_active: true,
     version: 1,
     created_at: "",
