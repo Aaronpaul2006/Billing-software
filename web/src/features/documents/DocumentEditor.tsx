@@ -13,7 +13,7 @@ import {
 import { useEffect, useMemo, useRef, useState } from "react";
 import type { KeyboardEvent as ReactKeyboardEvent } from "react";
 import { Controller, useFieldArray, useForm, useWatch } from "react-hook-form";
-import { Link, useLocation, useNavigate, useParams, useSearchParams } from "react-router";
+import { Link, useNavigate, useParams, useSearchParams } from "react-router";
 
 import { api, newIdempotencyKey, unwrap } from "@/api/client";
 import { ApiError } from "@/api/problem";
@@ -40,6 +40,7 @@ import { DOC_TYPE_LABELS, documentKey, DRAFTABLE, supplyNote, useDocument } from
 import { ItemPicker } from "./ItemPicker";
 import { catalogChoices, MAY_ADD_MASTERS } from "./items";
 import type { PickedItem } from "./items";
+import { AUTOSAVE } from "./autosave";
 import { enterTarget, SHORTCUTS } from "./keyboard";
 import { NewClientDialog, NewItemDialog } from "./QuickAdd";
 import type { Document, DraftableType } from "./api";
@@ -190,6 +191,29 @@ function apiLine(l: LineForm): LineIn {
   };
 }
 
+/** A line with text but no quantity or item: not sent to the server yet (toApi leaves it out). */
+function unsent(l: LineForm): boolean {
+  return (
+    l.quantity.trim() === "" &&
+    l.item === "" &&
+    [l.description, l.rate, l.unit, l.sac_hsn, l.discount_amount].some((x) => x.trim() !== "")
+  );
+}
+
+/** Enough to save as a draft: a client, and at least one line, each with a quantity (and a valid rate). */
+function saveable(body: DocumentWrite): boolean {
+  return (
+    body.party_id !== "" &&
+    (body.lines ?? []).length > 0 && // not an empty draft the moment a client is chosen
+    (body.lines ?? []).every(
+      (l) =>
+        QTY.test(l.quantity) &&
+        Number(l.quantity) > 0 &&
+        (l.rate === undefined || /^\d{1,12}(\.\d{1,2})?$/.test(l.rate)),
+    )
+  );
+}
+
 function toApi(v: FormValues): DocumentWrite {
   const quotation = v.doc_type === "QUOTATION";
   return {
@@ -307,7 +331,6 @@ function BulkEdit({
 }
 
 function Editor({ doc }: { doc?: Document }) {
-  const isNew = doc === undefined;
   const isNote = doc !== undefined && NOTE_TYPES.has(doc.doc_type);
   const [params] = useSearchParams();
   const requested = params.get("type") as DraftableType | null;
@@ -328,20 +351,18 @@ function Editor({ doc }: { doc?: Document }) {
   const [showKeys, setShowKeys] = useState(false);
   /** Lines chosen for a bulk edit, by their field id (stable across moves). */
   const [selected, setSelected] = useState<Set<string>>(() => new Set());
-  const location = useLocation();
-  // "Saved at …" survives the move from /documents/new to the saved draft's address
-  const [savedAt, setSavedAt] = useState<string | null>(
-    (location.state as { savedAt?: string } | null)?.savedAt ?? null,
-  );
+  const [savedAt, setSavedAt] = useState<string | null>(null);
+  /** A new bill once it is saved: later saves update it (the page is not reloaded). */
+  const [created, setCreated] = useState<Document | null>(null);
+  const current = doc ?? created;
   /** After saving: "stay" (Ctrl+S) keeps the editor open; "open" shows the bill. */
   const after = useRef<"stay" | "open">("open");
   const formRef = useRef<HTMLFormElement>(null);
   const mayViewBalance = REPORT_ROLES.has(role);
 
   const form = useForm<FormValues>({ defaultValues: toForm(doc, startType) });
-  const { register, handleSubmit, control, setValue, setError, formState } = form;
+  const { register, handleSubmit, control, setValue, setError, formState, getValues } = form;
   const errors = formState.errors;
-  const isDirty = formState.isDirty; // read while rendering, so the form keeps it up to date
   const lines = useFieldArray({ control, name: "lines" });
   const values = useWatch({ control }) as FormValues;
 
@@ -392,43 +413,56 @@ function Editor({ doc }: { doc?: Document }) {
       .join(" ");
   const headerErrors = previewErrors.filter((e) => !e.field?.startsWith("lines["));
 
-  const save = useMutation({
-    mutationFn: async (v: FormValues) => {
-      const body = toApi(v);
-      if (!doc) {
-        return unwrap(
-          await api.POST("/api/v1/documents", { body, headers: { "Idempotency-Key": key } }),
-        );
-      }
-      // Notes keep their type, party and project; the rest may change while a draft.
-      const patch = isNote
-        ? {
-            doc_date: body.doc_date,
-            due_date: body.due_date,
-            notes: body.notes,
-            terms: body.terms,
-            lines: body.lines,
-          }
-        : body;
+  /** Create the draft, or update it (If-Match): Save and autosave both use this. */
+  const persist = async (body: DocumentWrite) => {
+    if (!current) {
       return unwrap(
-        await api.PATCH("/api/v1/documents/{document_id}", {
-          params: { path: { document_id: doc.id } },
-          body: patch,
-          headers: { "If-Match": ifMatch(doc.version) },
-        }),
+        await api.POST("/api/v1/documents", { body, headers: { "Idempotency-Key": key } }),
       );
-    },
-    onSuccess: (saved) => {
-      setKey(newIdempotencyKey());
-      queryClient.setQueryData(documentKey(saved.id), saved);
-      void queryClient.invalidateQueries({ queryKey: ["documents"] });
+    }
+    // Notes keep their type, party and project; the rest may change while a draft.
+    const patch = isNote
+      ? {
+          doc_date: body.doc_date,
+          due_date: body.due_date,
+          notes: body.notes,
+          terms: body.terms,
+          lines: body.lines,
+        }
+      : body;
+    return unwrap(
+      await api.PATCH("/api/v1/documents/{document_id}", {
+        params: { path: { document_id: current.id } },
+        body: patch,
+        headers: { "If-Match": ifMatch(current.version) },
+      }),
+    );
+  };
+  const stored = (saved: Document, sent: { json: string; form: string }) => {
+    setKey(newIdempotencyKey());
+    queryClient.setQueryData(documentKey(saved.id), saved);
+    void queryClient.invalidateQueries({ queryKey: ["documents"] });
+    setSavedJson(sent.json);
+    setSavedForm(sent.form);
+    if (!doc) {
+      // Keep editing in place (no reload, the cursor stays where it is); the address now
+      // names the draft, so reloading the page opens it.
+      setCreated(saved);
+      // the server set the due date from the client's payment terms: keep it
+      if (!getValues("due_date") && saved.due_date) {
+        setValue("due_date", saved.due_date, { shouldDirty: true });
+      }
+      window.history.replaceState(window.history.state, "", `/documents/${saved.id}/edit`);
+    }
+  };
+
+  const save = useMutation({
+    mutationFn: async (v: FormValues) => persist(toApi(v)),
+    onSuccess: (saved, v) => {
+      stored(saved, { json: JSON.stringify(toApi(v)), form: JSON.stringify(v) });
       if (after.current === "stay") {
         const at = new Date().toLocaleTimeString("en-IN", { hour: "2-digit", minute: "2-digit" });
         setSavedAt(at);
-        form.reset(form.getValues()); // saved: nothing unsaved any more
-        if (!doc) {
-          void navigate(`/documents/${saved.id}/edit`, { replace: true, state: { savedAt: at } });
-        }
       } else {
         void navigate(`/documents/${saved.id}`);
       }
@@ -456,6 +490,50 @@ function Editor({ doc }: { doc?: Document }) {
       );
     },
   });
+
+  // Autosave (B.6): what was last saved, compared with the form as it is now.
+  const [savedJson, setSavedJson] = useState(() => JSON.stringify(toApi(toForm(doc, startType))));
+  // Unsaved = the form differs from the last saved one (a line with only a description
+  // is not sent yet, but it is still work to lose).
+  const [savedForm, setSavedForm] = useState(() => JSON.stringify(toForm(doc, startType)));
+  const [failedJson, setFailedJson] = useState<string | null>(null);
+  const [autoProblem, setAutoProblem] = useState<string | null>(null);
+  const [conflict, setConflict] = useState(false);
+  const payloadJson = JSON.stringify(payload);
+  const formJson = JSON.stringify(values);
+  const unsaved = formJson !== savedForm || values.lines.some(unsent);
+  const autosave = useMutation({
+    mutationFn: async (sent: { json: string; form: string }) =>
+      persist(JSON.parse(sent.json) as DocumentWrite),
+    onSuccess: (saved, sent) => {
+      stored(saved, sent);
+      setAutoProblem(null);
+      const at = new Date().toLocaleTimeString("en-IN", { hour: "2-digit", minute: "2-digit" });
+      setSavedAt(at);
+    },
+    onError: (e, sent) => {
+      setFailedJson(sent.json); // not again until something changes
+      if (e instanceof ApiError && e.code === "stale_version") {
+        setConflict(true);
+        setMessage("Someone else changed this draft. Reload the page to see their version.");
+      } else {
+        setAutoProblem(e instanceof ApiError ? e.message : "Could not reach the server.");
+      }
+    },
+  });
+  const settledJson = useDebounced(payloadJson, AUTOSAVE.delayMs);
+  const autosaveNow =
+    AUTOSAVE.enabled &&
+    settledJson === payloadJson && // typing has stopped
+    settledJson !== savedJson &&
+    settledJson !== failedJson &&
+    !conflict &&
+    !save.isPending &&
+    !autosave.isPending &&
+    saveable(JSON.parse(settledJson) as DocumentWrite);
+  useEffect(() => {
+    if (autosaveNow) autosave.mutate({ json: settledJson, form: formJson });
+  }, [autosaveNow, settledJson, formJson, autosave]);
 
   const onSubmit = handleSubmit((v) => {
     setMessage(null);
@@ -507,10 +585,10 @@ function Editor({ doc }: { doc?: Document }) {
     void onSubmit();
   };
   const leave = () => {
-    if (isDirty && !window.confirm("Leave this bill? Changes not saved will be lost.")) {
+    if (unsaved && !window.confirm("Leave this bill? Changes not saved will be lost.")) {
       return;
     }
-    void navigate(doc ? `/documents/${doc.id}` : "/documents");
+    void navigate(current ? `/documents/${current.id}` : "/documents");
   };
 
   // Shortcuts anywhere on the page (popups and item lists handle their own Esc).
@@ -618,14 +696,14 @@ function Editor({ doc }: { doc?: Document }) {
 
   const ra = values.is_ra_bill && values.project_id !== "" && RA_TYPES.has(values.doc_type);
   const boqItems = boq.data ?? [];
-  const title = isNew
-    ? `New ${DOC_TYPE_LABELS[values.doc_type].toLowerCase()}`
-    : `Edit draft ${DOC_TYPE_LABELS[doc.doc_type].toLowerCase()}`;
+  const title = current
+    ? `Edit draft ${DOC_TYPE_LABELS[current.doc_type].toLowerCase()}`
+    : `New ${DOC_TYPE_LABELS[values.doc_type].toLowerCase()}`;
 
   return (
     <>
       <Button variant="ghost" size="sm" asChild className="mb-2 -ml-2">
-        <Link to={doc ? `/documents/${doc.id}` : "/documents"}>
+        <Link to={current ? `/documents/${current.id}` : "/documents"}>
           <ArrowLeft aria-hidden /> {doc ? "Back to the draft" : "Invoices & quotes"}
         </Link>
       </Button>
@@ -780,7 +858,7 @@ function Editor({ doc }: { doc?: Document }) {
                 type="date"
                 error={errors.due_date?.message}
                 registration={register("due_date")}
-                {...(terms !== null && terms !== undefined && !values.due_date && !doc
+                {...(terms !== null && terms !== undefined && !values.due_date && !current
                   ? {
                       hint: `Left empty: due ${String(terms)} days after the bill date (the client's payment terms).`,
                     }
@@ -1127,11 +1205,21 @@ function Editor({ doc }: { doc?: Document }) {
           <Button type="button" variant="ghost" onClick={leave}>
             Cancel
           </Button>
-          {savedAt && !isDirty && (
-            <span role="status" className="text-muted-foreground flex items-center gap-1 text-sm">
-              <CheckCircle2 className="size-4" aria-hidden /> Saved at {savedAt}
-            </span>
-          )}
+          <span role="status" className="text-muted-foreground flex items-center gap-1 text-sm">
+            {autosave.isPending ? (
+              "Saving…"
+            ) : conflict ? null : unsaved ? (
+              autoProblem ? (
+                `Not saved: ${autoProblem}`
+              ) : !saveable(payload) ? (
+                "Not saved yet: choose the client and fill in each line's quantity."
+              ) : null
+            ) : savedAt ? (
+              <>
+                <CheckCircle2 className="size-4" aria-hidden /> Saved at {savedAt}
+              </>
+            ) : null}
+          </span>
         </div>
       </form>
       {newItem && (

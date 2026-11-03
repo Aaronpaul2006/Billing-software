@@ -90,7 +90,7 @@ describe("keyboard-first bill screen", () => {
     await user.type(within(line).getByLabelText("Quantity"), "10");
     await user.keyboard("{Control>}s{/Control}");
     await waitFor(() => {
-      expect(router.state.location.pathname).toBe(`/documents/${DOC}/edit`);
+      expect(window.location.pathname).toBe(`/documents/${DOC}/edit`); // the page stays open
     });
     expect(posts).toHaveLength(1);
     expect(await screen.findByRole("status")).toHaveTextContent(/Saved at/);
