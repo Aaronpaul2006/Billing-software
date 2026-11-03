@@ -1160,3 +1160,6 @@ NOT_TENANT_DATA["party-import-sample"] = "a fixed sample file"
 # --- B.7 lines from a file or pasted cells: reads nothing stored
 NOT_TENANT_DATA["document-parse-lines"] = "checks the cells sent; reads and saves nothing"
 NOT_TENANT_DATA["document-lines-sample"] = "a fixed sample file"
+
+# --- B.8 last rates: tests/documents/test_last_rates.py::test_another_tenants_client_is_not_found
+OBJECT_ROUTES["party-last-rates"] = lambda w: None

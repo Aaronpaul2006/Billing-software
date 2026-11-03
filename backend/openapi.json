@@ -4002,6 +4002,43 @@
                 }
             }
         },
+        "/api/v1/parties/{party_id}/last-rates": {
+            "get": {
+                "operationId": "parties_last_rates_retrieve",
+                "description": "The rate last charged to this client for each catalog item (B.8).",
+                "parameters": [
+                    {
+                        "in": "path",
+                        "name": "party_id",
+                        "schema": {
+                            "type": "string",
+                            "format": "uuid"
+                        },
+                        "required": true
+                    }
+                ],
+                "tags": [
+                    "documents"
+                ],
+                "security": [
+                    {
+                        "bearerAuth": []
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/LastRates"
+                                }
+                            }
+                        },
+                        "description": ""
+                    }
+                }
+            }
+        },
         "/api/v1/parties/{party_id}/portal-users": {
             "get": {
                 "operationId": "parties_portal_users_retrieve",
@@ -9244,6 +9281,64 @@
                     "invited_by_name",
                     "legal_name",
                     "role"
+                ]
+            },
+            "LastRate": {
+                "type": "object",
+                "properties": {
+                    "catalog_item_id": {
+                        "type": "string",
+                        "format": "uuid"
+                    },
+                    "catalog_variant_id": {
+                        "type": [
+                            "string",
+                            "null"
+                        ],
+                        "format": "uuid"
+                    },
+                    "rate": {
+                        "type": "string",
+                        "format": "decimal",
+                        "pattern": "^-?\\d{0,12}(?:\\.\\d{0,2})?$"
+                    },
+                    "document_id": {
+                        "type": "string",
+                        "format": "uuid"
+                    },
+                    "doc_number": {
+                        "type": [
+                            "string",
+                            "null"
+                        ]
+                    },
+                    "doc_date": {
+                        "type": "string",
+                        "format": "date"
+                    }
+                },
+                "required": [
+                    "catalog_item_id",
+                    "catalog_variant_id",
+                    "doc_date",
+                    "doc_number",
+                    "document_id",
+                    "rate"
+                ]
+            },
+            "LastRates": {
+                "type": "object",
+                "properties": {
+                    "results": {
+                        "type": "array",
+                        "items": {
+                            "$ref": "#/components/schemas/LastRate"
+                        },
+                        "description": "Per catalog item and variant: the rate on the latest issued bill."
+                    }
+                },
+                "required": [
+                    "results"
                 ]
             },
             "LineIn": {

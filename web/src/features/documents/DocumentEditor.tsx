@@ -34,7 +34,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { isoDate } from "@/features/dashboard/periods";
 import { applyServerErrors, blankToNull, formPath, ifMatch } from "@/lib/forms";
 import { placeName } from "@/lib/india";
-import { cleanMoneyInput, formatInr, formatQty } from "@/lib/money";
+import { cleanMoneyInput, formatInr, formatQty, toPaise } from "@/lib/money";
 import { useDebounced } from "@/lib/useDebounced";
 
 import { DOC_TYPE_LABELS, documentKey, DRAFTABLE, supplyNote, useDocument } from "./api";
@@ -200,6 +200,15 @@ function isEmptyLine(l: LineForm): boolean {
   return [l.item, l.description, l.quantity, l.rate, l.unit, l.sac_hsn, l.discount_amount].every(
     (x) => x.trim() === "",
   );
+}
+
+/** "2026-10-12" -> "12 Oct 2026". */
+function shortDate(iso: string): string {
+  return new Date(`${iso}T00:00:00`).toLocaleDateString("en-IN", {
+    day: "numeric",
+    month: "short",
+    year: "numeric",
+  });
 }
 
 /** "rows[3].rate" -> "Row 3 · Rate". */
@@ -742,6 +751,30 @@ function Editor({ doc }: { doc?: Document }) {
     enabled: values.party_id !== "" && !isNote,
   }).data;
 
+  // B.8: the rate last charged to this client, per catalog item and variant
+  const lastRates = useQuery({
+    queryKey: ["parties", values.party_id, "last-rates"],
+    queryFn: async () =>
+      unwrap(
+        await api.GET("/api/v1/parties/{party_id}/last-rates", {
+          params: { path: { party_id: values.party_id } },
+        }),
+      ).results,
+    enabled: values.party_id !== "" && !isNote,
+    staleTime: 60_000,
+  });
+  /** The client's last rate for this line's item, when it differs from the rate typed. */
+  const lastRateFor = (line: LineForm | undefined) => {
+    if (!line) return null;
+    const [kind, id, variantId] = line.item.split(":");
+    if ((kind !== "cat" && kind !== "var") || !id) return null;
+    const last = lastRates.data?.find(
+      (r) => r.catalog_item_id === id && (r.catalog_variant_id ?? undefined) === variantId,
+    );
+    if (!last) return null;
+    return toPaise(cleanMoneyInput(line.rate)) === toPaise(last.rate) ? null : last;
+  };
+
   const balance = useQuery({
     queryKey: ["statement", values.party_id, "now"],
     queryFn: async () =>
@@ -1122,6 +1155,27 @@ function Editor({ doc }: { doc?: Document }) {
                   {box("quantity", ra ? "This bill qty" : "Quantity", "decimal", 2)}
                   {box("unit", "Unit", "text", 1)}
                   {box("rate", "Rate (₹)", "decimal", 2)}
+                  {(() => {
+                    const last = lastRateFor(values.lines[i]);
+                    if (!last) return null;
+                    return (
+                      <p className="text-muted-foreground flex flex-wrap items-center gap-2 text-xs sm:order-last sm:col-span-12">
+                        Last charged to this client: {formatInr(last.rate)} on{" "}
+                        {last.doc_number ?? "a bill"} ({shortDate(last.doc_date)})
+                        <Button
+                          type="button"
+                          variant="link"
+                          size="sm"
+                          className="h-auto p-0 text-xs"
+                          onClick={() => {
+                            setValue(`lines.${i}.rate`, last.rate, { shouldDirty: true });
+                          }}
+                        >
+                          Use {formatInr(last.rate)}
+                        </Button>
+                      </p>
+                    );
+                  })()}
                   <div className="grid gap-1 sm:col-span-2">
                     <label htmlFor={`line-${n}-discount_amount`} className="text-xs font-medium">
                       Discount

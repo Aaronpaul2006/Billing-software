@@ -7,6 +7,9 @@ urlpatterns = [
     path("documents:parse-lines", views.ParseLinesView.as_view(), name="document-parse-lines"),
     path("documents:lines-sample", views.LinesSampleView.as_view(), name="document-lines-sample"),
     path(
+        "parties/<uuid:party_id>/last-rates", views.LastRatesView.as_view(), name="party-last-rates"
+    ),
+    path(
         "documents:preview-totals",
         views.PreviewTotalsView.as_view(),
         name="document-preview-totals",

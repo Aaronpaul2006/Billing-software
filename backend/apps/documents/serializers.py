@@ -314,3 +314,18 @@ class ParseLinesResultSerializer(serializers.Serializer[Any]):
     skipped_rows = serializers.ListField(child=serializers.IntegerField())
     ignored_columns = serializers.ListField(child=serializers.CharField())
     lines = ParsedLineSerializer(many=True)
+
+
+class LastRateSerializer(serializers.Serializer[Any]):
+    catalog_item_id = serializers.UUIDField()
+    catalog_variant_id = serializers.UUIDField(allow_null=True)
+    rate = MoneyField()
+    document_id = serializers.UUIDField()
+    doc_number = serializers.CharField(allow_null=True)
+    doc_date = serializers.DateField()
+
+
+class LastRatesSerializer(serializers.Serializer[Any]):
+    results = LastRateSerializer(
+        many=True, help_text="Per catalog item and variant: the rate on the latest issued bill."
+    )

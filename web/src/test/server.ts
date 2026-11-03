@@ -64,6 +64,7 @@ export const server = setupServer(
   // The bill screen's lookups for a chosen client (B.4): no earlier bill, nothing owed.
   http.get(`${API}/documents`, () => HttpResponse.json({ results: [], next_cursor: null })),
   http.get(`${API}/parties/:id/statement`, () => problem(403, "permission_denied")),
+  http.get(`${API}/parties/:id/last-rates`, () => HttpResponse.json({ results: [] })),
   http.get(`${API}/parties/:id`, () => problem(404, "not_found")),
   // A business that has finished setting up: no checklist on the first page.
   http.get(`${API}/tenant/setup`, () =>

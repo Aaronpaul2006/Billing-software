@@ -390,6 +390,13 @@ their own endpoints (Phase 1.6), RA bills below (Phase 3.2). Example response:
 }
 ```
 
+### Last rate for a client (B.8)
+
+`GET /parties/{id}/last-rates` (any member): per catalog item and variant,
+the line on the client's latest issued tax invoice or bill of supply
+(`rate`, `document_id`, `doc_number`, `doc_date`). Drafts, cancelled bills,
+quotations and notes do not count. Another tenant's client: `404`.
+
 ### Lines from a spreadsheet or pasted cells (B.7)
 
 `POST /documents:parse-lines` (permission `documents.draft`) takes either a

@@ -1452,6 +1452,23 @@ export interface paths {
         patch: operations["parties_partial_update"];
         trace?: never;
     };
+    "/api/v1/parties/{party_id}/last-rates": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** @description The rate last charged to this client for each catalog item (B.8). */
+        get: operations["parties_last_rates_retrieve"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/parties/{party_id}/portal-users": {
         parameters: {
             query?: never;
@@ -3235,6 +3252,23 @@ export interface components {
             invited_by_name: string;
             /** Format: date-time */
             expires_at: string;
+        };
+        LastRate: {
+            /** Format: uuid */
+            catalog_item_id: string;
+            /** Format: uuid */
+            catalog_variant_id: string | null;
+            /** Format: decimal */
+            rate: string;
+            /** Format: uuid */
+            document_id: string;
+            doc_number: string | null;
+            /** Format: date */
+            doc_date: string;
+        };
+        LastRates: {
+            /** @description Per catalog item and variant: the rate on the latest issued bill. */
+            results: components["schemas"]["LastRate"][];
         };
         /**
          * @description A line. Description, unit, SAC/HSN, rate and GST rate may be left out
@@ -7963,6 +7997,27 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["Party"];
+                };
+            };
+        };
+    };
+    parties_last_rates_retrieve: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                party_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["LastRates"];
                 };
             };
         };

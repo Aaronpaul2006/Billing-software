@@ -33,6 +33,8 @@ from .serializers import (
     DocumentListSerializer,
     DocumentSerializer,
     DocumentWriteSerializer,
+    LastRateSerializer,
+    LastRatesSerializer,
     NoteSerializer,
     ParseLinesRequestSerializer,
     ParseLinesResultSerializer,
@@ -40,7 +42,7 @@ from .serializers import (
     PreviewSerializer,
     TotalsSerializer,
 )
-from .services import drafts, lifecycle, line_import, pdfs
+from .services import drafts, lifecycle, line_import, pdfs, rates
 
 DRAFT = "documents.draft"
 
@@ -183,6 +185,18 @@ class ParseLinesView(ActionAPIView):
                 }
             ).data
         )
+
+
+class LastRatesView(ActionAPIView):
+    """The rate last charged to this client for each catalog item (B.8)."""
+
+    pagination_class = None
+    filter_backends = ()
+
+    @extend_schema(responses={200: LastRatesSerializer}, tags=["documents"])
+    def get(self, request: Request, party_id: uuid.UUID) -> Response:
+        rows = rates.last_rates(self.principal, party_id)
+        return Response({"results": LastRateSerializer(rows, many=True).data})
 
 
 class LinesSampleView(ActionAPIView):
