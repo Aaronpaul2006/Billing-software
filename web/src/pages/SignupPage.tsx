@@ -6,6 +6,7 @@ import { Link, Navigate, useNavigate } from "react-router";
 import { z } from "zod";
 
 import { useAuth } from "@/auth/context";
+import { BRAND } from "@/brand";
 import { TextField } from "@/components/FormField";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
@@ -47,7 +48,7 @@ export function SignupPage() {
   });
 
   return (
-    <AuthCard title="Create your account" description="Construction billing">
+    <AuthCard title="Create your account" description={`${BRAND.name}: ${BRAND.tagline}`}>
       {error && (
         <Alert variant="destructive">
           <AlertCircle aria-hidden />

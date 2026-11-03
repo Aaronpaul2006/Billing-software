@@ -7,6 +7,7 @@ import { z } from "zod";
 
 import { ApiError } from "@/api/problem";
 import { useAuth } from "@/auth/context";
+import { BRAND } from "@/brand";
 import type { MfaMethod } from "@/auth/context";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
@@ -104,7 +105,7 @@ export function LoginPage() {
           </CardTitle>
           <CardDescription>
             {!mfaToken
-              ? "Construction billing"
+              ? BRAND.name
               : method === "email"
                 ? "We emailed you a 6-digit code. Enter it to finish signing in (it works for 10 minutes)."
                 : "Enter the 6-digit code from your authenticator app, or a recovery code."}

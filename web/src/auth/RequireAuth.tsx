@@ -1,11 +1,16 @@
+import { lazy, Suspense } from "react";
 import { Navigate, Outlet, useLocation } from "react-router";
 
 import { FullPageSpinner } from "@/components/FullPageSpinner";
 
 import { useAuth } from "./context";
 
+// The public home page: only visitors who are not signed in download it.
+const HomePage = lazy(async () => ({ default: (await import("@/pages/HomePage")).HomePage }));
+
 /**
- * Routes behind sign-in. OWNER / ADMIN without MFA must enrol first. People
+ * Routes behind sign-in; a visitor who is not signed in sees the public home
+ * page at "/" and the sign-in page everywhere else. OWNER / ADMIN without MFA must enrol first. People
  * at a client (role CLIENT) only have the client portal (`portal` routes),
  * and the business's own people never see it.
  */
@@ -20,6 +25,13 @@ export function RequireAuth({
   const location = useLocation();
   if (state.status === "loading") return <FullPageSpinner />;
   if (state.status === "signed_out") {
+    if (location.pathname === "/" && !portal) {
+      return (
+        <Suspense fallback={<FullPageSpinner />}>
+          <HomePage />
+        </Suspense>
+      );
+    }
     return <Navigate to="/login" replace state={{ from: location.pathname }} />;
   }
   const isClient = state.session.role === "CLIENT";
