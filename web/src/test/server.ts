@@ -78,6 +78,25 @@ export const server = setupServer(
       complete: true,
     }),
   ),
+  // Print settings never saved: the defaults.
+  http.get(`${API}/tenant/print-settings`, () =>
+    HttpResponse.json(
+      {
+        layout: "DETAILED",
+        logo_attachment_id: null,
+        signature_attachment_id: null,
+        bank_account_name: null,
+        bank_name: null,
+        bank_account_number: null,
+        bank_ifsc: null,
+        bank_branch: null,
+        upi_id: null,
+        default_terms: null,
+        version: 1,
+      },
+      { headers: { ETag: '"v1"' } },
+    ),
+  ),
 );
 
 export { http, HttpResponse };

@@ -11,7 +11,7 @@ from rest_framework.response import Response
 from apps.core.api import ActionAPIView, detail_response, list_response, versioned_patch
 from apps.core.idempotency import idempotent_if_keyed
 
-from . import services
+from . import printing, services
 from .models import DocumentSeries, GstRegistration
 from .serializers import (
     DocumentSeriesCreateSerializer,
@@ -20,6 +20,8 @@ from .serializers import (
     GstRegistrationCreateSerializer,
     GstRegistrationSerializer,
     GstRegistrationUpdateSerializer,
+    PrintSettingsSerializer,
+    PrintSettingsUpdateSerializer,
     SetupStatusSerializer,
     TenantSerializer,
     TenantUpdateSerializer,
@@ -46,6 +48,31 @@ class TenantView(ActionAPIView):
             input_serializer=TenantUpdateSerializer,
             update=lambda v, changes: services.update_tenant(self.principal, v, changes),
             output_serializer=TenantSerializer,
+        )
+
+
+class PrintSettingsView(ActionAPIView):
+    """Logo, signature, bank details, UPI ID, default terms and layout of the
+    business's bills (B.12). Every member may read them; owners and admins change them."""
+
+    write_action = SETTINGS
+
+    @extend_schema(responses={200: PrintSettingsSerializer}, tags=["tenant"])
+    def get(self, request: Request) -> Response:
+        return detail_response(printing.get_print_settings(self.principal), PrintSettingsSerializer)
+
+    @extend_schema(
+        request=PrintSettingsUpdateSerializer,
+        responses={200: PrintSettingsSerializer},
+        tags=["tenant"],
+    )
+    def patch(self, request: Request) -> Response:
+        return versioned_patch(
+            request,
+            load=lambda: printing.get_print_settings(self.principal),
+            input_serializer=PrintSettingsUpdateSerializer,
+            update=lambda v, changes: printing.update_print_settings(self.principal, v, changes),
+            output_serializer=PrintSettingsSerializer,
         )
 
 

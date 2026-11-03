@@ -383,6 +383,29 @@ CREATE TABLE attachments (
   UNIQUE (tenant_id, id)
 );
 
+-- How the business's bills look on paper (B.12): one row per business, made
+-- on the first save. Logo and signature are uploaded images (attachments).
+CREATE TABLE print_settings (
+  id                       uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+  tenant_id                uuid NOT NULL UNIQUE REFERENCES tenants (id),
+  layout                   text NOT NULL DEFAULT 'DETAILED' CHECK (layout IN ('SIMPLE', 'DETAILED')),
+  logo_attachment_id       uuid,
+  signature_attachment_id  uuid,
+  bank_account_name        text CHECK (char_length(bank_account_name) BETWEEN 1 AND 200),
+  bank_name                text CHECK (char_length(bank_name) BETWEEN 1 AND 200),
+  bank_account_number      text CHECK (bank_account_number ~ '^[0-9]{6,18}$'),
+  bank_ifsc                text CHECK (bank_ifsc ~ '^[A-Z]{4}0[A-Z0-9]{6}$'),
+  bank_branch              text CHECK (char_length(bank_branch) BETWEEN 1 AND 200),
+  upi_id                   text CHECK (upi_id ~ '^[A-Za-z0-9._-]{2,64}@[A-Za-z][A-Za-z0-9]{1,63}$'),
+  default_terms            text CHECK (char_length(default_terms) BETWEEN 1 AND 5000),
+  version                  integer NOT NULL DEFAULT 1,
+  created_at               timestamptz NOT NULL DEFAULT now(),
+  updated_at               timestamptz NOT NULL DEFAULT now(),
+  UNIQUE (tenant_id, id),
+  FOREIGN KEY (tenant_id, logo_attachment_id) REFERENCES attachments (tenant_id, id),
+  FOREIGN KEY (tenant_id, signature_attachment_id) REFERENCES attachments (tenant_id, id)
+);
+
 -- =============================================================================
 -- 4. Billing documents
 --    ONE table for every billing document. "GST books", "estimates" and the
@@ -1076,7 +1099,7 @@ BEGIN
     'catalog_items', 'attachments', 'document_series', 'documents', 'document_lines',
     'payments', 'allocations', 'expenses', 'retention_releases', 'tds_certificates', 'exports',
     'email_invitations', 'payment_reminders', 'document_templates', 'catalog_item_variants',
-    'document_line_measurements']
+    'document_line_measurements', 'print_settings']
   LOOP
     EXECUTE format(
       'CREATE TRIGGER audit AFTER INSERT OR UPDATE OR DELETE ON %I FOR EACH ROW EXECUTE FUNCTION audit_row_change()', t);
@@ -1096,7 +1119,8 @@ BEGIN
     'gst_registrations', 'parties', 'projects', 'boq_items', 'catalog_items', 'attachments',
     'document_series', 'documents', 'document_lines', 'payments', 'allocations', 'expenses',
     'retention_releases', 'tds_certificates', 'idempotency_keys', 'exports', 'email_invitations',
-    'payment_reminders', 'document_templates', 'catalog_item_variants', 'document_line_measurements']
+    'payment_reminders', 'document_templates', 'catalog_item_variants', 'document_line_measurements',
+    'print_settings']
   LOOP
     EXECUTE format('ALTER TABLE %I ENABLE ROW LEVEL SECURITY', t);
     EXECUTE format('ALTER TABLE %I FORCE ROW LEVEL SECURITY', t);
@@ -1208,7 +1232,8 @@ DECLARE t text;
 BEGIN
   FOREACH t IN ARRAY ARRAY[
     'gst_registrations', 'catalog_items', 'catalog_item_variants', 'document_series', 'expenses',
-    'tds_certificates', 'email_invitations', 'payment_reminders', 'document_templates', 'audit_log']
+    'tds_certificates', 'email_invitations', 'payment_reminders', 'document_templates', 'audit_log',
+    'print_settings']
   LOOP
     EXECUTE format(
       'CREATE POLICY client_scope ON %I AS RESTRICTIVE USING (NOT app_portal_session())', t);

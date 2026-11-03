@@ -6424,6 +6424,65 @@
                 }
             }
         },
+        "/api/v1/tenant/print-settings": {
+            "get": {
+                "operationId": "tenant_print_settings_retrieve",
+                "description": "Logo, signature, bank details, UPI ID, default terms and layout of the\nbusiness's bills (B.12). Every member may read them; owners and admins change them.",
+                "tags": [
+                    "tenant"
+                ],
+                "security": [
+                    {
+                        "bearerAuth": []
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/PrintSettings"
+                                }
+                            }
+                        },
+                        "description": ""
+                    }
+                }
+            },
+            "patch": {
+                "operationId": "tenant_print_settings_partial_update",
+                "description": "Logo, signature, bank details, UPI ID, default terms and layout of the\nbusiness's bills (B.12). Every member may read them; owners and admins change them.",
+                "tags": [
+                    "tenant"
+                ],
+                "requestBody": {
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/PatchedPrintSettingsUpdate"
+                            }
+                        }
+                    }
+                },
+                "security": [
+                    {
+                        "bearerAuth": []
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/PrintSettings"
+                                }
+                            }
+                        },
+                        "description": ""
+                    }
+                }
+            }
+        },
         "/api/v1/tenant/setup": {
             "get": {
                 "operationId": "tenant_setup_retrieve",
@@ -9504,6 +9563,14 @@
                     "results"
                 ]
             },
+            "LayoutEnum": {
+                "enum": [
+                    "SIMPLE",
+                    "DETAILED"
+                ],
+                "type": "string",
+                "description": "* `SIMPLE` - Simple\n* `DETAILED` - Detailed"
+            },
             "LineIn": {
                 "type": "object",
                 "description": "A line. Description, unit, SAC/HSN, rate and GST rate may be left out\nwhen the line names a catalog or BOQ item: they are filled from it.",
@@ -11600,6 +11667,77 @@
                     }
                 }
             },
+            "PatchedPrintSettingsUpdate": {
+                "type": "object",
+                "properties": {
+                    "layout": {
+                        "$ref": "#/components/schemas/LayoutEnum"
+                    },
+                    "logo_attachment_id": {
+                        "type": [
+                            "string",
+                            "null"
+                        ],
+                        "format": "uuid"
+                    },
+                    "signature_attachment_id": {
+                        "type": [
+                            "string",
+                            "null"
+                        ],
+                        "format": "uuid"
+                    },
+                    "bank_account_name": {
+                        "type": [
+                            "string",
+                            "null"
+                        ],
+                        "maxLength": 200
+                    },
+                    "bank_name": {
+                        "type": [
+                            "string",
+                            "null"
+                        ],
+                        "maxLength": 200
+                    },
+                    "bank_account_number": {
+                        "type": [
+                            "string",
+                            "null"
+                        ],
+                        "maxLength": 40
+                    },
+                    "bank_ifsc": {
+                        "type": [
+                            "string",
+                            "null"
+                        ],
+                        "maxLength": 20
+                    },
+                    "bank_branch": {
+                        "type": [
+                            "string",
+                            "null"
+                        ],
+                        "maxLength": 200
+                    },
+                    "upi_id": {
+                        "type": [
+                            "string",
+                            "null"
+                        ],
+                        "maxLength": 130
+                    },
+                    "default_terms": {
+                        "type": [
+                            "string",
+                            "null"
+                        ],
+                        "maxLength": 5000
+                    }
+                }
+            },
             "PatchedProjectWrite": {
                 "type": "object",
                 "properties": {
@@ -12917,6 +13055,101 @@
                     "line_total",
                     "sgst_amount",
                     "taxable_value"
+                ]
+            },
+            "PrintSettings": {
+                "type": "object",
+                "properties": {
+                    "layout": {
+                        "allOf": [
+                            {
+                                "$ref": "#/components/schemas/LayoutEnum"
+                            }
+                        ],
+                        "readOnly": true
+                    },
+                    "logo_attachment_id": {
+                        "type": [
+                            "string",
+                            "null"
+                        ],
+                        "format": "uuid",
+                        "readOnly": true
+                    },
+                    "signature_attachment_id": {
+                        "type": [
+                            "string",
+                            "null"
+                        ],
+                        "format": "uuid",
+                        "readOnly": true
+                    },
+                    "bank_account_name": {
+                        "type": [
+                            "string",
+                            "null"
+                        ],
+                        "readOnly": true
+                    },
+                    "bank_name": {
+                        "type": [
+                            "string",
+                            "null"
+                        ],
+                        "readOnly": true
+                    },
+                    "bank_account_number": {
+                        "type": [
+                            "string",
+                            "null"
+                        ],
+                        "readOnly": true
+                    },
+                    "bank_ifsc": {
+                        "type": [
+                            "string",
+                            "null"
+                        ],
+                        "readOnly": true
+                    },
+                    "bank_branch": {
+                        "type": [
+                            "string",
+                            "null"
+                        ],
+                        "readOnly": true
+                    },
+                    "upi_id": {
+                        "type": [
+                            "string",
+                            "null"
+                        ],
+                        "readOnly": true
+                    },
+                    "default_terms": {
+                        "type": [
+                            "string",
+                            "null"
+                        ],
+                        "readOnly": true
+                    },
+                    "version": {
+                        "type": "integer",
+                        "readOnly": true
+                    }
+                },
+                "required": [
+                    "bank_account_name",
+                    "bank_account_number",
+                    "bank_branch",
+                    "bank_ifsc",
+                    "bank_name",
+                    "default_terms",
+                    "layout",
+                    "logo_attachment_id",
+                    "signature_attachment_id",
+                    "upi_id",
+                    "version"
                 ]
             },
             "Project": {

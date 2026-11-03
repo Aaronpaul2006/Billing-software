@@ -1168,3 +1168,6 @@ OBJECT_ROUTES["party-last-rates"] = lambda w: None
 OBJECT_ROUTES["document-duplicate"] = lambda w: None
 # --- B.11 history: tests/documents/test_history.py::test_another_tenants_bill_is_not_found
 OBJECT_ROUTES["document-history"] = lambda w: None
+
+# --- B.12 print settings: tests/tenants/test_print_settings.py::test_another_business_sees_only_its_own
+COLLECTION_ROUTES["tenant-print-settings"] = lambda w: None

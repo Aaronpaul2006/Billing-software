@@ -1,3 +1,4 @@
+import re
 from typing import Any
 from zoneinfo import available_timezones
 
@@ -6,7 +7,17 @@ from rest_framework import serializers
 from apps.core.india import STATE_CODES, gstin_problem, is_valid_pan
 from apps.core.serializers import STATE_CHOICES, AddressOutSerializer, AddressSerializer
 
-from .models import DocType, DocumentSeries, GstRegistration, Tenant
+from .models import (
+    BANK_ACCOUNT_RE,
+    IFSC_RE,
+    UPI_RE,
+    DocType,
+    DocumentSeries,
+    GstRegistration,
+    PrintLayout,
+    PrintSettings,
+    Tenant,
+)
 
 
 def _upper(value: str | None) -> str | None:
@@ -231,3 +242,89 @@ class SetupStatusSerializer(serializers.Serializer[Any]):
     first_bill = serializers.BooleanField(help_text="Something issued (not a draft).")
     team = serializers.BooleanField(help_text="Someone besides the first member, or invited.")
     complete = serializers.BooleanField()
+
+
+# --- print settings (B.12) ------------------------------------------------------------
+
+
+class PrintSettingsSerializer(serializers.ModelSerializer[PrintSettings]):
+    class Meta:
+        model = PrintSettings
+        fields = (
+            "layout",
+            "logo_attachment_id",
+            "signature_attachment_id",
+            "bank_account_name",
+            "bank_name",
+            "bank_account_number",
+            "bank_ifsc",
+            "bank_branch",
+            "upi_id",
+            "default_terms",
+            "version",
+        )
+        read_only_fields = fields
+
+
+def _text(value: str | None) -> str | None:
+    """Blank means not set."""
+    if value is None:
+        return None
+    value = value.strip()
+    return value or None
+
+
+class PrintSettingsUpdateSerializer(serializers.Serializer[Any]):
+    layout = serializers.ChoiceField(choices=PrintLayout.choices)
+    logo_attachment_id = serializers.UUIDField(allow_null=True)
+    signature_attachment_id = serializers.UUIDField(allow_null=True)
+    bank_account_name = serializers.CharField(max_length=200, allow_null=True, allow_blank=True)
+    bank_name = serializers.CharField(max_length=200, allow_null=True, allow_blank=True)
+    bank_account_number = serializers.CharField(max_length=40, allow_null=True, allow_blank=True)
+    bank_ifsc = serializers.CharField(max_length=20, allow_null=True, allow_blank=True)
+    bank_branch = serializers.CharField(max_length=200, allow_null=True, allow_blank=True)
+    upi_id = serializers.CharField(max_length=130, allow_null=True, allow_blank=True)
+    default_terms = serializers.CharField(
+        max_length=5000, allow_null=True, allow_blank=True, trim_whitespace=False
+    )
+
+    def validate_bank_account_name(self, value: str | None) -> str | None:
+        return _text(value)
+
+    def validate_bank_name(self, value: str | None) -> str | None:
+        return _text(value)
+
+    def validate_bank_branch(self, value: str | None) -> str | None:
+        return _text(value)
+
+    def validate_default_terms(self, value: str | None) -> str | None:
+        return _text(value)
+
+    def validate_bank_account_number(self, value: str | None) -> str | None:
+        value = _text(value)
+        if value is None:
+            return None
+        value = re.sub(r"[\s-]", "", value)  # people type it in groups
+        if not re.match(BANK_ACCOUNT_RE, value):
+            raise serializers.ValidationError(
+                "An account number is 6 to 18 digits.", code="invalid_account_number"
+            )
+        return value
+
+    def validate_bank_ifsc(self, value: str | None) -> str | None:
+        value = _upper(_text(value))
+        if value is not None and not re.match(IFSC_RE, value):
+            raise serializers.ValidationError(
+                "An IFSC is 11 characters, like SBIN0001234 (the 5th is a zero).",
+                code="invalid_ifsc",
+            )
+        return value
+
+    def validate_upi_id(self, value: str | None) -> str | None:
+        value = _text(value)
+        if value is not None and not re.match(UPI_RE, value):
+            raise serializers.ValidationError(
+                "A UPI ID looks like name@bank, e.g. nairconstructions@okaxis.",
+                code="invalid_upi_id",
+            )
+        return value

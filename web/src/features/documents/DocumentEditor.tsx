@@ -50,6 +50,8 @@ import { AUTOSAVE } from "./autosave";
 import { enterTarget, SHORTCUTS } from "./keyboard";
 import { NewClientDialog, NewItemDialog } from "./QuickAdd";
 import type { Document, DraftableType } from "./api";
+import { usePrintSettings } from "@/features/settings/printSettings";
+
 import { TotalsPanel } from "./TotalsPanel";
 
 type DocumentWrite = components["schemas"]["DocumentWrite"];
@@ -122,7 +124,7 @@ const EMPTY_LINE: LineForm = {
   measurements: [],
 };
 
-function toForm(doc: Document | undefined, type: DraftableType): FormValues {
+function toForm(doc: Document | undefined, type: DraftableType, defaultTerms = ""): FormValues {
   if (!doc) {
     return {
       doc_type: type,
@@ -136,7 +138,7 @@ function toForm(doc: Document | undefined, type: DraftableType): FormValues {
       reverse_charge: false,
       lut: "",
       notes: "",
-      terms: "",
+      terms: defaultTerms, // the business's default terms (B.12), still editable
       lines: [{ ...EMPTY_LINE }],
     };
   }
@@ -493,7 +495,7 @@ function BulkEdit({
   );
 }
 
-function Editor({ doc }: { doc?: Document }) {
+function Editor({ doc, defaultTerms }: { doc?: Document; defaultTerms?: string }) {
   const isNote = doc !== undefined && NOTE_TYPES.has(doc.doc_type);
   const [params] = useSearchParams();
   const requested = params.get("type") as DraftableType | null;
@@ -525,7 +527,7 @@ function Editor({ doc }: { doc?: Document }) {
   const formRef = useRef<HTMLFormElement>(null);
   const mayViewBalance = REPORT_ROLES.has(role);
 
-  const form = useForm<FormValues>({ defaultValues: toForm(doc, startType) });
+  const form = useForm<FormValues>({ defaultValues: toForm(doc, startType, defaultTerms) });
   const { register, handleSubmit, control, setValue, setError, formState, getValues } = form;
   const errors = formState.errors;
   const lines = useFieldArray({ control, name: "lines" });
@@ -1582,7 +1584,10 @@ function Editor({ doc }: { doc?: Document }) {
 }
 
 export function NewDocumentPage() {
-  return <Editor />;
+  const settings = usePrintSettings();
+  // Wait for the default terms, but never let a failed lookup stop billing.
+  if (settings.isPending) return <Skeleton className="h-96 w-full" />;
+  return <Editor defaultTerms={settings.data?.default_terms ?? ""} />;
 }
 
 export function EditDocumentPage() {

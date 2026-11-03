@@ -182,3 +182,52 @@ class DocumentSeries(TenantScoped):
                 name="document_series_number_length_check",
             ),
         ]
+
+
+class PrintLayout(models.TextChoices):
+    SIMPLE = "SIMPLE"  # one table: item, quantity, rate, amount; the tax in the totals
+    DETAILED = "DETAILED"  # every column, the HSN / tax breakup and measurement rows
+
+
+IFSC_RE = r"^[A-Z]{4}0[A-Z0-9]{6}$"
+BANK_ACCOUNT_RE = r"^[0-9]{6,18}$"
+UPI_RE = r"^[A-Za-z0-9._-]{2,64}@[A-Za-z][A-Za-z0-9]{1,63}$"
+
+
+class PrintSettings(TenantScoped):
+    """How the business's bills look on paper (B.12): one row per business,
+    created on the first save. Logo and signature are uploaded images."""
+
+    Layout = PrintLayout
+    id = uuid7_pk()
+    tenant = tenant_ref()
+    layout = models.TextField(
+        choices=PrintLayout, default=PrintLayout.DETAILED, db_default=PrintLayout.DETAILED
+    )
+    logo_attachment = ref("files.Attachment", null=True)
+    signature_attachment = ref("files.Attachment", null=True)
+    bank_account_name = models.TextField(null=True)  # noqa: DJ001 - mirrors schema
+    bank_name = models.TextField(null=True)  # noqa: DJ001
+    bank_account_number = models.TextField(null=True)  # noqa: DJ001
+    bank_ifsc = models.TextField(null=True)  # noqa: DJ001
+    bank_branch = models.TextField(null=True)  # noqa: DJ001
+    upi_id = models.TextField(null=True)  # noqa: DJ001
+    default_terms = models.TextField(null=True)  # noqa: DJ001
+    version = models.IntegerField(default=1, db_default=1)
+    created_at = created_at()
+    updated_at = updated_at()
+
+    class Meta:
+        db_table = "print_settings"
+        constraints = [
+            tenant_id_key("print_settings"),
+            models.UniqueConstraint(fields=["tenant"], name="print_settings_tenant_id_key"),
+            one_of("layout", PrintLayout.values, "print_settings_layout_check"),
+            length_between("bank_account_name", 1, 200, "print_settings_bank_account_name_check"),
+            length_between("bank_name", 1, 200, "print_settings_bank_name_check"),
+            regex("bank_account_number", BANK_ACCOUNT_RE, "print_settings_bank_account_check"),
+            regex("bank_ifsc", IFSC_RE, "print_settings_bank_ifsc_check"),
+            length_between("bank_branch", 1, 200, "print_settings_bank_branch_check"),
+            regex("upi_id", UPI_RE, "print_settings_upi_id_check"),
+            length_between("default_terms", 1, 5000, "print_settings_default_terms_check"),
+        ]

@@ -2301,6 +2301,30 @@ export interface paths {
         patch: operations["tenant_partial_update"];
         trace?: never;
     };
+    "/api/v1/tenant/print-settings": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * @description Logo, signature, bank details, UPI ID, default terms and layout of the
+         *     business's bills (B.12). Every member may read them; owners and admins change them.
+         */
+        get: operations["tenant_print_settings_retrieve"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        /**
+         * @description Logo, signature, bank details, UPI ID, default terms and layout of the
+         *     business's bills (B.12). Every member may read them; owners and admins change them.
+         */
+        patch: operations["tenant_print_settings_partial_update"];
+        trace?: never;
+    };
     "/api/v1/tenant/setup": {
         parameters: {
             query?: never;
@@ -3342,6 +3366,12 @@ export interface components {
             results: components["schemas"]["LastRate"][];
         };
         /**
+         * @description * `SIMPLE` - Simple
+         *     * `DETAILED` - Detailed
+         * @enum {string}
+         */
+        LayoutEnum: "SIMPLE" | "DETAILED";
+        /**
          * @description A line. Description, unit, SAC/HSN, rate and GST rate may be left out
          *     when the line names a catalog or BOQ item: they are filled from it.
          */
@@ -3953,6 +3983,20 @@ export interface components {
             /** @default true */
             is_active?: boolean;
         };
+        PatchedPrintSettingsUpdate: {
+            layout?: components["schemas"]["LayoutEnum"];
+            /** Format: uuid */
+            logo_attachment_id?: string | null;
+            /** Format: uuid */
+            signature_attachment_id?: string | null;
+            bank_account_name?: string | null;
+            bank_name?: string | null;
+            bank_account_number?: string | null;
+            bank_ifsc?: string | null;
+            bank_branch?: string | null;
+            upi_id?: string | null;
+            default_terms?: string | null;
+        };
         PatchedProjectWrite: {
             code?: string;
             name?: string;
@@ -4370,6 +4414,21 @@ export interface components {
              * @description RA bill lines only.
              */
             prev_cumulative_qty?: string;
+        };
+        PrintSettings: {
+            readonly layout: components["schemas"]["LayoutEnum"];
+            /** Format: uuid */
+            readonly logo_attachment_id: string | null;
+            /** Format: uuid */
+            readonly signature_attachment_id: string | null;
+            readonly bank_account_name: string | null;
+            readonly bank_name: string | null;
+            readonly bank_account_number: string | null;
+            readonly bank_ifsc: string | null;
+            readonly bank_branch: string | null;
+            readonly upi_id: string | null;
+            readonly default_terms: string | null;
+            readonly version: number;
         };
         Project: {
             /** Format: uuid */
@@ -9395,6 +9454,48 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["Tenant"];
+                };
+            };
+        };
+    };
+    tenant_print_settings_retrieve: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PrintSettings"];
+                };
+            };
+        };
+    };
+    tenant_print_settings_partial_update: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: {
+            content: {
+                "application/json": components["schemas"]["PatchedPrintSettingsUpdate"];
+            };
+        };
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PrintSettings"];
                 };
             };
         };

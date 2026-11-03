@@ -308,6 +308,13 @@ export const routes: RouteObject[] = [
             ),
           },
           {
+            path: "settings/print",
+            lazy: lazyPage(
+              () => import("@/features/settings/PrintSettingsPage"),
+              (m) => m.PrintSettingsPage,
+            ),
+          },
+          {
             path: "settings/series",
             lazy: lazyPage(
               () => import("@/features/settings/SeriesPage"),

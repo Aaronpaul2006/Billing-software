@@ -390,6 +390,29 @@ their own endpoints (Phase 1.6), RA bills below (Phase 3.2). Example response:
 }
 ```
 
+### Print settings (B.12)
+
+`GET /tenant/print-settings` (any member) and `PATCH /tenant/print-settings`
+(`tenant.settings`: owner, admin; `If-Match`): how the business's bills look
+on paper. One row per business (`print_settings`), made on the first save;
+until then `GET` returns the defaults at version 1, so the first save sends
+`If-Match: "v1"`.
+
+| Field | Rule |
+|---|---|
+| `layout` | `SIMPLE` (item, quantity, rate, amount) or `DETAILED` (default: every column, tax breakup, measurements) |
+| `logo_attachment_id`, `signature_attachment_id` | an uploaded file of this business (`/attachments`), `AVAILABLE`, PNG or JPEG, at most 1 MB; else `422 not_available` / `not_an_image` / `image_too_large` |
+| `bank_account_name`, `bank_name`, `bank_branch` | up to 200 characters |
+| `bank_account_number` | 6 to 18 digits; spaces and dashes are dropped (`invalid_account_number`) |
+| `bank_ifsc` | `AAAA0XXXXXX`, upper-cased (`invalid_ifsc`) |
+| `upi_id` | `name@bank` (`invalid_upi_id`); bills carry a UPI QR code (B.13) |
+| `default_terms` | up to 5000 characters |
+
+Blank text means "not set" (stored as null). New tax invoices, bills of
+supply, proformas and quotations created without a `terms` key get
+`default_terms`; `"terms": null` keeps them empty. The web bill screen fills
+them in on a new bill, where they can still be changed.
+
 ### Change history (B.11)
 
 `GET /documents/{id}/history` (permission `tenant.read`: everyone who can see

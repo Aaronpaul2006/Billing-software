@@ -35,6 +35,7 @@ from apps.core.tenancy import Principal
 from apps.core.versioning import update_versioned
 from apps.parties.models import Party
 from apps.projects.models import BoqItem, Project
+from apps.tenants import printing
 from apps.tenants.models import GstRegistration
 
 from ..models import Document, DocumentLine, DocumentLineMeasurement
@@ -51,6 +52,8 @@ MILLI = Decimal("0.001")
 HUNDRED = Decimal("100")
 # B.5: bills that fall due; a new one without a due date takes the client's payment terms
 TERMS_TYPES = frozenset({"TAX_INVOICE", "BILL_OF_SUPPLY", "DEBIT_NOTE", "PROFORMA"})
+# New bills and quotations get the business's default terms unless they say otherwise.
+DEFAULT_TERMS_TYPES = frozenset({"TAX_INVOICE", "BILL_OF_SUPPLY", "PROFORMA", "QUOTATION"})
 
 
 @dataclass(frozen=True)
@@ -509,6 +512,8 @@ def get_document(principal: Principal, doc_id: uuid.UUID) -> Document:
 
 def create_draft(principal: Principal, data: dict[str, Any]) -> Document:
     require(principal, "documents.draft")
+    if "terms" not in data and data["doc_type"] in DEFAULT_TERMS_TYPES:
+        data = {**data, "terms": printing.default_terms(principal.tenant_id)}  # B.12
     return _create(principal, data)
 
 

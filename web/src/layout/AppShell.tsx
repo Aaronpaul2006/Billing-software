@@ -11,6 +11,7 @@ import {
   LayoutDashboard,
   LogOut,
   Package,
+  Printer,
   Receipt,
   Settings,
   UserCog,
@@ -55,6 +56,7 @@ const SETTINGS_NAV = [
   { to: "/settings/members", label: "Members", icon: UserCog },
   { to: "/settings/gst-registrations", label: "GST registrations", icon: Landmark },
   { to: "/settings/series", label: "Number series", icon: Hash },
+  { to: "/settings/print", label: "Bill printing", icon: Printer },
 ] as const;
 
 function NavItem({

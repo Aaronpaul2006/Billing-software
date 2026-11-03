@@ -45,7 +45,9 @@ describe("change history", () => {
     expect(asked).toBe(0); // not loaded until opened
     await user.click(toggle);
     const list = await screen.findByRole("list", { name: "Changes, newest first" });
-    const items = within(list).getAllByRole("listitem").filter((li) => li.parentElement === list);
+    const items = within(list)
+      .getAllByRole("listitem")
+      .filter((li) => li.parentElement === list);
     expect(items).toHaveLength(3);
     expect(items[0]).toHaveTextContent("Issued as INV/0001 · Anu Accountant");
     expect(items[0]).toHaveTextContent("Total ₹3,41,020.00");
