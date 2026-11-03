@@ -938,6 +938,23 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/documents/{document_id}/email": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** @description Email the bill's PDF to the client (B.15): sent at once, logged. */
+        post: operations["documents_email_create"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/documents/{document_id}/history": {
         parameters: {
             query?: never;
@@ -2851,6 +2868,25 @@ export interface components {
             unapplied: string | null;
             allocations: components["schemas"]["AllocationOut"][];
         };
+        DocumentEmail: {
+            /** Format: uuid */
+            readonly id: string;
+            /** Format: uuid */
+            readonly document_id: string;
+            readonly sent_to: string;
+            readonly copy: components["schemas"]["DocumentEmailCopyEnum"];
+            /** Format: uuid */
+            readonly sent_by: string;
+            /** Format: date-time */
+            readonly sent_at: string;
+        };
+        /**
+         * @description * `original` - Original
+         *     * `duplicate` - Duplicate
+         *     * `triplicate` - Triplicate
+         * @enum {string}
+         */
+        DocumentEmailCopyEnum: "original" | "duplicate" | "triplicate";
         DocumentList: {
             /** Format: uuid */
             readonly id: string;
@@ -2992,6 +3028,25 @@ export interface components {
             new_email: string;
             password: string;
         };
+        /** @description Email the bill's PDF to the client (B.15). */
+        EmailDocument: {
+            /**
+             * Format: email
+             * @description Default: the client's email address.
+             */
+            to?: string | null;
+            /** @default original */
+            copy?: components["schemas"]["EmailDocumentCopyEnum"];
+            /** @description A note added to the email body. */
+            message?: string | null;
+        };
+        /**
+         * @description * `original` - original
+         *     * `duplicate` - duplicate
+         *     * `triplicate` - triplicate
+         * @enum {string}
+         */
+        EmailDocumentCopyEnum: "original" | "duplicate" | "triplicate";
         EmailInvitation: {
             /** Format: uuid */
             id: string;
@@ -3326,9 +3381,10 @@ export interface components {
          *     * `note` - note
          *     * `converted` - converted
          *     * `reminder` - reminder
+         *     * `emailed` - emailed
          * @enum {string}
          */
-        HistoryEntryKindEnum: "created" | "edited" | "issued" | "cancelled" | "accepted" | "declined" | "payment" | "note" | "converted" | "reminder";
+        HistoryEntryKindEnum: "created" | "edited" | "issued" | "cancelled" | "accepted" | "declined" | "payment" | "note" | "converted" | "reminder" | "emailed";
         ImportRequest: {
             /**
              * Format: uri
@@ -7330,6 +7386,31 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["Document"];
+                };
+            };
+        };
+    };
+    documents_email_create: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                document_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: {
+            content: {
+                "application/json": components["schemas"]["EmailDocument"];
+            };
+        };
+        responses: {
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["DocumentEmail"];
                 };
             };
         };

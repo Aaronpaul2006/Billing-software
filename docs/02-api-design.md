@@ -413,6 +413,31 @@ supply, proformas and quotations created without a `terms` key get
 `default_terms`; `"terms": null` keeps them empty. The web bill screen fills
 them in on a new bill, where they can still be changed.
 
+### Sending a bill (B.15)
+
+`POST /documents/{id}/email` (`documents.issue`: owner, admin, accountant;
+`Idempotency-Key`) `{to?, copy?, message?}`: emails the PDF of an issued (or
+accepted / cancelled) document at once and answers `201` with the log row
+(`document_emails`: who, to whom, which copy, when; shown in the change
+history as "Emailed to …").
+
+- `to`: default the client's email; none: `422 no_client_email`.
+- `copy`: `original` (default), `duplicate` or `triplicate`: the attachment
+  is `tax_invoice-INV-0001-original.pdf`, drawn with that label.
+- `message`: up to 2000 characters, added to the body. The body names the
+  bill, date, amount, due date and the bank / UPI details from the print
+  settings; replies go to the member who sent it (`Reply-To`).
+- A draft: `409 document_not_issued`. The PDF cannot be drawn:
+  `503 pdf_unavailable`; the mail server refuses: `503 email_unavailable`.
+  Either way nothing is logged.
+
+Web (issued documents), using the copy chosen next to the PDF button
+(Original for recipient if none): Print (the PDF in a hidden frame, then the
+browser's print dialog), Download, Email… (To prefilled, optional note;
+owner / admin / accountant only), WhatsApp (downloads the PDF and opens
+`https://wa.me/91<phone>?text=…` with the bill number, date, amount, due date
+and UPI ID; staff attach the PDF, owner decision B.0).
+
 ### Final review before issuing (B.14)
 
 `GET /documents/{id}/review` (`tenant.read`; another tenant's: `404`) returns

@@ -1,0 +1,18 @@
+{% autoescape off %}Dear {{ client }},
+
+Please find attached our {{ title|lower }} {{ number }} dated {{ doc_date }}{% if amount %} for ₹{{ amount }}{% endif %}.{% if due_date %} Payment is due by {{ due_date }}.{% endif %}
+{% if message %}
+{{ message }}
+{% endif %}{% if pay %}
+Payment details:{% if pay.bank_account_name %}
+  Account name: {{ pay.bank_account_name }}{% endif %}{% if pay.bank_name %}
+  Bank: {{ pay.bank_name }}{% if pay.bank_branch %}, {{ pay.bank_branch }}{% endif %}{% endif %}{% if pay.bank_account_number %}
+  Account number: {{ pay.bank_account_number }}{% endif %}{% if pay.bank_ifsc %}
+  IFSC: {{ pay.bank_ifsc }}{% endif %}{% if pay.upi_id %}
+  UPI: {{ pay.upi_id }} (or scan the QR code on the bill){% endif %}
+{% endif %}
+Regards,
+{{ sender }}
+{{ company.legal_name }}{% if company.gstin %}
+GSTIN {{ company.gstin }}{% endif %}
+{% endautoescape %}

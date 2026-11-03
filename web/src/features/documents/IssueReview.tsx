@@ -57,11 +57,11 @@ export function IssueReview({
         <dt className="text-muted-foreground">Lines</dt>
         <dd>{doc.lines.length}</dd>
         <dt className="text-muted-foreground">Total</dt>
-        <dd className="font-medium">₹{formatInr(doc.totals.grand_total)}</dd>
+        <dd className="font-medium">{formatInr(doc.totals.grand_total)}</dd>
         {net !== doc.totals.grand_total && (
           <>
             <dt className="text-muted-foreground">Client pays now</dt>
-            <dd>₹{formatInr(net)}</dd>
+            <dd>{formatInr(net)}</dd>
           </>
         )}
       </dl>

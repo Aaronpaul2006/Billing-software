@@ -30,10 +30,12 @@ from .pdf.render import COPIES, render_pdf
 from .serializers import (
     CancelSerializer,
     ConvertSerializer,
+    DocumentEmailSerializer,
     DocumentListSerializer,
     DocumentSerializer,
     DocumentWriteSerializer,
     DuplicateSerializer,
+    EmailDocumentSerializer,
     HistoryEntrySerializer,
     HistorySerializer,
     LastRateSerializer,
@@ -47,7 +49,7 @@ from .serializers import (
     ReviewWarningSerializer,
     TotalsSerializer,
 )
-from .services import drafts, history, lifecycle, line_import, pdfs, rates, review
+from .services import drafts, history, lifecycle, line_import, pdfs, rates, review, sending
 
 DRAFT = "documents.draft"
 
@@ -202,6 +204,31 @@ class LastRatesView(ActionAPIView):
     def get(self, request: Request, party_id: uuid.UUID) -> Response:
         rows = rates.last_rates(self.principal, party_id)
         return Response({"results": LastRateSerializer(rows, many=True).data})
+
+
+class DocumentEmailView(ActionAPIView):
+    """Email the bill's PDF to the client (B.15): sent at once, logged."""
+
+    write_action = sending.SEND
+
+    @extend_schema(
+        request=EmailDocumentSerializer,
+        responses={201: DocumentEmailSerializer},
+        tags=["documents"],
+    )
+    @idempotent
+    def post(self, request: Request, document_id: uuid.UUID) -> Response:
+        data = EmailDocumentSerializer(data=request.data)
+        data.is_valid(raise_exception=True)
+        v = data.validated_data
+        sent = sending.email_document(
+            self.principal,
+            document_id,
+            to=v.get("to"),
+            copy=v["copy"],
+            message=(v.get("message") or "").strip() or None,
+        )
+        return Response(DocumentEmailSerializer(sent).data, status=201)
 
 
 class DocumentReviewView(ActionAPIView):

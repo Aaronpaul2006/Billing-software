@@ -59,6 +59,11 @@ urlpatterns = [
     ),
     path("documents/<uuid:document_id>/pdf", views.DocumentPdfView.as_view(), name="document-pdf"),
     path(
+        "documents/<uuid:document_id>/email",
+        views.DocumentEmailView.as_view(),
+        name="document-email",
+    ),
+    path(
         "documents/<uuid:document_id>/review",
         views.DocumentReviewView.as_view(),
         name="document-review",

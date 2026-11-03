@@ -6,7 +6,13 @@ from rest_framework import serializers
 
 from apps.core.fields import MoneyField, PercentField, QuantityField
 
-from .models import Document, DocumentLine, DocumentLineMeasurement, SupplyCategory
+from .models import (
+    Document,
+    DocumentEmail,
+    DocumentLine,
+    DocumentLineMeasurement,
+    SupplyCategory,
+)
 from .services.drafts import DRAFTABLE_TYPES
 
 # --- input ---------------------------------------------------------------------------------
@@ -320,6 +326,31 @@ class PreviewSerializer(serializers.Serializer[Any]):
     lines = PreviewLineSerializer(many=True)
 
 
+class EmailDocumentSerializer(serializers.Serializer[Any]):
+    """Email the bill's PDF to the client (B.15)."""
+
+    to = serializers.EmailField(
+        required=False, allow_null=True, help_text="Default: the client's email address."
+    )
+    copy = serializers.ChoiceField(
+        choices=["original", "duplicate", "triplicate"], default="original"
+    )
+    message = serializers.CharField(
+        required=False,
+        allow_null=True,
+        allow_blank=True,
+        max_length=2000,
+        help_text="A note added to the email body.",
+    )
+
+
+class DocumentEmailSerializer(serializers.ModelSerializer[DocumentEmail]):
+    class Meta:
+        model = DocumentEmail
+        fields = ("id", "document_id", "sent_to", "copy", "sent_by", "sent_at")
+        read_only_fields = fields
+
+
 class CancelSerializer(serializers.Serializer[Any]):
     reason = serializers.CharField(min_length=3, max_length=500)
 
@@ -362,6 +393,7 @@ class HistoryEntrySerializer(serializers.Serializer[Any]):
             "note",
             "converted",
             "reminder",
+            "emailed",
         ]
     )
     summary = serializers.CharField()

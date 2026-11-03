@@ -46,6 +46,8 @@ import {
 import type { DocType, Document } from "./api";
 import { DocumentHistory } from "./DocumentHistory";
 import { IssueReview } from "./IssueReview";
+import { SendBill } from "./SendBill";
+import type { PrintCopy } from "./sending";
 import { TotalsPanel } from "./TotalsPanel";
 
 const CONVERT_TO: Partial<Record<DocType, DocType[]>> = {
@@ -158,7 +160,6 @@ function Lines({ doc }: { doc: Document }) {
 }
 
 type Panel = "none" | "cancel" | "convert" | "alter" | "review";
-type PrintCopy = "original" | "duplicate" | "triplicate";
 
 /** Bills and quotations can be copied into a new draft; notes belong to their bill. */
 const DUPLICABLE: ReadonlySet<DocType> = new Set([
@@ -498,6 +499,7 @@ function Actions({ doc }: { doc: Document }) {
         )}
       </div>
 
+      {doc.status !== "DRAFT" && <SendBill doc={doc} copy={copy || "original"} />}
       {notice && (
         <Alert variant="destructive">
           <AlertCircle aria-hidden />

@@ -2476,6 +2476,52 @@
                 }
             }
         },
+        "/api/v1/documents/{document_id}/email": {
+            "post": {
+                "operationId": "documents_email_create",
+                "description": "Email the bill's PDF to the client (B.15): sent at once, logged.",
+                "parameters": [
+                    {
+                        "in": "path",
+                        "name": "document_id",
+                        "schema": {
+                            "type": "string",
+                            "format": "uuid"
+                        },
+                        "required": true
+                    }
+                ],
+                "tags": [
+                    "documents"
+                ],
+                "requestBody": {
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/EmailDocument"
+                            }
+                        }
+                    }
+                },
+                "security": [
+                    {
+                        "bearerAuth": []
+                    }
+                ],
+                "responses": {
+                    "201": {
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/DocumentEmail"
+                                }
+                            }
+                        },
+                        "description": ""
+                    }
+                }
+            }
+        },
         "/api/v1/documents/{document_id}/history": {
             "get": {
                 "operationId": "documents_history_retrieve",
@@ -8041,6 +8087,60 @@
                     "unapplied"
                 ]
             },
+            "DocumentEmail": {
+                "type": "object",
+                "properties": {
+                    "id": {
+                        "type": "string",
+                        "format": "uuid",
+                        "readOnly": true
+                    },
+                    "document_id": {
+                        "type": "string",
+                        "format": "uuid",
+                        "readOnly": true
+                    },
+                    "sent_to": {
+                        "type": "string",
+                        "readOnly": true
+                    },
+                    "copy": {
+                        "allOf": [
+                            {
+                                "$ref": "#/components/schemas/DocumentEmailCopyEnum"
+                            }
+                        ],
+                        "readOnly": true
+                    },
+                    "sent_by": {
+                        "type": "string",
+                        "format": "uuid",
+                        "readOnly": true
+                    },
+                    "sent_at": {
+                        "type": "string",
+                        "format": "date-time",
+                        "readOnly": true
+                    }
+                },
+                "required": [
+                    "copy",
+                    "document_id",
+                    "id",
+                    "sent_at",
+                    "sent_by",
+                    "sent_to"
+                ]
+            },
+            "DocumentEmailCopyEnum": {
+                "enum": [
+                    "original",
+                    "duplicate",
+                    "triplicate"
+                ],
+                "type": "string",
+                "description": "* `original` - Original\n* `duplicate` - Duplicate\n* `triplicate` - Triplicate"
+            },
             "DocumentList": {
                 "type": "object",
                 "properties": {
@@ -8506,6 +8606,45 @@
                     "new_email",
                     "password"
                 ]
+            },
+            "EmailDocument": {
+                "type": "object",
+                "description": "Email the bill's PDF to the client (B.15).",
+                "properties": {
+                    "to": {
+                        "type": [
+                            "string",
+                            "null"
+                        ],
+                        "format": "email",
+                        "description": "Default: the client's email address."
+                    },
+                    "copy": {
+                        "allOf": [
+                            {
+                                "$ref": "#/components/schemas/EmailDocumentCopyEnum"
+                            }
+                        ],
+                        "default": "original"
+                    },
+                    "message": {
+                        "type": [
+                            "string",
+                            "null"
+                        ],
+                        "description": "A note added to the email body.",
+                        "maxLength": 2000
+                    }
+                }
+            },
+            "EmailDocumentCopyEnum": {
+                "enum": [
+                    "original",
+                    "duplicate",
+                    "triplicate"
+                ],
+                "type": "string",
+                "description": "* `original` - original\n* `duplicate` - duplicate\n* `triplicate` - triplicate"
             },
             "EmailInvitation": {
                 "type": "object",
@@ -9411,10 +9550,11 @@
                     "payment",
                     "note",
                     "converted",
-                    "reminder"
+                    "reminder",
+                    "emailed"
                 ],
                 "type": "string",
-                "description": "* `created` - created\n* `edited` - edited\n* `issued` - issued\n* `cancelled` - cancelled\n* `accepted` - accepted\n* `declined` - declined\n* `payment` - payment\n* `note` - note\n* `converted` - converted\n* `reminder` - reminder"
+                "description": "* `created` - created\n* `edited` - edited\n* `issued` - issued\n* `cancelled` - cancelled\n* `accepted` - accepted\n* `declined` - declined\n* `payment` - payment\n* `note` - note\n* `converted` - converted\n* `reminder` - reminder\n* `emailed` - emailed"
             },
             "ImportRequest": {
                 "type": "object",

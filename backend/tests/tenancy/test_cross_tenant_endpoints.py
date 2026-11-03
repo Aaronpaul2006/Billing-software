@@ -1174,3 +1174,6 @@ COLLECTION_ROUTES["tenant-print-settings"] = lambda w: None
 
 # --- B.14 review: tests/documents/test_review.py::test_another_tenants_bill_is_not_found
 OBJECT_ROUTES["document-review"] = lambda w: None
+
+# --- B.15 email: tests/documents/test_sending.py::test_another_tenants_bill_is_not_found
+OBJECT_ROUTES["document-email"] = lambda w: None

@@ -30,7 +30,7 @@ from apps.payments.models import Allocation
 from apps.projects.models import Project
 from apps.reminders.models import PaymentReminder
 
-from ..models import Document
+from ..models import Document, DocumentEmail
 from ..pdf.render import TITLES, inr
 from .drafts import get_document
 
@@ -440,6 +440,17 @@ def _afterwards(doc: Document) -> list[Entry]:
                 "converted",
                 f"Made into a {what}",
                 row=("documents", c.pk),
+            )
+        )
+    for sent in DocumentEmail.objects.filter(document_id=doc.pk):
+        entries.append(
+            Entry(
+                sent.sent_at,
+                sent.sent_by_id,
+                "emailed",
+                f"Emailed to {sent.sent_to}",
+                [f"PDF attached ({sent.copy} copy)"],
+                ("document_emails", sent.pk),
             )
         )
     for r in PaymentReminder.objects.filter(document_id=doc.pk):

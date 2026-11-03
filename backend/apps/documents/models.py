@@ -11,6 +11,7 @@ from django.db.models.functions import Round
 from django.db.models.lookups import Exact
 
 from apps.core.db import (
+    CITextField,
     FixedCharField,
     between,
     created_at,
@@ -438,3 +439,33 @@ class DocumentLineMeasurement(TenantScoped):
             ),
         ]
         indexes = [models.Index(fields=["tenant", "line"], name="line_measurements_line_idx")]
+
+
+class DocumentEmailCopy(models.TextChoices):
+    ORIGINAL = "original"
+    DUPLICATE = "duplicate"
+    TRIPLICATE = "triplicate"
+
+
+class DocumentEmail(TenantScoped):
+    """A bill emailed to a client with its PDF (B.15). A log: written once."""
+
+    Copy = DocumentEmailCopy
+    id = uuid7_pk()
+    tenant = tenant_ref()
+    document = ref("documents.Document")
+    sent_to = CITextField()
+    copy = models.TextField(choices=DocumentEmailCopy)
+    sent_by = ref("accounts.User", db_column="sent_by")
+    sent_at = created_at()
+
+    class Meta:
+        db_table = "document_emails"
+        constraints = [
+            tenant_id_key("document_emails"),
+            length_between("sent_to", 3, 254, "document_emails_sent_to_check"),
+            one_of("copy", DocumentEmailCopy.values, "document_emails_copy_check"),
+        ]
+        indexes = [
+            models.Index(fields=["tenant", "document", "-sent_at"], name="document_emails_doc_idx")
+        ]

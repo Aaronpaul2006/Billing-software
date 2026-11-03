@@ -787,6 +787,20 @@ CREATE UNIQUE INDEX payment_reminders_stage_once ON payment_reminders (tenant_id
   WHERE NOT (stage = 'MANUAL');
 CREATE INDEX payment_reminders_document_idx ON payment_reminders (tenant_id, document_id, sent_at DESC);
 
+-- A bill emailed to its client with the PDF attached (B.15). A log: written once.
+CREATE TABLE document_emails (
+  id           uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+  tenant_id    uuid NOT NULL REFERENCES tenants (id),
+  document_id  uuid NOT NULL,
+  sent_to      citext NOT NULL CHECK (char_length(sent_to) BETWEEN 3 AND 254),
+  copy         text NOT NULL CHECK (copy IN ('original', 'duplicate', 'triplicate')),
+  sent_by      uuid NOT NULL REFERENCES users (id),
+  sent_at      timestamptz NOT NULL DEFAULT now(),
+  UNIQUE (tenant_id, id),
+  FOREIGN KEY (tenant_id, document_id) REFERENCES documents (tenant_id, id)
+);
+CREATE INDEX document_emails_doc_idx ON document_emails (tenant_id, document_id, sent_at DESC);
+
 -- =============================================================================
 -- 6. Infrastructure tables
 -- =============================================================================
@@ -1099,7 +1113,7 @@ BEGIN
     'catalog_items', 'attachments', 'document_series', 'documents', 'document_lines',
     'payments', 'allocations', 'expenses', 'retention_releases', 'tds_certificates', 'exports',
     'email_invitations', 'payment_reminders', 'document_templates', 'catalog_item_variants',
-    'document_line_measurements', 'print_settings']
+    'document_line_measurements', 'print_settings', 'document_emails']
   LOOP
     EXECUTE format(
       'CREATE TRIGGER audit AFTER INSERT OR UPDATE OR DELETE ON %I FOR EACH ROW EXECUTE FUNCTION audit_row_change()', t);
@@ -1120,7 +1134,7 @@ BEGIN
     'document_series', 'documents', 'document_lines', 'payments', 'allocations', 'expenses',
     'retention_releases', 'tds_certificates', 'idempotency_keys', 'exports', 'email_invitations',
     'payment_reminders', 'document_templates', 'catalog_item_variants', 'document_line_measurements',
-    'print_settings']
+    'print_settings', 'document_emails']
   LOOP
     EXECUTE format('ALTER TABLE %I ENABLE ROW LEVEL SECURITY', t);
     EXECUTE format('ALTER TABLE %I FORCE ROW LEVEL SECURITY', t);
@@ -1233,7 +1247,7 @@ BEGIN
   FOREACH t IN ARRAY ARRAY[
     'gst_registrations', 'catalog_items', 'catalog_item_variants', 'document_series', 'expenses',
     'tds_certificates', 'email_invitations', 'payment_reminders', 'document_templates', 'audit_log',
-    'print_settings']
+    'print_settings', 'document_emails']
   LOOP
     EXECUTE format(
       'CREATE POLICY client_scope ON %I AS RESTRICTIVE USING (NOT app_portal_session())', t);
@@ -1498,5 +1512,7 @@ GRANT UPDATE (status, cancelled_at, cancelled_by, cancel_reason, version, update
   ON retention_releases TO billing_app;
 -- Payment reminders are a log: written once, never changed.
 REVOKE UPDATE ON payment_reminders FROM billing_app;
+-- Emailed bills: a log, written once (B.15).
+REVOKE UPDATE ON document_emails FROM billing_app;
 
 COMMIT;
