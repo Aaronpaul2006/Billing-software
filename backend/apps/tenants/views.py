@@ -20,9 +20,11 @@ from .serializers import (
     GstRegistrationCreateSerializer,
     GstRegistrationSerializer,
     GstRegistrationUpdateSerializer,
+    SetupStatusSerializer,
     TenantSerializer,
     TenantUpdateSerializer,
 )
+from .setup import setup_status
 
 SETTINGS = "tenant.settings"
 
@@ -45,6 +47,17 @@ class TenantView(ActionAPIView):
             update=lambda v, changes: services.update_tenant(self.principal, v, changes),
             output_serializer=TenantSerializer,
         )
+
+
+class SetupStatusView(ActionAPIView):
+    """The setup checklist on the first page after sign-in (any member may read it)."""
+
+    pagination_class = None
+    filter_backends = ()
+
+    @extend_schema(responses={200: SetupStatusSerializer}, tags=["tenant"])
+    def get(self, request: Request) -> Response:
+        return Response(SetupStatusSerializer(setup_status(self.principal.tenant_id)).data)
 
 
 class GstRegistrationListView(ActionAPIView):

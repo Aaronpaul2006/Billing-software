@@ -219,3 +219,15 @@ class DocumentSeriesUpdateSerializer(serializers.Serializer[Any]):
     next_number = serializers.IntegerField(min_value=1)
     pad_width = serializers.IntegerField(min_value=1, max_value=8)
     is_active = serializers.BooleanField()
+
+
+class SetupStatusSerializer(serializers.Serializer[Any]):
+    """Setting up a new business (H.2): each step done or not."""
+
+    gst_registration = serializers.BooleanField(help_text="A GSTIN (or the unregistered profile).")
+    number_series = serializers.BooleanField(help_text="An active number series.")
+    client = serializers.BooleanField()
+    project = serializers.BooleanField()
+    first_bill = serializers.BooleanField(help_text="Something issued (not a draft).")
+    team = serializers.BooleanField(help_text="Someone besides the first member, or invited.")
+    complete = serializers.BooleanField()

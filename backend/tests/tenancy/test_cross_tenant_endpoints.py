@@ -1145,3 +1145,6 @@ NOT_TENANT_DATA["portal-me"] = "the caller's own client and business (tests/port
 
 # --- W.6 main dashboard: tests/reports/test_dashboard.py::test_another_tenant_sees_only_its_own
 COLLECTION_ROUTES["report-dashboard"] = lambda w: None
+
+# --- H.2 setup checklist: tests/tenants/test_setup.py::test_another_tenant_is_not_counted
+COLLECTION_ROUTES["tenant-setup"] = lambda w: None

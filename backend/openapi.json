@@ -6025,6 +6025,32 @@
                     }
                 }
             }
+        },
+        "/api/v1/tenant/setup": {
+            "get": {
+                "operationId": "tenant_setup_retrieve",
+                "description": "The setup checklist on the first page after sign-in (any member may read it).",
+                "tags": [
+                    "tenant"
+                ],
+                "security": [
+                    {
+                        "bearerAuth": []
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/SetupStatus"
+                                }
+                            }
+                        },
+                        "description": ""
+                    }
+                }
+            }
         }
     },
     "components": {
@@ -12928,6 +12954,46 @@
                 },
                 "required": [
                     "results"
+                ]
+            },
+            "SetupStatus": {
+                "type": "object",
+                "description": "Setting up a new business (H.2): each step done or not.",
+                "properties": {
+                    "gst_registration": {
+                        "type": "boolean",
+                        "description": "A GSTIN (or the unregistered profile)."
+                    },
+                    "number_series": {
+                        "type": "boolean",
+                        "description": "An active number series."
+                    },
+                    "client": {
+                        "type": "boolean"
+                    },
+                    "project": {
+                        "type": "boolean"
+                    },
+                    "first_bill": {
+                        "type": "boolean",
+                        "description": "Something issued (not a draft)."
+                    },
+                    "team": {
+                        "type": "boolean",
+                        "description": "Someone besides the first member, or invited."
+                    },
+                    "complete": {
+                        "type": "boolean"
+                    }
+                },
+                "required": [
+                    "client",
+                    "complete",
+                    "first_bill",
+                    "gst_registration",
+                    "number_series",
+                    "project",
+                    "team"
                 ]
             },
             "Signup": {

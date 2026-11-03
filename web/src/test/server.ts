@@ -61,6 +61,18 @@ export const server = setupServer(
   http.get(`${API}/invitations`, () => HttpResponse.json({ results: [] })),
   http.get(`${API}/email-invitations`, () => HttpResponse.json({ results: [] })),
   http.get(`${API}/documents/:id/reminders`, () => HttpResponse.json({ results: [] })),
+  // A business that has finished setting up: no checklist on the first page.
+  http.get(`${API}/tenant/setup`, () =>
+    HttpResponse.json({
+      gst_registration: true,
+      number_series: true,
+      client: true,
+      project: true,
+      first_bill: true,
+      team: true,
+      complete: true,
+    }),
+  ),
 );
 
 export { http, HttpResponse };

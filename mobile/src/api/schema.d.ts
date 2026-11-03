@@ -2153,6 +2153,23 @@ export interface paths {
         patch: operations["tenant_partial_update"];
         trace?: never;
     };
+    "/api/v1/tenant/setup": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** @description The setup checklist on the first page after sign-in (any member may read it). */
+        get: operations["tenant_setup_retrieve"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
 }
 export type webhooks = Record<string, never>;
 export interface components {
@@ -4397,6 +4414,20 @@ export interface components {
         };
         SessionList: {
             results: components["schemas"]["Session"][];
+        };
+        /** @description Setting up a new business (H.2): each step done or not. */
+        SetupStatus: {
+            /** @description A GSTIN (or the unregistered profile). */
+            gst_registration: boolean;
+            /** @description An active number series. */
+            number_series: boolean;
+            client: boolean;
+            project: boolean;
+            /** @description Something issued (not a draft). */
+            first_bill: boolean;
+            /** @description Someone besides the first member, or invited. */
+            team: boolean;
+            complete: boolean;
         };
         Signup: {
             /** @default mobile */
@@ -8809,6 +8840,25 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["Tenant"];
+                };
+            };
+        };
+    };
+    tenant_setup_retrieve: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SetupStatus"];
                 };
             };
         };

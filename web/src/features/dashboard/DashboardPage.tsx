@@ -26,6 +26,7 @@ import { formatInr, toPaise } from "@/lib/money";
 import { cn } from "@/lib/utils";
 
 import { formatRange, PERIOD_LABELS, periodRange } from "./periods";
+import { Welcome } from "./Welcome";
 import type { PeriodKey } from "./periods";
 
 type Book = "ALL" | "GST" | "NON_GST";
@@ -477,6 +478,7 @@ export function DashboardPage() {
   const { from, to } = periodRange(period, new Date());
   return (
     <>
+      <Welcome />
       <PageHeader
         title="Dashboard"
         description={formatRange(from, to)}
