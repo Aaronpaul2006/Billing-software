@@ -71,6 +71,7 @@ export function doc(overrides: Partial<Document> = {}): Document {
         up_to_date_qty: null,
         rate: "6800.00",
         discount_amount: "0.00",
+        discount_pct: null,
         taxable_value: "289000.00",
         gst_rate: "18.00",
         cgst_amount: "26010.00",

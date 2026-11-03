@@ -230,6 +230,7 @@ CREATE TABLE parties (
   email           citext,
   phone           text,
   reminders_enabled boolean NOT NULL DEFAULT true,     -- automatic payment reminders by email
+  payment_terms_days smallint CHECK (payment_terms_days BETWEEN 0 AND 365),  -- B.5: new bills fall due this many days after the bill date
   is_active       boolean NOT NULL DEFAULT true,
   version         integer NOT NULL DEFAULT 1,
   created_by      uuid NOT NULL REFERENCES users (id),
@@ -544,6 +545,7 @@ CREATE TABLE document_lines (
   prev_cumulative_qty  numeric(14,3) CHECK (prev_cumulative_qty >= 0),    -- RA bill: billed up to the previous bill (snapshot)
   rate                 numeric(14,2) NOT NULL CHECK (rate >= 0),
   discount_amount      numeric(14,2) NOT NULL DEFAULT 0 CHECK (discount_amount >= 0),
+  discount_pct         numeric(5,2) CHECK (discount_pct BETWEEN 0 AND 100),  -- B.5: discount as %; the amount is worked out from it
   taxable_value        numeric(14,2) NOT NULL CHECK (taxable_value >= 0),
   gst_rate             numeric(5,2) NOT NULL DEFAULT 0 CHECK (gst_rate BETWEEN 0 AND 50),
   cgst_amount          numeric(14,2) NOT NULL DEFAULT 0 CHECK (cgst_amount >= 0),

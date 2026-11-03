@@ -5,6 +5,7 @@ from django.db.models import Q
 from apps.core.db import (
     CITextField,
     FixedCharField,
+    between,
     created_at,
     length_between,
     one_of,
@@ -46,6 +47,8 @@ class Party(TenantScoped):
     email = CITextField(null=True)
     phone = models.TextField(null=True)  # noqa: DJ001
     reminders_enabled = models.BooleanField(default=True, db_default=True)
+    # B.5: days to pay; new bills fall due this many days after the bill date
+    payment_terms_days = models.SmallIntegerField(null=True)
     is_active = models.BooleanField(default=True, db_default=True)
     version = models.IntegerField(default=1, db_default=1)
     created_by = ref("accounts.User", db_column="created_by")
@@ -56,6 +59,7 @@ class Party(TenantScoped):
         db_table = "parties"
         constraints = [
             tenant_id_key("parties"),
+            between("payment_terms_days", 0, 365, "parties_payment_terms_days_check"),
             length_between("display_name", 1, 200, "parties_display_name_check"),
             one_of("gst_treatment", PartyGstTreatment.values, "parties_gst_treatment_check"),
             regex("gstin", GSTIN_RE, "parties_gstin_check"),

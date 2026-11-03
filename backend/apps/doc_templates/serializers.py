@@ -18,6 +18,9 @@ class TemplateLineSerializer(serializers.Serializer[Any]):
     quantity = QuantityField(min_value=Decimal("0.001"))
     rate = MoneyField(min_value=Decimal("0"))
     discount_amount = MoneyField(min_value=Decimal("0"), default=Decimal("0.00"))
+    discount_pct = PercentField(
+        required=False, allow_null=True, max_value=Decimal("100"), default=None
+    )
     gst_rate = PercentField(max_value=Decimal("50"))
 
 

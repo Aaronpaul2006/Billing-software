@@ -319,6 +319,8 @@ class DocumentLine(TenantScoped):
     )
     rate = _money()
     discount_amount = _money_zero()
+    # B.5: a discount given as a percentage; discount_amount is worked out from it
+    discount_pct = models.DecimalField(max_digits=5, decimal_places=2, null=True)
     taxable_value = _money()
     gst_rate = models.DecimalField(max_digits=5, decimal_places=2, default=0, db_default=0)
     cgst_amount = _money_zero()
@@ -343,6 +345,7 @@ class DocumentLine(TenantScoped):
             non_negative("prev_cumulative_qty", "document_lines_prev_cumulative_qty_check"),
             non_negative("rate", "document_lines_rate_check"),
             non_negative("discount_amount", "document_lines_discount_amount_check"),
+            between("discount_pct", 0, 100, "document_lines_discount_pct_check"),
             non_negative("taxable_value", "document_lines_taxable_value_check"),
             between("gst_rate", 0, 50, "document_lines_gst_rate_check"),
             non_negative("cgst_amount", "document_lines_cgst_amount_check"),

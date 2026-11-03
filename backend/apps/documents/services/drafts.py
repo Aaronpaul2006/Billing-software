@@ -19,7 +19,8 @@ they are derived here and computed by the tax engine on every save.
 
 import uuid
 from dataclasses import dataclass
-from decimal import Decimal
+from datetime import timedelta
+from decimal import ROUND_HALF_UP, Decimal
 from typing import Any
 
 from django.db import transaction
@@ -45,6 +46,10 @@ DRAFTABLE_TYPES = ("QUOTATION", "PROFORMA", "TAX_INVOICE", "BILL_OF_SUPPLY")
 NOTE_TYPES = frozenset({"CREDIT_NOTE", "DEBIT_NOTE"})  # created via their own endpoints
 DEDUCTION_TYPES = frozenset({"PROFORMA", "TAX_INVOICE", "BILL_OF_SUPPLY"})
 ZERO = Decimal("0.00")
+CENT = Decimal("0.01")
+HUNDRED = Decimal("100")
+# B.5: bills that fall due; a new one without a due date takes the client's payment terms
+TERMS_TYPES = frozenset({"TAX_INVOICE", "BILL_OF_SUPPLY", "DEBIT_NOTE", "PROFORMA"})
 
 
 @dataclass(frozen=True)
@@ -231,6 +236,11 @@ def _line_inputs(lines: list[dict[str, Any]], project: Project | None) -> list[d
         for key, label in (("description", "description"), ("rate", "rate")):
             if line.get(key) in (None, ""):
                 raise Invalid(f"lines[{i}].{key}", f"A {label} is required.", code="required")
+        if line.get("discount_pct") is not None:
+            gross = (line["quantity"] * line["rate"]).quantize(CENT, ROUND_HALF_UP)
+            line["discount_amount"] = (gross * line["discount_pct"] / HUNDRED).quantize(
+                CENT, ROUND_HALF_UP
+            )
         line.setdefault("discount_amount", ZERO)
         line.setdefault("gst_rate", ZERO)
         filled.append(line)
@@ -368,6 +378,7 @@ def _write_lines(doc: Document, c: Computed) -> None:
             prev_cumulative_qty=ln.get("prev_cumulative_qty"),
             rate=ln["rate"],
             discount_amount=ln["discount_amount"],
+            discount_pct=ln.get("discount_pct"),
             gst_rate=ln["gst_rate"],
             **_line_amounts(out),
         )
@@ -400,6 +411,7 @@ def _stored_lines(doc: Document) -> list[dict[str, Any]]:
                 "quantity",
                 "rate",
                 "discount_amount",
+                "discount_pct",
                 "gst_rate",
             )
         }
@@ -445,9 +457,18 @@ def create_draft(principal: Principal, data: dict[str, Any]) -> Document:
     return _create(principal, data)
 
 
+def _due_from_terms(data: dict[str, Any], c: Computed) -> dict[str, Any]:
+    """No due date on a new bill: the bill date plus the client's payment terms."""
+    days = c.resolved.party.payment_terms_days
+    if data.get("due_date") or days is None or data["doc_type"] not in TERMS_TYPES:
+        return data
+    return {**data, "due_date": data["doc_date"] + timedelta(days=days)}
+
+
 def _create(principal: Principal, data: dict[str, Any], **links: uuid.UUID) -> Document:
     """Insert a draft; `links` sets source_document_id / original_document_id."""
     c = _compute(data)
+    data = _due_from_terms(data, c)
     with transaction.atomic():
         doc = Document(
             **_header(c, data),

@@ -9222,6 +9222,15 @@
                         "format": "decimal",
                         "pattern": "^-?\\d{0,12}(?:\\.\\d{0,2})?$"
                     },
+                    "discount_pct": {
+                        "type": [
+                            "string",
+                            "null"
+                        ],
+                        "format": "decimal",
+                        "pattern": "^-?\\d{0,3}(?:\\.\\d{0,2})?$",
+                        "description": "A discount as a percentage of quantity times rate; when given it sets discount_amount (rounded to the paisa) and wins over a discount_amount sent with it."
+                    },
                     "gst_rate": {
                         "type": "string",
                         "format": "decimal",
@@ -9311,6 +9320,14 @@
                         "format": "decimal",
                         "pattern": "^-?\\d{0,12}(?:\\.\\d{0,2})?$"
                     },
+                    "discount_pct": {
+                        "type": [
+                            "string",
+                            "null"
+                        ],
+                        "format": "decimal",
+                        "pattern": "^-?\\d{0,3}(?:\\.\\d{0,2})?$"
+                    },
                     "taxable_value": {
                         "type": "string",
                         "format": "decimal",
@@ -9355,6 +9372,7 @@
                     "cgst_amount",
                     "description",
                     "discount_amount",
+                    "discount_pct",
                     "gst_rate",
                     "igst_amount",
                     "line_no",
@@ -10223,6 +10241,13 @@
                         "type": "boolean",
                         "readOnly": true
                     },
+                    "payment_terms_days": {
+                        "type": [
+                            "integer",
+                            "null"
+                        ],
+                        "readOnly": true
+                    },
                     "is_active": {
                         "type": "boolean",
                         "readOnly": true
@@ -10255,6 +10280,7 @@
                     "is_vendor",
                     "legal_name",
                     "pan",
+                    "payment_terms_days",
                     "phone",
                     "reminders_enabled",
                     "state_code",
@@ -10425,6 +10451,15 @@
                         "type": "boolean",
                         "default": true,
                         "description": "Email automatic payment reminders for unpaid bills."
+                    },
+                    "payment_terms_days": {
+                        "type": [
+                            "integer",
+                            "null"
+                        ],
+                        "maximum": 365,
+                        "minimum": 0,
+                        "description": "Days to pay: a new bill without a due date falls due this many days after its date."
                     },
                     "is_active": {
                         "type": "boolean",
@@ -10963,6 +10998,15 @@
                         "type": "boolean",
                         "default": true,
                         "description": "Email automatic payment reminders for unpaid bills."
+                    },
+                    "payment_terms_days": {
+                        "type": [
+                            "integer",
+                            "null"
+                        ],
+                        "maximum": 365,
+                        "minimum": 0,
+                        "description": "Days to pay: a new bill without a due date falls due this many days after its date."
                     },
                     "is_active": {
                         "type": "boolean",
@@ -14048,6 +14092,14 @@
                         "format": "decimal",
                         "pattern": "^-?\\d{0,12}(?:\\.\\d{0,2})?$",
                         "default": "0.00"
+                    },
+                    "discount_pct": {
+                        "type": [
+                            "string",
+                            "null"
+                        ],
+                        "format": "decimal",
+                        "pattern": "^-?\\d{0,3}(?:\\.\\d{0,2})?$"
                     },
                     "gst_rate": {
                         "type": "string",

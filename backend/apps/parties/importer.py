@@ -37,8 +37,10 @@ LAYOUT = sheets.Layout(
         "line1": ("address", "address_line_1", "line1", "street"),
         "city": ("city", "town"),
         "pincode": ("pincode", "pin", "pin_code", "postal_code"),
+        "payment_terms_days": ("payment_terms", "payment_terms_days", "credit_days", "due_days"),
     },
     required=("display_name",),
+    numeric=("payment_terms_days",),
     sample_header=(
         "Name",
         "GSTIN",
@@ -100,7 +102,7 @@ def to_party(values: dict[str, str]) -> dict[str, Any]:
         else ("REGISTERED" if gstin else "UNREGISTERED"),
         "is_customer": True,
     }
-    for name in ("legal_name", "pan", "email"):
+    for name in ("legal_name", "pan", "email", "payment_terms_days"):
         if values.get(name):
             data[name] = values[name]
     if gstin:

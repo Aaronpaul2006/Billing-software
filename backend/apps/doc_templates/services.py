@@ -34,6 +34,7 @@ def _json_lines(lines: list[dict[str, Any]]) -> list[dict[str, Any]]:
             "quantity": str(line["quantity"]),
             "rate": str(line["rate"]),
             "discount_amount": str(line.get("discount_amount") or Decimal("0.00")),
+            "discount_pct": None if line.get("discount_pct") is None else str(line["discount_pct"]),
             "gst_rate": str(line["gst_rate"]),
         }
         for line in lines
@@ -102,6 +103,7 @@ def save_document_as_template(
             "quantity": line.quantity,
             "rate": line.rate,
             "discount_amount": line.discount_amount,
+            "discount_pct": line.discount_pct,
             "gst_rate": line.gst_rate,
         }
         for line in DocumentLine.objects.filter(document_id=doc.pk).order_by("line_no")

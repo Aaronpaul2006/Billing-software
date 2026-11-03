@@ -78,6 +78,7 @@ def test_a_quote_saved_as_a_template_starts_the_next_quote(w: Templates) -> None
         "quantity": "420.000",
         "rate": "65.50",
         "discount_amount": "0.00",
+        "discount_pct": None,
         "gst_rate": "18.00",
     }
 

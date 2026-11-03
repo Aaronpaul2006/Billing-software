@@ -390,6 +390,17 @@ their own endpoints (Phase 1.6), RA bills below (Phase 3.2). Example response:
 }
 ```
 
+### Discount as a percentage, due date from payment terms (B.5)
+
+A line may send `discount_pct` (0–100) instead of `discount_amount`: the
+server sets `discount_amount` = quantity × rate (to the paisa) × % ÷ 100,
+rounded half up, and keeps `discount_pct` on the line, so edits, copies,
+conversions and templates keep the percentage. When both are sent the
+percentage wins. A party's `payment_terms_days` (0–365, or null): a new tax
+invoice, bill of supply, debit note or proforma created without a `due_date`
+falls due that many days after its `doc_date`. A typed due date is kept;
+quotations never fall due.
+
 ### Catalog item variants (W.4)
 
 A catalog item may have variants (`attribute` + `value`, e.g. Brand:

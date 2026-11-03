@@ -29,6 +29,13 @@ class LineInSerializer(serializers.Serializer[Any]):
     quantity = QuantityField(min_value=Decimal("0.001"))
     rate = MoneyField(required=False, min_value=Decimal("0"))
     discount_amount = MoneyField(required=False, min_value=Decimal("0"))
+    discount_pct = PercentField(
+        required=False,
+        allow_null=True,
+        max_value=Decimal("100"),
+        help_text="A discount as a percentage of quantity times rate; when given it sets "
+        "discount_amount (rounded to the paisa) and wins over a discount_amount sent with it.",
+    )
     gst_rate = PercentField(required=False, max_value=Decimal("50"))
 
 
@@ -97,6 +104,7 @@ class LineOutSerializer(serializers.ModelSerializer[DocumentLine]):
     up_to_date_qty = serializers.SerializerMethodField(help_text="RA bill: previous + this bill.")
     rate = MoneyField()
     discount_amount = MoneyField()
+    discount_pct = PercentField(allow_null=True)
     taxable_value = MoneyField()
     gst_rate = PercentField()
     cgst_amount = MoneyField()
@@ -120,6 +128,7 @@ class LineOutSerializer(serializers.ModelSerializer[DocumentLine]):
             "up_to_date_qty",
             "rate",
             "discount_amount",
+            "discount_pct",
             "taxable_value",
             "gst_rate",
             "cgst_amount",

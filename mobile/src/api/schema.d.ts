@@ -3225,6 +3225,11 @@ export interface components {
             rate?: string;
             /** Format: decimal */
             discount_amount?: string;
+            /**
+             * Format: decimal
+             * @description A discount as a percentage of quantity times rate; when given it sets discount_amount (rounded to the paisa) and wins over a discount_amount sent with it.
+             */
+            discount_pct?: string | null;
             /** Format: decimal */
             gst_rate?: string;
         };
@@ -3255,6 +3260,8 @@ export interface components {
             rate: string;
             /** Format: decimal */
             discount_amount: string;
+            /** Format: decimal */
+            discount_pct: string | null;
             /** Format: decimal */
             taxable_value: string;
             /** Format: decimal */
@@ -3494,6 +3501,7 @@ export interface components {
             readonly email: string | null;
             readonly phone: string | null;
             readonly reminders_enabled: boolean;
+            readonly payment_terms_days: number | null;
             readonly is_active: boolean;
             readonly version: number;
             /** Format: date-time */
@@ -3552,6 +3560,8 @@ export interface components {
              * @default true
              */
             reminders_enabled?: boolean;
+            /** @description Days to pay: a new bill without a due date falls due this many days after its date. */
+            payment_terms_days?: number | null;
             /** @default true */
             is_active?: boolean;
         };
@@ -3723,6 +3733,8 @@ export interface components {
              * @default true
              */
             reminders_enabled?: boolean;
+            /** @description Days to pay: a new bill without a due date falls due this many days after its date. */
+            payment_terms_days?: number | null;
             /** @default true */
             is_active?: boolean;
         };
@@ -4818,6 +4830,8 @@ export interface components {
              * @default 0.00
              */
             discount_amount?: string;
+            /** Format: decimal */
+            discount_pct?: string | null;
             /** Format: decimal */
             gst_rate: string;
         };

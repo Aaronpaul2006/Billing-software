@@ -54,6 +54,7 @@ class PartySerializer(serializers.ModelSerializer[Party]):
             "email",
             "phone",
             "reminders_enabled",
+            "payment_terms_days",
             "is_active",
             "version",
             "created_at",
@@ -79,6 +80,14 @@ class PartyWriteSerializer(serializers.Serializer[Any]):
     phone = serializers.RegexField(r"^\+?[0-9]{10,15}$", required=False, allow_null=True)
     reminders_enabled = serializers.BooleanField(
         default=True, help_text="Email automatic payment reminders for unpaid bills."
+    )
+    payment_terms_days = serializers.IntegerField(
+        required=False,
+        allow_null=True,
+        min_value=0,
+        max_value=365,
+        help_text="Days to pay: a new bill without a due date falls due this many days after "
+        "its date.",
     )
     is_active = serializers.BooleanField(default=True)
 

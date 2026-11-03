@@ -46,6 +46,11 @@ const formSchema = z
     email: z.string(),
     phone: z.string(),
     reminders_enabled: z.boolean(),
+    payment_terms_days: z
+      .string()
+      .trim()
+      .regex(/^(\d{1,3})?$/, "Whole days, like 30.")
+      .refine((v) => v === "" || Number(v) <= 365, "At most 365 days."),
     billing_address: z.object({
       line1: z.string(),
       line2: z.string(),
@@ -78,6 +83,7 @@ const FIELDS = [
   "email",
   "phone",
   "reminders_enabled",
+  "payment_terms_days",
   "billing_address.line1",
   "billing_address.line2",
   "billing_address.city",
@@ -98,6 +104,7 @@ const EMPTY: FormValues = {
   email: "",
   phone: "",
   reminders_enabled: true,
+  payment_terms_days: "",
   billing_address: { line1: "", line2: "", city: "", state_code: "", pincode: "", country: "IN" },
 };
 
@@ -115,6 +122,7 @@ function toForm(p: Party): FormValues {
     email: p.email ?? "",
     phone: p.phone ?? "",
     reminders_enabled: p.reminders_enabled,
+    payment_terms_days: p.payment_terms_days === null ? "" : String(p.payment_terms_days),
     billing_address: {
       line1: a.line1 ?? "",
       line2: a.line2 ?? "",
@@ -144,6 +152,7 @@ function toApi(v: FormValues): PartyWrite {
     email: blankToNull(v.email),
     phone: blankToNull(v.phone),
     reminders_enabled: v.reminders_enabled,
+    payment_terms_days: v.payment_terms_days.trim() === "" ? null : Number(v.payment_terms_days),
     billing_address: hasAddress
       ? {
           line1: a.line1.trim(),
@@ -370,6 +379,14 @@ export function PartyFormPage() {
               type="tel"
               error={errors.phone?.message}
               registration={register("phone")}
+            />
+            <TextField
+              id="payment_terms_days"
+              label="Payment terms (days)"
+              inputMode="numeric"
+              hint="New bills fall due this many days after the bill date. Leave empty for none."
+              error={errors.payment_terms_days?.message}
+              registration={register("payment_terms_days")}
             />
             <label className="flex items-start gap-2 text-sm sm:col-span-2">
               <input type="checkbox" className="mt-1" {...register("reminders_enabled")} />

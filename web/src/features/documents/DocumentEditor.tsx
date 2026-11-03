@@ -58,7 +58,9 @@ interface LineForm {
   unit: string;
   quantity: string;
   rate: string;
+  /** The discount as typed: rupees, or a percentage when discount_mode is "pct". */
   discount_amount: string;
+  discount_mode: "amount" | "pct";
   gst_rate: string;
 }
 
@@ -105,6 +107,7 @@ const EMPTY_LINE: LineForm = {
   quantity: "",
   rate: "",
   discount_amount: "",
+  discount_mode: "amount",
   gst_rate: "",
 };
 
@@ -153,7 +156,13 @@ function toForm(doc: Document | undefined, type: DraftableType): FormValues {
       unit: l.unit ?? "",
       quantity: l.quantity,
       rate: l.rate,
-      discount_amount: l.discount_amount === "0.00" ? "" : l.discount_amount,
+      discount_amount:
+        l.discount_pct !== null
+          ? l.discount_pct
+          : l.discount_amount === "0.00"
+            ? ""
+            : l.discount_amount,
+      discount_mode: l.discount_pct !== null ? "pct" : "amount",
       gst_rate: l.gst_rate,
     })),
   };
@@ -175,7 +184,8 @@ function apiLine(l: LineForm): LineIn {
     ...(l.unit.trim() ? { unit: l.unit.trim() } : {}),
     quantity: l.quantity.trim(),
     ...(rate ? { rate } : {}),
-    ...(discount ? { discount_amount: discount } : {}),
+    ...(discount && l.discount_mode === "pct" ? { discount_pct: discount } : {}),
+    ...(discount && l.discount_mode === "amount" ? { discount_amount: discount } : {}),
     ...(l.gst_rate.trim() ? { gst_rate: l.gst_rate.trim() } : {}),
   };
 }
@@ -225,6 +235,77 @@ function useAllBoqItems(projectId: string) {
   });
 }
 
+type BulkField = "rate" | "discount_pct" | "gst_rate";
+
+const BULK_FIELDS: { field: BulkField; label: string }[] = [
+  { field: "rate", label: "Rate (₹)" },
+  { field: "discount_pct", label: "Discount %" },
+  { field: "gst_rate", label: "GST %" },
+];
+
+/** Change the rate, discount % or GST % of the selected lines at once (B.5). */
+function BulkEdit({
+  count,
+  onApply,
+  onClear,
+}: {
+  count: number;
+  onApply: (field: BulkField, value: string) => void;
+  onClear: () => void;
+}) {
+  const [field, setField] = useState<BulkField>("rate");
+  const [value, setValue] = useState("");
+  const valid = /^\d{1,12}(\.\d{1,2})?$/.test(cleanMoneyInput(value));
+  return (
+    <div
+      role="group"
+      aria-label="Change selected lines"
+      className="bg-muted/40 flex flex-wrap items-end gap-2 rounded-lg border p-3 text-sm"
+    >
+      <span className="font-medium">
+        {count} {count === 1 ? "line" : "lines"} selected:
+      </span>
+      <NativeSelect
+        aria-label="What to change"
+        className="w-auto"
+        value={field}
+        onChange={(e) => {
+          setField(e.target.value as BulkField);
+        }}
+      >
+        {BULK_FIELDS.map((f) => (
+          <option key={f.field} value={f.field}>
+            {f.label}
+          </option>
+        ))}
+      </NativeSelect>
+      <Input
+        aria-label="New value"
+        inputMode="decimal"
+        className="w-32"
+        value={value}
+        onChange={(e) => {
+          setValue(e.target.value);
+        }}
+      />
+      <Button
+        type="button"
+        size="sm"
+        disabled={!valid}
+        onClick={() => {
+          onApply(field, cleanMoneyInput(value));
+          setValue("");
+        }}
+      >
+        Apply to selected
+      </Button>
+      <Button type="button" size="sm" variant="ghost" onClick={onClear}>
+        Clear selection
+      </Button>
+    </div>
+  );
+}
+
 function Editor({ doc }: { doc?: Document }) {
   const isNew = doc === undefined;
   const isNote = doc !== undefined && NOTE_TYPES.has(doc.doc_type);
@@ -245,6 +326,8 @@ function Editor({ doc }: { doc?: Document }) {
   const [newItem, setNewItem] = useState<{ line: number; name: string } | null>(null);
   const [newClient, setNewClient] = useState(false);
   const [showKeys, setShowKeys] = useState(false);
+  /** Lines chosen for a bulk edit, by their field id (stable across moves). */
+  const [selected, setSelected] = useState<Set<string>>(() => new Set());
   const location = useLocation();
   // "Saved at …" survives the move from /documents/new to the saved draft's address
   const [savedAt, setSavedAt] = useState<string | null>(
@@ -510,6 +593,17 @@ function Editor({ doc }: { doc?: Document }) {
     setValue,
   ]);
 
+  const terms = useQuery({
+    queryKey: ["parties", values.party_id, "terms"],
+    queryFn: async () =>
+      unwrap(
+        await api.GET("/api/v1/parties/{party_id}", {
+          params: { path: { party_id: values.party_id } },
+        }),
+      ).payment_terms_days,
+    enabled: values.party_id !== "" && !isNote,
+  }).data;
+
   const balance = useQuery({
     queryKey: ["statement", values.party_id, "now"],
     queryFn: async () =>
@@ -686,6 +780,11 @@ function Editor({ doc }: { doc?: Document }) {
                 type="date"
                 error={errors.due_date?.message}
                 registration={register("due_date")}
+                {...(terms !== null && terms !== undefined && !values.due_date && !doc
+                  ? {
+                      hint: `Left empty: due ${String(terms)} days after the bill date (the client's payment terms).`,
+                    }
+                  : {})}
               />
             )}
             <div className="grid content-end gap-2 pb-1 text-sm">
@@ -738,11 +837,68 @@ function Editor({ doc }: { doc?: Document }) {
                 RA bill: every line bills a BOQ item, once; the quantity is this bill&apos;s.
               </p>
             )}
+            {selected.size > 0 && (
+              <BulkEdit
+                count={selected.size}
+                onApply={(field, value) => {
+                  lines.fields.forEach((f, i) => {
+                    if (!selected.has(f.id)) return;
+                    if (field === "discount_pct") {
+                      setValue(`lines.${i}.discount_amount`, value, { shouldDirty: true });
+                      setValue(`lines.${i}.discount_mode`, "pct", { shouldDirty: true });
+                    } else {
+                      setValue(`lines.${i}.${field}`, value, { shouldDirty: true });
+                    }
+                  });
+                }}
+                onClear={() => {
+                  setSelected(new Set());
+                }}
+              />
+            )}
+            {lines.fields.length > 1 && (
+              <label className="text-muted-foreground flex items-center gap-2 text-xs">
+                <input
+                  type="checkbox"
+                  checked={selected.size === lines.fields.length}
+                  onChange={(e) => {
+                    setSelected(
+                      e.target.checked ? new Set(lines.fields.map((f) => f.id)) : new Set(),
+                    );
+                  }}
+                />
+                Select all lines (to change their rate, discount or GST together)
+              </label>
+            )}
             {lines.fields.map((field, i) => {
               const n = String(i);
               const lineErrors = errors.lines?.[i];
               const previewLine = preview.data?.lines[i];
               const problem = lineError(i);
+              const box = (
+                name: "quantity" | "unit" | "rate" | "gst_rate" | "sac_hsn",
+                label: string,
+                mode: "decimal" | "text" | "numeric",
+                span: 1 | 2,
+              ) => (
+                <div
+                  key={name}
+                  className={span === 2 ? "grid gap-1 sm:col-span-2" : "grid gap-1 sm:col-span-1"}
+                >
+                  <label htmlFor={`line-${n}-${name}`} className="text-xs font-medium">
+                    {label}
+                  </label>
+                  <Input
+                    id={`line-${n}-${name}`}
+                    inputMode={mode}
+                    aria-invalid={!!lineErrors?.[name]}
+                    {...register(`lines.${i}.${name}`)}
+                  />
+                  {lineErrors?.[name] && (
+                    <span className="text-destructive text-xs">{lineErrors[name].message}</span>
+                  )}
+                </div>
+              );
               return (
                 <fieldset
                   key={field.id}
@@ -750,6 +906,19 @@ function Editor({ doc }: { doc?: Document }) {
                   aria-label={`Line ${String(i + 1)}`}
                   className="grid gap-3 rounded-lg border p-3 sm:grid-cols-12"
                 >
+                  <label className="text-muted-foreground flex items-center gap-2 text-xs sm:col-span-12">
+                    <input
+                      type="checkbox"
+                      checked={selected.has(field.id)}
+                      onChange={(e) => {
+                        const next = new Set(selected);
+                        if (e.target.checked) next.add(field.id);
+                        else next.delete(field.id);
+                        setSelected(next);
+                      }}
+                    />
+                    Select line {i + 1}
+                  </label>
                   <div className="grid gap-1 sm:col-span-4">
                     <label htmlFor={`line-${n}-item`} className="text-xs font-medium">
                       Item
@@ -777,36 +946,37 @@ function Editor({ doc }: { doc?: Document }) {
                     </label>
                     <Input id={`line-${n}-description`} {...register(`lines.${i}.description`)} />
                   </div>
-                  {(
-                    [
-                      ["quantity", ra ? "This bill qty" : "Quantity", "decimal", 2],
-                      ["unit", "Unit", "text", 1],
-                      ["rate", "Rate (₹)", "decimal", 2],
-                      ["discount_amount", "Discount (₹)", "decimal", 2],
-                      ["gst_rate", "GST %", "decimal", 1],
-                      ["sac_hsn", "HSN/SAC", "numeric", 2],
-                    ] as const
-                  ).map(([name, label, mode, span]) => (
-                    <div
-                      key={name}
-                      className={
-                        span === 2 ? "grid gap-1 sm:col-span-2" : "grid gap-1 sm:col-span-1"
-                      }
-                    >
-                      <label htmlFor={`line-${n}-${name}`} className="text-xs font-medium">
-                        {label}
-                      </label>
+                  {box("quantity", ra ? "This bill qty" : "Quantity", "decimal", 2)}
+                  {box("unit", "Unit", "text", 1)}
+                  {box("rate", "Rate (₹)", "decimal", 2)}
+                  <div className="grid gap-1 sm:col-span-2">
+                    <label htmlFor={`line-${n}-discount_amount`} className="text-xs font-medium">
+                      Discount
+                    </label>
+                    <div className="flex gap-1">
                       <Input
-                        id={`line-${n}-${name}`}
-                        inputMode={mode}
-                        aria-invalid={!!lineErrors?.[name]}
-                        {...register(`lines.${i}.${name}`)}
+                        id={`line-${n}-discount_amount`}
+                        inputMode="decimal"
+                        aria-invalid={!!(lineErrors?.discount_amount ?? lineErrors?.discount_mode)}
+                        {...register(`lines.${i}.discount_amount`)}
                       />
-                      {lineErrors?.[name] && (
-                        <span className="text-destructive text-xs">{lineErrors[name].message}</span>
-                      )}
+                      <NativeSelect
+                        aria-label={`Discount of line ${String(i + 1)} in`}
+                        className="w-16"
+                        {...register(`lines.${i}.discount_mode`)}
+                      >
+                        <option value="amount">₹</option>
+                        <option value="pct">%</option>
+                      </NativeSelect>
                     </div>
-                  ))}
+                    {lineErrors?.discount_amount && (
+                      <span className="text-destructive text-xs">
+                        {lineErrors.discount_amount.message}
+                      </span>
+                    )}
+                  </div>
+                  {box("gst_rate", "GST %", "decimal", 1)}
+                  {box("sac_hsn", "HSN/SAC", "numeric", 2)}
                   <div className="flex items-end justify-between gap-2 sm:col-span-2">
                     <div className="text-right text-sm">
                       {previewLine && (
