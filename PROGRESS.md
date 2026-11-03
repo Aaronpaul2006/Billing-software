@@ -108,7 +108,8 @@ Last updated: 2026-10-22
 
 ## In progress
 
-- Web additions (owner decision 2026-11-01): W.1–W.7 done. Main web page (2026-11-03): H.1 and H.2 done. Next: owner to choose.
+- Web additions (owner decision 2026-11-01): W.1–W.7 done. Main web page (2026-11-03): H.1 and H.2 done. 
+- **Billing made complete and easy (owner brief 2026-11-03)**: B.0 gap report done (`docs/04-billing-ideas.md` has the analysis of the suggested ideas); steps B.1–B.16 proposed, waiting for the owner's approval and five decisions (autosave, who sees bill history, WhatsApp link, quick-add for site engineers, PDF copy labels).
 - **Mobile stopped (owner decision 2026-11-03)**: the mobile build is stopped completely (M.4 dropped); M.1–M.3 stay in `mobile/` as they are. The web app comes first.
 
 - Mobile on the PC (owner request 2026-10-22: run it on the PC first): `npm run web` in `mobile/` serves the app in a browser; the dev server passes `/api` to 127.0.0.1:8000 (`metro.config.js`, no CORS, backend unchanged). Web-only stand-ins: the refresh token in memory (`refreshToken.web.ts`; reload signs you out), the browser's confirm dialog (`confirm.web.ts`), the PDF opened in a new tab (`sharePdf.web.ts`). Walked through in Edge at phone size with Playwright (sign-in with a 2-step code, dashboard, projects, payments, issue a draft, bill, client, record a payment): no errors; it caught the deductions written "income-tax tds" (now TDS / GST) and tab labels cut off in the browser (taller bar on the web only). Steps in `mobile/README.md`. Also there: testing on an Android phone over USB (Expo Go + `adb reverse`).
