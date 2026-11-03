@@ -78,6 +78,8 @@ export const server = setupServer(
       complete: true,
     }),
   ),
+  // The final review before issuing: nothing to say.
+  http.get(`${API}/documents/:id/review`, () => HttpResponse.json({ warnings: [] })),
   // Print settings never saved: the defaults.
   http.get(`${API}/tenant/print-settings`, () =>
     HttpResponse.json(

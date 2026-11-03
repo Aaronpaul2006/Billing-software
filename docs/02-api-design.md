@@ -413,6 +413,25 @@ supply, proformas and quotations created without a `terms` key get
 `default_terms`; `"terms": null` keeps them empty. The web bill screen fills
 them in on a new bill, where they can still be changed.
 
+### Final review before issuing (B.14)
+
+`GET /documents/{id}/review` (`tenant.read`; another tenant's: `404`) returns
+`{warnings: [{code, message, line_no}]}` for a draft, `[]` for anything
+already issued. Warnings never block: `POST /issue` keeps its own rules.
+
+| Code | When |
+|---|---|
+| `no_number_series` | no active series for this type, GSTIN and financial year (issuing would fail) |
+| `client_no_gstin` | tax invoice / debit note to an `UNREGISTERED` client (no GSTIN): B2C in the returns, no input tax credit; stronger wording when the PAN's 4th letter is not `P` (a business). A `REGISTERED` client without a GSTIN cannot exist (database check) |
+| `possible_duplicate` | an issued / accepted document of the same type for the same client dated up to 7 days before, total within 1 % (up to 3 listed) |
+| `no_due_date` | a bill that asks to be paid has no due date (no overdue, no reminders) |
+| `missing_hsn` | a line of a GST bill without HSN / SAC (`line_no`) |
+| `rate_below_usual` | a catalog line more than 25 % under the usual rate: the last rate charged to this client for that item / variant, else the catalog rate (`line_no`) |
+
+Web: "Issue…" opens "Review before issuing" (client, lines, total, what the
+client pays now, the warnings with a link to fix each, "Issue now", "Go back
+and edit"); Ctrl+Enter in the editor saves and opens it (`?review=1`).
+
 ### The complete PDF (B.13)
 
 `GET /documents/{id}/pdf?copy=original|duplicate|triplicate` draws a labelled

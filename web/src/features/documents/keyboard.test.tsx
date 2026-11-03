@@ -70,7 +70,7 @@ describe("keyboard-first bill screen", () => {
     expect(screen.queryByRole("region", { name: "Keyboard shortcuts" })).not.toBeInTheDocument();
   });
 
-  it("Ctrl+S saves and keeps the bill open; Ctrl+Enter opens it", async () => {
+  it("Ctrl+S saves and keeps the bill open; Ctrl+Enter opens the final review", async () => {
     base();
     const saved = doc();
     useDoc(saved);
@@ -99,6 +99,11 @@ describe("keyboard-first bill screen", () => {
     await waitFor(() => {
       expect(router.state.location.pathname).toBe(`/documents/${DOC}`);
     });
+    expect(router.state.location.search).toBe("?review=1");
+    expect(
+      await screen.findByRole("region", { name: "Review before issuing" }),
+    ).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Issue now" })).toHaveFocus();
   });
 
   it("moves and inserts lines", async () => {

@@ -2,7 +2,7 @@ import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { AlertCircle, ArrowLeft, Copy, FileDown, Pencil } from "lucide-react";
 import { useState } from "react";
 import type { ReactNode } from "react";
-import { Link, useNavigate, useParams } from "react-router";
+import { Link, useNavigate, useParams, useSearchParams } from "react-router";
 
 import { api, newIdempotencyKey, unwrap } from "@/api/client";
 import { ApiError } from "@/api/problem";
@@ -45,6 +45,7 @@ import {
 } from "./api";
 import type { DocType, Document } from "./api";
 import { DocumentHistory } from "./DocumentHistory";
+import { IssueReview } from "./IssueReview";
 import { TotalsPanel } from "./TotalsPanel";
 
 const CONVERT_TO: Partial<Record<DocType, DocType[]>> = {
@@ -156,7 +157,7 @@ function Lines({ doc }: { doc: Document }) {
   );
 }
 
-type Panel = "none" | "cancel" | "convert" | "alter";
+type Panel = "none" | "cancel" | "convert" | "alter" | "review";
 type PrintCopy = "original" | "duplicate" | "triplicate";
 
 /** Bills and quotations can be copied into a new draft; notes belong to their bill. */
@@ -172,7 +173,11 @@ const ALTERABLE: ReadonlySet<DocType> = new Set(["TAX_INVOICE", "BILL_OF_SUPPLY"
 function Actions({ doc }: { doc: Document }) {
   const queryClient = useQueryClient();
   const navigate = useNavigate();
-  const [panel, setPanel] = useState<Panel>("none");
+  const [params] = useSearchParams();
+  // Ctrl+Enter in the editor saves and lands here with the final review open (B.14).
+  const [panel, setPanel] = useState<Panel>(() =>
+    params.get("review") === "1" && doc.status === "DRAFT" ? "review" : "none",
+  );
   const [reason, setReason] = useState("");
   const [convertTo, setConvertTo] = useState<DocType>(
     CONVERT_TO[doc.doc_type]?.[0] ?? "TAX_INVOICE",
@@ -369,16 +374,12 @@ function Actions({ doc }: { doc: Document }) {
           <>
             <Button
               disabled={busy}
+              aria-expanded={panel === "review"}
               onClick={() => {
-                if (
-                  window.confirm(
-                    `Issue this ${DOC_TYPE_LABELS[doc.doc_type].toLowerCase()}? It gets the next number and can no longer be edited.`,
-                  )
-                )
-                  issue.mutate();
+                setPanel("review"); // the final review first; issuing is one more click
               }}
             >
-              Issue
+              Issue…
             </Button>
             <Button variant="outline" asChild>
               <Link to={`/documents/${doc.id}/edit`}>
@@ -502,6 +503,19 @@ function Actions({ doc }: { doc: Document }) {
           <AlertCircle aria-hidden />
           <AlertDescription>{notice}</AlertDescription>
         </Alert>
+      )}
+
+      {panel === "review" && doc.status === "DRAFT" && (
+        <IssueReview
+          doc={doc}
+          busy={busy}
+          onIssue={() => {
+            issue.mutate();
+          }}
+          onClose={() => {
+            setPanel("none");
+          }}
+        />
       )}
 
       {panel === "alter" && (

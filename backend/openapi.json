@@ -2707,6 +2707,43 @@
                 }
             }
         },
+        "/api/v1/documents/{document_id}/review": {
+            "get": {
+                "operationId": "documents_review_retrieve",
+                "description": "Warnings to look at before issuing a draft (B.14); never blocks issuing.",
+                "parameters": [
+                    {
+                        "in": "path",
+                        "name": "document_id",
+                        "schema": {
+                            "type": "string",
+                            "format": "uuid"
+                        },
+                        "required": true
+                    }
+                ],
+                "tags": [
+                    "documents"
+                ],
+                "security": [
+                    {
+                        "bearerAuth": []
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/Review"
+                                }
+                            }
+                        },
+                        "description": ""
+                    }
+                }
+            }
+        },
         "/api/v1/documents/{document_id}/save-as-template": {
             "post": {
                 "operationId": "documents_save_as_template_create",
@@ -7392,6 +7429,18 @@
                 ],
                 "type": "string",
                 "description": "* `web` - web\n* `mobile` - mobile"
+            },
+            "CodeEnum": {
+                "enum": [
+                    "no_number_series",
+                    "client_no_gstin",
+                    "possible_duplicate",
+                    "no_due_date",
+                    "missing_hsn",
+                    "rate_below_usual"
+                ],
+                "type": "string",
+                "description": "* `no_number_series` - no_number_series\n* `client_no_gstin` - client_no_gstin\n* `possible_duplicate` - possible_duplicate\n* `no_due_date` - no_due_date\n* `missing_hsn` - missing_hsn\n* `rate_below_usual` - rate_below_usual"
             },
             "ContentTypeEnum": {
                 "enum": [
@@ -14034,6 +14083,43 @@
                 ],
                 "type": "string",
                 "description": "* `RELEASED` - Released\n* `CANCELLED` - Cancelled"
+            },
+            "Review": {
+                "type": "object",
+                "properties": {
+                    "warnings": {
+                        "type": "array",
+                        "items": {
+                            "$ref": "#/components/schemas/ReviewWarning"
+                        }
+                    }
+                },
+                "required": [
+                    "warnings"
+                ]
+            },
+            "ReviewWarning": {
+                "type": "object",
+                "description": "Something to check before issuing (B.14): never stops the bill.",
+                "properties": {
+                    "code": {
+                        "$ref": "#/components/schemas/CodeEnum"
+                    },
+                    "message": {
+                        "type": "string"
+                    },
+                    "line_no": {
+                        "type": [
+                            "integer",
+                            "null"
+                        ]
+                    }
+                },
+                "required": [
+                    "code",
+                    "line_no",
+                    "message"
+                ]
             },
             "RoleEnum": {
                 "enum": [

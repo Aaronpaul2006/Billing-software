@@ -39,7 +39,7 @@ export const SHORTCUTS: { keys: string; what: string }[] = [
   { keys: "Alt + N", what: "Add a line" },
   { keys: "↑ ↓ then Enter", what: "Choose an item from the list" },
   { keys: "Ctrl + S", what: "Save the draft and keep working" },
-  { keys: "Ctrl + Enter", what: "Save and open the bill to check and issue it" },
+  { keys: "Ctrl + Enter", what: "Save and open the final review, to issue the bill" },
   { keys: "Esc", what: "Close a list or popup; otherwise leave the bill" },
   { keys: "Alt + /", what: "Show or hide these shortcuts" },
 ];

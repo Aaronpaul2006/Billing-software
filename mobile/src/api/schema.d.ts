@@ -1027,6 +1027,23 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/documents/{document_id}/review": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** @description Warnings to look at before issuing a draft (B.14); never blocks issuing. */
+        get: operations["documents_review_retrieve"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/documents/{document_id}/save-as-template": {
         parameters: {
             query?: never;
@@ -2626,6 +2643,16 @@ export interface components {
          * @enum {string}
          */
         ClientEnum: "web" | "mobile";
+        /**
+         * @description * `no_number_series` - no_number_series
+         *     * `client_no_gstin` - client_no_gstin
+         *     * `possible_duplicate` - possible_duplicate
+         *     * `no_due_date` - no_due_date
+         *     * `missing_hsn` - missing_hsn
+         *     * `rate_below_usual` - rate_below_usual
+         * @enum {string}
+         */
+        CodeEnum: "no_number_series" | "client_no_gstin" | "possible_duplicate" | "no_due_date" | "missing_hsn" | "rate_below_usual";
         /**
          * @description * `application/pdf` - application/pdf
          *     * `image/jpeg` - image/jpeg
@@ -4767,6 +4794,15 @@ export interface components {
          * @enum {string}
          */
         RetentionReleaseStatusEnum: "RELEASED" | "CANCELLED";
+        Review: {
+            warnings: components["schemas"]["ReviewWarning"][];
+        };
+        /** @description Something to check before issuing (B.14): never stops the bill. */
+        ReviewWarning: {
+            code: components["schemas"]["CodeEnum"];
+            message: string;
+            line_no: number | null;
+        };
         /**
          * @description * `OWNER` - OWNER
          *     * `ADMIN` - ADMIN
@@ -7422,6 +7458,27 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["PaymentReminder"];
+                };
+            };
+        };
+    };
+    documents_review_retrieve: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                document_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Review"];
                 };
             };
         };

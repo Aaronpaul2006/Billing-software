@@ -522,8 +522,9 @@ function Editor({ doc, defaultTerms }: { doc?: Document; defaultTerms?: string }
   /** A new bill once it is saved: later saves update it (the page is not reloaded). */
   const [created, setCreated] = useState<Document | null>(null);
   const current = doc ?? created;
-  /** After saving: "stay" (Ctrl+S) keeps the editor open; "open" shows the bill. */
-  const after = useRef<"stay" | "open">("open");
+  /** After saving: "stay" (Ctrl+S) keeps the editor open; "open" shows the bill;
+   * "review" (Ctrl+Enter) shows it with the final review open, ready to issue. */
+  const after = useRef<"stay" | "open" | "review">("open");
   const formRef = useRef<HTMLFormElement>(null);
   const mayViewBalance = REPORT_ROLES.has(role);
 
@@ -631,7 +632,8 @@ function Editor({ doc, defaultTerms }: { doc?: Document; defaultTerms?: string }
         const at = new Date().toLocaleTimeString("en-IN", { hour: "2-digit", minute: "2-digit" });
         setSavedAt(at);
       } else {
-        void navigate(`/documents/${saved.id}`);
+        const review = after.current === "review" && saved.status === "DRAFT";
+        void navigate(`/documents/${saved.id}${review ? "?review=1" : ""}`);
       }
     },
     onError: (e) => {
@@ -786,7 +788,7 @@ function Editor({ doc, defaultTerms }: { doc?: Document; defaultTerms?: string }
     }, 0);
   };
 
-  const submitWith = (mode: "stay" | "open") => {
+  const submitWith = (mode: "stay" | "open" | "review") => {
     after.current = mode;
     void onSubmit();
   };
@@ -806,7 +808,7 @@ function Editor({ doc, defaultTerms }: { doc?: Document; defaultTerms?: string }
       submitWith("stay");
     } else if (ctrl && e.key === "Enter") {
       e.preventDefault();
-      submitWith("open");
+      submitWith("review");
     } else if (e.altKey && e.code === "KeyN") {
       e.preventDefault();
       addLine();

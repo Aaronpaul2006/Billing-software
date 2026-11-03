@@ -43,9 +43,11 @@ from .serializers import (
     ParseLinesResultSerializer,
     PdfLinkSerializer,
     PreviewSerializer,
+    ReviewSerializer,
+    ReviewWarningSerializer,
     TotalsSerializer,
 )
-from .services import drafts, history, lifecycle, line_import, pdfs, rates
+from .services import drafts, history, lifecycle, line_import, pdfs, rates, review
 
 DRAFT = "documents.draft"
 
@@ -200,6 +202,18 @@ class LastRatesView(ActionAPIView):
     def get(self, request: Request, party_id: uuid.UUID) -> Response:
         rows = rates.last_rates(self.principal, party_id)
         return Response({"results": LastRateSerializer(rows, many=True).data})
+
+
+class DocumentReviewView(ActionAPIView):
+    """Warnings to look at before issuing a draft (B.14); never blocks issuing."""
+
+    pagination_class = None
+    filter_backends = ()
+
+    @extend_schema(responses={200: ReviewSerializer}, tags=["documents"])
+    def get(self, request: Request, document_id: uuid.UUID) -> Response:
+        found = review.review(self.principal, document_id)
+        return Response({"warnings": ReviewWarningSerializer(found, many=True).data})
 
 
 class DocumentHistoryView(ActionAPIView):

@@ -324,6 +324,27 @@ class CancelSerializer(serializers.Serializer[Any]):
     reason = serializers.CharField(min_length=3, max_length=500)
 
 
+class ReviewWarningSerializer(serializers.Serializer[Any]):
+    """Something to check before issuing (B.14): never stops the bill."""
+
+    code = serializers.ChoiceField(
+        choices=[
+            "no_number_series",
+            "client_no_gstin",
+            "possible_duplicate",
+            "no_due_date",
+            "missing_hsn",
+            "rate_below_usual",
+        ]
+    )
+    message = serializers.CharField()
+    line_no = serializers.IntegerField(allow_null=True)
+
+
+class ReviewSerializer(serializers.Serializer[Any]):
+    warnings = ReviewWarningSerializer(many=True)
+
+
 class HistoryEntrySerializer(serializers.Serializer[Any]):
     """One change to a bill, in plain words (B.11)."""
 

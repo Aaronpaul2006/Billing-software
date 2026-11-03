@@ -292,12 +292,12 @@ describe("document page", () => {
         );
       }),
     );
-    vi.spyOn(window, "confirm").mockReturnValue(true);
     const user = userEvent.setup();
     renderSignedIn(`/documents/${DOC}`);
     expect(await screen.findByRole("heading", { name: "Tax invoice (draft)" })).toBeInTheDocument();
     expect(screen.getByText("RCC M25 for slabs")).toBeInTheDocument();
-    await user.click(screen.getByRole("button", { name: "Issue" }));
+    await user.click(screen.getByRole("button", { name: "Issue…" }));
+    await user.click(await screen.findByRole("button", { name: "Issue now" }));
     expect(
       await screen.findByRole("heading", { name: "Tax invoice INV/0001" }),
     ).toBeInTheDocument();
@@ -318,10 +318,10 @@ describe("document page", () => {
         ),
       ),
     );
-    vi.spyOn(window, "confirm").mockReturnValue(true);
     const user = userEvent.setup();
     renderSignedIn(`/documents/${DOC}`);
-    await user.click(await screen.findByRole("button", { name: "Issue" }));
+    await user.click(await screen.findByRole("button", { name: "Issue…" }));
+    await user.click(await screen.findByRole("button", { name: "Issue now" }));
     const link = await screen.findByRole("link", { name: "Add a number series" });
     expect(link).toHaveAttribute("href", "/settings/series");
   });
