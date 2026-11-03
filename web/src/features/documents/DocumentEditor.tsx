@@ -1,8 +1,19 @@
 import { keepPreviousData, useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { AlertCircle, ArrowLeft, Plus, Trash2 } from "lucide-react";
-import { useMemo, useState } from "react";
+import {
+  AlertCircle,
+  ArrowDown,
+  ArrowLeft,
+  ArrowUp,
+  CheckCircle2,
+  Keyboard,
+  ListPlus,
+  Plus,
+  Trash2,
+} from "lucide-react";
+import { useEffect, useMemo, useRef, useState } from "react";
+import type { KeyboardEvent as ReactKeyboardEvent } from "react";
 import { Controller, useFieldArray, useForm, useWatch } from "react-hook-form";
-import { Link, useNavigate, useParams, useSearchParams } from "react-router";
+import { Link, useLocation, useNavigate, useParams, useSearchParams } from "react-router";
 
 import { api, newIdempotencyKey, unwrap } from "@/api/client";
 import { ApiError } from "@/api/problem";
@@ -29,6 +40,7 @@ import { DOC_TYPE_LABELS, documentKey, DRAFTABLE, supplyNote, useDocument } from
 import { ItemPicker } from "./ItemPicker";
 import { catalogChoices, MAY_ADD_MASTERS } from "./items";
 import type { PickedItem } from "./items";
+import { enterTarget, SHORTCUTS } from "./keyboard";
 import { NewClientDialog, NewItemDialog } from "./QuickAdd";
 import type { Document, DraftableType } from "./api";
 import { TotalsPanel } from "./TotalsPanel";
@@ -68,6 +80,20 @@ interface FormValues {
 }
 
 const QTY = /^\d{1,11}(\.\d{1,3})?$/;
+/** Roles that may see reports (the client's balance), docs/01-architecture.md §3. */
+const REPORT_ROLES: ReadonlySet<string> = new Set(["OWNER", "ADMIN", "ACCOUNTANT", "VIEWER"]);
+const LINE_LABELS: Record<string, string> = {
+  description: "Description",
+  quantity: "Quantity",
+  unit: "Unit",
+  rate: "Rate",
+  discount_amount: "Discount",
+  gst_rate: "GST %",
+  sac_hsn: "HSN/SAC",
+  boq_item_id: "BOQ item",
+  catalog_item_id: "Item",
+  catalog_variant_id: "Item",
+};
 const RA_TYPES: ReadonlySet<string> = new Set(["TAX_INVOICE", "BILL_OF_SUPPLY", "PROFORMA"]);
 const NOTE_TYPES: ReadonlySet<string> = new Set(["CREDIT_NOTE", "DEBIT_NOTE"]);
 const EMPTY_LINE: LineForm = {
@@ -218,10 +244,21 @@ function Editor({ doc }: { doc?: Document }) {
   /** "New item" popup: for which line, starting with what was typed. */
   const [newItem, setNewItem] = useState<{ line: number; name: string } | null>(null);
   const [newClient, setNewClient] = useState(false);
+  const [showKeys, setShowKeys] = useState(false);
+  const location = useLocation();
+  // "Saved at …" survives the move from /documents/new to the saved draft's address
+  const [savedAt, setSavedAt] = useState<string | null>(
+    (location.state as { savedAt?: string } | null)?.savedAt ?? null,
+  );
+  /** After saving: "stay" (Ctrl+S) keeps the editor open; "open" shows the bill. */
+  const after = useRef<"stay" | "open">("open");
+  const formRef = useRef<HTMLFormElement>(null);
+  const mayViewBalance = REPORT_ROLES.has(role);
 
   const form = useForm<FormValues>({ defaultValues: toForm(doc, startType) });
   const { register, handleSubmit, control, setValue, setError, formState } = form;
   const errors = formState.errors;
+  const isDirty = formState.isDirty; // read while rendering, so the form keeps it up to date
   const lines = useFieldArray({ control, name: "lines" });
   const values = useWatch({ control }) as FormValues;
 
@@ -262,14 +299,13 @@ function Editor({ doc }: { doc?: Document }) {
   const lineError = (i: number) =>
     previewErrors
       .filter((e) => e.field?.startsWith(`lines[${String(i)}]`))
-      .map(
-        (e) =>
-          `${
-            formPath(e.field ?? "")
-              .split(".")
-              .pop() ?? ""
-          }: ${e.message}`,
-      )
+      .map((e) => {
+        const name =
+          formPath(e.field ?? "")
+            .split(".")
+            .pop() ?? "";
+        return `${LINE_LABELS[name] ?? name}: ${e.message}`;
+      })
       .join(" ");
   const headerErrors = previewErrors.filter((e) => !e.field?.startsWith("lines["));
 
@@ -303,7 +339,16 @@ function Editor({ doc }: { doc?: Document }) {
       setKey(newIdempotencyKey());
       queryClient.setQueryData(documentKey(saved.id), saved);
       void queryClient.invalidateQueries({ queryKey: ["documents"] });
-      void navigate(`/documents/${saved.id}`);
+      if (after.current === "stay") {
+        const at = new Date().toLocaleTimeString("en-IN", { hour: "2-digit", minute: "2-digit" });
+        setSavedAt(at);
+        form.reset(form.getValues()); // saved: nothing unsaved any more
+        if (!doc) {
+          void navigate(`/documents/${saved.id}/edit`, { replace: true, state: { savedAt: at } });
+        }
+      } else {
+        void navigate(`/documents/${saved.id}`);
+      }
     },
     onError: (e) => {
       if (e instanceof ApiError && e.code === "stale_version") {
@@ -364,6 +409,119 @@ function Editor({ doc }: { doc?: Document }) {
     set("gst_rate", picked.fill.gst_rate);
   };
 
+  const addLine = (at?: number) => {
+    const index = at ?? lines.fields.length;
+    if (at === undefined) lines.append({ ...EMPTY_LINE }, { shouldFocus: false });
+    else lines.insert(at, { ...EMPTY_LINE }, { shouldFocus: false });
+    // the new line's item box, once React has put it on the page
+    window.setTimeout(() => {
+      document.getElementById(`line-${String(index)}-item`)?.focus();
+    }, 0);
+  };
+
+  const submitWith = (mode: "stay" | "open") => {
+    after.current = mode;
+    void onSubmit();
+  };
+  const leave = () => {
+    if (isDirty && !window.confirm("Leave this bill? Changes not saved will be lost.")) {
+      return;
+    }
+    void navigate(doc ? `/documents/${doc.id}` : "/documents");
+  };
+
+  // Shortcuts anywhere on the page (popups and item lists handle their own Esc).
+  const shortcut = useRef<(e: KeyboardEvent) => void>(() => undefined);
+  const onShortcut = (e: KeyboardEvent) => {
+    const ctrl = e.ctrlKey || e.metaKey;
+    if (ctrl && e.key.toLowerCase() === "s") {
+      e.preventDefault();
+      submitWith("stay");
+    } else if (ctrl && e.key === "Enter") {
+      e.preventDefault();
+      submitWith("open");
+    } else if (e.altKey && e.code === "KeyN") {
+      e.preventDefault();
+      addLine();
+    } else if (e.altKey && (e.key === "/" || e.code === "Slash")) {
+      e.preventDefault();
+      setShowKeys((v) => !v);
+    } else if (e.key === "Escape" && !newItem && !newClient) {
+      e.preventDefault();
+      if (showKeys) setShowKeys(false);
+      else leave();
+    }
+  };
+  useEffect(() => {
+    shortcut.current = onShortcut; // the latest values, without re-adding the listener
+  });
+  useEffect(() => {
+    const listener = (e: KeyboardEvent) => {
+      shortcut.current(e);
+    };
+    window.addEventListener("keydown", listener);
+    return () => {
+      window.removeEventListener("keydown", listener);
+    };
+  }, []);
+
+  /** Enter moves on to the next box instead of sending the form. */
+  const onFormKeyDown = (e: ReactKeyboardEvent<HTMLFormElement>) => {
+    const el = e.target;
+    if (e.key !== "Enter" || e.ctrlKey || e.metaKey || e.shiftKey || e.altKey) return;
+    if (!(el instanceof HTMLInputElement || el instanceof HTMLSelectElement)) return;
+    if (el.getAttribute("aria-expanded") === "true") return; // an open item list takes Enter
+    if (!formRef.current) return;
+    e.preventDefault();
+    const target = enterTarget(formRef.current, el);
+    if (target?.kind === "field") target.to.focus();
+    else if (target?.kind === "new-line") addLine();
+  };
+
+  // A client chosen: their only project, or the one on their last bill.
+  const projectFor = useRef<string | null>(null);
+  const lastBill = useQuery({
+    queryKey: ["documents", "last-for", values.party_id],
+    queryFn: async () =>
+      unwrap(
+        await api.GET("/api/v1/documents", {
+          params: { query: { party_id: values.party_id, limit: 1 } },
+        }),
+      ).results[0] ?? null,
+    enabled: values.party_id !== "" && !doc,
+  });
+  useEffect(() => {
+    if (doc || !values.party_id || values.project_id || projectFor.current === values.party_id) {
+      return;
+    }
+    const list = projects.data;
+    if (!list || lastBill.isPending) return;
+    projectFor.current = values.party_id;
+    const last = lastBill.data?.project_id;
+    const pick = list.length === 1 ? list[0]?.id : list.find((p) => p.id === last)?.id;
+    if (pick) setValue("project_id", pick, { shouldDirty: true });
+  }, [
+    doc,
+    values.party_id,
+    values.project_id,
+    projects.data,
+    lastBill.isPending,
+    lastBill.data,
+    setValue,
+  ]);
+
+  const balance = useQuery({
+    queryKey: ["statement", values.party_id, "now"],
+    queryFn: async () =>
+      unwrap(
+        await api.GET("/api/v1/parties/{party_id}/statement", {
+          params: { path: { party_id: values.party_id } },
+        }),
+      ).closing_balance,
+    enabled: values.party_id !== "" && mayViewBalance && !isNote,
+    retry: false,
+  });
+
   const ra = values.is_ra_bill && values.project_id !== "" && RA_TYPES.has(values.doc_type);
   const boqItems = boq.data ?? [];
   const title = isNew
@@ -379,9 +537,46 @@ function Editor({ doc }: { doc?: Document }) {
       </Button>
       <PageHeader
         title={title}
-        description="Amounts and tax are worked out by the server as you type."
+        description="Totals and tax update as you type. Enter moves to the next box."
+        actions={
+          <Button
+            type="button"
+            variant="outline"
+            size="sm"
+            aria-expanded={showKeys}
+            onClick={() => {
+              setShowKeys((v) => !v);
+            }}
+          >
+            <Keyboard aria-hidden /> Keyboard shortcuts
+          </Button>
+        }
       />
-      <form noValidate className="grid gap-6" onSubmit={(e) => void onSubmit(e)}>
+      {showKeys && (
+        <section
+          aria-label="Keyboard shortcuts"
+          className="bg-muted/40 mb-4 grid max-w-xl gap-1 rounded-lg border p-3 text-sm"
+        >
+          {SHORTCUTS.map((k) => (
+            <div key={k.keys} className="flex gap-3">
+              <kbd className="bg-background min-w-32 rounded border px-1.5 font-mono text-xs leading-6">
+                {k.keys}
+              </kbd>
+              <span>{k.what}</span>
+            </div>
+          ))}
+        </section>
+      )}
+      <form
+        ref={formRef}
+        noValidate
+        className="grid gap-6"
+        onKeyDown={onFormKeyDown}
+        onSubmit={(e) => {
+          after.current = "open";
+          void onSubmit(e);
+        }}
+      >
         {message && (
           <Alert variant="destructive">
             <AlertCircle aria-hidden />
@@ -423,6 +618,15 @@ function Editor({ doc }: { doc?: Document }) {
                           setValue("project_id", "");
                         }}
                       />
+                      {balance.data !== undefined && (
+                        <p className="text-muted-foreground text-xs">
+                          {balance.data.startsWith("-")
+                            ? `Paid in advance: ${formatInr(balance.data.slice(1))}`
+                            : balance.data === "0.00"
+                              ? "Nothing to pay now."
+                              : `Owes you now: ${formatInr(balance.data)}`}
+                        </p>
+                      )}
                       {mayAddMasters && (
                         <Button
                           type="button"
@@ -542,6 +746,7 @@ function Editor({ doc }: { doc?: Document }) {
               return (
                 <fieldset
                   key={field.id}
+                  data-line
                   aria-label={`Line ${String(i + 1)}`}
                   className="grid gap-3 rounded-lg border p-3 sm:grid-cols-12"
                 >
@@ -617,18 +822,55 @@ function Editor({ doc }: { doc?: Document }) {
                         </>
                       )}
                     </div>
-                    <Button
-                      type="button"
-                      variant="ghost"
-                      size="icon"
-                      aria-label={`Remove line ${String(i + 1)}`}
-                      disabled={lines.fields.length === 1}
-                      onClick={() => {
-                        lines.remove(i);
-                      }}
-                    >
-                      <Trash2 aria-hidden />
-                    </Button>
+                    <div className="flex">
+                      <Button
+                        type="button"
+                        variant="ghost"
+                        size="icon"
+                        aria-label={`Move line ${String(i + 1)} up`}
+                        disabled={i === 0}
+                        onClick={() => {
+                          lines.move(i, i - 1);
+                        }}
+                      >
+                        <ArrowUp aria-hidden />
+                      </Button>
+                      <Button
+                        type="button"
+                        variant="ghost"
+                        size="icon"
+                        aria-label={`Move line ${String(i + 1)} down`}
+                        disabled={i === lines.fields.length - 1}
+                        onClick={() => {
+                          lines.move(i, i + 1);
+                        }}
+                      >
+                        <ArrowDown aria-hidden />
+                      </Button>
+                      <Button
+                        type="button"
+                        variant="ghost"
+                        size="icon"
+                        aria-label={`Insert a line below line ${String(i + 1)}`}
+                        onClick={() => {
+                          addLine(i + 1);
+                        }}
+                      >
+                        <ListPlus aria-hidden />
+                      </Button>
+                      <Button
+                        type="button"
+                        variant="ghost"
+                        size="icon"
+                        aria-label={`Remove line ${String(i + 1)}`}
+                        disabled={lines.fields.length === 1}
+                        onClick={() => {
+                          lines.remove(i);
+                        }}
+                      >
+                        <Trash2 aria-hidden />
+                      </Button>
+                    </div>
                   </div>
                   {problem && <p className="text-destructive text-sm sm:col-span-12">{problem}</p>}
                 </fieldset>
@@ -639,7 +881,7 @@ function Editor({ doc }: { doc?: Document }) {
                 type="button"
                 variant="outline"
                 onClick={() => {
-                  lines.append({ ...EMPTY_LINE });
+                  addLine();
                 }}
               >
                 <Plus aria-hidden /> Add line
@@ -698,13 +940,28 @@ function Editor({ doc }: { doc?: Document }) {
           </div>
         </div>
 
-        <div className="flex gap-2">
+        <div className="flex flex-wrap items-center gap-2">
           <Button type="submit" disabled={save.isPending}>
             Save draft
           </Button>
-          <Button type="button" variant="ghost" asChild>
-            <Link to={doc ? `/documents/${doc.id}` : "/documents"}>Cancel</Link>
+          <Button
+            type="button"
+            variant="outline"
+            disabled={save.isPending}
+            onClick={() => {
+              submitWith("stay");
+            }}
+          >
+            Save and keep working
           </Button>
+          <Button type="button" variant="ghost" onClick={leave}>
+            Cancel
+          </Button>
+          {savedAt && !isDirty && (
+            <span role="status" className="text-muted-foreground flex items-center gap-1 text-sm">
+              <CheckCircle2 className="size-4" aria-hidden /> Saved at {savedAt}
+            </span>
+          )}
         </div>
       </form>
       {newItem && (

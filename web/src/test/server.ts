@@ -61,6 +61,9 @@ export const server = setupServer(
   http.get(`${API}/invitations`, () => HttpResponse.json({ results: [] })),
   http.get(`${API}/email-invitations`, () => HttpResponse.json({ results: [] })),
   http.get(`${API}/documents/:id/reminders`, () => HttpResponse.json({ results: [] })),
+  // The bill screen's lookups for a chosen client (B.4): no earlier bill, nothing owed.
+  http.get(`${API}/documents`, () => HttpResponse.json({ results: [], next_cursor: null })),
+  http.get(`${API}/parties/:id/statement`, () => problem(403, "permission_denied")),
   // A business that has finished setting up: no checklist on the first page.
   http.get(`${API}/tenant/setup`, () =>
     HttpResponse.json({
