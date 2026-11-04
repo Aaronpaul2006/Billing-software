@@ -231,3 +231,58 @@ class PrintSettings(TenantScoped):
             regex("upi_id", UPI_RE, "print_settings_upi_id_check"),
             length_between("default_terms", 1, 5000, "print_settings_default_terms_check"),
         ]
+
+
+# Ledger names the Tally export uses (B.16), with Tally's usual names as defaults.
+TALLY_LEDGERS: dict[str, str] = {
+    "sales_ledger": "Sales",
+    "cgst_ledger": "Output CGST",
+    "sgst_ledger": "Output SGST",
+    "igst_ledger": "Output IGST",
+    "cess_ledger": "Output Cess",
+    "round_off_ledger": "Round Off",
+    "tds_ledger": "TDS Receivable",
+    "gst_tds_ledger": "GST TDS Receivable",
+    "retention_ledger": "Retention Receivable",
+    "advance_ledger": "Client Advances",
+    "bank_ledger": "Bank Account",
+    "cash_ledger": "Cash",
+}
+
+
+def _ledger(default: str) -> models.TextField:  # type: ignore[type-arg]
+    return models.TextField(default=default, db_default=default)
+
+
+class TallySettings(TenantScoped):
+    """The ledger names the Tally export writes (B.16): one row per business,
+    made on the first save. Clients use their own names as ledgers."""
+
+    id = uuid7_pk()
+    tenant = tenant_ref()
+    sales_ledger = _ledger("Sales")
+    cgst_ledger = _ledger("Output CGST")
+    sgst_ledger = _ledger("Output SGST")
+    igst_ledger = _ledger("Output IGST")
+    cess_ledger = _ledger("Output Cess")
+    round_off_ledger = _ledger("Round Off")
+    tds_ledger = _ledger("TDS Receivable")
+    gst_tds_ledger = _ledger("GST TDS Receivable")
+    retention_ledger = _ledger("Retention Receivable")
+    advance_ledger = _ledger("Client Advances")
+    bank_ledger = _ledger("Bank Account")
+    cash_ledger = _ledger("Cash")
+    version = models.IntegerField(default=1, db_default=1)
+    created_at = created_at()
+    updated_at = updated_at()
+
+    class Meta:
+        db_table = "tally_settings"
+        constraints = [
+            tenant_id_key("tally_settings"),
+            models.UniqueConstraint(fields=["tenant"], name="tally_settings_tenant_id_key"),
+            *(
+                length_between(name, 1, 200, f"tally_settings_{name}_check")
+                for name in TALLY_LEDGERS
+            ),
+        ]

@@ -13,7 +13,7 @@ from apps.tenants.models import GstRegistration
 from . import services
 from .models import Export, ExportFormat, ExportKind, ExportStatus
 
-DATED_KINDS = {"DOCUMENTS", "PAYMENTS", "EXPENSES"}
+DATED_KINDS = {"DOCUMENTS", "PAYMENTS", "EXPENSES", "TALLY"}
 FIRST_GSTR1_PERIOD = "2025-05"  # the HSN summary split into B2B / B2C from May 2025
 
 
@@ -51,6 +51,11 @@ class ExportRequestSerializer(serializers.Serializer[Any]):
         if (attrs["kind"] == "GSTR1") != (attrs["format"] == "JSON"):
             raise serializers.ValidationError(
                 {"format": "GSTR-1 is a JSON file; the registers are CSV or XLSX."},
+                code="invalid_format",
+            )
+        if (attrs["kind"] == "TALLY") != (attrs["format"] == "XML"):
+            raise serializers.ValidationError(
+                {"format": "The Tally export is an XML file, and only it is."},
                 code="invalid_format",
             )
         if attrs["format"] == "PDF" and attrs["kind"] != "STATEMENT":

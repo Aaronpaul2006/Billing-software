@@ -18,7 +18,7 @@ from apps.core.queries import get_or_404
 from apps.core.tenancy import Principal
 from apps.files import storage
 
-from . import builders, gstr1, statement_pdf, writers
+from . import builders, gstr1, statement_pdf, tally, writers
 from .models import Export, ExportStatus
 
 log = logging.getLogger(__name__)
@@ -60,6 +60,8 @@ def build(export: Export) -> tuple[bytes, str, int, list[str]]:
     """(file bytes, file name, row count, warnings). Call inside tenant_context."""
     if export.kind == "GSTR1":
         return gstr1.build_gstr1(export.tenant_id, export.params)
+    if export.kind == "TALLY":
+        return tally.build_tally(export.tenant_id, export.params)
     if export.format == "PDF":
         return statement_pdf.render(export.tenant_id, export.params)
     built = builders.BUILDERS[export.kind](export.tenant_id, export.params)

@@ -16,6 +16,7 @@ from .models import (
     GstRegistration,
     PrintLayout,
     PrintSettings,
+    TallySettings,
     Tenant,
 )
 
@@ -328,3 +329,48 @@ class PrintSettingsUpdateSerializer(serializers.Serializer[Any]):
                 code="invalid_upi_id",
             )
         return value
+
+
+# --- Tally ledger names (B.16) --------------------------------------------------------
+
+
+class TallySettingsSerializer(serializers.ModelSerializer[TallySettings]):
+    class Meta:
+        model = TallySettings
+        fields = (
+            "sales_ledger",
+            "cgst_ledger",
+            "sgst_ledger",
+            "igst_ledger",
+            "cess_ledger",
+            "round_off_ledger",
+            "tds_ledger",
+            "gst_tds_ledger",
+            "retention_ledger",
+            "advance_ledger",
+            "bank_ledger",
+            "cash_ledger",
+            "version",
+        )
+        read_only_fields = fields
+
+
+def _ledger_name() -> serializers.CharField:
+    return serializers.CharField(min_length=1, max_length=200)
+
+
+class TallySettingsUpdateSerializer(serializers.Serializer[Any]):
+    """Ledger names exactly as they are in Tally (Tally matches them by name)."""
+
+    sales_ledger = _ledger_name()
+    cgst_ledger = _ledger_name()
+    sgst_ledger = _ledger_name()
+    igst_ledger = _ledger_name()
+    cess_ledger = _ledger_name()
+    round_off_ledger = _ledger_name()
+    tds_ledger = _ledger_name()
+    gst_tds_ledger = _ledger_name()
+    retention_ledger = _ledger_name()
+    advance_ledger = _ledger_name()
+    bank_ledger = _ledger_name()
+    cash_ledger = _ledger_name()

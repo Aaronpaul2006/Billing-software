@@ -23,6 +23,7 @@ class ExportKind(models.TextChoices):
     BOQ = "BOQ"  # one project's BOQ: contract vs billed
     PROJECTS = "PROJECTS"  # the project margins report
     STATEMENT = "STATEMENT"  # one client's statement of account
+    TALLY = "TALLY"  # vouchers to import into Tally (B.16)
 
 
 class ExportFormat(models.TextChoices):
@@ -30,6 +31,7 @@ class ExportFormat(models.TextChoices):
     XLSX = "XLSX"
     JSON = "JSON"
     PDF = "PDF"  # statements only
+    XML = "XML"  # Tally only
 
 
 class ExportStatus(models.TextChoices):

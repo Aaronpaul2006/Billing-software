@@ -2378,6 +2378,30 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/tenant/tally-settings": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * @description Ledger names for the Tally export (B.16). Every member may read them;
+         *     owners and admins change them.
+         */
+        get: operations["tenant_tally_settings_retrieve"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        /**
+         * @description Ledger names for the Tally export (B.16). Every member may read them;
+         *     owners and admins change them.
+         */
+        patch: operations["tenant_tally_settings_partial_update"];
+        trace?: never;
+    };
 }
 export type webhooks = Record<string, never>;
 export interface components {
@@ -3179,9 +3203,10 @@ export interface components {
          *     * `XLSX` - Xlsx
          *     * `JSON` - Json
          *     * `PDF` - Pdf
+         *     * `XML` - Xml
          * @enum {string}
          */
-        ExportFormatEnum: "CSV" | "XLSX" | "JSON" | "PDF";
+        ExportFormatEnum: "CSV" | "XLSX" | "JSON" | "PDF" | "XML";
         /**
          * @description * `DOCUMENTS` - Documents
          *     * `PAYMENTS` - Payments
@@ -3191,9 +3216,10 @@ export interface components {
          *     * `BOQ` - Boq
          *     * `PROJECTS` - Projects
          *     * `STATEMENT` - Statement
+         *     * `TALLY` - Tally
          * @enum {string}
          */
-        ExportKindEnum: "DOCUMENTS" | "PAYMENTS" | "EXPENSES" | "RECEIVABLES" | "GSTR1" | "BOQ" | "PROJECTS" | "STATEMENT";
+        ExportKindEnum: "DOCUMENTS" | "PAYMENTS" | "EXPENSES" | "RECEIVABLES" | "GSTR1" | "BOQ" | "PROJECTS" | "STATEMENT" | "TALLY";
         ExportList: {
             results: components["schemas"]["Export"][];
         };
@@ -3239,6 +3265,7 @@ export interface components {
              *     * `XLSX` - XLSX
              *     * `JSON` - JSON
              *     * `PDF` - PDF
+             *     * `XML` - XML
              */
             format: components["schemas"]["ExportRequestFormatEnum"];
             params?: components["schemas"]["ExportParams"];
@@ -3248,9 +3275,10 @@ export interface components {
          *     * `XLSX` - XLSX
          *     * `JSON` - JSON
          *     * `PDF` - PDF
+         *     * `XML` - XML
          * @enum {string}
          */
-        ExportRequestFormatEnum: "CSV" | "XLSX" | "JSON" | "PDF";
+        ExportRequestFormatEnum: "CSV" | "XLSX" | "JSON" | "PDF" | "XML";
         /**
          * @description * `DOCUMENTS` - DOCUMENTS
          *     * `PAYMENTS` - PAYMENTS
@@ -3260,9 +3288,10 @@ export interface components {
          *     * `BOQ` - BOQ
          *     * `PROJECTS` - PROJECTS
          *     * `STATEMENT` - STATEMENT
+         *     * `TALLY` - TALLY
          * @enum {string}
          */
-        ExportRequestKindEnum: "DOCUMENTS" | "PAYMENTS" | "EXPENSES" | "RECEIVABLES" | "GSTR1" | "BOQ" | "PROJECTS" | "STATEMENT";
+        ExportRequestKindEnum: "DOCUMENTS" | "PAYMENTS" | "EXPENSES" | "RECEIVABLES" | "GSTR1" | "BOQ" | "PROJECTS" | "STATEMENT" | "TALLY";
         /**
          * @description * `PENDING` - Pending
          *     * `READY` - Ready
@@ -4165,6 +4194,21 @@ export interface components {
             /** Format: date */
             end_date?: string | null;
         };
+        /** @description Ledger names exactly as they are in Tally (Tally matches them by name). */
+        PatchedTallySettingsUpdate: {
+            sales_ledger?: string;
+            cgst_ledger?: string;
+            sgst_ledger?: string;
+            igst_ledger?: string;
+            cess_ledger?: string;
+            round_off_ledger?: string;
+            tds_ledger?: string;
+            gst_tds_ledger?: string;
+            retention_ledger?: string;
+            advance_ledger?: string;
+            bank_ledger?: string;
+            cash_ledger?: string;
+        };
         PatchedTdsCertificateWrite: {
             /**
              * Format: uuid
@@ -5062,6 +5106,21 @@ export interface components {
             device_label?: string;
             /** Format: uuid */
             tenant_id: string;
+        };
+        TallySettings: {
+            readonly sales_ledger: string;
+            readonly cgst_ledger: string;
+            readonly sgst_ledger: string;
+            readonly igst_ledger: string;
+            readonly cess_ledger: string;
+            readonly round_off_ledger: string;
+            readonly tds_ledger: string;
+            readonly gst_tds_ledger: string;
+            readonly retention_ledger: string;
+            readonly advance_ledger: string;
+            readonly bank_ledger: string;
+            readonly cash_ledger: string;
+            readonly version: number;
         };
         TdsCertificate: {
             /** Format: uuid */
@@ -9657,6 +9716,48 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["SetupStatus"];
+                };
+            };
+        };
+    };
+    tenant_tally_settings_retrieve: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["TallySettings"];
+                };
+            };
+        };
+    };
+    tenant_tally_settings_partial_update: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: {
+            content: {
+                "application/json": components["schemas"]["PatchedTallySettingsUpdate"];
+            };
+        };
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["TallySettings"];
                 };
             };
         };

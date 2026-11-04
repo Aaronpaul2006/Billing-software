@@ -14,6 +14,7 @@ export const KIND_LABELS: Record<Export["kind"], string> = {
   BOQ: "BOQ progress (one project)",
   PROJECTS: "Project margins",
   STATEMENT: "Statement of account",
+  TALLY: "Tally (vouchers, XML)",
 };
 
 /** Made from a client's page, not from the Exports form (it needs the client). */

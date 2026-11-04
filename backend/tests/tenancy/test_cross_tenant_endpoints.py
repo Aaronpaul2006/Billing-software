@@ -1177,3 +1177,6 @@ OBJECT_ROUTES["document-review"] = lambda w: None
 
 # --- B.15 email: tests/documents/test_sending.py::test_another_tenants_bill_is_not_found
 OBJECT_ROUTES["document-email"] = lambda w: None
+
+# --- B.16 Tally ledger names: tests/exports/test_tally.py::test_ledger_names_are_per_business
+COLLECTION_ROUTES["tenant-tally-settings"] = lambda w: None

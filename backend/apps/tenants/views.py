@@ -11,7 +11,7 @@ from rest_framework.response import Response
 from apps.core.api import ActionAPIView, detail_response, list_response, versioned_patch
 from apps.core.idempotency import idempotent_if_keyed
 
-from . import printing, services
+from . import printing, services, tally
 from .models import DocumentSeries, GstRegistration
 from .serializers import (
     DocumentSeriesCreateSerializer,
@@ -23,6 +23,8 @@ from .serializers import (
     PrintSettingsSerializer,
     PrintSettingsUpdateSerializer,
     SetupStatusSerializer,
+    TallySettingsSerializer,
+    TallySettingsUpdateSerializer,
     TenantSerializer,
     TenantUpdateSerializer,
 )
@@ -73,6 +75,31 @@ class PrintSettingsView(ActionAPIView):
             input_serializer=PrintSettingsUpdateSerializer,
             update=lambda v, changes: printing.update_print_settings(self.principal, v, changes),
             output_serializer=PrintSettingsSerializer,
+        )
+
+
+class TallySettingsView(ActionAPIView):
+    """Ledger names for the Tally export (B.16). Every member may read them;
+    owners and admins change them."""
+
+    write_action = SETTINGS
+
+    @extend_schema(responses={200: TallySettingsSerializer}, tags=["tenant"])
+    def get(self, request: Request) -> Response:
+        return detail_response(tally.get_tally_settings(self.principal), TallySettingsSerializer)
+
+    @extend_schema(
+        request=TallySettingsUpdateSerializer,
+        responses={200: TallySettingsSerializer},
+        tags=["tenant"],
+    )
+    def patch(self, request: Request) -> Response:
+        return versioned_patch(
+            request,
+            load=lambda: tally.get_tally_settings(self.principal),
+            input_serializer=TallySettingsUpdateSerializer,
+            update=lambda v, changes: tally.update_tally_settings(self.principal, v, changes),
+            output_serializer=TallySettingsSerializer,
         )
 
 

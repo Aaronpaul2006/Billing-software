@@ -413,6 +413,41 @@ supply, proformas and quotations created without a `terms` key get
 `default_terms`; `"terms": null` keeps them empty. The web bill screen fills
 them in on a new bill, where they can still be changed.
 
+### Tally export (B.16)
+
+`POST /exports` `{kind: "TALLY", format: "XML", params: {from, to}}` (the
+export rules and job as for the registers; XML is only for Tally, a database
+check). The file is for Gateway of Tally, Import, Transactions:
+`ENVELOPE / HEADER / TALLYREQUEST "Import Data"`, `BODY / IMPORTDATA /
+REQUESTDESC / REPORTNAME "Vouchers"`, one `TALLYMESSAGE` per voucher,
+`VOUCHER REMOTEID=<our id> VCHTYPE ACTION="Create" OBJVIEW="Accounting
+Voucher View"`, `DATE` as `YYYYMMDD`, ledger lines in
+`ALLLEDGERENTRIES.LIST` (debit: `ISDEEMEDPOSITIVE` Yes, negative `AMOUNT`;
+credit: No, positive), bill-wise details in `BILLALLOCATIONS.LIST`.
+
+| Voucher | Entries |
+|---|---|
+| Sales (issued tax invoices and bills of supply, by bill date) | Dr client: net receivable, `New Ref` = bill number; Dr TDS, GST TDS, retention, advance recovered; Cr sales (taxable value), CGST / SGST / IGST / cess when charged (not under reverse charge), round off |
+| Debit Note | as a sale |
+| Credit Note | the reverse, `Agst Ref` the original bill |
+| Receipt (recorded payments, by payment date) | Dr bank (cash ledger for cash), Cr client: `Agst Ref` per bill paid, the rest `On Account`; no voucher number (Tally numbers receipts) |
+
+Every voucher adds up to zero (checked while writing). Cancelled bills and
+voided payments are left out with a warning; the warnings also list every
+ledger the file uses, which must exist in Tally first (Tally matches ledgers
+by name; clients use their display name). Bill numbers are kept, so the
+Tally voucher types need manual numbering. Non-ASCII text is written as
+character references. Masters (client ledgers) are not in the file: how
+Tally treats an existing ledger in an import is not documented reliably.
+
+Ledger names: `GET/PATCH /tenant/tally-settings` (any member reads; owner /
+admin change; `If-Match`; made on the first save): `sales_ledger`,
+`cgst_ledger`, `sgst_ledger`, `igst_ledger`, `cess_ledger`,
+`round_off_ledger`, `tds_ledger`, `gst_tds_ledger`, `retention_ledger`,
+`advance_ledger`, `bank_ledger`, `cash_ledger` (defaults: Sales, Output
+CGST / SGST / IGST / Cess, Round Off, TDS Receivable, GST TDS Receivable,
+Retention Receivable, Client Advances, Bank Account, Cash).
+
 ### Sending a bill (B.15)
 
 `POST /documents/{id}/email` (`documents.issue`: owner, admin, accountant;

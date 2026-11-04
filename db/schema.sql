@@ -406,6 +406,29 @@ CREATE TABLE print_settings (
   FOREIGN KEY (tenant_id, signature_attachment_id) REFERENCES attachments (tenant_id, id)
 );
 
+-- The ledger names the Tally export writes (B.16): one row per business, made
+-- on the first save. Clients use their own names as ledgers.
+CREATE TABLE tally_settings (
+  id               uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+  tenant_id        uuid NOT NULL UNIQUE REFERENCES tenants (id),
+  sales_ledger     text NOT NULL DEFAULT 'Sales' CHECK (char_length(sales_ledger) BETWEEN 1 AND 200),
+  cgst_ledger      text NOT NULL DEFAULT 'Output CGST' CHECK (char_length(cgst_ledger) BETWEEN 1 AND 200),
+  sgst_ledger      text NOT NULL DEFAULT 'Output SGST' CHECK (char_length(sgst_ledger) BETWEEN 1 AND 200),
+  igst_ledger      text NOT NULL DEFAULT 'Output IGST' CHECK (char_length(igst_ledger) BETWEEN 1 AND 200),
+  cess_ledger      text NOT NULL DEFAULT 'Output Cess' CHECK (char_length(cess_ledger) BETWEEN 1 AND 200),
+  round_off_ledger text NOT NULL DEFAULT 'Round Off' CHECK (char_length(round_off_ledger) BETWEEN 1 AND 200),
+  tds_ledger       text NOT NULL DEFAULT 'TDS Receivable' CHECK (char_length(tds_ledger) BETWEEN 1 AND 200),
+  gst_tds_ledger   text NOT NULL DEFAULT 'GST TDS Receivable' CHECK (char_length(gst_tds_ledger) BETWEEN 1 AND 200),
+  retention_ledger text NOT NULL DEFAULT 'Retention Receivable' CHECK (char_length(retention_ledger) BETWEEN 1 AND 200),
+  advance_ledger   text NOT NULL DEFAULT 'Client Advances' CHECK (char_length(advance_ledger) BETWEEN 1 AND 200),
+  bank_ledger      text NOT NULL DEFAULT 'Bank Account' CHECK (char_length(bank_ledger) BETWEEN 1 AND 200),
+  cash_ledger      text NOT NULL DEFAULT 'Cash' CHECK (char_length(cash_ledger) BETWEEN 1 AND 200),
+  version          integer NOT NULL DEFAULT 1,
+  created_at       timestamptz NOT NULL DEFAULT now(),
+  updated_at       timestamptz NOT NULL DEFAULT now(),
+  UNIQUE (tenant_id, id)
+);
+
 -- =============================================================================
 -- 4. Billing documents
 --    ONE table for every billing document. "GST books", "estimates" and the
@@ -830,8 +853,8 @@ CREATE TABLE exports (
   id            uuid PRIMARY KEY DEFAULT gen_random_uuid(),
   tenant_id     uuid NOT NULL REFERENCES tenants (id),
   kind          text NOT NULL CHECK (kind IN ('DOCUMENTS', 'PAYMENTS', 'EXPENSES', 'RECEIVABLES', 'GSTR1',
-                                              'BOQ', 'PROJECTS', 'STATEMENT')),
-  format        text NOT NULL CHECK (format IN ('CSV', 'XLSX', 'JSON', 'PDF')),
+                                              'BOQ', 'PROJECTS', 'STATEMENT', 'TALLY')),
+  format        text NOT NULL CHECK (format IN ('CSV', 'XLSX', 'JSON', 'PDF', 'XML')),
   params        jsonb NOT NULL DEFAULT '{}',
   status        text NOT NULL DEFAULT 'PENDING' CHECK (status IN ('PENDING', 'READY', 'FAILED')),
   file_name     text CHECK (char_length(file_name) BETWEEN 1 AND 200),
@@ -847,7 +870,8 @@ CREATE TABLE exports (
   CHECK ((status = 'READY') = (storage_key IS NOT NULL AND file_name IS NOT NULL AND size_bytes IS NOT NULL)),
   CHECK ((status = 'PENDING') = (finished_at IS NULL)),
   CHECK ((format = 'JSON') = (kind = 'GSTR1')),
-  CONSTRAINT exports_pdf_check CHECK (format <> 'PDF' OR kind = 'STATEMENT')  -- a statement of account
+  CONSTRAINT exports_pdf_check CHECK (format <> 'PDF' OR kind = 'STATEMENT'),  -- a statement of account
+  CONSTRAINT exports_xml_check CHECK ((format = 'XML') = (kind = 'TALLY'))  -- vouchers for Tally (B.16)
 );
 CREATE INDEX exports_requested_idx ON exports (tenant_id, requested_by, created_at DESC);
 
@@ -1113,7 +1137,7 @@ BEGIN
     'catalog_items', 'attachments', 'document_series', 'documents', 'document_lines',
     'payments', 'allocations', 'expenses', 'retention_releases', 'tds_certificates', 'exports',
     'email_invitations', 'payment_reminders', 'document_templates', 'catalog_item_variants',
-    'document_line_measurements', 'print_settings', 'document_emails']
+    'document_line_measurements', 'print_settings', 'document_emails', 'tally_settings']
   LOOP
     EXECUTE format(
       'CREATE TRIGGER audit AFTER INSERT OR UPDATE OR DELETE ON %I FOR EACH ROW EXECUTE FUNCTION audit_row_change()', t);
@@ -1134,7 +1158,7 @@ BEGIN
     'document_series', 'documents', 'document_lines', 'payments', 'allocations', 'expenses',
     'retention_releases', 'tds_certificates', 'idempotency_keys', 'exports', 'email_invitations',
     'payment_reminders', 'document_templates', 'catalog_item_variants', 'document_line_measurements',
-    'print_settings', 'document_emails']
+    'print_settings', 'document_emails', 'tally_settings']
   LOOP
     EXECUTE format('ALTER TABLE %I ENABLE ROW LEVEL SECURITY', t);
     EXECUTE format('ALTER TABLE %I FORCE ROW LEVEL SECURITY', t);
@@ -1247,7 +1271,7 @@ BEGIN
   FOREACH t IN ARRAY ARRAY[
     'gst_registrations', 'catalog_items', 'catalog_item_variants', 'document_series', 'expenses',
     'tds_certificates', 'email_invitations', 'payment_reminders', 'document_templates', 'audit_log',
-    'print_settings', 'document_emails']
+    'print_settings', 'document_emails', 'tally_settings']
   LOOP
     EXECUTE format(
       'CREATE POLICY client_scope ON %I AS RESTRICTIVE USING (NOT app_portal_session())', t);

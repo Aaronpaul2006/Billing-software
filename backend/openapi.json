@@ -6604,6 +6604,65 @@
                     }
                 }
             }
+        },
+        "/api/v1/tenant/tally-settings": {
+            "get": {
+                "operationId": "tenant_tally_settings_retrieve",
+                "description": "Ledger names for the Tally export (B.16). Every member may read them;\nowners and admins change them.",
+                "tags": [
+                    "tenant"
+                ],
+                "security": [
+                    {
+                        "bearerAuth": []
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/TallySettings"
+                                }
+                            }
+                        },
+                        "description": ""
+                    }
+                }
+            },
+            "patch": {
+                "operationId": "tenant_tally_settings_partial_update",
+                "description": "Ledger names for the Tally export (B.16). Every member may read them;\nowners and admins change them.",
+                "tags": [
+                    "tenant"
+                ],
+                "requestBody": {
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/PatchedTallySettingsUpdate"
+                            }
+                        }
+                    }
+                },
+                "security": [
+                    {
+                        "bearerAuth": []
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/TallySettings"
+                                }
+                            }
+                        },
+                        "description": ""
+                    }
+                }
+            }
         }
     },
     "components": {
@@ -9075,10 +9134,11 @@
                     "CSV",
                     "XLSX",
                     "JSON",
-                    "PDF"
+                    "PDF",
+                    "XML"
                 ],
                 "type": "string",
-                "description": "* `CSV` - Csv\n* `XLSX` - Xlsx\n* `JSON` - Json\n* `PDF` - Pdf"
+                "description": "* `CSV` - Csv\n* `XLSX` - Xlsx\n* `JSON` - Json\n* `PDF` - Pdf\n* `XML` - Xml"
             },
             "ExportKindEnum": {
                 "enum": [
@@ -9089,10 +9149,11 @@
                     "GSTR1",
                     "BOQ",
                     "PROJECTS",
-                    "STATEMENT"
+                    "STATEMENT",
+                    "TALLY"
                 ],
                 "type": "string",
-                "description": "* `DOCUMENTS` - Documents\n* `PAYMENTS` - Payments\n* `EXPENSES` - Expenses\n* `RECEIVABLES` - Receivables\n* `GSTR1` - Gstr1\n* `BOQ` - Boq\n* `PROJECTS` - Projects\n* `STATEMENT` - Statement"
+                "description": "* `DOCUMENTS` - Documents\n* `PAYMENTS` - Payments\n* `EXPENSES` - Expenses\n* `RECEIVABLES` - Receivables\n* `GSTR1` - Gstr1\n* `BOQ` - Boq\n* `PROJECTS` - Projects\n* `STATEMENT` - Statement\n* `TALLY` - Tally"
             },
             "ExportList": {
                 "type": "object",
@@ -9169,7 +9230,7 @@
                                 "$ref": "#/components/schemas/ExportRequestFormatEnum"
                             }
                         ],
-                        "description": "GSTR-1: JSON; statement: CSV, XLSX or PDF; everything else: CSV or XLSX.\n\n* `CSV` - CSV\n* `XLSX` - XLSX\n* `JSON` - JSON\n* `PDF` - PDF"
+                        "description": "GSTR-1: JSON; statement: CSV, XLSX or PDF; everything else: CSV or XLSX.\n\n* `CSV` - CSV\n* `XLSX` - XLSX\n* `JSON` - JSON\n* `PDF` - PDF\n* `XML` - XML"
                     },
                     "params": {
                         "$ref": "#/components/schemas/ExportParams"
@@ -9185,10 +9246,11 @@
                     "CSV",
                     "XLSX",
                     "JSON",
-                    "PDF"
+                    "PDF",
+                    "XML"
                 ],
                 "type": "string",
-                "description": "* `CSV` - CSV\n* `XLSX` - XLSX\n* `JSON` - JSON\n* `PDF` - PDF"
+                "description": "* `CSV` - CSV\n* `XLSX` - XLSX\n* `JSON` - JSON\n* `PDF` - PDF\n* `XML` - XML"
             },
             "ExportRequestKindEnum": {
                 "enum": [
@@ -9199,10 +9261,11 @@
                     "GSTR1",
                     "BOQ",
                     "PROJECTS",
-                    "STATEMENT"
+                    "STATEMENT",
+                    "TALLY"
                 ],
                 "type": "string",
-                "description": "* `DOCUMENTS` - DOCUMENTS\n* `PAYMENTS` - PAYMENTS\n* `EXPENSES` - EXPENSES\n* `RECEIVABLES` - RECEIVABLES\n* `GSTR1` - GSTR1\n* `BOQ` - BOQ\n* `PROJECTS` - PROJECTS\n* `STATEMENT` - STATEMENT"
+                "description": "* `DOCUMENTS` - DOCUMENTS\n* `PAYMENTS` - PAYMENTS\n* `EXPENSES` - EXPENSES\n* `RECEIVABLES` - RECEIVABLES\n* `GSTR1` - GSTR1\n* `BOQ` - BOQ\n* `PROJECTS` - PROJECTS\n* `STATEMENT` - STATEMENT\n* `TALLY` - TALLY"
             },
             "ExportStatusEnum": {
                 "enum": [
@@ -12039,6 +12102,72 @@
                     }
                 }
             },
+            "PatchedTallySettingsUpdate": {
+                "type": "object",
+                "description": "Ledger names exactly as they are in Tally (Tally matches them by name).",
+                "properties": {
+                    "sales_ledger": {
+                        "type": "string",
+                        "maxLength": 200,
+                        "minLength": 1
+                    },
+                    "cgst_ledger": {
+                        "type": "string",
+                        "maxLength": 200,
+                        "minLength": 1
+                    },
+                    "sgst_ledger": {
+                        "type": "string",
+                        "maxLength": 200,
+                        "minLength": 1
+                    },
+                    "igst_ledger": {
+                        "type": "string",
+                        "maxLength": 200,
+                        "minLength": 1
+                    },
+                    "cess_ledger": {
+                        "type": "string",
+                        "maxLength": 200,
+                        "minLength": 1
+                    },
+                    "round_off_ledger": {
+                        "type": "string",
+                        "maxLength": 200,
+                        "minLength": 1
+                    },
+                    "tds_ledger": {
+                        "type": "string",
+                        "maxLength": 200,
+                        "minLength": 1
+                    },
+                    "gst_tds_ledger": {
+                        "type": "string",
+                        "maxLength": 200,
+                        "minLength": 1
+                    },
+                    "retention_ledger": {
+                        "type": "string",
+                        "maxLength": 200,
+                        "minLength": 1
+                    },
+                    "advance_ledger": {
+                        "type": "string",
+                        "maxLength": 200,
+                        "minLength": 1
+                    },
+                    "bank_ledger": {
+                        "type": "string",
+                        "maxLength": 200,
+                        "minLength": 1
+                    },
+                    "cash_ledger": {
+                        "type": "string",
+                        "maxLength": 200,
+                        "minLength": 1
+                    }
+                }
+            },
             "PatchedTdsCertificateWrite": {
                 "type": "object",
                 "properties": {
@@ -14745,6 +14874,78 @@
                 },
                 "required": [
                     "tenant_id"
+                ]
+            },
+            "TallySettings": {
+                "type": "object",
+                "properties": {
+                    "sales_ledger": {
+                        "type": "string",
+                        "readOnly": true
+                    },
+                    "cgst_ledger": {
+                        "type": "string",
+                        "readOnly": true
+                    },
+                    "sgst_ledger": {
+                        "type": "string",
+                        "readOnly": true
+                    },
+                    "igst_ledger": {
+                        "type": "string",
+                        "readOnly": true
+                    },
+                    "cess_ledger": {
+                        "type": "string",
+                        "readOnly": true
+                    },
+                    "round_off_ledger": {
+                        "type": "string",
+                        "readOnly": true
+                    },
+                    "tds_ledger": {
+                        "type": "string",
+                        "readOnly": true
+                    },
+                    "gst_tds_ledger": {
+                        "type": "string",
+                        "readOnly": true
+                    },
+                    "retention_ledger": {
+                        "type": "string",
+                        "readOnly": true
+                    },
+                    "advance_ledger": {
+                        "type": "string",
+                        "readOnly": true
+                    },
+                    "bank_ledger": {
+                        "type": "string",
+                        "readOnly": true
+                    },
+                    "cash_ledger": {
+                        "type": "string",
+                        "readOnly": true
+                    },
+                    "version": {
+                        "type": "integer",
+                        "readOnly": true
+                    }
+                },
+                "required": [
+                    "advance_ledger",
+                    "bank_ledger",
+                    "cash_ledger",
+                    "cess_ledger",
+                    "cgst_ledger",
+                    "gst_tds_ledger",
+                    "igst_ledger",
+                    "retention_ledger",
+                    "round_off_ledger",
+                    "sales_ledger",
+                    "sgst_ledger",
+                    "tds_ledger",
+                    "version"
                 ]
             },
             "TdsCertificate": {

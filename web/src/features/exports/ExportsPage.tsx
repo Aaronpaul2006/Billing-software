@@ -1,7 +1,7 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { AlertCircle, Download, Loader2 } from "lucide-react";
 import { useState } from "react";
-import { useSearchParams } from "react-router";
+import { Link, useSearchParams } from "react-router";
 
 import { api, newIdempotencyKey, unwrap } from "@/api/client";
 import { ApiError } from "@/api/problem";
@@ -25,7 +25,7 @@ import type { Export } from "./exports";
 type Kind = components["schemas"]["ExportRequest"]["kind"];
 type Format = components["schemas"]["ExportRequest"]["format"];
 
-const DATED: Kind[] = ["DOCUMENTS", "PAYMENTS", "EXPENSES"];
+const DATED: Kind[] = ["DOCUMENTS", "PAYMENTS", "EXPENSES", "TALLY"];
 const KINDS: Kind[] = FORM_KINDS;
 const WITH_BOOK: Kind[] = ["DOCUMENTS", "RECEIVABLES"];
 
@@ -79,16 +79,18 @@ function ExportForm() {
                   format: "JSON",
                   params: { gst_registration_id: chosenRegistration, period },
                 }
-              : kind === "BOQ"
-                ? { kind, format, params: { project_id: chosenProject } }
-                : {
-                    kind,
-                    format,
-                    params: {
-                      ...(DATED.includes(kind) ? { from, to } : {}),
-                      ...(WITH_BOOK.includes(kind) ? { book } : {}),
+              : kind === "TALLY"
+                ? { kind, format: "XML", params: { from, to } }
+                : kind === "BOQ"
+                  ? { kind, format, params: { project_id: chosenProject } }
+                  : {
+                      kind,
+                      format,
+                      params: {
+                        ...(DATED.includes(kind) ? { from, to } : {}),
+                        ...(WITH_BOOK.includes(kind) ? { book } : {}),
+                      },
                     },
-                  },
           headers: { "Idempotency-Key": key },
         }),
       ),
@@ -158,6 +160,15 @@ function ExportForm() {
                 you file.
               </p>
             </>
+          ) : kind === "TALLY" ? (
+            <p className="text-muted-foreground text-sm sm:col-span-2">
+              Sales, credit and debit notes and receipts as Tally vouchers. In Tally: Gateway of
+              Tally, Import, Transactions. Ledger names are set in{" "}
+              <Link to="/settings/tally" className="underline">
+                Settings, Tally export
+              </Link>
+              ; create those ledgers (and one per client) in Tally first.
+            </p>
           ) : (
             <Field id="export-format" label="File">
               <NativeSelect
@@ -172,7 +183,7 @@ function ExportForm() {
               </NativeSelect>
             </Field>
           )}
-          {kind === "GSTR1" ? null : WITH_BOOK.includes(kind) ? (
+          {kind === "GSTR1" || kind === "TALLY" ? null : WITH_BOOK.includes(kind) ? (
             <Field id="export-book" label="Books">
               <NativeSelect
                 id="export-book"

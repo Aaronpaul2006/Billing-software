@@ -1,5 +1,6 @@
 import {
   BarChart3,
+  BookOpen,
   Building2,
   ChevronsUpDown,
   Download,
@@ -57,6 +58,7 @@ const SETTINGS_NAV = [
   { to: "/settings/gst-registrations", label: "GST registrations", icon: Landmark },
   { to: "/settings/series", label: "Number series", icon: Hash },
   { to: "/settings/print", label: "Bill printing", icon: Printer },
+  { to: "/settings/tally", label: "Tally export", icon: BookOpen },
 ] as const;
 
 function NavItem({
