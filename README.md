@@ -69,6 +69,11 @@ Running the API on the host instead (`manage.py runserver`): set
 `CELERY_TASK_ALWAYS_EAGER=true` in `.env` so emails, PDFs and upload checks run
 without a worker.
 
+## Demo
+
+A demo business full of sample data, and what to try in it:
+[`docs/05-demo.md`](docs/05-demo.md) (`backend/scripts/seed_demo.py`).
+
 ## Production
 
 One server with Docker Compose: `deploy/docker-compose.prod.yml`, settings in
