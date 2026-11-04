@@ -90,9 +90,16 @@ def sign_up(api: Api, mailpit: str, email: str, password: str) -> str:
     )
     api.token = signed["access_token"]
     query = urllib.parse.quote(f"to:{email}")
-    with urllib.request.urlopen(f"{mailpit}/api/v1/search?query={query}") as r:  # noqa: S310
-        message_id = json.loads(r.read())["messages"][0]["ID"]
-    with urllib.request.urlopen(f"{mailpit}/api/v1/message/{message_id}") as r:  # noqa: S310
+    messages: list[Json] = []
+    for _ in range(30):  # the worker sends the confirmation email a moment later
+        with urllib.request.urlopen(f"{mailpit}/api/v1/search?query={query}") as r:  # noqa: S310
+            messages = json.loads(r.read())["messages"]
+        if messages:
+            break
+        time.sleep(1)
+    if not messages:
+        raise SystemExit("The confirmation email did not arrive: is the worker running?")
+    with urllib.request.urlopen(f"{mailpit}/api/v1/message/{messages[0]['ID']}") as r:  # noqa: S310
         text = json.loads(r.read())["Text"]
     token = re.search(r"verify-email\?token=(\S+)", text)
     if token is None:
