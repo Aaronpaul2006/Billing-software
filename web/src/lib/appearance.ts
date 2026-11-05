@@ -61,6 +61,33 @@ export function setTextSize(size: TextSize): void {
   applyAppearance();
 }
 
+export type Density = "comfortable" | "compact";
+const DENSITY_KEY = "app.tableDensity";
+
+/** Table rows: comfortable (default) or compact, for everyone's tables (D.4). */
+export function tableDensity(): Density {
+  return read(DENSITY_KEY) === "compact" ? "compact" : "comfortable";
+}
+
+export function setTableDensity(density: Density): void {
+  write(DENSITY_KEY, density);
+}
+
+/** Small JSON values kept in this browser (saved filters); null when absent or unreadable. */
+export function readJson(key: string): unknown {
+  const raw = read(key);
+  if (raw === null) return null;
+  try {
+    return JSON.parse(raw) as unknown;
+  } catch {
+    return null;
+  }
+}
+
+export function writeJson(key: string, value: unknown): void {
+  write(key, JSON.stringify(value));
+}
+
 /** Once at start-up: apply the choices, and follow the system when it switches. */
 export function startAppearance(): void {
   applyAppearance();

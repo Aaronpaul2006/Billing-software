@@ -1,6 +1,6 @@
 {
  "base": "http://localhost:5173",
- "at": "2026-11-05T08:42:47.018Z",
+ "at": "2026-11-05T08:58:52.379Z",
  "sizes": [
   {
    "name": "desktop",
@@ -503,138 +503,6 @@
    }
   },
   {
-   "name": "Design system (/design)",
-   "path": "/design",
-   "sizes": {
-    "desktop": {
-     "screenshot": "design--desktop.jpg",
-     "url": "/design",
-     "metrics": {
-      "pageHeight": 1983,
-      "sidewaysScroll": false,
-      "overflowing": [],
-      "tapTargets": 18,
-      "smallTapTargets": 0,
-      "smallTapExamples": [],
-      "tinyText": 0,
-      "fontSizes": [
-       "12px",
-       "13px",
-       "14px",
-       "16px",
-       "17px",
-       "24px",
-       "28px"
-      ],
-      "textColours": 10,
-      "radii": [
-       "6px",
-       "8px",
-       "4px",
-       "12px"
-      ],
-      "buttonHeights": [
-       32,
-       36
-      ],
-      "tables": 1,
-      "widestTable": 960,
-      "h1": [
-       "Design system"
-      ]
-     },
-     "axe": [],
-     "consoleErrors": [
-      "Failed to load resource: the server responded with a status of 401 (Unauthorized)"
-     ]
-    },
-    "tablet": {
-     "screenshot": "design--tablet.jpg",
-     "url": "/design",
-     "metrics": {
-      "pageHeight": 2121,
-      "sidewaysScroll": false,
-      "overflowing": [],
-      "tapTargets": 18,
-      "smallTapTargets": 0,
-      "smallTapExamples": [],
-      "tinyText": 0,
-      "fontSizes": [
-       "12px",
-       "13px",
-       "14px",
-       "16px",
-       "17px",
-       "24px",
-       "28px"
-      ],
-      "textColours": 10,
-      "radii": [
-       "6px",
-       "8px",
-       "4px",
-       "12px"
-      ],
-      "buttonHeights": [
-       32,
-       36
-      ],
-      "tables": 1,
-      "widestTable": 704,
-      "h1": [
-       "Design system"
-      ]
-     },
-     "axe": null,
-     "consoleErrors": [
-      "Failed to load resource: the server responded with a status of 401 (Unauthorized)"
-     ]
-    },
-    "phone": {
-     "screenshot": "design--phone.jpg",
-     "url": "/design",
-     "metrics": {
-      "pageHeight": 2889,
-      "sidewaysScroll": false,
-      "overflowing": [],
-      "tapTargets": 18,
-      "smallTapTargets": 0,
-      "smallTapExamples": [],
-      "tinyText": 0,
-      "fontSizes": [
-       "12px",
-       "13px",
-       "14px",
-       "16px",
-       "17px",
-       "24px",
-       "28px"
-      ],
-      "textColours": 10,
-      "radii": [
-       "6px",
-       "8px",
-       "4px",
-       "12px"
-      ],
-      "buttonHeights": [
-       32,
-       36
-      ],
-      "tables": 1,
-      "widestTable": 358,
-      "h1": [
-       "Design system"
-      ]
-     },
-     "axe": [],
-     "consoleErrors": [
-      "Failed to load resource: the server responded with a status of 401 (Unauthorized)"
-     ]
-    }
-   }
-  },
-  {
    "name": "Dashboard (first page after sign-in)",
    "path": "/",
    "sizes": {
@@ -792,31 +660,35 @@
       "pageHeight": 900,
       "sidewaysScroll": false,
       "overflowing": [],
-      "tapTargets": 31,
-      "smallTapTargets": 7,
+      "tapTargets": 35,
+      "smallTapTargets": 9,
       "smallTapExamples": [
+       "button \"Number\"",
+       "button \"Date\"",
        "a \"Draft\"",
        "a \"Draft\"",
-       "a \"CN/0001\"",
-       "a \"QT/0001\"",
-       "a \"INV/0002\""
+       "a \"CN/0001\""
       ],
       "tinyText": 0,
       "fontSizes": [
        "12px",
+       "13px",
        "14px",
        "24px"
       ],
       "textColours": 8,
       "radii": [
        "6px",
+       "12px",
        "4px"
       ],
       "buttonHeights": [
+       16,
+       32,
        36
       ],
       "tables": 1,
-      "widestTable": 1152,
+      "widestTable": 1150,
       "h1": [
        "Invoices & quotes"
       ]
@@ -828,12 +700,10 @@
      "screenshot": "documents--tablet.jpg",
      "url": "/documents",
      "metrics": {
-      "pageHeight": 1024,
+      "pageHeight": 1926,
       "sidewaysScroll": false,
-      "overflowing": [
-       "table \"NumberDateParty / projectStatusTotalOuts\""
-      ],
-      "tapTargets": 31,
+      "overflowing": [],
+      "tapTargets": 32,
       "smallTapTargets": 7,
       "smallTapExamples": [
        "a \"Draft\"",
@@ -845,19 +715,21 @@
       "tinyText": 0,
       "fontSizes": [
        "12px",
+       "13px",
        "14px",
+       "16px",
        "24px"
       ],
       "textColours": 8,
       "radii": [
        "6px",
-       "4px"
+       "12px"
       ],
       "buttonHeights": [
        36
       ],
-      "tables": 1,
-      "widestTable": 689,
+      "tables": 0,
+      "widestTable": 0,
       "h1": [
        "Invoices & quotes"
       ]
@@ -869,12 +741,10 @@
      "screenshot": "documents--phone.jpg",
      "url": "/documents",
      "metrics": {
-      "pageHeight": 844,
+      "pageHeight": 2099,
       "sidewaysScroll": false,
-      "overflowing": [
-       "table \"NumberDateParty / projectStatusTotalOuts\""
-      ],
-      "tapTargets": 15,
+      "overflowing": [],
+      "tapTargets": 16,
       "smallTapTargets": 7,
       "smallTapExamples": [
        "a \"Draft\"",
@@ -886,19 +756,22 @@
       "tinyText": 0,
       "fontSizes": [
        "12px",
+       "13px",
        "14px",
+       "16px",
        "24px"
       ],
       "textColours": 6,
       "radii": [
        "6px",
-       "4px"
+       "12px"
       ],
       "buttonHeights": [
+       36,
        44
       ],
-      "tables": 1,
-      "widestTable": 689,
+      "tables": 0,
+      "widestTable": 0,
       "h1": [
        "Invoices & quotes"
       ]
@@ -4689,10 +4562,10 @@
      "screenshot": "account--desktop.jpg",
      "url": "/account",
      "metrics": {
-      "pageHeight": 2436,
+      "pageHeight": 2562,
       "sidewaysScroll": false,
       "overflowing": [],
-      "tapTargets": 42,
+      "tapTargets": 44,
       "smallTapTargets": 0,
       "smallTapExamples": [],
       "tinyText": 0,
@@ -4724,10 +4597,10 @@
      "screenshot": "account--tablet.jpg",
      "url": "/account",
      "metrics": {
-      "pageHeight": 2712,
+      "pageHeight": 2870,
       "sidewaysScroll": false,
       "overflowing": [],
-      "tapTargets": 42,
+      "tapTargets": 44,
       "smallTapTargets": 0,
       "smallTapExamples": [],
       "tinyText": 0,
@@ -4759,10 +4632,10 @@
      "screenshot": "account--phone.jpg",
      "url": "/account",
      "metrics": {
-      "pageHeight": 3045,
+      "pageHeight": 3235,
       "sidewaysScroll": false,
       "overflowing": [],
-      "tapTargets": 26,
+      "tapTargets": 28,
       "smallTapTargets": 0,
       "smallTapExamples": [],
       "tinyText": 0,
@@ -5679,5 +5552,5 @@
    }
   }
  ],
- "step": "D.3"
+ "step": "D.4"
 }

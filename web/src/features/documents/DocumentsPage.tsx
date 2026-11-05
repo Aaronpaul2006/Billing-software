@@ -5,21 +5,16 @@ import { Link } from "react-router";
 
 import { api, unwrap } from "@/api/client";
 import { ErrorState } from "@/components/ErrorState";
+import { DataTable } from "@/components/DataTable";
+import type { Column, SortState } from "@/components/DataTable";
+import { Money } from "@/components/Money";
+import { SavedFilters } from "@/components/SavedFilters";
+import type { components } from "@/api/schema";
+import { sumMoney } from "@/lib/money";
 import { PageHeader } from "@/components/PageHeader";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { NativeSelect } from "@/components/ui/native-select";
-import { Skeleton } from "@/components/ui/skeleton";
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from "@/components/ui/table";
-import { formatInr } from "@/lib/money";
-import { cn } from "@/lib/utils";
 import { formatDate } from "@/lib/dates";
 import { StatusBadge } from "@/components/StatusBadge";
 import { documentStatus } from "@/features/documents/status";
@@ -41,16 +36,101 @@ const TYPE_FILTERS: { value: string; label: string; types: DocType[] }[] = [
 
 type PaymentState = "" | "UNPAID" | "PARTIAL" | "PAID";
 
+type Row = components["schemas"]["DocumentList"];
+
+/** Bills that ask to be paid, once issued: they have something outstanding. */
+const owed = (d: Row) => d.status === "ISSUED" && RECEIVABLE_TYPES.has(d.doc_type);
+
+const columns: Column<Row>[] = [
+  {
+    id: "number",
+    header: "Number",
+    sortable: true,
+    card: "title",
+    cell: (d) => (
+      <>
+        <Link to={`/documents/${d.id}`} className="font-medium hover:underline">
+          {d.doc_number ?? "Draft"}
+        </Link>
+        <div className="text-help text-muted-foreground">
+          {DOC_TYPE_LABELS[d.doc_type]}
+          {d.is_ra_bill && d.ra_sequence ? ` · RA ${String(d.ra_sequence)}` : ""}
+        </div>
+      </>
+    ),
+  },
+  { id: "date", header: "Date", sortable: true, cell: (d) => formatDate(d.doc_date) },
+  {
+    id: "party",
+    header: "Party / project",
+    card: "subtitle",
+    cell: (d) => (
+      <>
+        {d.party_name}
+        {d.project_name && <div className="text-help text-muted-foreground">{d.project_name}</div>}
+      </>
+    ),
+  },
+  {
+    id: "status",
+    header: "Status",
+    card: "badge",
+    cell: (d) => <StatusBadge status={documentStatus(d)} />,
+  },
+  {
+    id: "total",
+    header: "Total",
+    align: "right",
+    card: "amount",
+    cell: (d) => <Money value={d.totals.grand_total} />,
+  },
+  {
+    id: "outstanding",
+    header: "Outstanding",
+    align: "right",
+    card: "amount",
+    cell: (d) =>
+      owed(d) ? (
+        <Money
+          value={d.totals.outstanding}
+          strong={d.totals.outstanding !== "0.00"}
+          muted={d.totals.outstanding === "0.00"}
+        />
+      ) : (
+        <span className="text-muted-foreground">–</span>
+      ),
+  },
+];
+
+/** Server orderings for the sortable columns (documents API: doc_date, doc_number). */
+const ORDERING: Record<string, string> = { number: "doc_number", date: "doc_date" };
+
+interface Filters extends Record<string, string> {
+  type: string;
+  status: string;
+  paymentState: string;
+  search: string;
+}
+const NO_FILTERS: Filters = { type: "all", status: "", paymentState: "", search: "" };
+
 export function DocumentsPage() {
   const [type, setType] = useState("all");
   const [status, setStatus] = useState<DocStatus | "">("");
   const [paymentState, setPaymentState] = useState<PaymentState>("");
   const [search, setSearch] = useState("");
+  const [sort, setSort] = useState<SortState>({ column: "date", direction: "desc" });
+  const filtered = type !== "all" || status !== "" || paymentState !== "" || search.trim() !== "";
+  const apply = (f: Filters) => {
+    setType(f.type);
+    setStatus(f.status as DocStatus | "");
+    setPaymentState(f.paymentState as PaymentState);
+    setSearch(f.search);
+  };
   const q = useDeferredValue(search.trim());
   const types = TYPE_FILTERS.find((t) => t.value === type)?.types ?? [];
 
   const documents = useInfiniteQuery({
-    queryKey: ["documents", { type, status, paymentState, q }],
+    queryKey: ["documents", { type, status, paymentState, q, sort }],
     queryFn: async ({ pageParam }) =>
       unwrap(
         await api.GET("/api/v1/documents", {
@@ -60,7 +140,7 @@ export function DocumentsPage() {
               ...(status ? { status: [status] } : {}),
               ...(paymentState ? { payment_state: paymentState } : {}),
               ...(q ? { q } : {}),
-              ordering: "-doc_date",
+              ordering: `${sort.direction === "desc" ? "-" : ""}${ORDERING[sort.column] ?? "doc_date"}`,
               limit: 50,
               ...(pageParam ? { cursor: pageParam } : {}),
             },
@@ -87,7 +167,7 @@ export function DocumentsPage() {
             </Button>
             <Button asChild>
               <Link to="/documents/new">
-                <Plus aria-hidden /> New invoice
+                <Plus aria-hidden /> New bill
               </Link>
             </Button>
           </>
@@ -149,69 +229,70 @@ export function DocumentsPage() {
           <option value="PARTIAL">Part paid</option>
           <option value="PAID">Paid</option>
         </NativeSelect>
+        <SavedFilters
+          list="bills"
+          current={{ type, status, paymentState, search }}
+          onApply={apply}
+        />
       </div>
 
       {documents.error ? (
         <ErrorState error={documents.error} />
-      ) : documents.isPending ? (
-        <Skeleton className="h-40 w-full" />
-      ) : rows.length === 0 ? (
-        <p className="text-muted-foreground py-8 text-center text-sm">No documents match.</p>
       ) : (
         <>
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead>Number</TableHead>
-                <TableHead>Date</TableHead>
-                <TableHead>Party / project</TableHead>
-                <TableHead>Status</TableHead>
-                <TableHead className="text-right">Total</TableHead>
-                <TableHead className="text-right">Outstanding</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {rows.map((d) => {
-                const owed = d.status === "ISSUED" && RECEIVABLE_TYPES.has(d.doc_type);
-                return (
-                  <TableRow key={d.id}>
-                    <TableCell>
-                      <Link to={`/documents/${d.id}`} className="font-medium hover:underline">
-                        {d.doc_number ?? "Draft"}
-                      </Link>
-                      <div className="text-muted-foreground text-xs">
-                        {DOC_TYPE_LABELS[d.doc_type]}
-                        {d.is_ra_bill && d.ra_sequence ? ` · RA ${String(d.ra_sequence)}` : ""}
-                      </div>
-                    </TableCell>
-                    <TableCell>{formatDate(d.doc_date)}</TableCell>
-                    <TableCell>
-                      {d.party_name}
-                      {d.project_name && (
-                        <div className="text-muted-foreground text-xs">{d.project_name}</div>
-                      )}
-                    </TableCell>
-                    <TableCell>
-                      <StatusBadge status={documentStatus(d)} />
-                    </TableCell>
-                    <TableCell className="text-right tabular-nums">
-                      {formatInr(d.totals.grand_total)}
-                    </TableCell>
-                    <TableCell
-                      className={cn(
-                        "text-right tabular-nums",
-                        owed && d.totals.outstanding !== "0.00"
-                          ? "font-medium"
-                          : "text-muted-foreground",
-                      )}
-                    >
-                      {owed ? formatInr(d.totals.outstanding) : "–"}
-                    </TableCell>
-                  </TableRow>
-                );
-              })}
-            </TableBody>
-          </Table>
+          <DataTable
+            label="Bills and quotations"
+            rows={rows}
+            columns={columns}
+            rowKey={(d) => d.id}
+            rowLabel={(d) => d.doc_number ?? `draft for ${d.party_name}`}
+            loading={documents.isPending}
+            sort={sort}
+            onSortChange={setSort}
+            empty={
+              filtered
+                ? {
+                    title: "No documents match these filters",
+                    action: (
+                      <Button
+                        variant="outline"
+                        onClick={() => {
+                          apply(NO_FILTERS);
+                        }}
+                      >
+                        Clear the filters
+                      </Button>
+                    ),
+                  }
+                : {
+                    title: "No bills yet",
+                    description:
+                      "Make your first bill or quotation; drafts get their number when issued.",
+                    action: (
+                      <Button asChild>
+                        <Link to="/documents/new">
+                          <Plus aria-hidden /> New bill
+                        </Link>
+                      </Button>
+                    ),
+                  }
+            }
+            totals={
+              rows.length > 1
+                ? {
+                    label: `Total of ${String(rows.length)} shown`,
+                    cells: {
+                      total: <Money value={sumMoney(rows.map((d) => d.totals.grand_total))} />,
+                      outstanding: (
+                        <Money
+                          value={sumMoney(rows.filter(owed).map((d) => d.totals.outstanding))}
+                        />
+                      ),
+                    },
+                  }
+                : undefined
+            }
+          />
           {documents.hasNextPage && (
             <div className="mt-4 flex justify-center">
               <Button
