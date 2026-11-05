@@ -8,7 +8,7 @@ import { server } from "./server";
 
 // Pages load lazily; with every test file running in parallel (and on a cold CI
 // runner) the first import of a page can take over the default 1 s of findBy*.
-configure({ asyncUtilTimeout: 5000 });
+configure({ asyncUtilTimeout: 10_000 }); // under the 20 s test limit (vite.config.ts)
 
 // jsdom lays nothing out, so it has no scrollIntoView (the command palette keeps
 // the chosen row in view with it).

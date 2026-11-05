@@ -22,6 +22,7 @@ dependencies = [
     "gunicorn>=26.2.0",
     "sentry-sdk[celery,django]>=2.72.0",
     "segno>=1.6",
+    "tzdata>=2026.5",
 ]
 
 [dependency-groups]

@@ -77,7 +77,9 @@ describe("forgot and reset password", () => {
     const user = userEvent.setup();
     renderApp("/login");
     await user.click(await screen.findByRole("link", { name: "Forgot password?" }));
-    await user.type(await screen.findByLabelText("Email"), "asha@nair.in");
+    // the sign-in page has an Email box too: type only once the reset page is there
+    await screen.findByRole("heading", { name: "Reset your password" });
+    await user.type(screen.getByLabelText("Email"), "asha@nair.in");
     await user.click(screen.getByRole("button", { name: "Send reset link" }));
     expect(await screen.findByText(/If an account uses asha@nair.in/)).toBeInTheDocument();
     expect(sent).toEqual({ email: "asha@nair.in" });

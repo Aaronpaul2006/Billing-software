@@ -24,6 +24,9 @@ export default defineConfig({
     environment: "jsdom",
     globals: true,
     setupFiles: ["./src/test/setup.ts"],
+    // CI runners are several times slower than a desk PC: the longer bill-screen tests
+    // (open a menu, fill a form, wait for the server) need more than the default 5 s.
+    testTimeout: 20_000,
     css: false,
     restoreMocks: true,
   },

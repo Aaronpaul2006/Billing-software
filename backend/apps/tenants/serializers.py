@@ -1,6 +1,6 @@
 import re
+from importlib.resources import files
 from typing import Any
-from zoneinfo import available_timezones
 
 from rest_framework import serializers
 
@@ -19,6 +19,11 @@ from .models import (
     TallySettings,
     Tenant,
 )
+
+# The IANA time zones shipped with the tzdata package: the same list on every
+# system (Linux's own list adds entries such as "localtime"), so the OpenAPI
+# document is the same wherever it is generated.
+TIME_ZONES = sorted(files("tzdata").joinpath("zones").read_text(encoding="utf-8").split())
 
 
 def _upper(value: str | None) -> str | None:
@@ -50,7 +55,7 @@ class TenantUpdateSerializer(serializers.Serializer[Any]):
     legal_name = serializers.CharField(min_length=1, max_length=200)
     trade_name = serializers.CharField(max_length=200, allow_null=True, allow_blank=False)
     pan = serializers.CharField(max_length=10, allow_null=True)
-    timezone = serializers.ChoiceField(choices=sorted(available_timezones()))
+    timezone = serializers.ChoiceField(choices=TIME_ZONES)
 
     def validate_pan(self, value: str | None) -> str | None:
         value = _upper(value)
