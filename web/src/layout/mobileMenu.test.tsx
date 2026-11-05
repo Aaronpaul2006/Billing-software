@@ -47,3 +47,22 @@ describe("menu on phones (D.1)", () => {
     expect(switchers.length).toBeGreaterThan(0);
   });
 });
+
+describe("theme and text size in the user menu (D.2)", () => {
+  afterEach(() => {
+    window.localStorage.clear();
+    document.documentElement.className = "";
+  });
+
+  it("switches to dark and large text, and the menu shows the choice", async () => {
+    const user = userEvent.setup();
+    renderSignedIn("/");
+    await user.click(await screen.findByRole("button", { name: /your account and sign out/ }));
+    await user.click(await screen.findByRole("menuitemcheckbox", { name: "Dark" }));
+    expect(document.documentElement.classList.contains("dark")).toBe(true);
+    expect(screen.getByRole("menuitemcheckbox", { name: "Dark" })).toBeChecked();
+    await user.click(screen.getByRole("menuitemcheckbox", { name: "Large text" }));
+    expect(document.documentElement.classList.contains("text-large")).toBe(true);
+    expect(window.localStorage.getItem("app.theme")).toBe("dark");
+  });
+});

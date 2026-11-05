@@ -43,6 +43,8 @@ import {
   SheetTitle,
   SheetTrigger,
 } from "@/components/ui/sheet";
+import { setTextSize, setThemeChoice, textSize, themeChoice } from "@/lib/appearance";
+import type { TextSize, ThemeChoice } from "@/lib/appearance";
 import { cn } from "@/lib/utils";
 
 import { InvitationsBanner } from "./InvitationsBanner";
@@ -141,11 +143,23 @@ function TenantSwitcher() {
   );
 }
 
+const THEMES: { value: ThemeChoice; label: string }[] = [
+  { value: "system", label: "Same as this device" },
+  { value: "light", label: "Light" },
+  { value: "dark", label: "Dark" },
+];
+const SIZES: { value: TextSize; label: string }[] = [
+  { value: "normal", label: "Normal text" },
+  { value: "large", label: "Large text" },
+];
+
 function UserMenu() {
   const { logout } = useAuth();
   const navigate = useNavigate();
   const session = useSession();
   const me = useMe();
+  const [theme, setTheme] = useState(themeChoice);
+  const [size, setSize] = useState(textSize);
   return (
     <DropdownMenu>
       <DropdownMenuTrigger asChild>
@@ -167,6 +181,40 @@ function UserMenu() {
         <DropdownMenuItem onSelect={() => void navigate("/account")}>
           <UserRound aria-hidden /> Your account
         </DropdownMenuItem>
+        <DropdownMenuSeparator />
+        <DropdownMenuLabel className="text-muted-foreground text-xs font-normal">
+          Theme
+        </DropdownMenuLabel>
+        {THEMES.map((t) => (
+          <DropdownMenuCheckItem
+            key={t.value}
+            checked={theme === t.value}
+            onSelect={(e) => {
+              e.preventDefault(); // keep the menu open to see the change
+              setThemeChoice(t.value);
+              setTheme(t.value);
+            }}
+          >
+            {t.label}
+          </DropdownMenuCheckItem>
+        ))}
+        <DropdownMenuLabel className="text-muted-foreground text-xs font-normal">
+          Text size
+        </DropdownMenuLabel>
+        {SIZES.map((t) => (
+          <DropdownMenuCheckItem
+            key={t.value}
+            checked={size === t.value}
+            onSelect={(e) => {
+              e.preventDefault();
+              setTextSize(t.value);
+              setSize(t.value);
+            }}
+          >
+            {t.label}
+          </DropdownMenuCheckItem>
+        ))}
+        <DropdownMenuSeparator />
         <DropdownMenuItem onSelect={() => void logout()}>
           <LogOut aria-hidden /> Sign out
         </DropdownMenuItem>

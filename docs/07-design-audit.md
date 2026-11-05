@@ -234,6 +234,7 @@ Screenshot names are `<page>--desktop.jpg`, `--tablet.jpg`, `--phone.jpg`.
 |---|---|---|---|---|
 | Before (A.0) | 4 / 5 | 91 nodes | 75 | 166 KB |
 | D.1 | 4 / 5 | **0** | 75 | 168.8 KB |
+| D.2 | 4 / 5 | 0 (light and dark) | 75 | 170.3 KB (+ fonts, cached) |
 
 ## Proposed design steps
 

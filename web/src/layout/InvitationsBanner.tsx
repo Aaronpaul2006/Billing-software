@@ -28,7 +28,7 @@ export function InvitationsBanner() {
   });
   if (!invitations.data?.length) return null;
   return (
-    <div className="grid gap-2 border-b bg-amber-50 p-3 text-sm dark:bg-amber-950/30">
+    <div className="grid gap-2 border-b bg-warning-soft border-warning-border p-3 text-sm">
       {invitations.data.map((inv) => (
         <div key={inv.id} role="status" className="flex flex-wrap items-center gap-3">
           <MailOpen className="size-4" aria-hidden />

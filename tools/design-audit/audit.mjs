@@ -10,6 +10,8 @@
 //   set AUDIT_EMAIL=... AUDIT_PASSWORD=... AUDIT_TOTP_SECRET=...      (the demo owner)
 //   set AUDIT_PORTAL_EMAIL=... AUDIT_PORTAL_PASSWORD=...             (a client-portal user)
 //   node audit.mjs ../../docs/design/before        (or ../../docs/design/after)
+//   set AUDIT_THEME=dark                            (optional: audit the dark theme)
+//   set AUDIT_ONLY=^(dashboard|documents)$         (optional: only these pages)
 //
 // Pages are visited one at a time in one browser tab, to keep memory low.
 
@@ -289,6 +291,12 @@ const wanted = (list) => (ONLY ? list.filter((x) => ONLY.test(x.slug)) : list);
 
 async function withContext(run) {
   const context = await browser.newContext({ viewport: SIZES[0], deviceScaleFactor: 1 });
+  if (process.env.AUDIT_THEME) {
+    // AUDIT_THEME=dark: the app's theme choice (D.2), set before every page loads
+    await context.addInitScript((theme) => {
+      window.localStorage.setItem("app.theme", theme);
+    }, process.env.AUDIT_THEME);
+  }
   const page = await context.newPage();
   const consoleErrors = [];
   page.on("console", (m) => {

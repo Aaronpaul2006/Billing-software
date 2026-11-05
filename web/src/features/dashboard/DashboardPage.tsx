@@ -140,7 +140,7 @@ function MonthsChart({ months }: { months: Month[] }) {
                 y={h - collected}
                 width={13}
                 height={collected}
-                className="fill-emerald-500"
+                className="fill-chart-2"
                 rx={2}
               >
                 <title>{`${monthLabel(m.month)}: collected ${formatInr(m.collected)}`}</title>
@@ -162,7 +162,7 @@ function MonthsChart({ months }: { months: Month[] }) {
           <span className="bg-primary inline-block size-2 rounded-sm" aria-hidden /> Billed
         </span>
         <span className="flex items-center gap-1">
-          <span className="inline-block size-2 rounded-sm bg-emerald-500" aria-hidden /> Collected
+          <span className="bg-chart-2 inline-block size-2 rounded-sm" aria-hidden /> Collected
         </span>
       </figcaption>
       <details className="text-sm">

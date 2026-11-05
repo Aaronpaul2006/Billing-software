@@ -72,7 +72,7 @@ export function IssueReview({
           The bill could not be checked just now; you can still issue it.
         </p>
       ) : review.data.length === 0 ? (
-        <p className="flex items-center gap-2 text-green-700 dark:text-green-400">
+        <p className="text-success flex items-center gap-2">
           <CheckCircle2 className="size-4" aria-hidden /> Everything looks right.
         </p>
       ) : (
@@ -87,9 +87,9 @@ export function IssueReview({
               return (
                 <li
                   key={`${w.code}-${String(i)}`}
-                  className="flex gap-2 rounded-md border border-amber-300 bg-amber-50 p-2 dark:border-amber-700 dark:bg-amber-950/40"
+                  className="border-warning-border bg-warning-soft flex gap-2 rounded-md border p-2"
                 >
-                  <AlertTriangle className="mt-0.5 size-4 shrink-0 text-amber-600" aria-hidden />
+                  <AlertTriangle className="text-warning mt-0.5 size-4 shrink-0" aria-hidden />
                   <span>
                     {w.message}{" "}
                     <Link to={fix.to} className="underline">

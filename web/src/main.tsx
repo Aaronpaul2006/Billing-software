@@ -3,6 +3,9 @@ import { createRoot } from "react-dom/client";
 
 import { App } from "./App";
 import "./index.css";
+import { startAppearance } from "./lib/appearance";
+
+startAppearance(); // theme and text size before the first paint
 
 const root = document.getElementById("root");
 if (!root) throw new Error("#root missing from index.html");

@@ -292,7 +292,7 @@ export function ExportRow({ x }: { x: Export }) {
           {formatDateTime(x.created_at)}
         </span>
         {x.warnings.map((w) => (
-          <span key={w} className="text-xs text-amber-700 dark:text-amber-400">
+          <span key={w} className="text-warning text-xs">
             {w}
           </span>
         ))}

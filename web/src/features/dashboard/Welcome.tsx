@@ -84,7 +84,7 @@ function SetupChecklist() {
             <li key={step.key} className="flex items-center gap-2 text-sm">
               {data[step.key] ? (
                 <>
-                  <CheckCircle2 className="size-4 text-emerald-600" aria-label="Done" />
+                  <CheckCircle2 className="text-success size-4" aria-label="Done" />
                   <span className="text-muted-foreground line-through">{step.label}</span>
                 </>
               ) : (

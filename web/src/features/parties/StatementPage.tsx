@@ -220,7 +220,7 @@ export function StatementPage() {
                     <TableCell
                       className={cn(
                         "text-right tabular-nums",
-                        e.balance.startsWith("-") && "text-emerald-700 dark:text-emerald-400",
+                        e.balance.startsWith("-") && "text-success",
                       )}
                     >
                       {formatInr(e.balance)}

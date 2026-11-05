@@ -1,6 +1,6 @@
 {
  "base": "http://localhost:5173",
- "at": "2026-11-05T08:00:50.949Z",
+ "at": "2026-11-05T08:10:54.931Z",
  "sizes": [
   {
    "name": "desktop",
@@ -27,7 +27,7 @@
      "screenshot": "home--desktop.jpg",
      "url": "/",
      "metrics": {
-      "pageHeight": 2378,
+      "pageHeight": 2398,
       "sidewaysScroll": false,
       "overflowing": [],
       "tapTargets": 13,
@@ -47,12 +47,12 @@
       ],
       "textColours": 4,
       "radii": [
-       "8px",
+       "6px",
        "16px",
-       "10px",
+       "8px",
        "3.35544e+07px",
        "4px",
-       "14px"
+       "12px"
       ],
       "buttonHeights": [],
       "tables": 0,
@@ -71,7 +71,7 @@
      "screenshot": "home--tablet.jpg",
      "url": "/",
      "metrics": {
-      "pageHeight": 2826,
+      "pageHeight": 2846,
       "sidewaysScroll": false,
       "overflowing": [],
       "tapTargets": 13,
@@ -91,12 +91,12 @@
       ],
       "textColours": 4,
       "radii": [
-       "8px",
+       "6px",
        "16px",
-       "10px",
+       "8px",
        "3.35544e+07px",
        "4px",
-       "14px"
+       "12px"
       ],
       "buttonHeights": [],
       "tables": 0,
@@ -114,7 +114,7 @@
      "screenshot": "home--phone.jpg",
      "url": "/",
      "metrics": {
-      "pageHeight": 4168,
+      "pageHeight": 4208,
       "sidewaysScroll": false,
       "overflowing": [],
       "tapTargets": 10,
@@ -134,12 +134,12 @@
       ],
       "textColours": 4,
       "radii": [
-       "8px",
+       "6px",
        "16px",
-       "10px",
+       "8px",
        "3.35544e+07px",
        "4px",
-       "14px"
+       "12px"
       ],
       "buttonHeights": [],
       "tables": 0,
@@ -179,8 +179,8 @@
       ],
       "textColours": 3,
       "radii": [
-       "14px",
-       "8px"
+       "12px",
+       "6px"
       ],
       "buttonHeights": [
        36
@@ -216,8 +216,8 @@
       ],
       "textColours": 3,
       "radii": [
-       "14px",
-       "8px"
+       "12px",
+       "6px"
       ],
       "buttonHeights": [
        36
@@ -253,8 +253,8 @@
       ],
       "textColours": 3,
       "radii": [
-       "14px",
-       "8px"
+       "12px",
+       "6px"
       ],
       "buttonHeights": [
        36
@@ -296,8 +296,8 @@
       ],
       "textColours": 3,
       "radii": [
-       "14px",
-       "8px"
+       "12px",
+       "6px"
       ],
       "buttonHeights": [
        36
@@ -333,8 +333,8 @@
       ],
       "textColours": 3,
       "radii": [
-       "14px",
-       "8px"
+       "12px",
+       "6px"
       ],
       "buttonHeights": [
        36
@@ -370,8 +370,8 @@
       ],
       "textColours": 3,
       "radii": [
-       "14px",
-       "8px"
+       "12px",
+       "6px"
       ],
       "buttonHeights": [
        36
@@ -412,8 +412,8 @@
       ],
       "textColours": 3,
       "radii": [
-       "14px",
-       "8px"
+       "12px",
+       "6px"
       ],
       "buttonHeights": [
        36
@@ -448,8 +448,8 @@
       ],
       "textColours": 3,
       "radii": [
-       "14px",
-       "8px"
+       "12px",
+       "6px"
       ],
       "buttonHeights": [
        36
@@ -484,8 +484,8 @@
       ],
       "textColours": 3,
       "radii": [
-       "14px",
-       "8px"
+       "12px",
+       "6px"
       ],
       "buttonHeights": [
        36
@@ -511,7 +511,7 @@
      "screenshot": "dashboard--desktop.jpg",
      "url": "/",
      "metrics": {
-      "pageHeight": 1599,
+      "pageHeight": 1588,
       "sidewaysScroll": false,
       "overflowing": [],
       "tapTargets": 28,
@@ -528,15 +528,15 @@
        "10px",
        "12px",
        "14px",
-       "16px",
+       "17px",
        "18px",
        "24px"
       ],
-      "textColours": 3,
+      "textColours": 4,
       "radii": [
-       "8px",
-       "14px",
-       "6px"
+       "6px",
+       "12px",
+       "4px"
       ],
       "buttonHeights": [
        36
@@ -554,7 +554,7 @@
      "screenshot": "dashboard--tablet.jpg",
      "url": "/",
      "metrics": {
-      "pageHeight": 1971,
+      "pageHeight": 1973,
       "sidewaysScroll": true,
       "overflowing": [
        "section \"Summary\"",
@@ -577,21 +577,21 @@
        "10px",
        "12px",
        "14px",
-       "16px",
+       "17px",
        "18px",
        "24px"
       ],
-      "textColours": 3,
+      "textColours": 4,
       "radii": [
-       "8px",
-       "14px",
-       "6px"
+       "6px",
+       "12px",
+       "4px"
       ],
       "buttonHeights": [
        36
       ],
       "tables": 2,
-      "widestTable": 612,
+      "widestTable": 667,
       "h1": [
        "Dashboard"
       ]
@@ -603,7 +603,7 @@
      "screenshot": "dashboard--phone.jpg",
      "url": "/",
      "metrics": {
-      "pageHeight": 2564,
+      "pageHeight": 2522,
       "sidewaysScroll": true,
       "overflowing": [
        "section \"Summary\"",
@@ -626,21 +626,21 @@
        "10px",
        "12px",
        "14px",
-       "16px",
+       "17px",
        "18px",
        "24px"
       ],
       "textColours": 2,
       "radii": [
-       "8px",
-       "14px",
-       "6px"
+       "6px",
+       "12px",
+       "4px"
       ],
       "buttonHeights": [
        44
       ],
       "tables": 2,
-      "widestTable": 612,
+      "widestTable": 667,
       "h1": [
        "Dashboard"
       ]
@@ -676,10 +676,10 @@
        "14px",
        "24px"
       ],
-      "textColours": 4,
+      "textColours": 5,
       "radii": [
-       "8px",
-       "6px"
+       "6px",
+       "4px"
       ],
       "buttonHeights": [
        36
@@ -717,16 +717,16 @@
        "14px",
        "24px"
       ],
-      "textColours": 4,
+      "textColours": 5,
       "radii": [
-       "8px",
-       "6px"
+       "6px",
+       "4px"
       ],
       "buttonHeights": [
        36
       ],
       "tables": 1,
-      "widestTable": 629,
+      "widestTable": 689,
       "h1": [
        "Invoices & quotes"
       ]
@@ -760,14 +760,14 @@
       ],
       "textColours": 3,
       "radii": [
-       "8px",
-       "6px"
+       "6px",
+       "4px"
       ],
       "buttonHeights": [
        44
       ],
       "tables": 1,
-      "widestTable": 629,
+      "widestTable": 689,
       "h1": [
        "Invoices & quotes"
       ]
@@ -801,14 +801,14 @@
       "fontSizes": [
        "12px",
        "14px",
-       "16px",
+       "17px",
        "24px"
       ],
-      "textColours": 4,
+      "textColours": 6,
       "radii": [
-       "8px",
-       "14px",
-       "10px"
+       "6px",
+       "12px",
+       "8px"
       ],
       "buttonHeights": [
        16,
@@ -846,14 +846,14 @@
       "fontSizes": [
        "12px",
        "14px",
-       "16px",
+       "17px",
        "24px"
       ],
-      "textColours": 4,
+      "textColours": 6,
       "radii": [
-       "8px",
-       "14px",
-       "10px"
+       "6px",
+       "12px",
+       "8px"
       ],
       "buttonHeights": [
        16,
@@ -895,14 +895,14 @@
       "fontSizes": [
        "12px",
        "14px",
-       "16px",
+       "17px",
        "24px"
       ],
       "textColours": 4,
       "radii": [
-       "8px",
-       "14px",
-       "10px"
+       "6px",
+       "12px",
+       "8px"
       ],
       "buttonHeights": [
        16,
@@ -931,8 +931,10 @@
      "url": "/documents/01a1a478-0ffb-7791-bedd-bb89480540eb/edit",
      "metrics": {
       "pageHeight": 1588,
-      "sidewaysScroll": false,
-      "overflowing": [],
+      "sidewaysScroll": true,
+      "overflowing": [
+       "div"
+      ],
       "tapTargets": 82,
       "smallTapTargets": 11,
       "smallTapExamples": [
@@ -946,14 +948,14 @@
       "fontSizes": [
        "12px",
        "14px",
-       "16px",
+       "17px",
        "24px"
       ],
-      "textColours": 4,
+      "textColours": 6,
       "radii": [
-       "8px",
-       "14px",
-       "10px"
+       "6px",
+       "12px",
+       "8px"
       ],
       "buttonHeights": [
        16,
@@ -994,14 +996,14 @@
       "fontSizes": [
        "12px",
        "14px",
-       "16px",
+       "17px",
        "24px"
       ],
-      "textColours": 4,
+      "textColours": 6,
       "radii": [
-       "8px",
-       "14px",
-       "10px"
+       "6px",
+       "12px",
+       "8px"
       ],
       "buttonHeights": [
        16,
@@ -1043,14 +1045,14 @@
       "fontSizes": [
        "12px",
        "14px",
-       "16px",
+       "17px",
        "24px"
       ],
       "textColours": 4,
       "radii": [
-       "8px",
-       "14px",
-       "10px"
+       "6px",
+       "12px",
+       "8px"
       ],
       "buttonHeights": [
        16,
@@ -1078,7 +1080,7 @@
      "screenshot": "document-issued--desktop.jpg",
      "url": "/documents/01a1a478-09fc-7450-97e3-a204d97028a6",
      "metrics": {
-      "pageHeight": 1313,
+      "pageHeight": 1314,
       "sidewaysScroll": false,
       "overflowing": [],
       "tapTargets": 32,
@@ -1093,13 +1095,14 @@
        "12px",
        "14px",
        "16px",
+       "17px",
        "24px"
       ],
-      "textColours": 4,
+      "textColours": 5,
       "radii": [
-       "8px",
-       "14px",
-       "6px"
+       "6px",
+       "12px",
+       "4px"
       ],
       "buttonHeights": [
        32,
@@ -1118,7 +1121,7 @@
      "screenshot": "document-issued--tablet.jpg",
      "url": "/documents/01a1a478-09fc-7450-97e3-a204d97028a6",
      "metrics": {
-      "pageHeight": 1537,
+      "pageHeight": 1578,
       "sidewaysScroll": false,
       "overflowing": [
        "table \"#DescriptionQuantityRateTaxableGST %Amou\""
@@ -1134,20 +1137,21 @@
        "12px",
        "14px",
        "16px",
+       "17px",
        "24px"
       ],
-      "textColours": 4,
+      "textColours": 5,
       "radii": [
-       "8px",
-       "14px",
-       "6px"
+       "6px",
+       "12px",
+       "4px"
       ],
       "buttonHeights": [
        32,
        36
       ],
       "tables": 2,
-      "widestTable": 518,
+      "widestTable": 578,
       "h1": [
        "Tax invoice INV/0002"
       ]
@@ -1159,7 +1163,7 @@
      "screenshot": "document-issued--phone.jpg",
      "url": "/documents/01a1a478-09fc-7450-97e3-a204d97028a6",
      "metrics": {
-      "pageHeight": 1902,
+      "pageHeight": 1903,
       "sidewaysScroll": false,
       "overflowing": [
        "table \"#DescriptionQuantityRateTaxableGST %Amou\""
@@ -1176,13 +1180,14 @@
        "12px",
        "14px",
        "16px",
+       "17px",
        "24px"
       ],
       "textColours": 3,
       "radii": [
-       "8px",
-       "14px",
-       "6px"
+       "6px",
+       "12px",
+       "4px"
       ],
       "buttonHeights": [
        32,
@@ -1190,7 +1195,7 @@
        44
       ],
       "tables": 2,
-      "widestTable": 518,
+      "widestTable": 578,
       "h1": [
        "Tax invoice INV/0002"
       ]
@@ -1208,13 +1213,14 @@
      "screenshot": "document-review--desktop.jpg",
      "url": "/documents/01a1a478-1039-72ea-96e0-19de89d02673?review=1",
      "metrics": {
-      "pageHeight": 1301,
+      "pageHeight": 1321,
       "sidewaysScroll": false,
       "overflowing": [],
       "tapTargets": 32,
-      "smallTapTargets": 3,
+      "smallTapTargets": 4,
       "smallTapExamples": [
        "a \"Open the client\"",
+       "a \"Edit the bill\"",
        "a \"Edit the bill\"",
        "a \"Lakshmi Traders\""
       ],
@@ -1225,12 +1231,12 @@
        "16px",
        "24px"
       ],
-      "textColours": 4,
+      "textColours": 5,
       "radii": [
+       "6px",
        "8px",
-       "10px",
-       "14px",
-       "6px"
+       "12px",
+       "4px"
       ],
       "buttonHeights": [
        32,
@@ -1249,14 +1255,15 @@
      "screenshot": "document-review--tablet.jpg",
      "url": "/documents/01a1a478-1039-72ea-96e0-19de89d02673?review=1",
      "metrics": {
-      "pageHeight": 1489,
+      "pageHeight": 1601,
       "sidewaysScroll": false,
-      "overflowing": [],
+      "overflowing": [
+       "table \"#DescriptionQuantityRateTaxableGST %Amou\""
+      ],
       "tapTargets": 32,
-      "smallTapTargets": 4,
+      "smallTapTargets": 3,
       "smallTapExamples": [
        "a \"Open the client\"",
-       "a \"Edit the bill\"",
        "a \"Edit the bill\"",
        "a \"Lakshmi Traders\""
       ],
@@ -1267,19 +1274,19 @@
        "16px",
        "24px"
       ],
-      "textColours": 4,
+      "textColours": 5,
       "radii": [
+       "6px",
        "8px",
-       "10px",
-       "14px",
-       "6px"
+       "12px",
+       "4px"
       ],
       "buttonHeights": [
        32,
        36
       ],
       "tables": 1,
-      "widestTable": 480,
+      "widestTable": 517,
       "h1": [
        "Tax invoice (draft)"
       ]
@@ -1291,16 +1298,15 @@
      "screenshot": "document-review--phone.jpg",
      "url": "/documents/01a1a478-1039-72ea-96e0-19de89d02673?review=1",
      "metrics": {
-      "pageHeight": 1928,
+      "pageHeight": 1948,
       "sidewaysScroll": false,
       "overflowing": [
        "table \"#DescriptionQuantityRateTaxableGST %Amou\""
       ],
       "tapTargets": 16,
-      "smallTapTargets": 4,
+      "smallTapTargets": 3,
       "smallTapExamples": [
        "a \"Open the client\"",
-       "a \"Edit the bill\"",
        "a \"Edit the bill\"",
        "a \"Lakshmi Traders\""
       ],
@@ -1313,10 +1319,10 @@
       ],
       "textColours": 3,
       "radii": [
+       "6px",
        "8px",
-       "10px",
-       "14px",
-       "6px"
+       "12px",
+       "4px"
       ],
       "buttonHeights": [
        32,
@@ -1324,7 +1330,7 @@
        44
       ],
       "tables": 1,
-      "widestTable": 470,
+      "widestTable": 517,
       "h1": [
        "Tax invoice (draft)"
       ]
@@ -1357,11 +1363,11 @@
        "14px",
        "24px"
       ],
-      "textColours": 4,
+      "textColours": 5,
       "radii": [
-       "8px",
-       "14px",
-       "6px"
+       "6px",
+       "12px",
+       "4px"
       ],
       "buttonHeights": [
        32,
@@ -1380,9 +1386,11 @@
      "screenshot": "document-quotation--tablet.jpg",
      "url": "/documents/01a1a478-0ed1-70f9-be9c-1b0644e3fe04",
      "metrics": {
-      "pageHeight": 1182,
+      "pageHeight": 1202,
       "sidewaysScroll": false,
-      "overflowing": [],
+      "overflowing": [
+       "table \"#DescriptionQuantityRateTaxableGST %Amou\""
+      ],
       "tapTargets": 31,
       "smallTapTargets": 1,
       "smallTapExamples": [
@@ -1394,18 +1402,18 @@
        "14px",
        "24px"
       ],
-      "textColours": 4,
+      "textColours": 5,
       "radii": [
-       "8px",
-       "14px",
-       "6px"
+       "6px",
+       "12px",
+       "4px"
       ],
       "buttonHeights": [
        32,
        36
       ],
       "tables": 1,
-      "widestTable": 502,
+      "widestTable": 556,
       "h1": [
        "Quotation QT/0001"
       ]
@@ -1436,9 +1444,9 @@
       ],
       "textColours": 3,
       "radii": [
-       "8px",
-       "14px",
-       "6px"
+       "6px",
+       "12px",
+       "4px"
       ],
       "buttonHeights": [
        32,
@@ -1446,7 +1454,7 @@
        44
       ],
       "tables": 1,
-      "widestTable": 502,
+      "widestTable": 556,
       "h1": [
        "Quotation QT/0001"
       ]
@@ -1476,9 +1484,9 @@
        "14px",
        "24px"
       ],
-      "textColours": 2,
+      "textColours": 3,
       "radii": [
-       "8px"
+       "6px"
       ],
       "buttonHeights": [
        36
@@ -1508,9 +1516,9 @@
        "14px",
        "24px"
       ],
-      "textColours": 2,
+      "textColours": 3,
       "radii": [
-       "8px"
+       "6px"
       ],
       "buttonHeights": [
        36
@@ -1541,7 +1549,7 @@
       ],
       "textColours": 2,
       "radii": [
-       "8px"
+       "6px"
       ],
       "buttonHeights": [
        44
@@ -1578,10 +1586,10 @@
        "16px",
        "24px"
       ],
-      "textColours": 4,
+      "textColours": 5,
       "radii": [
-       "8px",
-       "10px"
+       "6px",
+       "8px"
       ],
       "buttonHeights": [
        32,
@@ -1613,10 +1621,10 @@
        "16px",
        "24px"
       ],
-      "textColours": 4,
+      "textColours": 5,
       "radii": [
-       "8px",
-       "10px"
+       "6px",
+       "8px"
       ],
       "buttonHeights": [
        32,
@@ -1649,8 +1657,8 @@
       ],
       "textColours": 3,
       "radii": [
-       "8px",
-       "10px"
+       "6px",
+       "8px"
       ],
       "buttonHeights": [
        32,
@@ -1691,10 +1699,10 @@
        "14px",
        "24px"
       ],
-      "textColours": 4,
+      "textColours": 5,
       "radii": [
-       "8px",
-       "6px"
+       "6px",
+       "4px"
       ],
       "buttonHeights": [
        36
@@ -1729,16 +1737,16 @@
        "14px",
        "24px"
       ],
-      "textColours": 4,
+      "textColours": 5,
       "radii": [
-       "8px",
-       "6px"
+       "6px",
+       "4px"
       ],
       "buttonHeights": [
        36
       ],
       "tables": 1,
-      "widestTable": 577,
+      "widestTable": 641,
       "h1": [
        "Payments"
       ]
@@ -1769,14 +1777,14 @@
       ],
       "textColours": 3,
       "radii": [
-       "8px",
-       "6px"
+       "6px",
+       "4px"
       ],
       "buttonHeights": [
        44
       ],
       "tables": 1,
-      "widestTable": 577,
+      "widestTable": 641,
       "h1": [
        "Payments"
       ]
@@ -1806,10 +1814,10 @@
        "14px",
        "24px"
       ],
-      "textColours": 4,
+      "textColours": 5,
       "radii": [
-       "8px",
-       "14px"
+       "6px",
+       "12px"
       ],
       "buttonHeights": [
        36
@@ -1839,10 +1847,10 @@
        "14px",
        "24px"
       ],
-      "textColours": 4,
+      "textColours": 5,
       "radii": [
-       "8px",
-       "14px"
+       "6px",
+       "12px"
       ],
       "buttonHeights": [
        36
@@ -1874,8 +1882,8 @@
       ],
       "textColours": 3,
       "radii": [
-       "8px",
-       "14px"
+       "6px",
+       "12px"
       ],
       "buttonHeights": [
        36,
@@ -1913,14 +1921,14 @@
       "fontSizes": [
        "12px",
        "14px",
-       "16px",
+       "17px",
        "24px"
       ],
-      "textColours": 3,
+      "textColours": 4,
       "radii": [
-       "8px",
-       "14px",
-       "6px"
+       "6px",
+       "12px",
+       "4px"
       ],
       "buttonHeights": [
        32,
@@ -1951,14 +1959,14 @@
       "fontSizes": [
        "12px",
        "14px",
-       "16px",
+       "17px",
        "24px"
       ],
-      "textColours": 3,
+      "textColours": 4,
       "radii": [
-       "8px",
-       "14px",
-       "6px"
+       "6px",
+       "12px",
+       "4px"
       ],
       "buttonHeights": [
        32,
@@ -1990,14 +1998,14 @@
       "fontSizes": [
        "12px",
        "14px",
-       "16px",
+       "17px",
        "24px"
       ],
       "textColours": 2,
       "radii": [
-       "8px",
-       "14px",
-       "6px"
+       "6px",
+       "12px",
+       "4px"
       ],
       "buttonHeights": [
        32,
@@ -2041,10 +2049,10 @@
        "14px",
        "24px"
       ],
-      "textColours": 4,
+      "textColours": 6,
       "radii": [
-       "8px",
-       "6px"
+       "6px",
+       "4px"
       ],
       "buttonHeights": [
        36
@@ -2082,16 +2090,16 @@
        "14px",
        "24px"
       ],
-      "textColours": 4,
+      "textColours": 6,
       "radii": [
-       "8px",
-       "6px"
+       "6px",
+       "4px"
       ],
       "buttonHeights": [
        36
       ],
       "tables": 1,
-      "widestTable": 525,
+      "widestTable": 562,
       "h1": [
        "Parties"
       ]
@@ -2125,15 +2133,15 @@
       ],
       "textColours": 4,
       "radii": [
-       "8px",
-       "6px"
+       "6px",
+       "4px"
       ],
       "buttonHeights": [
        36,
        44
       ],
       "tables": 1,
-      "widestTable": 525,
+      "widestTable": 562,
       "h1": [
        "Parties"
       ]
@@ -2151,7 +2159,7 @@
      "screenshot": "party-new--desktop.jpg",
      "url": "/parties/new",
      "metrics": {
-      "pageHeight": 1196,
+      "pageHeight": 1199,
       "sidewaysScroll": false,
       "overflowing": [],
       "tapTargets": 35,
@@ -2165,13 +2173,13 @@
       "fontSizes": [
        "12px",
        "14px",
-       "16px",
+       "17px",
        "24px"
       ],
-      "textColours": 4,
+      "textColours": 5,
       "radii": [
-       "8px",
-       "14px"
+       "6px",
+       "12px"
       ],
       "buttonHeights": [
        36
@@ -2189,7 +2197,7 @@
      "screenshot": "party-new--tablet.jpg",
      "url": "/parties/new",
      "metrics": {
-      "pageHeight": 1212,
+      "pageHeight": 1247,
       "sidewaysScroll": false,
       "overflowing": [],
       "tapTargets": 35,
@@ -2203,13 +2211,13 @@
       "fontSizes": [
        "12px",
        "14px",
-       "16px",
+       "17px",
        "24px"
       ],
-      "textColours": 4,
+      "textColours": 5,
       "radii": [
-       "8px",
-       "14px"
+       "6px",
+       "12px"
       ],
       "buttonHeights": [
        36
@@ -2227,7 +2235,7 @@
      "screenshot": "party-new--phone.jpg",
      "url": "/parties/new",
      "metrics": {
-      "pageHeight": 1663,
+      "pageHeight": 1666,
       "sidewaysScroll": false,
       "overflowing": [],
       "tapTargets": 19,
@@ -2241,13 +2249,13 @@
       "fontSizes": [
        "12px",
        "14px",
-       "16px",
+       "17px",
        "24px"
       ],
       "textColours": 3,
       "radii": [
-       "8px",
-       "14px"
+       "6px",
+       "12px"
       ],
       "buttonHeights": [
        36,
@@ -2272,7 +2280,7 @@
      "screenshot": "party--desktop.jpg",
      "url": "/parties/01a1a478-0088-7443-9bd2-0621e69cadba",
      "metrics": {
-      "pageHeight": 1470,
+      "pageHeight": 1474,
       "sidewaysScroll": false,
       "overflowing": [],
       "tapTargets": 40,
@@ -2286,13 +2294,13 @@
       "fontSizes": [
        "12px",
        "14px",
-       "16px",
+       "17px",
        "24px"
       ],
-      "textColours": 4,
+      "textColours": 5,
       "radii": [
-       "8px",
-       "14px"
+       "6px",
+       "12px"
       ],
       "buttonHeights": [
        32,
@@ -2311,7 +2319,7 @@
      "screenshot": "party--tablet.jpg",
      "url": "/parties/01a1a478-0088-7443-9bd2-0621e69cadba",
      "metrics": {
-      "pageHeight": 1526,
+      "pageHeight": 1610,
       "sidewaysScroll": false,
       "overflowing": [],
       "tapTargets": 40,
@@ -2325,13 +2333,13 @@
       "fontSizes": [
        "12px",
        "14px",
-       "16px",
+       "17px",
        "24px"
       ],
-      "textColours": 4,
+      "textColours": 5,
       "radii": [
-       "8px",
-       "14px"
+       "6px",
+       "12px"
       ],
       "buttonHeights": [
        32,
@@ -2350,7 +2358,7 @@
      "screenshot": "party--phone.jpg",
      "url": "/parties/01a1a478-0088-7443-9bd2-0621e69cadba",
      "metrics": {
-      "pageHeight": 2089,
+      "pageHeight": 2093,
       "sidewaysScroll": false,
       "overflowing": [],
       "tapTargets": 24,
@@ -2364,13 +2372,13 @@
       "fontSizes": [
        "12px",
        "14px",
-       "16px",
+       "17px",
        "24px"
       ],
       "textColours": 3,
       "radii": [
-       "8px",
-       "14px"
+       "6px",
+       "12px"
       ],
       "buttonHeights": [
        32,
@@ -2413,11 +2421,11 @@
        "14px",
        "24px"
       ],
-      "textColours": 3,
+      "textColours": 4,
       "radii": [
-       "8px",
-       "14px",
-       "6px"
+       "6px",
+       "12px",
+       "4px"
       ],
       "buttonHeights": [
        36
@@ -2449,17 +2457,17 @@
        "14px",
        "24px"
       ],
-      "textColours": 3,
+      "textColours": 4,
       "radii": [
-       "8px",
-       "14px",
-       "6px"
+       "6px",
+       "12px",
+       "4px"
       ],
       "buttonHeights": [
        36
       ],
       "tables": 1,
-      "widestTable": 560,
+      "widestTable": 618,
       "h1": [
        "Statement of account"
       ]
@@ -2471,7 +2479,7 @@
      "screenshot": "party-statement--phone.jpg",
      "url": "/parties/01a1a478-0088-7443-9bd2-0621e69cadba/statement",
      "metrics": {
-      "pageHeight": 1019,
+      "pageHeight": 1035,
       "sidewaysScroll": false,
       "overflowing": [
        "table \"Statement\""
@@ -2487,16 +2495,16 @@
       ],
       "textColours": 2,
       "radii": [
-       "8px",
-       "14px",
-       "6px"
+       "6px",
+       "12px",
+       "4px"
       ],
       "buttonHeights": [
        36,
        44
       ],
       "tables": 1,
-      "widestTable": 560,
+      "widestTable": 618,
       "h1": [
        "Statement of account"
       ]
@@ -2530,10 +2538,10 @@
        "14px",
        "24px"
       ],
-      "textColours": 4,
+      "textColours": 5,
       "radii": [
-       "8px",
-       "6px"
+       "6px",
+       "4px"
       ],
       "buttonHeights": [
        36
@@ -2569,16 +2577,16 @@
        "14px",
        "24px"
       ],
-      "textColours": 4,
+      "textColours": 5,
       "radii": [
-       "8px",
-       "6px"
+       "6px",
+       "4px"
       ],
       "buttonHeights": [
        36
       ],
       "tables": 1,
-      "widestTable": 596,
+      "widestTable": 635,
       "h1": [
        "Projects"
       ]
@@ -2610,14 +2618,14 @@
       ],
       "textColours": 3,
       "radii": [
-       "8px",
-       "6px"
+       "6px",
+       "4px"
       ],
       "buttonHeights": [
        44
       ],
       "tables": 1,
-      "widestTable": 596,
+      "widestTable": 635,
       "h1": [
        "Projects"
       ]
@@ -2635,7 +2643,7 @@
      "screenshot": "project-new--desktop.jpg",
      "url": "/projects/new",
      "metrics": {
-      "pageHeight": 1236,
+      "pageHeight": 1239,
       "sidewaysScroll": false,
       "overflowing": [],
       "tapTargets": 37,
@@ -2647,13 +2655,13 @@
       "fontSizes": [
        "12px",
        "14px",
-       "16px",
+       "17px",
        "24px"
       ],
-      "textColours": 4,
+      "textColours": 5,
       "radii": [
-       "8px",
-       "14px"
+       "6px",
+       "12px"
       ],
       "buttonHeights": [
        36
@@ -2671,7 +2679,7 @@
      "screenshot": "project-new--tablet.jpg",
      "url": "/projects/new",
      "metrics": {
-      "pageHeight": 1268,
+      "pageHeight": 1287,
       "sidewaysScroll": false,
       "overflowing": [],
       "tapTargets": 37,
@@ -2683,13 +2691,13 @@
       "fontSizes": [
        "12px",
        "14px",
-       "16px",
+       "17px",
        "24px"
       ],
-      "textColours": 4,
+      "textColours": 5,
       "radii": [
-       "8px",
-       "14px"
+       "6px",
+       "12px"
       ],
       "buttonHeights": [
        36
@@ -2707,7 +2715,7 @@
      "screenshot": "project-new--phone.jpg",
      "url": "/projects/new",
      "metrics": {
-      "pageHeight": 1967,
+      "pageHeight": 1970,
       "sidewaysScroll": false,
       "overflowing": [],
       "tapTargets": 21,
@@ -2719,13 +2727,13 @@
       "fontSizes": [
        "12px",
        "14px",
-       "16px",
+       "17px",
        "24px"
       ],
       "textColours": 3,
       "radii": [
-       "8px",
-       "14px"
+       "6px",
+       "12px"
       ],
       "buttonHeights": [
        36,
@@ -2750,7 +2758,7 @@
      "screenshot": "project--desktop.jpg",
      "url": "/projects/01a1a478-0101-75ac-a97a-e8c776d370db",
      "metrics": {
-      "pageHeight": 1324,
+      "pageHeight": 1327,
       "sidewaysScroll": false,
       "overflowing": [],
       "tapTargets": 42,
@@ -2762,13 +2770,13 @@
       "fontSizes": [
        "12px",
        "14px",
-       "16px",
+       "17px",
        "24px"
       ],
-      "textColours": 4,
+      "textColours": 5,
       "radii": [
-       "8px",
-       "14px"
+       "6px",
+       "12px"
       ],
       "buttonHeights": [
        36
@@ -2786,7 +2794,7 @@
      "screenshot": "project--tablet.jpg",
      "url": "/projects/01a1a478-0101-75ac-a97a-e8c776d370db",
      "metrics": {
-      "pageHeight": 1356,
+      "pageHeight": 1375,
       "sidewaysScroll": false,
       "overflowing": [],
       "tapTargets": 42,
@@ -2798,13 +2806,13 @@
       "fontSizes": [
        "12px",
        "14px",
-       "16px",
+       "17px",
        "24px"
       ],
-      "textColours": 4,
+      "textColours": 5,
       "radii": [
-       "8px",
-       "14px"
+       "6px",
+       "12px"
       ],
       "buttonHeights": [
        36
@@ -2822,7 +2830,7 @@
      "screenshot": "project--phone.jpg",
      "url": "/projects/01a1a478-0101-75ac-a97a-e8c776d370db",
      "metrics": {
-      "pageHeight": 2055,
+      "pageHeight": 2058,
       "sidewaysScroll": false,
       "overflowing": [],
       "tapTargets": 26,
@@ -2834,13 +2842,13 @@
       "fontSizes": [
        "12px",
        "14px",
-       "16px",
+       "17px",
        "24px"
       ],
       "textColours": 3,
       "radii": [
-       "8px",
-       "14px"
+       "6px",
+       "12px"
       ],
       "buttonHeights": [
        36,
@@ -2877,10 +2885,10 @@
        "14px",
        "24px"
       ],
-      "textColours": 4,
+      "textColours": 5,
       "radii": [
-       "8px",
-       "6px"
+       "6px",
+       "4px"
       ],
       "buttonHeights": [
        36
@@ -2912,16 +2920,16 @@
        "14px",
        "24px"
       ],
-      "textColours": 4,
+      "textColours": 5,
       "radii": [
-       "8px",
-       "6px"
+       "6px",
+       "4px"
       ],
       "buttonHeights": [
        36
       ],
       "tables": 1,
-      "widestTable": 517,
+      "widestTable": 549,
       "h1": [
        "Skyline Towers, Kakkanad"
       ]
@@ -2949,15 +2957,15 @@
       ],
       "textColours": 3,
       "radii": [
-       "8px",
-       "6px"
+       "6px",
+       "4px"
       ],
       "buttonHeights": [
        36,
        44
       ],
       "tables": 1,
-      "widestTable": 517,
+      "widestTable": 549,
       "h1": [
        "Skyline Towers, Kakkanad"
       ]
@@ -2987,14 +2995,14 @@
       "fontSizes": [
        "12px",
        "14px",
-       "16px",
+       "17px",
        "24px"
       ],
-      "textColours": 4,
+      "textColours": 5,
       "radii": [
-       "8px",
-       "14px",
        "6px",
+       "12px",
+       "4px",
        "3.35544e+07px"
       ],
       "buttonHeights": [
@@ -3019,27 +3027,29 @@
        "div \"BOQ progressBilled in issued tax invoice\""
       ],
       "tapTargets": 23,
-      "smallTapTargets": 0,
-      "smallTapExamples": [],
+      "smallTapTargets": 1,
+      "smallTapExamples": [
+       "a \"Export to Excel or CSV\""
+      ],
       "tinyText": 0,
       "fontSizes": [
        "12px",
        "14px",
-       "16px",
+       "17px",
        "24px"
       ],
-      "textColours": 4,
+      "textColours": 5,
       "radii": [
-       "8px",
-       "14px",
        "6px",
+       "12px",
+       "4px",
        "3.35544e+07px"
       ],
       "buttonHeights": [
        36
       ],
       "tables": 1,
-      "widestTable": 530,
+      "widestTable": 558,
       "h1": [
        "Skyline Towers, Kakkanad"
       ]
@@ -3051,33 +3061,35 @@
      "screenshot": "project-progress--phone.jpg",
      "url": "/projects/01a1a478-0101-75ac-a97a-e8c776d370db/progress",
      "metrics": {
-      "pageHeight": 994,
+      "pageHeight": 995,
       "sidewaysScroll": true,
       "overflowing": [
        "div \"BOQ progressBilled in issued tax invoice\""
       ],
       "tapTargets": 7,
-      "smallTapTargets": 0,
-      "smallTapExamples": [],
+      "smallTapTargets": 1,
+      "smallTapExamples": [
+       "a \"Export to Excel or CSV\""
+      ],
       "tinyText": 0,
       "fontSizes": [
        "12px",
        "14px",
-       "16px",
+       "17px",
        "24px"
       ],
       "textColours": 3,
       "radii": [
-       "8px",
-       "14px",
        "6px",
+       "12px",
+       "4px",
        "3.35544e+07px"
       ],
       "buttonHeights": [
        44
       ],
       "tables": 1,
-      "widestTable": 530,
+      "widestTable": 558,
       "h1": [
        "Skyline Towers, Kakkanad"
       ]
@@ -3105,14 +3117,14 @@
       "fontSizes": [
        "12px",
        "14px",
-       "16px",
+       "17px",
        "24px"
       ],
-      "textColours": 4,
+      "textColours": 5,
       "radii": [
-       "8px",
-       "14px",
-       "6px"
+       "6px",
+       "12px",
+       "4px"
       ],
       "buttonHeights": [
        36
@@ -3140,14 +3152,14 @@
       "fontSizes": [
        "12px",
        "14px",
-       "16px",
+       "17px",
        "24px"
       ],
-      "textColours": 4,
+      "textColours": 5,
       "radii": [
-       "8px",
-       "14px",
-       "6px"
+       "6px",
+       "12px",
+       "4px"
       ],
       "buttonHeights": [
        36
@@ -3178,21 +3190,21 @@
       "fontSizes": [
        "12px",
        "14px",
-       "16px",
+       "17px",
        "24px"
       ],
       "textColours": 3,
       "radii": [
-       "8px",
-       "14px",
-       "6px"
+       "6px",
+       "12px",
+       "4px"
       ],
       "buttonHeights": [
        36,
        44
       ],
       "tables": 1,
-      "widestTable": 364,
+      "widestTable": 408,
       "h1": [
        "Skyline Towers, Kakkanad"
       ]
@@ -3226,10 +3238,10 @@
        "14px",
        "24px"
       ],
-      "textColours": 4,
+      "textColours": 5,
       "radii": [
-       "8px",
-       "6px"
+       "6px",
+       "4px"
       ],
       "buttonHeights": [
        36
@@ -3263,16 +3275,16 @@
        "14px",
        "24px"
       ],
-      "textColours": 4,
+      "textColours": 5,
       "radii": [
-       "8px",
-       "6px"
+       "6px",
+       "4px"
       ],
       "buttonHeights": [
        36
       ],
       "tables": 1,
-      "widestTable": 556,
+      "widestTable": 622,
       "h1": [
        "Expenses"
       ]
@@ -3302,14 +3314,14 @@
       ],
       "textColours": 3,
       "radii": [
-       "8px",
-       "6px"
+       "6px",
+       "4px"
       ],
       "buttonHeights": [
        44
       ],
       "tables": 1,
-      "widestTable": 556,
+      "widestTable": 622,
       "h1": [
        "Expenses"
       ]
@@ -3341,10 +3353,10 @@
        "14px",
        "24px"
       ],
-      "textColours": 4,
+      "textColours": 5,
       "radii": [
-       "8px",
-       "14px"
+       "6px",
+       "12px"
       ],
       "buttonHeights": [
        36
@@ -3376,10 +3388,10 @@
        "14px",
        "24px"
       ],
-      "textColours": 4,
+      "textColours": 5,
       "radii": [
-       "8px",
-       "14px"
+       "6px",
+       "12px"
       ],
       "buttonHeights": [
        36
@@ -3413,8 +3425,8 @@
       ],
       "textColours": 3,
       "radii": [
-       "8px",
-       "14px"
+       "6px",
+       "12px"
       ],
       "buttonHeights": [
        36,
@@ -3453,10 +3465,10 @@
        "14px",
        "24px"
       ],
-      "textColours": 4,
+      "textColours": 5,
       "radii": [
-       "8px",
-       "14px"
+       "6px",
+       "12px"
       ],
       "buttonHeights": [
        36
@@ -3488,10 +3500,10 @@
        "14px",
        "24px"
       ],
-      "textColours": 4,
+      "textColours": 5,
       "radii": [
-       "8px",
-       "14px"
+       "6px",
+       "12px"
       ],
       "buttonHeights": [
        36
@@ -3525,8 +3537,8 @@
       ],
       "textColours": 3,
       "radii": [
-       "8px",
-       "14px"
+       "6px",
+       "12px"
       ],
       "buttonHeights": [
        36,
@@ -3563,9 +3575,9 @@
        "14px",
        "24px"
       ],
-      "textColours": 3,
+      "textColours": 4,
       "radii": [
-       "8px"
+       "6px"
       ],
       "buttonHeights": [
        36,
@@ -3598,9 +3610,9 @@
        "14px",
        "24px"
       ],
-      "textColours": 3,
+      "textColours": 4,
       "radii": [
-       "8px"
+       "6px"
       ],
       "buttonHeights": [
        36,
@@ -3623,8 +3635,10 @@
       "sidewaysScroll": false,
       "overflowing": [],
       "tapTargets": 7,
-      "smallTapTargets": 0,
-      "smallTapExamples": [],
+      "smallTapTargets": 1,
+      "smallTapExamples": [
+       "a \"Make the GSTR-1 file for this month\""
+      ],
       "tinyText": 0,
       "fontSizes": [
        "14px",
@@ -3632,7 +3646,7 @@
       ],
       "textColours": 2,
       "radii": [
-       "8px"
+       "6px"
       ],
       "buttonHeights": [
        38,
@@ -3670,10 +3684,10 @@
        "16px",
        "24px"
       ],
-      "textColours": 4,
+      "textColours": 5,
       "radii": [
-       "8px",
-       "14px"
+       "6px",
+       "12px"
       ],
       "buttonHeights": [
        36
@@ -3704,10 +3718,10 @@
        "16px",
        "24px"
       ],
-      "textColours": 4,
+      "textColours": 5,
       "radii": [
-       "8px",
-       "14px"
+       "6px",
+       "12px"
       ],
       "buttonHeights": [
        36
@@ -3739,8 +3753,8 @@
       ],
       "textColours": 3,
       "radii": [
-       "8px",
-       "14px"
+       "6px",
+       "12px"
       ],
       "buttonHeights": [
        36,
@@ -3777,9 +3791,9 @@
        "14px",
        "24px"
       ],
-      "textColours": 3,
+      "textColours": 4,
       "radii": [
-       "8px"
+       "6px"
       ],
       "buttonHeights": [
        36
@@ -3809,9 +3823,9 @@
        "14px",
        "24px"
       ],
-      "textColours": 3,
+      "textColours": 4,
       "radii": [
-       "8px"
+       "6px"
       ],
       "buttonHeights": [
        36
@@ -3842,7 +3856,7 @@
       ],
       "textColours": 3,
       "radii": [
-       "8px"
+       "6px"
       ],
       "buttonHeights": [
        36,
@@ -3879,10 +3893,10 @@
        "14px",
        "24px"
       ],
-      "textColours": 4,
+      "textColours": 5,
       "radii": [
-       "8px",
-       "14px"
+       "6px",
+       "12px"
       ],
       "buttonHeights": [
        36
@@ -3912,10 +3926,10 @@
        "14px",
        "24px"
       ],
-      "textColours": 4,
+      "textColours": 5,
       "radii": [
-       "8px",
-       "14px"
+       "6px",
+       "12px"
       ],
       "buttonHeights": [
        36
@@ -3947,8 +3961,8 @@
       ],
       "textColours": 3,
       "radii": [
-       "8px",
-       "14px"
+       "6px",
+       "12px"
       ],
       "buttonHeights": [
        36,
@@ -3985,11 +3999,11 @@
        "14px",
        "24px"
       ],
-      "textColours": 4,
+      "textColours": 5,
       "radii": [
+       "6px",
        "8px",
-       "10px",
-       "6px"
+       "4px"
       ],
       "buttonHeights": [
        36
@@ -4019,11 +4033,11 @@
        "14px",
        "24px"
       ],
-      "textColours": 4,
+      "textColours": 5,
       "radii": [
+       "6px",
        "8px",
-       "10px",
-       "6px"
+       "4px"
       ],
       "buttonHeights": [
        36
@@ -4055,9 +4069,9 @@
       ],
       "textColours": 3,
       "radii": [
+       "6px",
        "8px",
-       "10px",
-       "6px"
+       "4px"
       ],
       "buttonHeights": [
        36,
@@ -4094,10 +4108,10 @@
        "14px",
        "24px"
       ],
-      "textColours": 4,
+      "textColours": 5,
       "radii": [
-       "8px",
-       "6px"
+       "6px",
+       "4px"
       ],
       "buttonHeights": [
        32,
@@ -4130,17 +4144,17 @@
        "14px",
        "24px"
       ],
-      "textColours": 4,
+      "textColours": 5,
       "radii": [
-       "8px",
-       "6px"
+       "6px",
+       "4px"
       ],
       "buttonHeights": [
        32,
        36
       ],
       "tables": 1,
-      "widestTable": 617,
+      "widestTable": 647,
       "h1": [
        "GST registrations"
       ]
@@ -4168,8 +4182,8 @@
       ],
       "textColours": 3,
       "radii": [
-       "8px",
-       "6px"
+       "6px",
+       "4px"
       ],
       "buttonHeights": [
        32,
@@ -4177,7 +4191,7 @@
        44
       ],
       "tables": 1,
-      "widestTable": 617,
+      "widestTable": 647,
       "h1": [
        "GST registrations"
       ]
@@ -4207,10 +4221,10 @@
        "14px",
        "24px"
       ],
-      "textColours": 4,
+      "textColours": 5,
       "radii": [
-       "8px",
-       "6px"
+       "6px",
+       "4px"
       ],
       "buttonHeights": [
        32,
@@ -4231,7 +4245,9 @@
      "metrics": {
       "pageHeight": 1024,
       "sidewaysScroll": false,
-      "overflowing": [],
+      "overflowing": [
+       "table \"Document typeRegistrationFinancial yearN\""
+      ],
       "tapTargets": 23,
       "smallTapTargets": 0,
       "smallTapExamples": [],
@@ -4241,17 +4257,17 @@
        "14px",
        "24px"
       ],
-      "textColours": 4,
+      "textColours": 5,
       "radii": [
-       "8px",
-       "6px"
+       "6px",
+       "4px"
       ],
       "buttonHeights": [
        32,
        36
       ],
       "tables": 1,
-      "widestTable": 502,
+      "widestTable": 520,
       "h1": [
        "Number series"
       ]
@@ -4279,8 +4295,8 @@
       ],
       "textColours": 3,
       "radii": [
-       "8px",
-       "6px"
+       "6px",
+       "4px"
       ],
       "buttonHeights": [
        32,
@@ -4288,7 +4304,7 @@
        44
       ],
       "tables": 1,
-      "widestTable": 502,
+      "widestTable": 520,
       "h1": [
        "Number series"
       ]
@@ -4306,7 +4322,7 @@
      "screenshot": "settings-print--desktop.jpg",
      "url": "/settings/print",
      "metrics": {
-      "pageHeight": 1314,
+      "pageHeight": 1318,
       "sidewaysScroll": false,
       "overflowing": [],
       "tapTargets": 29,
@@ -4320,12 +4336,13 @@
        "12px",
        "14px",
        "16px",
+       "17px",
        "24px"
       ],
-      "textColours": 4,
+      "textColours": 5,
       "radii": [
-       "8px",
-       "14px",
+       "6px",
+       "12px",
        "50%",
        "4px"
       ],
@@ -4346,7 +4363,7 @@
      "screenshot": "settings-print--tablet.jpg",
      "url": "/settings/print",
      "metrics": {
-      "pageHeight": 1354,
+      "pageHeight": 1358,
       "sidewaysScroll": false,
       "overflowing": [],
       "tapTargets": 29,
@@ -4360,12 +4377,13 @@
        "12px",
        "14px",
        "16px",
+       "17px",
        "24px"
       ],
-      "textColours": 4,
+      "textColours": 5,
       "radii": [
-       "8px",
-       "14px",
+       "6px",
+       "12px",
        "50%",
        "4px"
       ],
@@ -4386,7 +4404,7 @@
      "screenshot": "settings-print--phone.jpg",
      "url": "/settings/print",
      "metrics": {
-      "pageHeight": 1751,
+      "pageHeight": 1755,
       "sidewaysScroll": false,
       "overflowing": [],
       "tapTargets": 13,
@@ -4400,12 +4418,13 @@
        "12px",
        "14px",
        "16px",
+       "17px",
        "24px"
       ],
       "textColours": 3,
       "radii": [
-       "8px",
-       "14px",
+       "6px",
+       "12px",
        "50%",
        "4px"
       ],
@@ -4445,10 +4464,10 @@
        "14px",
        "24px"
       ],
-      "textColours": 4,
+      "textColours": 5,
       "radii": [
-       "8px",
-       "14px"
+       "6px",
+       "12px"
       ],
       "buttonHeights": [
        36
@@ -4478,10 +4497,10 @@
        "14px",
        "24px"
       ],
-      "textColours": 4,
+      "textColours": 5,
       "radii": [
-       "8px",
-       "14px"
+       "6px",
+       "12px"
       ],
       "buttonHeights": [
        36
@@ -4513,8 +4532,8 @@
       ],
       "textColours": 3,
       "radii": [
-       "8px",
-       "14px"
+       "6px",
+       "12px"
       ],
       "buttonHeights": [
        36,
@@ -4539,23 +4558,23 @@
      "screenshot": "account--desktop.jpg",
      "url": "/account",
      "metrics": {
-      "pageHeight": 2053,
+      "pageHeight": 2184,
       "sidewaysScroll": false,
       "overflowing": [],
-      "tapTargets": 36,
+      "tapTargets": 38,
       "smallTapTargets": 0,
       "smallTapExamples": [],
       "tinyText": 0,
       "fontSizes": [
        "12px",
        "14px",
-       "16px",
+       "17px",
        "24px"
       ],
-      "textColours": 4,
+      "textColours": 5,
       "radii": [
-       "8px",
-       "14px"
+       "6px",
+       "12px"
       ],
       "buttonHeights": [
        32,
@@ -4574,23 +4593,23 @@
      "screenshot": "account--tablet.jpg",
      "url": "/account",
      "metrics": {
-      "pageHeight": 2233,
+      "pageHeight": 2396,
       "sidewaysScroll": false,
       "overflowing": [],
-      "tapTargets": 36,
+      "tapTargets": 38,
       "smallTapTargets": 0,
       "smallTapExamples": [],
       "tinyText": 0,
       "fontSizes": [
        "12px",
        "14px",
-       "16px",
+       "17px",
        "24px"
       ],
-      "textColours": 4,
+      "textColours": 5,
       "radii": [
-       "8px",
-       "14px"
+       "6px",
+       "12px"
       ],
       "buttonHeights": [
        32,
@@ -4609,23 +4628,23 @@
      "screenshot": "account--phone.jpg",
      "url": "/account",
      "metrics": {
-      "pageHeight": 2294,
+      "pageHeight": 2665,
       "sidewaysScroll": false,
       "overflowing": [],
-      "tapTargets": 20,
+      "tapTargets": 22,
       "smallTapTargets": 0,
       "smallTapExamples": [],
       "tinyText": 0,
       "fontSizes": [
        "12px",
        "14px",
-       "16px",
+       "17px",
        "24px"
       ],
       "textColours": 4,
       "radii": [
-       "8px",
-       "14px"
+       "6px",
+       "12px"
       ],
       "buttonHeights": [
        32,
@@ -4636,6 +4655,64 @@
       "widestTable": 0,
       "h1": [
        "Your account"
+      ]
+     },
+     "axe": [],
+     "consoleErrors": []
+    }
+   }
+  },
+  {
+   "name": "Menu open on a phone",
+   "path": "/",
+   "sizes": {
+    "phone": {
+     "screenshot": "menu-open--phone.jpg",
+     "url": "/",
+     "metrics": {
+      "pageHeight": 2522,
+      "sidewaysScroll": true,
+      "overflowing": [
+       "section \"Summary\"",
+       "div \"Billed and collectedThe last 12 months.D\"",
+       "div \"Overdue billsNothing is past due.\"",
+       "div \"Projects losing moneyCosts so far are mo\"",
+       "div \"Receivables by partyWhat each client owe\""
+      ],
+      "tapTargets": 30,
+      "smallTapTargets": 5,
+      "smallTapExamples": [
+       "a \"Invite your team\"",
+       "a \"Tax invoice \u00c2\u00b7 Anil Kumar\"",
+       "a \"Tax invoice \u00c2\u00b7 Lakshmi Traders\"",
+       "a \"Green Valley Homes\"",
+       "a \"Skyline Developers\""
+      ],
+      "tinyText": 12,
+      "fontSizes": [
+       "10px",
+       "12px",
+       "14px",
+       "16px",
+       "17px",
+       "18px",
+       "24px"
+      ],
+      "textColours": 4,
+      "radii": [
+       "6px",
+       "12px",
+       "4px"
+      ],
+      "buttonHeights": [
+       28,
+       36,
+       44
+      ],
+      "tables": 2,
+      "widestTable": 667,
+      "h1": [
+       "Dashboard"
       ]
      },
      "axe": [],
@@ -4666,15 +4743,16 @@
        "12px",
        "14px",
        "16px",
+       "17px",
        "18px",
        "24px",
        "30px"
       ],
       "textColours": 3,
       "radii": [
-       "8px",
-       "14px",
-       "6px"
+       "6px",
+       "12px",
+       "4px"
       ],
       "buttonHeights": [
        32
@@ -4707,15 +4785,16 @@
        "12px",
        "14px",
        "16px",
+       "17px",
        "18px",
        "24px",
        "30px"
       ],
       "textColours": 3,
       "radii": [
-       "8px",
-       "14px",
-       "6px"
+       "6px",
+       "12px",
+       "4px"
       ],
       "buttonHeights": [
        32
@@ -4752,21 +4831,22 @@
        "12px",
        "14px",
        "16px",
+       "17px",
        "18px",
        "24px",
        "30px"
       ],
       "textColours": 3,
       "radii": [
-       "8px",
-       "14px",
-       "6px"
+       "6px",
+       "12px",
+       "4px"
       ],
       "buttonHeights": [
        32
       ],
       "tables": 1,
-      "widestTable": 594,
+      "widestTable": 658,
       "h1": [
        "Overview"
       ]
@@ -4802,8 +4882,8 @@
       ],
       "textColours": 3,
       "radii": [
-       "8px",
-       "6px"
+       "6px",
+       "4px"
       ],
       "buttonHeights": [
        32
@@ -4839,8 +4919,8 @@
       ],
       "textColours": 3,
       "radii": [
-       "8px",
-       "6px"
+       "6px",
+       "4px"
       ],
       "buttonHeights": [
        32
@@ -4880,14 +4960,14 @@
       ],
       "textColours": 3,
       "radii": [
-       "8px",
-       "6px"
+       "6px",
+       "4px"
       ],
       "buttonHeights": [
        32
       ],
       "tables": 1,
-      "widestTable": 594,
+      "widestTable": 658,
       "h1": [
        "Bills & quotes"
       ]
@@ -4922,9 +5002,9 @@
       ],
       "textColours": 3,
       "radii": [
-       "8px",
-       "14px",
-       "6px"
+       "6px",
+       "12px",
+       "4px"
       ],
       "buttonHeights": [
        32,
@@ -4960,9 +5040,9 @@
       ],
       "textColours": 3,
       "radii": [
-       "8px",
-       "14px",
-       "6px"
+       "6px",
+       "12px",
+       "4px"
       ],
       "buttonHeights": [
        32,
@@ -5002,16 +5082,16 @@
       ],
       "textColours": 3,
       "radii": [
-       "8px",
-       "14px",
-       "6px"
+       "6px",
+       "12px",
+       "4px"
       ],
       "buttonHeights": [
        32,
        36
       ],
       "tables": 1,
-      "widestTable": 493,
+      "widestTable": 552,
       "h1": [
        "Tax invoice INV/0002"
       ]
@@ -5044,8 +5124,8 @@
       ],
       "textColours": 2,
       "radii": [
-       "8px",
-       "6px"
+       "6px",
+       "4px"
       ],
       "buttonHeights": [
        32
@@ -5078,8 +5158,8 @@
       ],
       "textColours": 2,
       "radii": [
-       "8px",
-       "6px"
+       "6px",
+       "4px"
       ],
       "buttonHeights": [
        32
@@ -5116,14 +5196,14 @@
       ],
       "textColours": 2,
       "radii": [
-       "8px",
-       "6px"
+       "6px",
+       "4px"
       ],
       "buttonHeights": [
        32
       ],
       "tables": 1,
-      "widestTable": 604,
+      "widestTable": 683,
       "h1": [
        "Payments"
       ]
@@ -5156,8 +5236,8 @@
       ],
       "textColours": 2,
       "radii": [
-       "8px",
-       "6px"
+       "6px",
+       "4px"
       ],
       "buttonHeights": [
        32
@@ -5192,14 +5272,14 @@
       ],
       "textColours": 2,
       "radii": [
-       "8px",
-       "6px"
+       "6px",
+       "4px"
       ],
       "buttonHeights": [
        32
       ],
       "tables": 1,
-      "widestTable": 805,
+      "widestTable": 892,
       "h1": [
        "Statement of account"
       ]
@@ -5230,14 +5310,14 @@
       ],
       "textColours": 2,
       "radii": [
-       "8px",
-       "6px"
+       "6px",
+       "4px"
       ],
       "buttonHeights": [
        32
       ],
       "tables": 1,
-      "widestTable": 805,
+      "widestTable": 892,
       "h1": [
        "Statement of account"
       ]
@@ -5270,7 +5350,7 @@
       ],
       "textColours": 2,
       "radii": [
-       "8px"
+       "6px"
       ],
       "buttonHeights": [
        32
@@ -5303,7 +5383,7 @@
       ],
       "textColours": 2,
       "radii": [
-       "8px"
+       "6px"
       ],
       "buttonHeights": [
        32
@@ -5339,7 +5419,7 @@
       ],
       "textColours": 2,
       "radii": [
-       "8px"
+       "6px"
       ],
       "buttonHeights": [
        32
@@ -5378,8 +5458,8 @@
       ],
       "textColours": 2,
       "radii": [
-       "8px",
-       "6px"
+       "6px",
+       "4px"
       ],
       "buttonHeights": [
        32
@@ -5412,8 +5492,8 @@
       ],
       "textColours": 2,
       "radii": [
-       "8px",
-       "6px"
+       "6px",
+       "4px"
       ],
       "buttonHeights": [
        32
@@ -5450,14 +5530,14 @@
       ],
       "textColours": 2,
       "radii": [
-       "8px",
-       "6px"
+       "6px",
+       "4px"
       ],
       "buttonHeights": [
        32
       ],
       "tables": 1,
-      "widestTable": 473,
+      "widestTable": 516,
       "h1": [
        "Skyline Towers, Kakkanad"
       ]
@@ -5466,64 +5546,7 @@
      "consoleErrors": []
     }
    }
-  },
-  {
-   "name": "Menu open on a phone",
-   "path": "/",
-   "sizes": {
-    "phone": {
-     "screenshot": "menu-open--phone.jpg",
-     "url": "/",
-     "metrics": {
-      "pageHeight": 2564,
-      "sidewaysScroll": true,
-      "overflowing": [
-       "section \"Summary\"",
-       "div \"Billed and collectedThe last 12 months.D\"",
-       "div \"Overdue billsNothing is past due.\"",
-       "div \"Projects losing moneyCosts so far are mo\"",
-       "div \"Receivables by partyWhat each client owe\""
-      ],
-      "tapTargets": 30,
-      "smallTapTargets": 5,
-      "smallTapExamples": [
-       "a \"Invite your team\"",
-       "a \"Tax invoice \u00c2\u00b7 Anil Kumar\"",
-       "a \"Tax invoice \u00c2\u00b7 Lakshmi Traders\"",
-       "a \"Green Valley Homes\"",
-       "a \"Skyline Developers\""
-      ],
-      "tinyText": 12,
-      "fontSizes": [
-       "10px",
-       "12px",
-       "14px",
-       "16px",
-       "18px",
-       "24px"
-      ],
-      "textColours": 3,
-      "radii": [
-       "8px",
-       "14px",
-       "6px"
-      ],
-      "buttonHeights": [
-       28,
-       36,
-       44
-      ],
-      "tables": 2,
-      "widestTable": 612,
-      "h1": [
-       "Dashboard"
-      ]
-     },
-     "axe": [],
-     "consoleErrors": []
-    }
-   }
   }
  ],
- "step": "D.1"
+ "step": "D.2"
 }

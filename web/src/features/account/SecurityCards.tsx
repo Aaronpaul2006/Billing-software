@@ -144,7 +144,7 @@ export function TwoStepCard() {
         ) : me.data.mfa_enabled ? (
           <>
             <p className="flex items-center gap-2 text-sm">
-              <CheckCircle2 className="size-4 text-green-600" aria-hidden /> On.
+              <CheckCircle2 className="text-success size-4" aria-hidden /> On.
               {required && " Owners and admins must keep it on."}
             </p>
             {!required && <TurnOff />}

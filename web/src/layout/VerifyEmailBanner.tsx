@@ -39,7 +39,7 @@ export function VerifyEmailBanner() {
   return (
     <div
       role="status"
-      className="flex flex-wrap items-center gap-3 border-b bg-sky-50 p-3 text-sm dark:bg-sky-950/30"
+      className="flex flex-wrap items-center gap-3 border-b bg-info-soft border-info-border p-3 text-sm"
     >
       <Mail className="size-4" aria-hidden />
       <span>
