@@ -7,14 +7,17 @@ import { api, newIdempotencyKey, unwrap } from "@/api/client";
 import { ApiError } from "@/api/problem";
 import type { components } from "@/api/schema";
 import { useSession } from "@/auth/context";
+import { DataTable } from "@/components/DataTable";
+import type { Column, SortState } from "@/components/DataTable";
 import { ErrorState } from "@/components/ErrorState";
+import { Money } from "@/components/Money";
 import { Field } from "@/components/FormField";
 import { PageHeader } from "@/components/PageHeader";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Skeleton } from "@/components/ui/skeleton";
+import { Sheet, SheetContent, SheetDescription, SheetTitle } from "@/components/ui/sheet";
 import { errorMessage } from "@/lib/errors";
 import { ifMatch } from "@/lib/forms";
 import { cleanMoneyInput, formatInr, MONEY_INPUT, sumMoney } from "@/lib/money";
@@ -368,16 +371,98 @@ export function CatalogPage() {
   const [params] = useSearchParams();
   const [search, setSearch] = useState(() => params.get("q") ?? ""); // the command palette links here
   const q = useDebounced(search.trim(), 300);
+  const [sort, setSort] = useState<SortState>({ column: "name", direction: "asc" });
   const page = useQuery({
-    queryKey: ["catalog-items", "all", q],
+    queryKey: ["catalog-items", "all", q, sort.direction],
     queryFn: async () =>
       unwrap(
         await api.GET("/api/v1/catalog-items", {
-          params: { query: { limit: 100, ordering: "name", ...(q ? { q } : {}) } },
+          params: {
+            query: {
+              limit: 100,
+              ordering: sort.direction === "desc" ? "-name" : "name",
+              ...(q ? { q } : {}),
+            },
+          },
         }),
       ),
   });
   const items = { error: page.error, data: page.data?.results };
+  const open = items.data?.find((i) => panel?.endsWith(`:${i.id}`));
+  const columns: Column<Item>[] = [
+    {
+      id: "name",
+      header: "Item",
+      sortable: true,
+      card: "title",
+      cell: (item) => (
+        <>
+          <span className="font-medium">{item.name}</span>
+          {!item.is_active && (
+            <Badge variant="secondary" className="ml-2">
+              Archived
+            </Badge>
+          )}
+          {item.description && (
+            <div className="text-help text-muted-foreground line-clamp-1">{item.description}</div>
+          )}
+        </>
+      ),
+    },
+    {
+      id: "rate",
+      header: "Rate",
+      align: "right",
+      card: "amount",
+      cell: (item) =>
+        item.default_rate ? (
+          <span>
+            <Money value={item.default_rate} />
+            {item.unit && <span className="text-muted-foreground"> / {item.unit}</span>}
+          </span>
+        ) : (
+          <span className="text-muted-foreground">No rate</span>
+        ),
+    },
+    { id: "gst", header: "GST", cell: (item) => `${item.gst_rate} %` },
+    { id: "hsn", header: "HSN/SAC", cell: (item) => item.sac_hsn ?? "–" },
+    {
+      id: "variants",
+      header: "Variants",
+      cell: (item) => (item.variants.length > 0 ? String(item.variants.length) : "–"),
+    },
+    {
+      id: "actions",
+      header: "Change",
+      card: "badge",
+      cell: (item) => (
+        <span className="flex gap-1">
+          <Button
+            size="sm"
+            variant="outline"
+            aria-label={`Variants of ${item.name}`}
+            onClick={() => {
+              setPanel(`variants:${item.id}`);
+            }}
+          >
+            Variants
+          </Button>
+          {canEdit && (
+            <Button
+              size="sm"
+              variant="ghost"
+              aria-label={`Edit ${item.name}`}
+              onClick={() => {
+                setPanel(`edit:${item.id}`);
+              }}
+            >
+              Edit
+            </Button>
+          )}
+        </span>
+      ),
+    },
+  ];
   return (
     <>
       <PageHeader
@@ -429,82 +514,84 @@ export function CatalogPage() {
           }}
         />
       </div>
-      {panel === "new" && (
-        <div className="mb-4 max-w-4xl">
-          <ItemForm
-            onDone={() => {
-              setPanel(null);
-            }}
-          />
-        </div>
-      )}
       {items.error ? (
         <ErrorState error={items.error} />
-      ) : !items.data ? (
-        <Skeleton className="h-24 w-full" />
-      ) : items.data.length === 0 ? (
-        <p className="text-muted-foreground py-8 text-center text-sm">
-          {q ? "No item matches." : "No items yet."}
-        </p>
       ) : (
-        <ul className="grid max-w-4xl gap-3">
-          {items.data.map((item) => (
-            <li key={item.id} className="rounded-lg border p-4">
-              <div className="flex flex-wrap items-center gap-3">
-                <div className="min-w-48 flex-1">
-                  <div className="font-medium">
-                    {item.name}
-                    {!item.is_active && (
-                      <Badge variant="secondary" className="ml-2">
-                        Archived
-                      </Badge>
-                    )}
-                  </div>
-                  <div className="text-muted-foreground text-sm">
-                    {item.default_rate ? formatInr(item.default_rate) : "No rate"}
-                    {item.unit ? ` per ${item.unit}` : ""} · GST {item.gst_rate} %
-                    {item.sac_hsn ? ` · HSN/SAC ${item.sac_hsn}` : ""}
-                    {item.variants.length > 0
-                      ? ` · ${String(item.variants.length)} variant${item.variants.length === 1 ? "" : "s"}`
-                      : ""}
-                  </div>
-                </div>
-                <Button
-                  size="sm"
-                  variant="outline"
-                  onClick={() => {
-                    setPanel(panel === `variants:${item.id}` ? null : `variants:${item.id}`);
-                  }}
-                >
-                  Variants
-                </Button>
-                {canEdit && (
-                  <Button
-                    size="sm"
-                    variant="ghost"
-                    onClick={() => {
-                      setPanel(`edit:${item.id}`);
-                    }}
-                  >
-                    Edit
-                  </Button>
-                )}
-              </div>
-              {panel === `edit:${item.id}` && (
-                <div className="mt-3">
-                  <ItemForm
-                    item={item}
-                    onDone={() => {
-                      setPanel(null);
-                    }}
-                  />
-                </div>
-              )}
-              {panel === `variants:${item.id}` && <Variants item={item} canEdit={canEdit} />}
-            </li>
-          ))}
-        </ul>
+        <DataTable
+          label="Catalog items"
+          rows={items.data ?? []}
+          columns={columns}
+          rowKey={(item) => item.id}
+          rowLabel={(item) => item.name}
+          loading={!items.data}
+          sort={sort}
+          onSortChange={setSort}
+          empty={
+            q
+              ? {
+                  title: "No item matches",
+                  description: "Try part of the name, a brand or the HSN/SAC code.",
+                }
+              : {
+                  title: "No items yet",
+                  description:
+                    "Save the items you bill often, with their rates, to fill bills faster.",
+                  action: canEdit && (
+                    <Button
+                      onClick={() => {
+                        setPanel("new");
+                      }}
+                    >
+                      <Plus aria-hidden /> Add item
+                    </Button>
+                  ),
+                }
+          }
+        />
       )}
+      <Sheet
+        open={panel !== null && panel !== "import"}
+        onOpenChange={(open) => {
+          if (!open) setPanel(null);
+        }}
+      >
+        <SheetContent
+          side="right"
+          closeLabel="Close"
+          className="w-full max-w-lg overflow-y-auto p-4 pt-12 sm:w-[32rem] sm:max-w-lg"
+        >
+          <SheetTitle className="text-section">
+            {panel === "new"
+              ? "Add an item"
+              : open
+                ? `${panel?.startsWith("edit:") ? "Edit" : "Variants of"} ${open.name}`
+                : ""}
+          </SheetTitle>
+          <SheetDescription className="sr-only">
+            {panel?.startsWith("variants:")
+              ? "Brands, grades or sizes of this item, each adding to or taking off its rate."
+              : "The item's name, unit, rate, GST and HSN/SAC."}
+          </SheetDescription>
+          <div className="mt-4">
+            {panel === "new" && (
+              <ItemForm
+                onDone={() => {
+                  setPanel(null);
+                }}
+              />
+            )}
+            {open && panel?.startsWith("edit:") && (
+              <ItemForm
+                item={open}
+                onDone={() => {
+                  setPanel(null);
+                }}
+              />
+            )}
+            {open && panel?.startsWith("variants:") && <Variants item={open} canEdit={canEdit} />}
+          </div>
+        </SheetContent>
+      </Sheet>
     </>
   );
 }

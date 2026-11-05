@@ -4,27 +4,24 @@ import { useDeferredValue, useState } from "react";
 import { Link } from "react-router";
 
 import { api, unwrap } from "@/api/client";
+import type { components } from "@/api/schema";
 import { useSession } from "@/auth/context";
+import { DataTable } from "@/components/DataTable";
+import type { Column, SortState } from "@/components/DataTable";
 import { ErrorState } from "@/components/ErrorState";
+import { LoadMore } from "@/components/LoadMore";
 import { PageHeader } from "@/components/PageHeader";
+import { SavedFilters } from "@/components/SavedFilters";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { NativeSelect } from "@/components/ui/native-select";
-import { Skeleton } from "@/components/ui/skeleton";
 import { can } from "@/lib/permissions";
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from "@/components/ui/table";
 
 import { PartyImport } from "./PartyImport";
 
 type Role = "all" | "customers" | "vendors";
+type Row = components["schemas"]["Party"];
 
 const ROLE_QUERY: Record<Role, { is_customer?: boolean; is_vendor?: boolean }> = {
   all: {},
@@ -32,16 +29,69 @@ const ROLE_QUERY: Record<Role, { is_customer?: boolean; is_vendor?: boolean }> =
   vendors: { is_vendor: true },
 };
 
+const columns: Column<Row>[] = [
+  {
+    id: "name",
+    header: "Name",
+    sortable: true,
+    card: "title",
+    cell: (p) => (
+      <>
+        <Link to={`/parties/${p.id}`} className="font-medium hover:underline">
+          {p.display_name}
+        </Link>
+        {p.legal_name && p.legal_name !== p.display_name && (
+          <div className="text-help text-muted-foreground">{p.legal_name}</div>
+        )}
+      </>
+    ),
+  },
+  {
+    id: "type",
+    header: "Type",
+    card: "badge",
+    cell: (p) => (
+      <span className="flex flex-wrap gap-1">
+        {p.is_customer && <Badge variant="secondary">Client</Badge>}
+        {p.is_vendor && <Badge variant="outline">Vendor</Badge>}
+        {!p.is_active && <Badge variant="outline">Archived</Badge>}
+      </span>
+    ),
+  },
+  {
+    id: "gstin",
+    header: "GSTIN",
+    card: "subtitle",
+    cell: (p) => (p.gstin ? <span className="font-mono text-xs">{p.gstin}</span> : "–"),
+  },
+  { id: "state", header: "State", cell: (p) => p.state_name ?? "–" },
+  { id: "phone", header: "Phone", cell: (p) => p.phone ?? "–" },
+];
+
+interface Filters extends Record<string, string> {
+  search: string;
+  role: string;
+  archived: string;
+}
+const NO_FILTERS: Filters = { search: "", role: "all", archived: "" };
+
 export function PartiesPage() {
+  const mayEdit = can(useSession().role, "masters.edit");
   const [search, setSearch] = useState("");
   const [role, setRole] = useState<Role>("all");
   const [archived, setArchived] = useState(false);
   const [importing, setImporting] = useState(false);
-  const mayImport = can(useSession().role, "masters.edit");
+  const [sort, setSort] = useState<SortState>({ column: "name", direction: "asc" });
   const q = useDeferredValue(search.trim());
+  const filtered = search.trim() !== "" || role !== "all" || archived;
+  const apply = (f: Filters) => {
+    setSearch(f.search);
+    setRole(f.role as Role);
+    setArchived(f.archived === "yes");
+  };
 
   const parties = useInfiniteQuery({
-    queryKey: ["parties", { q, role, archived }],
+    queryKey: ["parties", { q, role, archived, sort }],
     queryFn: async ({ pageParam }) =>
       unwrap(
         await api.GET("/api/v1/parties", {
@@ -50,7 +100,7 @@ export function PartiesPage() {
               ...(q ? { q } : {}),
               ...ROLE_QUERY[role],
               is_active: !archived,
-              ordering: "display_name",
+              ordering: sort.direction === "desc" ? "-display_name" : "display_name",
               limit: 50,
               ...(pageParam ? { cursor: pageParam } : {}),
             },
@@ -61,15 +111,22 @@ export function PartiesPage() {
     getNextPageParam: (page) => page.next_cursor,
   });
   const rows = parties.data?.pages.flatMap((p) => p.results) ?? [];
+  const add = mayEdit ? (
+    <Button asChild>
+      <Link to="/parties/new">
+        <Plus aria-hidden /> New client or vendor
+      </Link>
+    </Button>
+  ) : undefined;
 
   return (
     <>
       <PageHeader
-        title="Parties"
-        description="Clients you bill and vendors you buy from."
+        title="Clients & vendors"
+        description="Clients you bill, and vendors and subcontractors you buy from."
         actions={
           <>
-            {mayImport && !importing && (
+            {mayEdit && !importing && (
               <Button
                 variant="outline"
                 onClick={() => {
@@ -79,11 +136,7 @@ export function PartiesPage() {
                 <FileUp aria-hidden /> Import from Excel
               </Button>
             )}
-            <Button asChild>
-              <Link to="/parties/new">
-                <Plus aria-hidden /> New party
-              </Link>
-            </Button>
+            {add}
           </>
         }
       />
@@ -118,11 +171,11 @@ export function PartiesPage() {
             setRole(e.target.value as Role);
           }}
         >
-          <option value="all">Customers and vendors</option>
-          <option value="customers">Customers</option>
+          <option value="all">Clients and vendors</option>
+          <option value="customers">Clients</option>
           <option value="vendors">Vendors</option>
         </NativeSelect>
-        <label className="flex items-center gap-2 text-sm">
+        <label className="flex min-h-9 items-center gap-2 text-sm">
           <input
             type="checkbox"
             checked={archived}
@@ -132,61 +185,50 @@ export function PartiesPage() {
           />
           Archived
         </label>
+        <SavedFilters
+          list="parties"
+          current={{ search, role, archived: archived ? "yes" : "" }}
+          onApply={apply}
+        />
       </div>
 
       {parties.error ? (
         <ErrorState error={parties.error} />
-      ) : parties.isPending ? (
-        <Skeleton className="h-40 w-full" />
-      ) : rows.length === 0 ? (
-        <p className="text-muted-foreground py-8 text-center text-sm">
-          {q ? "No party matches your search." : "No parties yet."}
-        </p>
       ) : (
         <>
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead>Name</TableHead>
-                <TableHead>GSTIN</TableHead>
-                <TableHead>State</TableHead>
-                <TableHead>Type</TableHead>
-                <TableHead>Phone</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {rows.map((p) => (
-                <TableRow key={p.id}>
-                  <TableCell>
-                    <Link to={`/parties/${p.id}`} className="font-medium hover:underline">
-                      {p.display_name}
-                    </Link>
-                    {p.legal_name && p.legal_name !== p.display_name && (
-                      <div className="text-muted-foreground text-xs">{p.legal_name}</div>
-                    )}
-                  </TableCell>
-                  <TableCell className="font-mono text-xs">{p.gstin ?? "–"}</TableCell>
-                  <TableCell>{p.state_name ?? "–"}</TableCell>
-                  <TableCell className="flex gap-1">
-                    {p.is_customer && <Badge variant="secondary">Customer</Badge>}
-                    {p.is_vendor && <Badge variant="outline">Vendor</Badge>}
-                  </TableCell>
-                  <TableCell>{p.phone ?? "–"}</TableCell>
-                </TableRow>
-              ))}
-            </TableBody>
-          </Table>
-          {parties.hasNextPage && (
-            <div className="mt-4 flex justify-center">
-              <Button
-                variant="outline"
-                disabled={parties.isFetchingNextPage}
-                onClick={() => void parties.fetchNextPage()}
-              >
-                Load more
-              </Button>
-            </div>
-          )}
+          <DataTable
+            label="Clients and vendors"
+            rows={rows}
+            columns={columns}
+            rowKey={(p) => p.id}
+            rowLabel={(p) => p.display_name}
+            loading={parties.isPending}
+            sort={sort}
+            onSortChange={setSort}
+            empty={
+              filtered
+                ? {
+                    title: q ? "No one matches your search" : "No one matches these filters",
+                    action: (
+                      <Button
+                        variant="outline"
+                        onClick={() => {
+                          apply(NO_FILTERS);
+                        }}
+                      >
+                        Clear the filters
+                      </Button>
+                    ),
+                  }
+                : {
+                    title: "No clients or vendors yet",
+                    description:
+                      "Add the clients you bill (with their GSTIN) or import them from Excel.",
+                    action: add,
+                  }
+            }
+          />
+          <LoadMore query={parties} />
         </>
       )}
     </>

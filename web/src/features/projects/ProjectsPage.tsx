@@ -4,35 +4,85 @@ import { useDeferredValue, useState } from "react";
 import { Link } from "react-router";
 
 import { api, unwrap } from "@/api/client";
+import type { components } from "@/api/schema";
+import { useSession } from "@/auth/context";
+import { DataTable } from "@/components/DataTable";
+import type { Column, SortState } from "@/components/DataTable";
 import { ErrorState } from "@/components/ErrorState";
+import { LoadMore } from "@/components/LoadMore";
+import { Money } from "@/components/Money";
 import { PageHeader } from "@/components/PageHeader";
+import { SavedFilters } from "@/components/SavedFilters";
+import { StatusBadge } from "@/components/StatusBadge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { NativeSelect } from "@/components/ui/native-select";
-import { Skeleton } from "@/components/ui/skeleton";
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from "@/components/ui/table";
-import { STATES } from "@/lib/india";
-import { formatInr } from "@/lib/money";
-import { StatusBadge } from "@/components/StatusBadge";
 import { projectStatus } from "@/features/projects/status";
+import { STATES } from "@/lib/india";
+import { sumMoney } from "@/lib/money";
+import { can } from "@/lib/permissions";
 
 import { STATUS_LABELS } from "./api";
 import type { ProjectStatus } from "./api";
 
+type Row = components["schemas"]["Project"];
+
+const columns: Column<Row>[] = [
+  {
+    id: "project",
+    header: "Project",
+    sortable: true,
+    card: "title",
+    cell: (p) => (
+      <>
+        <Link to={`/projects/${p.id}`} className="font-medium hover:underline">
+          {p.name}
+        </Link>
+        <div className="text-help text-muted-foreground font-mono">{p.code}</div>
+      </>
+    ),
+  },
+  { id: "client", header: "Client", card: "subtitle", cell: (p) => p.client_name },
+  {
+    id: "site",
+    header: "Site",
+    cell: (p) => STATES[p.site_state_code] ?? p.site_state_code,
+  },
+  {
+    id: "status",
+    header: "Status",
+    card: "badge",
+    cell: (p) => <StatusBadge status={projectStatus(p.status)} />,
+  },
+  {
+    id: "contract",
+    header: "Contract value",
+    align: "right",
+    card: "amount",
+    cell: (p) => <Money value={p.contract_value} />,
+  },
+];
+
+interface Filters extends Record<string, string> {
+  search: string;
+  status: string;
+}
+const NO_FILTERS: Filters = { search: "", status: "" };
+
 export function ProjectsPage() {
+  const mayEdit = can(useSession().role, "masters.edit");
   const [search, setSearch] = useState("");
   const [status, setStatus] = useState<ProjectStatus | "">("");
+  const [sort, setSort] = useState<SortState>({ column: "project", direction: "asc" });
   const q = useDeferredValue(search.trim());
+  const filtered = search.trim() !== "" || status !== "";
+  const apply = (f: Filters) => {
+    setSearch(f.search);
+    setStatus(f.status as ProjectStatus | "");
+  };
 
   const projects = useInfiniteQuery({
-    queryKey: ["projects", { q, status }],
+    queryKey: ["projects", { q, status, sort }],
     queryFn: async ({ pageParam }) =>
       unwrap(
         await api.GET("/api/v1/projects", {
@@ -40,7 +90,7 @@ export function ProjectsPage() {
             query: {
               ...(q ? { q } : {}),
               ...(status ? { status } : {}),
-              ordering: "code",
+              ordering: sort.direction === "desc" ? "-name" : "name",
               limit: 50,
               ...(pageParam ? { cursor: pageParam } : {}),
             },
@@ -51,19 +101,21 @@ export function ProjectsPage() {
     getNextPageParam: (page) => page.next_cursor,
   });
   const rows = projects.data?.pages.flatMap((p) => p.results) ?? [];
+  const valued = rows.filter((p) => p.contract_value !== null);
+  const add = mayEdit ? (
+    <Button asChild>
+      <Link to="/projects/new">
+        <Plus aria-hidden /> New project
+      </Link>
+    </Button>
+  ) : undefined;
 
   return (
     <>
       <PageHeader
         title="Projects"
         description="Sites you bill: client, place of supply, deductions and the BOQ."
-        actions={
-          <Button asChild>
-            <Link to="/projects/new">
-              <Plus aria-hidden /> New project
-            </Link>
-          </Button>
-        }
+        actions={add}
       />
       <div className="mb-4 flex flex-wrap items-center gap-2">
         <div className="relative min-w-60 flex-1">
@@ -94,60 +146,57 @@ export function ProjectsPage() {
             </option>
           ))}
         </NativeSelect>
+        <SavedFilters list="projects" current={{ search, status }} onApply={apply} />
       </div>
 
       {projects.error ? (
         <ErrorState error={projects.error} />
-      ) : projects.isPending ? (
-        <Skeleton className="h-40 w-full" />
-      ) : rows.length === 0 ? (
-        <p className="text-muted-foreground py-8 text-center text-sm">
-          {q || status ? "No project matches." : "No projects yet."}
-        </p>
       ) : (
         <>
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead>Project</TableHead>
-                <TableHead>Client</TableHead>
-                <TableHead>Site</TableHead>
-                <TableHead>Status</TableHead>
-                <TableHead className="text-right">Contract value</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {rows.map((p) => (
-                <TableRow key={p.id}>
-                  <TableCell>
-                    <Link to={`/projects/${p.id}`} className="font-medium hover:underline">
-                      {p.name}
-                    </Link>
-                    <div className="text-muted-foreground font-mono text-xs">{p.code}</div>
-                  </TableCell>
-                  <TableCell>{p.client_name}</TableCell>
-                  <TableCell>{STATES[p.site_state_code] ?? p.site_state_code}</TableCell>
-                  <TableCell>
-                    <StatusBadge status={projectStatus(p.status)} />
-                  </TableCell>
-                  <TableCell className="text-right tabular-nums">
-                    {p.contract_value ? formatInr(p.contract_value) : "–"}
-                  </TableCell>
-                </TableRow>
-              ))}
-            </TableBody>
-          </Table>
-          {projects.hasNextPage && (
-            <div className="mt-4 flex justify-center">
-              <Button
-                variant="outline"
-                disabled={projects.isFetchingNextPage}
-                onClick={() => void projects.fetchNextPage()}
-              >
-                Load more
-              </Button>
-            </div>
-          )}
+          <DataTable
+            label="Projects"
+            rows={rows}
+            columns={columns}
+            rowKey={(p) => p.id}
+            rowLabel={(p) => p.name}
+            loading={projects.isPending}
+            sort={sort}
+            onSortChange={setSort}
+            empty={
+              filtered
+                ? {
+                    title: "No project matches",
+                    action: (
+                      <Button
+                        variant="outline"
+                        onClick={() => {
+                          apply(NO_FILTERS);
+                        }}
+                      >
+                        Clear the filters
+                      </Button>
+                    ),
+                  }
+                : {
+                    title: "No projects yet",
+                    description: "Add a site to bill it against its BOQ, with retention and TDS.",
+                    action: add,
+                  }
+            }
+            totals={
+              valued.length > 1
+                ? {
+                    label: `Total of ${String(valued.length)} with a contract value`,
+                    cells: {
+                      contract: (
+                        <Money value={sumMoney(valued.map((p) => p.contract_value ?? "0"))} />
+                      ),
+                    },
+                  }
+                : undefined
+            }
+          />
+          <LoadMore query={projects} />
         </>
       )}
     </>

@@ -2,7 +2,10 @@ import { useQuery } from "@tanstack/react-query";
 import { useState } from "react";
 import { Link, useParams } from "react-router";
 
+import { DataTable } from "@/components/DataTable";
+import type { Column } from "@/components/DataTable";
 import { ErrorState } from "@/components/ErrorState";
+import { Money } from "@/components/Money";
 import { PageHeader } from "@/components/PageHeader";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -17,7 +20,7 @@ import {
 } from "@/components/ui/table";
 import { periodRange } from "@/features/dashboard/periods";
 import { DOC_TYPE_LABELS } from "@/features/documents/api";
-import { formatInr, formatQty } from "@/lib/money";
+import { formatInr, formatQty, sumMoney } from "@/lib/money";
 import { formatDate } from "@/lib/dates";
 import { StatusBadge } from "@/components/StatusBadge";
 import { documentStatus } from "@/features/documents/status";
@@ -30,7 +33,7 @@ import {
   portalProjectsQuery,
   portalStatementQuery,
 } from "./api";
-import type { PortalDocument } from "./api";
+import type { PortalDocument, PortalPayment } from "./api";
 
 const day = (iso: string | null | undefined) => formatDate(iso, "");
 
@@ -38,49 +41,82 @@ function Loading() {
   return <Skeleton className="h-32 w-full" />;
 }
 
-function DocumentsTable({ rows }: { rows: PortalDocument[] }) {
-  if (rows.length === 0) return <p className="text-muted-foreground text-sm">Nothing here yet.</p>;
+const owedOn = (d: PortalDocument) =>
+  (BILL_TYPES as readonly string[]).includes(d.doc_type) && d.status === "ISSUED";
+
+const DOCUMENT_COLUMNS: Column<PortalDocument>[] = [
+  {
+    id: "number",
+    header: "Number",
+    card: "title",
+    cell: (d) => (
+      <>
+        <Link to={`/portal/bills/${d.id}`} className="font-medium underline">
+          {d.doc_number}
+        </Link>
+        <div className="text-help text-muted-foreground">
+          {DOC_TYPE_LABELS[d.doc_type]}
+          {d.is_ra_bill && d.ra_sequence ? ` · RA bill ${d.ra_sequence}` : ""}
+        </div>
+      </>
+    ),
+  },
+  {
+    id: "date",
+    header: "Date",
+    sortable: true,
+    sortValue: (d) => d.doc_date,
+    card: "subtitle",
+    cell: (d) => day(d.doc_date),
+  },
+  { id: "project", header: "Project", cell: (d) => d.project_name ?? "–" },
+  {
+    id: "status",
+    header: "Status",
+    card: "badge",
+    cell: (d) => <StatusBadge status={documentStatus(d)} />,
+  },
+  {
+    id: "amount",
+    header: "Amount",
+    align: "right",
+    card: "amount",
+    cell: (d) => <Money value={d.totals.net_receivable} />,
+  },
+  {
+    id: "due",
+    header: "Due",
+    align: "right",
+    card: "amount",
+    cell: (d) =>
+      owedOn(d) ? (
+        <Money value={d.totals.outstanding} strong={d.totals.outstanding !== "0.00"} />
+      ) : (
+        <span className="text-muted-foreground">–</span>
+      ),
+  },
+];
+
+function DocumentsTable({ rows, label }: { rows: PortalDocument[]; label: string }) {
+  const owed = rows.filter(owedOn);
   return (
-    <Table>
-      <TableHeader>
-        <TableRow>
-          <TableHead>Number</TableHead>
-          <TableHead>Date</TableHead>
-          <TableHead>Project</TableHead>
-          <TableHead>Status</TableHead>
-          <TableHead className="text-right">Amount</TableHead>
-          <TableHead className="text-right">Due</TableHead>
-        </TableRow>
-      </TableHeader>
-      <TableBody>
-        {rows.map((d) => (
-          <TableRow key={d.id}>
-            <TableCell>
-              <Link to={`/portal/bills/${d.id}`} className="font-medium underline">
-                {d.doc_number}
-              </Link>
-              <div className="text-muted-foreground text-xs">
-                {DOC_TYPE_LABELS[d.doc_type]}
-                {d.is_ra_bill && d.ra_sequence ? ` · RA bill ${d.ra_sequence}` : ""}
-              </div>
-            </TableCell>
-            <TableCell>{day(d.doc_date)}</TableCell>
-            <TableCell>{d.project_name}</TableCell>
-            <TableCell>
-              <StatusBadge status={documentStatus(d)} />
-            </TableCell>
-            <TableCell className="text-right tabular-nums">
-              {formatInr(d.totals.net_receivable)}
-            </TableCell>
-            <TableCell className="text-right tabular-nums">
-              {(BILL_TYPES as readonly string[]).includes(d.doc_type) && d.status === "ISSUED"
-                ? formatInr(d.totals.outstanding)
-                : ""}
-            </TableCell>
-          </TableRow>
-        ))}
-      </TableBody>
-    </Table>
+    <DataTable
+      label={label}
+      rows={rows}
+      columns={DOCUMENT_COLUMNS}
+      rowKey={(d) => d.id}
+      rowLabel={(d) => d.doc_number ?? DOC_TYPE_LABELS[d.doc_type]}
+      defaultSort={{ column: "date", direction: "desc" }}
+      empty={{ title: "Nothing here yet" }}
+      totals={
+        owed.length > 1
+          ? {
+              label: `Still due on ${String(owed.length)} bills`,
+              cells: { due: <Money value={sumMoney(owed.map((d) => d.totals.outstanding))} /> },
+            }
+          : undefined
+      }
+    />
   );
 }
 
@@ -153,7 +189,7 @@ export function PortalHomePage() {
       ) : bills.isError ? (
         <ErrorState error={bills.error} />
       ) : (
-        <DocumentsTable rows={bills.data.results.slice(0, 5)} />
+        <DocumentsTable label="Recent bills" rows={bills.data.results.slice(0, 5)} />
       )}
     </>
   );
@@ -192,7 +228,7 @@ export function PortalDocumentsPage() {
       ) : documents.isError ? (
         <ErrorState error={documents.error} />
       ) : (
-        <DocumentsTable rows={documents.data.results} />
+        <DocumentsTable label={FILTERS[filter].label} rows={documents.data.results} />
       )}
     </>
   );
@@ -207,6 +243,39 @@ const MODE_LABELS: Record<string, string> = {
   OTHER: "Other",
 };
 
+const PAYMENT_COLUMNS: Column<PortalPayment>[] = [
+  {
+    id: "date",
+    header: "Date",
+    sortable: true,
+    sortValue: (p) => p.payment_date,
+    card: "title",
+    cell: (p) => <span className="font-medium">{day(p.payment_date)}</span>,
+  },
+  {
+    id: "mode",
+    header: "Mode",
+    card: "subtitle",
+    cell: (p) => `${MODE_LABELS[p.mode] ?? p.mode}${p.reference ? ` · ${p.reference}` : ""}`,
+  },
+  {
+    id: "against",
+    header: "Against",
+    className: "whitespace-normal",
+    cell: (p) =>
+      p.allocations
+        .map((x) => `${x.doc_number ?? "Retention release"} ${formatInr(x.amount)}`)
+        .join(", ") || "–",
+  },
+  {
+    id: "amount",
+    header: "Amount",
+    align: "right",
+    card: "amount",
+    cell: (p) => <Money value={p.amount} />,
+  },
+];
+
 export function PortalPaymentsPage() {
   const payments = useQuery(portalPaymentsQuery);
   return (
@@ -216,36 +285,26 @@ export function PortalPaymentsPage() {
         <Loading />
       ) : payments.isError ? (
         <ErrorState error={payments.error} />
-      ) : payments.data.results.length === 0 ? (
-        <p className="text-muted-foreground text-sm">No payments yet.</p>
       ) : (
-        <Table>
-          <TableHeader>
-            <TableRow>
-              <TableHead>Date</TableHead>
-              <TableHead>Mode</TableHead>
-              <TableHead>Against</TableHead>
-              <TableHead className="text-right">Amount</TableHead>
-            </TableRow>
-          </TableHeader>
-          <TableBody>
-            {payments.data.results.map((p) => (
-              <TableRow key={p.id}>
-                <TableCell>{day(p.payment_date)}</TableCell>
-                <TableCell>
-                  {MODE_LABELS[p.mode] ?? p.mode}
-                  {p.reference ? ` · ${p.reference}` : ""}
-                </TableCell>
-                <TableCell className="text-sm">
-                  {p.allocations
-                    .map((a) => `${a.doc_number ?? "Retention release"} ${formatInr(a.amount)}`)
-                    .join(", ") || "—"}
-                </TableCell>
-                <TableCell className="text-right tabular-nums">{formatInr(p.amount)}</TableCell>
-              </TableRow>
-            ))}
-          </TableBody>
-        </Table>
+        <DataTable
+          label="Payments"
+          rows={payments.data.results}
+          columns={PAYMENT_COLUMNS}
+          rowKey={(p) => p.id}
+          rowLabel={(p) => day(p.payment_date)}
+          defaultSort={{ column: "date", direction: "desc" }}
+          empty={{ title: "No payments yet" }}
+          totals={
+            payments.data.results.length > 1
+              ? {
+                  label: `Total of ${String(payments.data.results.length)} payments`,
+                  cells: {
+                    amount: <Money value={sumMoney(payments.data.results.map((p) => p.amount))} />,
+                  },
+                }
+              : undefined
+          }
+        />
       )}
     </>
   );

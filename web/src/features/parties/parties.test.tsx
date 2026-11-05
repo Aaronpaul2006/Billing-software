@@ -227,7 +227,7 @@ describe("client import", () => {
       http.get(`${API}/parties`, () => HttpResponse.json({ results: [], next_cursor: null })),
     );
     renderSignedIn("/parties", { role: "SITE_ENGINEER" });
-    expect(await screen.findByRole("heading", { name: "Parties" })).toBeInTheDocument();
+    expect(await screen.findByRole("heading", { name: "Clients & vendors" })).toBeInTheDocument();
     expect(screen.queryByRole("button", { name: "Import from Excel" })).not.toBeInTheDocument();
   });
 });

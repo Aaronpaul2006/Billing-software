@@ -61,10 +61,10 @@ describe("catalog", () => {
     );
     const user = userEvent.setup();
     renderSignedIn("/catalog");
-    expect(
-      await screen.findByText("₹380.00 per bag · GST 28.00 % · HSN/SAC 2523 · 1 variant"),
-    ).toBeInTheDocument();
-    await user.click(screen.getByRole("button", { name: "Variants" }));
+    const row = (await screen.findByText("OPC 53 cement")).closest("tr") as HTMLElement;
+    // rate per unit, GST, HSN/SAC and the number of variants, in their columns
+    expect(row).toHaveTextContent("₹380.00 / bag28.00 %25231");
+    await user.click(screen.getByRole("button", { name: "Variants of OPC 53 cement" }));
     const section = screen.getByRole("region", { name: "Variants of OPC 53 cement" });
     expect(within(section).getByText("+₹20.00 → ₹400.00")).toBeInTheDocument();
 
@@ -90,7 +90,7 @@ describe("catalog", () => {
     );
     const user = userEvent.setup();
     renderSignedIn("/catalog", { role: "SITE_ENGINEER" });
-    await user.click(await screen.findByRole("button", { name: "Variants" }));
+    await user.click(await screen.findByRole("button", { name: "Variants of OPC 53 cement" }));
     await waitFor(() => {
       expect(screen.getByText("+₹20.00 → ₹400.00")).toBeInTheDocument();
     });
@@ -111,9 +111,9 @@ describe("catalog search and import", () => {
     );
     const user = userEvent.setup();
     renderSignedIn("/catalog");
-    await screen.findByText(/₹380.00 per bag/);
+    await screen.findByText("OPC 53 cement");
     await user.type(screen.getByRole("searchbox", { name: "Search items" }), "ultratech");
-    expect(await screen.findByText("No item matches.")).toBeInTheDocument();
+    expect(await screen.findByText("No item matches")).toBeInTheDocument();
     expect(seen.at(-1)).toBe("ultratech");
   });
 

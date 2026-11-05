@@ -97,10 +97,11 @@ describe("payments", () => {
       ),
     );
     renderSignedIn("/payments");
-    const row = (await screen.findByRole("link", { name: "25 Oct 2026" })).closest(
+    // the client's name opens the payment
+    const row = (await screen.findByRole("link", { name: "Skyline Developers" })).closest(
       "tr",
     ) as HTMLElement;
-    expect(within(row).getByText("Skyline Developers")).toBeInTheDocument();
+    expect(row).toHaveTextContent("25 Oct 2026");
     expect(within(row).getByText("Bank transfer")).toBeInTheDocument();
     expect(within(row).getByText("₹6,320.00")).toBeInTheDocument();
   });

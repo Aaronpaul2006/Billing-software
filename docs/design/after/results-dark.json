@@ -1,6 +1,6 @@
 {
  "base": "http://localhost:5173",
- "at": "2026-11-05T09:35:15.112Z",
+ "at": "2026-11-05T14:06:43.516Z",
  "sizes": [
   {
    "name": "desktop",
@@ -20,32 +20,25 @@
  ],
  "pages": [
   {
-   "name": "Command palette (Ctrl+K)",
-   "path": "/",
+   "name": "Catalog",
+   "path": "/catalog",
    "sizes": {
     "desktop": {
-     "screenshot": "palette--desktop.jpg",
-     "url": "/",
+     "screenshot": "catalog--desktop.jpg",
+     "url": "/catalog",
      "metrics": {
-      "pageHeight": 1588,
+      "pageHeight": 992,
       "sidewaysScroll": false,
       "overflowing": [],
-      "tapTargets": 33,
-      "smallTapTargets": 5,
+      "tapTargets": 40,
+      "smallTapTargets": 1,
       "smallTapExamples": [
-       "a \"Invite your team\"",
-       "a \"Tax invoice \u00c2\u00b7 Anil Kumar\"",
-       "a \"Tax invoice \u00c2\u00b7 Lakshmi Traders\"",
-       "a \"Green Valley Homes\"",
-       "a \"Skyline Developers\""
+       "button \"Item\""
       ],
-      "tinyText": 12,
+      "tinyText": 0,
       "fontSizes": [
-       "10px",
        "12px",
        "14px",
-       "17px",
-       "18px",
        "24px"
       ],
       "textColours": 5,
@@ -55,110 +48,86 @@
        "4px"
       ],
       "buttonHeights": [
+       16,
+       32,
        36
       ],
-      "tables": 2,
-      "widestTable": 1102,
+      "tables": 1,
+      "widestTable": 1150,
       "h1": [
-       "Dashboard"
+       "Catalog"
       ]
      },
      "axe": [],
      "consoleErrors": []
     },
     "tablet": {
-     "screenshot": "palette--tablet.jpg",
-     "url": "/",
+     "screenshot": "catalog--tablet.jpg",
+     "url": "/catalog",
      "metrics": {
-      "pageHeight": 1973,
-      "sidewaysScroll": true,
-      "overflowing": [
-       "section \"Summary\"",
-       "div \"Billed and collectedThe last 12 months.D\"",
-       "div \"Overdue billsNothing is past due.\"",
-       "div \"Projects losing moneyCosts so far are mo\"",
-       "div \"Receivables by partyWhat each client owe\""
-      ],
-      "tapTargets": 33,
-      "smallTapTargets": 5,
-      "smallTapExamples": [
-       "a \"Invite your team\"",
-       "a \"Tax invoice \u00c2\u00b7 Anil Kumar\"",
-       "a \"Tax invoice \u00c2\u00b7 Lakshmi Traders\"",
-       "a \"Green Valley Homes\"",
-       "a \"Skyline Developers\""
-      ],
-      "tinyText": 12,
+      "pageHeight": 1738,
+      "sidewaysScroll": false,
+      "overflowing": [],
+      "tapTargets": 38,
+      "smallTapTargets": 0,
+      "smallTapExamples": [],
+      "tinyText": 0,
       "fontSizes": [
-       "10px",
        "12px",
+       "13px",
        "14px",
-       "17px",
-       "18px",
+       "16px",
        "24px"
       ],
       "textColours": 5,
       "radii": [
        "6px",
-       "12px",
-       "4px"
+       "12px"
       ],
       "buttonHeights": [
+       32,
        36
       ],
-      "tables": 2,
-      "widestTable": 667,
+      "tables": 0,
+      "widestTable": 0,
       "h1": [
-       "Dashboard"
+       "Catalog"
       ]
      },
      "axe": null,
      "consoleErrors": []
     },
     "phone": {
-     "screenshot": "palette--phone.jpg",
-     "url": "/",
+     "screenshot": "catalog--phone.jpg",
+     "url": "/catalog",
      "metrics": {
-      "pageHeight": 2522,
-      "sidewaysScroll": true,
-      "overflowing": [
-       "section \"Summary\"",
-       "div \"Billed and collectedThe last 12 months.D\"",
-       "div \"Overdue billsNothing is past due.\"",
-       "div \"Projects losing moneyCosts so far are mo\"",
-       "div \"Receivables by partyWhat each client owe\""
-      ],
-      "tapTargets": 14,
-      "smallTapTargets": 5,
-      "smallTapExamples": [
-       "a \"Invite your team\"",
-       "a \"Tax invoice \u00c2\u00b7 Anil Kumar\"",
-       "a \"Tax invoice \u00c2\u00b7 Lakshmi Traders\"",
-       "a \"Green Valley Homes\"",
-       "a \"Skyline Developers\""
-      ],
-      "tinyText": 12,
+      "pageHeight": 1843,
+      "sidewaysScroll": false,
+      "overflowing": [],
+      "tapTargets": 19,
+      "smallTapTargets": 0,
+      "smallTapExamples": [],
+      "tinyText": 0,
       "fontSizes": [
-       "10px",
-       "12px",
+       "13px",
        "14px",
-       "17px",
-       "18px",
+       "16px",
        "24px"
       ],
       "textColours": 3,
       "radii": [
        "6px",
-       "12px",
-       "4px"
+       "12px"
       ],
       "buttonHeights": [
+       32,
+       36,
        44
       ],
-      "tables": 2,
-      "widestTable": 667,
+      "tables": 0,
+      "widestTable": 0,
       "h1": [
-       "Dashboard"
+       "Catalog"
       ]
      },
      "axe": [],
@@ -167,32 +136,29 @@
    }
   },
   {
-   "name": "Command palette: searching",
-   "path": "/",
+   "name": "Payments list",
+   "path": "/payments",
    "sizes": {
     "desktop": {
-     "screenshot": "palette-search--desktop.jpg",
-     "url": "/",
+     "screenshot": "payments--desktop.jpg",
+     "url": "/payments",
      "metrics": {
-      "pageHeight": 1588,
+      "pageHeight": 992,
       "sidewaysScroll": false,
       "overflowing": [],
-      "tapTargets": 33,
-      "smallTapTargets": 5,
+      "tapTargets": 30,
+      "smallTapTargets": 4,
       "smallTapExamples": [
-       "a \"Invite your team\"",
-       "a \"Tax invoice \u00c2\u00b7 Anil Kumar\"",
-       "a \"Tax invoice \u00c2\u00b7 Lakshmi Traders\"",
-       "a \"Green Valley Homes\"",
+       "button \"Date\"",
+       "button \"Amount\"",
+       "a \"Skyline Developers\"",
        "a \"Skyline Developers\""
       ],
-      "tinyText": 12,
+      "tinyText": 0,
       "fontSizes": [
-       "10px",
        "12px",
+       "13px",
        "14px",
-       "17px",
-       "18px",
        "24px"
       ],
       "textColours": 5,
@@ -202,46 +168,121 @@
        "4px"
       ],
       "buttonHeights": [
+       16,
+       32,
        36
       ],
-      "tables": 2,
-      "widestTable": 1102,
+      "tables": 1,
+      "widestTable": 1150,
       "h1": [
-       "Dashboard"
+       "Payments"
       ]
      },
      "axe": [],
      "consoleErrors": []
     },
     "tablet": {
-     "screenshot": "palette-search--tablet.jpg",
-     "url": "/",
+     "screenshot": "payments--tablet.jpg",
+     "url": "/payments",
      "metrics": {
-      "pageHeight": 1973,
-      "sidewaysScroll": true,
-      "overflowing": [
-       "section \"Summary\"",
-       "div \"Billed and collectedThe last 12 months.D\"",
-       "div \"Overdue billsNothing is past due.\"",
-       "div \"Projects losing moneyCosts so far are mo\"",
-       "div \"Receivables by partyWhat each client owe\""
-      ],
-      "tapTargets": 33,
-      "smallTapTargets": 5,
+      "pageHeight": 1024,
+      "sidewaysScroll": false,
+      "overflowing": [],
+      "tapTargets": 27,
+      "smallTapTargets": 2,
       "smallTapExamples": [
-       "a \"Invite your team\"",
-       "a \"Tax invoice \u00c2\u00b7 Anil Kumar\"",
-       "a \"Tax invoice \u00c2\u00b7 Lakshmi Traders\"",
-       "a \"Green Valley Homes\"",
+       "a \"Skyline Developers\"",
        "a \"Skyline Developers\""
       ],
-      "tinyText": 12,
+      "tinyText": 0,
       "fontSizes": [
-       "10px",
        "12px",
+       "13px",
        "14px",
-       "17px",
-       "18px",
+       "16px",
+       "24px"
+      ],
+      "textColours": 5,
+      "radii": [
+       "6px",
+       "12px"
+      ],
+      "buttonHeights": [
+       36
+      ],
+      "tables": 0,
+      "widestTable": 0,
+      "h1": [
+       "Payments"
+      ]
+     },
+     "axe": null,
+     "consoleErrors": []
+    },
+    "phone": {
+     "screenshot": "payments--phone.jpg",
+     "url": "/payments",
+     "metrics": {
+      "pageHeight": 844,
+      "sidewaysScroll": false,
+      "overflowing": [],
+      "tapTargets": 8,
+      "smallTapTargets": 2,
+      "smallTapExamples": [
+       "a \"Skyline Developers\"",
+       "a \"Skyline Developers\""
+      ],
+      "tinyText": 0,
+      "fontSizes": [
+       "13px",
+       "14px",
+       "16px",
+       "24px"
+      ],
+      "textColours": 3,
+      "radii": [
+       "6px",
+       "12px"
+      ],
+      "buttonHeights": [
+       36,
+       44
+      ],
+      "tables": 0,
+      "widestTable": 0,
+      "h1": [
+       "Payments"
+      ]
+     },
+     "axe": [],
+     "consoleErrors": []
+    }
+   }
+  },
+  {
+   "name": "Client portal: bills & quotes",
+   "path": "/portal/bills",
+   "sizes": {
+    "desktop": {
+     "screenshot": "portal-bills--desktop.jpg",
+     "url": "/portal/bills",
+     "metrics": {
+      "pageHeight": 900,
+      "sidewaysScroll": false,
+      "overflowing": [],
+      "tapTargets": 14,
+      "smallTapTargets": 3,
+      "smallTapExamples": [
+       "button \"Date\"",
+       "a \"INV/0002\"",
+       "a \"INV/0001\""
+      ],
+      "tinyText": 0,
+      "fontSizes": [
+       "12px",
+       "13px",
+       "14px",
+       "16px",
        "24px"
       ],
       "textColours": 5,
@@ -251,61 +292,92 @@
        "4px"
       ],
       "buttonHeights": [
-       36
+       16,
+       32
       ],
-      "tables": 2,
-      "widestTable": 667,
+      "tables": 1,
+      "widestTable": 974,
       "h1": [
-       "Dashboard"
+       "Bills & quotes"
+      ]
+     },
+     "axe": [],
+     "consoleErrors": []
+    },
+    "tablet": {
+     "screenshot": "portal-bills--tablet.jpg",
+     "url": "/portal/bills",
+     "metrics": {
+      "pageHeight": 1024,
+      "sidewaysScroll": false,
+      "overflowing": [],
+      "tapTargets": 12,
+      "smallTapTargets": 2,
+      "smallTapExamples": [
+       "a \"INV/0002\"",
+       "a \"INV/0001\""
+      ],
+      "tinyText": 0,
+      "fontSizes": [
+       "12px",
+       "13px",
+       "14px",
+       "16px",
+       "24px"
+      ],
+      "textColours": 5,
+      "radii": [
+       "6px",
+       "12px"
+      ],
+      "buttonHeights": [
+       32
+      ],
+      "tables": 0,
+      "widestTable": 0,
+      "h1": [
+       "Bills & quotes"
       ]
      },
      "axe": null,
      "consoleErrors": []
     },
     "phone": {
-     "screenshot": "palette-search--phone.jpg",
-     "url": "/",
+     "screenshot": "portal-bills--phone.jpg",
+     "url": "/portal/bills",
      "metrics": {
-      "pageHeight": 2522,
-      "sidewaysScroll": true,
+      "pageHeight": 844,
+      "sidewaysScroll": false,
       "overflowing": [
-       "section \"Summary\"",
-       "div \"Billed and collectedThe last 12 months.D\"",
-       "div \"Overdue billsNothing is past due.\"",
-       "div \"Projects losing moneyCosts so far are mo\"",
-       "div \"Receivables by partyWhat each client owe\""
+       "a \"Statement\"",
+       "a \"Projects\""
       ],
-      "tapTargets": 14,
-      "smallTapTargets": 5,
+      "tapTargets": 12,
+      "smallTapTargets": 2,
       "smallTapExamples": [
-       "a \"Invite your team\"",
-       "a \"Tax invoice \u00c2\u00b7 Anil Kumar\"",
-       "a \"Tax invoice \u00c2\u00b7 Lakshmi Traders\"",
-       "a \"Green Valley Homes\"",
-       "a \"Skyline Developers\""
+       "a \"INV/0002\"",
+       "a \"INV/0001\""
       ],
-      "tinyText": 12,
+      "tinyText": 0,
       "fontSizes": [
-       "10px",
        "12px",
+       "13px",
        "14px",
-       "17px",
-       "18px",
+       "16px",
        "24px"
       ],
-      "textColours": 3,
+      "textColours": 5,
       "radii": [
        "6px",
-       "12px",
-       "4px"
+       "12px"
       ],
       "buttonHeights": [
-       44
+       32
       ],
-      "tables": 2,
-      "widestTable": 667,
+      "tables": 0,
+      "widestTable": 0,
       "h1": [
-       "Dashboard"
+       "Bills & quotes"
       ]
      },
      "axe": [],
@@ -314,5 +386,5 @@
    }
   }
  ],
- "step": "D.6 (palette, dark)"
+ "step": "D.7 (lists, dark)"
 }

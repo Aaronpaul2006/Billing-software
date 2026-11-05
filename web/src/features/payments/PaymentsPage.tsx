@@ -5,32 +5,109 @@ import { Link } from "react-router";
 
 import { api, unwrap } from "@/api/client";
 import type { components } from "@/api/schema";
+import { useSession } from "@/auth/context";
+import { DataTable } from "@/components/DataTable";
+import type { Column, SortState } from "@/components/DataTable";
 import { ErrorState } from "@/components/ErrorState";
+import { LoadMore } from "@/components/LoadMore";
+import { Money } from "@/components/Money";
 import { PageHeader } from "@/components/PageHeader";
+import { SavedFilters } from "@/components/SavedFilters";
+import { StatusBadge } from "@/components/StatusBadge";
 import { Button } from "@/components/ui/button";
 import { NativeSelect } from "@/components/ui/native-select";
-import { Skeleton } from "@/components/ui/skeleton";
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from "@/components/ui/table";
-import { compareMoney, formatInr } from "@/lib/money";
 import { formatDate } from "@/lib/dates";
-import { StatusBadge } from "@/components/StatusBadge";
+import { compareMoney, sumMoney } from "@/lib/money";
+import { can } from "@/lib/permissions";
 
 import { MODE_LABELS } from "./modes";
 
 type Mode = components["schemas"]["PaymentModeEnum"];
+type Row = components["schemas"]["Payment"];
+type Status = "" | "RECORDED" | "VOIDED";
+
+const recorded = (p: Row) => p.status !== "VOIDED";
+
+const columns: Column<Row>[] = [
+  {
+    id: "client",
+    header: "Client / project",
+    card: "title",
+    cell: (p) => (
+      <>
+        <Link to={`/payments/${p.id}`} className="font-medium hover:underline">
+          {p.party_name}
+        </Link>
+        {p.project_name && <div className="text-help text-muted-foreground">{p.project_name}</div>}
+      </>
+    ),
+  },
+  {
+    id: "date",
+    header: "Date",
+    sortable: true,
+    card: "subtitle",
+    cell: (p) => formatDate(p.payment_date),
+  },
+  {
+    id: "mode",
+    header: "Mode",
+    cell: (p) => (
+      <>
+        {MODE_LABELS[p.mode]}
+        {p.reference && <div className="text-help text-muted-foreground">{p.reference}</div>}
+      </>
+    ),
+  },
+  {
+    id: "status",
+    header: "Status",
+    card: "badge",
+    cell: (p) => (p.status === "VOIDED" ? <StatusBadge status="voided" /> : null),
+  },
+  {
+    id: "amount",
+    header: "Amount",
+    align: "right",
+    sortable: true,
+    card: "amount",
+    cell: (p) => <Money value={p.amount} muted={p.status === "VOIDED"} />,
+  },
+  {
+    id: "unallocated",
+    header: "Not set against bills",
+    align: "right",
+    card: "amount",
+    cell: (p) =>
+      recorded(p) && compareMoney(p.unallocated, "0") === 1 ? (
+        <Money value={p.unallocated} />
+      ) : (
+        <span className="text-muted-foreground">–</span>
+      ),
+  },
+];
+
+/** Server orderings for the sortable columns (payments API: payment_date, amount). */
+const ORDERING: Record<string, string> = { date: "payment_date", amount: "amount" };
+
+interface Filters extends Record<string, string> {
+  status: string;
+  mode: string;
+}
+const NO_FILTERS: Filters = { status: "RECORDED", mode: "" };
 
 export function PaymentsPage() {
-  const [status, setStatus] = useState<"" | "RECORDED" | "VOIDED">("RECORDED");
+  const mayRecord = can(useSession().role, "payments.record");
+  const [status, setStatus] = useState<Status>("RECORDED");
   const [mode, setMode] = useState<Mode | "">("");
+  const [sort, setSort] = useState<SortState>({ column: "date", direction: "desc" });
+  const filtered = status !== "RECORDED" || mode !== "";
+  const apply = (f: Filters) => {
+    setStatus(f.status as Status);
+    setMode(f.mode as Mode | "");
+  };
   const payments = useInfiniteQuery({
-    queryKey: ["payments", { status, mode }],
+    queryKey: ["payments", { status, mode, sort }],
     queryFn: async ({ pageParam }) =>
       unwrap(
         await api.GET("/api/v1/payments", {
@@ -38,7 +115,7 @@ export function PaymentsPage() {
             query: {
               ...(status ? { status } : {}),
               ...(mode ? { mode } : {}),
-              ordering: "-payment_date",
+              ordering: `${sort.direction === "desc" ? "-" : ""}${ORDERING[sort.column] ?? "payment_date"}`,
               limit: 50,
               ...(pageParam ? { cursor: pageParam } : {}),
             },
@@ -49,27 +126,29 @@ export function PaymentsPage() {
     getNextPageParam: (page) => page.next_cursor,
   });
   const rows = payments.data?.pages.flatMap((p) => p.results) ?? [];
+  const counted = rows.filter(recorded);
+  const record = mayRecord ? (
+    <Button asChild>
+      <Link to="/payments/new">
+        <Plus aria-hidden /> Record payment
+      </Link>
+    </Button>
+  ) : undefined;
 
   return (
     <>
       <PageHeader
         title="Payments"
         description="Money received from clients, and what it settled."
-        actions={
-          <Button asChild>
-            <Link to="/payments/new">
-              <Plus aria-hidden /> Record payment
-            </Link>
-          </Button>
-        }
+        actions={record}
       />
-      <div className="mb-4 flex flex-wrap gap-2">
+      <div className="mb-4 flex flex-wrap items-center gap-2">
         <NativeSelect
           aria-label="Status"
           className="w-auto"
           value={status}
           onChange={(e) => {
-            setStatus(e.target.value as typeof status);
+            setStatus(e.target.value as Status);
           }}
         >
           <option value="RECORDED">Recorded</option>
@@ -91,67 +170,56 @@ export function PaymentsPage() {
             </option>
           ))}
         </NativeSelect>
+        <SavedFilters list="payments" current={{ status, mode }} onApply={apply} />
       </div>
       {payments.error ? (
         <ErrorState error={payments.error} />
-      ) : payments.isPending ? (
-        <Skeleton className="h-40 w-full" />
-      ) : rows.length === 0 ? (
-        <p className="text-muted-foreground py-8 text-center text-sm">No payments.</p>
       ) : (
         <>
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead>Date</TableHead>
-                <TableHead>Client</TableHead>
-                <TableHead>Mode</TableHead>
-                <TableHead className="text-right">Amount</TableHead>
-                <TableHead className="text-right">Unallocated</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {rows.map((p) => (
-                <TableRow key={p.id}>
-                  <TableCell>
-                    <Link to={`/payments/${p.id}`} className="font-medium hover:underline">
-                      {formatDate(p.payment_date)}
-                    </Link>
-                  </TableCell>
-                  <TableCell>
-                    {p.party_name}
-                    {p.project_name && (
-                      <div className="text-muted-foreground text-xs">{p.project_name}</div>
-                    )}
-                  </TableCell>
-                  <TableCell>
-                    {MODE_LABELS[p.mode]}
-                    {p.reference && (
-                      <div className="text-muted-foreground text-xs">{p.reference}</div>
-                    )}
-                  </TableCell>
-                  <TableCell className="text-right tabular-nums">
-                    {formatInr(p.amount)}
-                    {p.status === "VOIDED" && <StatusBadge status="voided" className="ml-2" />}
-                  </TableCell>
-                  <TableCell className="text-right tabular-nums">
-                    {compareMoney(p.unallocated, "0") === 1 ? formatInr(p.unallocated) : "–"}
-                  </TableCell>
-                </TableRow>
-              ))}
-            </TableBody>
-          </Table>
-          {payments.hasNextPage && (
-            <div className="mt-4 flex justify-center">
-              <Button
-                variant="outline"
-                disabled={payments.isFetchingNextPage}
-                onClick={() => void payments.fetchNextPage()}
-              >
-                Load more
-              </Button>
-            </div>
-          )}
+          <DataTable
+            label="Payments"
+            rows={rows}
+            columns={status === "RECORDED" ? columns.filter((c) => c.id !== "status") : columns}
+            rowKey={(p) => p.id}
+            rowLabel={(p) => `${p.party_name}, ${formatDate(p.payment_date)}`}
+            loading={payments.isPending}
+            sort={sort}
+            onSortChange={setSort}
+            empty={
+              filtered
+                ? {
+                    title: "No payments match these filters",
+                    action: (
+                      <Button
+                        variant="outline"
+                        onClick={() => {
+                          apply(NO_FILTERS);
+                        }}
+                      >
+                        Clear the filters
+                      </Button>
+                    ),
+                  }
+                : {
+                    title: "No payments yet",
+                    description:
+                      "Record money as it comes in, and set it against the bills it pays.",
+                    action: record,
+                  }
+            }
+            totals={
+              counted.length > 1
+                ? {
+                    label: `Total of ${String(counted.length)} shown${counted.length < rows.length ? ", not counting voided" : ""}`,
+                    cells: {
+                      amount: <Money value={sumMoney(counted.map((p) => p.amount))} />,
+                      unallocated: <Money value={sumMoney(counted.map((p) => p.unallocated))} />,
+                    },
+                  }
+                : undefined
+            }
+          />
+          <LoadMore query={payments} />
         </>
       )}
     </>

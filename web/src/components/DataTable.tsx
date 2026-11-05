@@ -196,7 +196,11 @@ export function DataTable<T>({
                   <div className="flex items-start justify-between gap-3">
                     <div className="grid min-w-0 gap-0.5">
                       {pick("title").map((c) => (
-                        <div key={c.id} className="font-medium">
+                        // links in the title are the card's main tap: at least 24 px tall
+                        <div
+                          key={c.id}
+                          className="font-medium [&_a]:inline-flex [&_a]:min-h-6 [&_a]:items-center"
+                        >
                           {c.cell(row)}
                         </div>
                       ))}
