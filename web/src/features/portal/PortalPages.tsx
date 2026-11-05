@@ -2,6 +2,7 @@ import { useQuery } from "@tanstack/react-query";
 import { useState } from "react";
 import { Link, useParams } from "react-router";
 
+import type { components } from "@/api/schema";
 import { DataTable } from "@/components/DataTable";
 import type { Column } from "@/components/DataTable";
 import { ErrorState } from "@/components/ErrorState";
@@ -310,6 +311,40 @@ export function PortalPaymentsPage() {
   );
 }
 
+type StatementEntry = components["schemas"]["StatementEntry"];
+
+const STATEMENT_COLUMNS: Column<StatementEntry>[] = [
+  { id: "date", header: "Date", card: "subtitle", cell: (e) => day(e.date) },
+  {
+    id: "details",
+    header: "Details",
+    card: "title",
+    className: "whitespace-normal",
+    cell: (e) => e.description,
+  },
+  {
+    id: "debit",
+    header: "Billed",
+    align: "right",
+    card: "amount",
+    cell: (e) => (e.debit !== "0.00" ? <Money value={e.debit} /> : null),
+  },
+  {
+    id: "credit",
+    header: "Paid / credited",
+    align: "right",
+    card: "amount",
+    cell: (e) => (e.credit !== "0.00" ? <Money value={e.credit} /> : null),
+  },
+  {
+    id: "balance",
+    header: "Balance",
+    align: "right",
+    card: "amount",
+    cell: (e) => <Money value={e.balance} />,
+  },
+];
+
 export function PortalStatementPage() {
   const fy = periodRange("this_fy", new Date());
   const statement = useQuery(portalStatementQuery(fy.from, fy.to));
@@ -324,54 +359,27 @@ export function PortalStatementPage() {
       ) : statement.isError ? (
         <ErrorState error={statement.error} />
       ) : (
-        <Table>
-          <TableHeader>
-            <TableRow>
-              <TableHead>Date</TableHead>
-              <TableHead>Details</TableHead>
-              <TableHead className="text-right">Billed</TableHead>
-              <TableHead className="text-right">Paid / credited</TableHead>
-              <TableHead className="text-right">Balance</TableHead>
-            </TableRow>
-          </TableHeader>
-          <TableBody>
-            <TableRow>
-              <TableCell />
-              <TableCell>Opening balance</TableCell>
-              <TableCell />
-              <TableCell />
-              <TableCell className="text-right tabular-nums">
-                {formatInr(statement.data.opening_balance)}
-              </TableCell>
-            </TableRow>
-            {statement.data.entries.map((e, i) => (
-              <TableRow key={`${e.date}-${i}`}>
-                <TableCell>{day(e.date)}</TableCell>
-                <TableCell>{e.description}</TableCell>
-                <TableCell className="text-right tabular-nums">
-                  {e.debit !== "0.00" ? formatInr(e.debit) : ""}
-                </TableCell>
-                <TableCell className="text-right tabular-nums">
-                  {e.credit !== "0.00" ? formatInr(e.credit) : ""}
-                </TableCell>
-                <TableCell className="text-right tabular-nums">{formatInr(e.balance)}</TableCell>
-              </TableRow>
-            ))}
-            <TableRow className="font-medium">
-              <TableCell />
-              <TableCell>Closing balance</TableCell>
-              <TableCell className="text-right tabular-nums">
-                {formatInr(statement.data.total_debit)}
-              </TableCell>
-              <TableCell className="text-right tabular-nums">
-                {formatInr(statement.data.total_credit)}
-              </TableCell>
-              <TableCell className="text-right tabular-nums">
-                {formatInr(statement.data.closing_balance)}
-              </TableCell>
-            </TableRow>
-          </TableBody>
-        </Table>
+        <div className="grid gap-3">
+          <p className="text-sm">
+            Opening balance on {day(fy.from)}:{" "}
+            <Money value={statement.data.opening_balance} strong />
+          </p>
+          <DataTable
+            label="Statement of account"
+            rows={statement.data.entries}
+            columns={STATEMENT_COLUMNS}
+            rowKey={(e) => `${e.date}-${e.description}-${e.balance}`}
+            empty={{ title: "Nothing billed or paid this year yet" }}
+            totals={{
+              label: "Closing balance",
+              cells: {
+                debit: <Money value={statement.data.total_debit} />,
+                credit: <Money value={statement.data.total_credit} />,
+                balance: <Money value={statement.data.closing_balance} strong />,
+              },
+            }}
+          />
+        </div>
       )}
     </>
   );

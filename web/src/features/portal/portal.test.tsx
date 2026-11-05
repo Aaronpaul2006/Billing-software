@@ -292,3 +292,52 @@ describe("portal access on the client page", () => {
     expect(screen.queryByText("Client portal")).not.toBeInTheDocument();
   });
 });
+
+describe("client portal layout (D.12)", () => {
+  it("the statement: opening balance, each entry, the closing balance as the last row", async () => {
+    portalApi();
+    server.use(
+      http.get(`${API}/portal/statement`, () =>
+        HttpResponse.json({
+          party: { id: "c1", display_name: "Skyline Developers", gstin: null },
+          from: "2026-04-01",
+          to: "2026-11-02",
+          opening_balance: "10000.00",
+          entries: [
+            {
+              date: "2026-10-19",
+              kind: "INVOICE",
+              description: "Tax invoice INV/0001",
+              debit: "323680.00",
+              credit: "0.00",
+              balance: "333680.00",
+            },
+            {
+              date: "2026-10-25",
+              kind: "PAYMENT",
+              description: "Payment, UTR 123",
+              debit: "0.00",
+              credit: "100000.00",
+              balance: "233680.00",
+            },
+          ],
+          total_debit: "323680.00",
+          total_credit: "100000.00",
+          closing_balance: "233680.00",
+        }),
+      ),
+    );
+    renderSignedIn("/portal/statement", CLIENT);
+    expect(await screen.findByText(/Opening balance on/)).toHaveTextContent("₹10,000.00");
+    const table = await screen.findByRole("table", { name: "Statement of account" });
+    const rows = within(table).getAllByRole("row");
+    expect(rows[1]).toHaveTextContent("Tax invoice INV/0001");
+    expect(rows[2]).toHaveTextContent("₹1,00,000.00");
+    expect(within(table).getByText("Closing balance").closest("tr")).toHaveTextContent(
+      "₹2,33,680.00",
+    );
+    // every section is in the menu (a bar at the bottom on phones)
+    const nav = screen.getByRole("navigation", { name: "Portal" });
+    expect(within(nav).getAllByRole("link")).toHaveLength(5);
+  });
+});

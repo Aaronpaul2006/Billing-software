@@ -6,20 +6,15 @@ import { Link, useParams } from "react-router";
 import { useConfirm } from "@/components/confirm-context";
 import { api, unwrap } from "@/api/client";
 import { ApiError } from "@/api/problem";
+import { DataTable } from "@/components/DataTable";
+import type { Column } from "@/components/DataTable";
 import { ErrorState } from "@/components/ErrorState";
+import { Money } from "@/components/Money";
 import { PageHeader } from "@/components/PageHeader";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from "@/components/ui/table";
 import { DOC_TYPE_LABELS } from "@/features/documents/api";
 import { TotalsPanel } from "@/features/documents/TotalsPanel";
 import { errorMessage } from "@/lib/errors";
@@ -45,6 +40,51 @@ function answerMessage(error: unknown): string {
   }
   return errorMessage(error);
 }
+
+type Line = PortalDocumentDetail["lines"][number];
+
+/** A bill's lines: a table on wide screens, cards on phones (D.12). */
+const LINE_COLUMNS: Column<Line>[] = [
+  {
+    id: "description",
+    header: "Description",
+    card: "title",
+    className: "whitespace-normal",
+    cell: (l) => (
+      <>
+        <span className="font-normal">{l.description}</span>
+        {l.sac_hsn && <div className="text-help text-muted-foreground">HSN/SAC {l.sac_hsn}</div>}
+      </>
+    ),
+  },
+  {
+    id: "quantity",
+    header: "Quantity",
+    align: "right",
+    card: "subtitle",
+    cell: (l) => (
+      <span className="tabular-nums">
+        {formatQty(l.quantity)} {l.unit}
+        <span className="lg:hidden"> × {formatInr(l.rate)}</span>
+      </span>
+    ),
+  },
+  {
+    id: "rate",
+    header: "Rate",
+    align: "right",
+    card: "hidden",
+    cell: (l) => <Money value={l.rate} />,
+  },
+  { id: "gst", header: "GST", align: "right", cell: (l) => `${l.gst_rate} %` },
+  {
+    id: "amount",
+    header: "Amount",
+    align: "right",
+    card: "amount",
+    cell: (l) => <Money value={l.taxable_value} />,
+  },
+];
 
 export function PortalDocumentPage() {
   const { documentId = "" } = useParams();
@@ -178,37 +218,12 @@ function DocumentView({ doc }: { doc: PortalDocumentDetail }) {
       )}
       <Card>
         <CardContent className="grid gap-6 pt-6">
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead>Description</TableHead>
-                <TableHead className="text-right">Quantity</TableHead>
-                <TableHead className="text-right">Rate</TableHead>
-                <TableHead className="text-right">GST</TableHead>
-                <TableHead className="text-right">Amount</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {doc.lines.map((l) => (
-                <TableRow key={l.line_no}>
-                  <TableCell>
-                    {l.description}
-                    {l.sac_hsn && (
-                      <div className="text-muted-foreground text-xs">HSN/SAC {l.sac_hsn}</div>
-                    )}
-                  </TableCell>
-                  <TableCell className="text-right tabular-nums">
-                    {formatQty(l.quantity)} {l.unit}
-                  </TableCell>
-                  <TableCell className="text-right tabular-nums">{formatInr(l.rate)}</TableCell>
-                  <TableCell className="text-right tabular-nums">{l.gst_rate} %</TableCell>
-                  <TableCell className="text-right tabular-nums">
-                    {formatInr(l.taxable_value)}
-                  </TableCell>
-                </TableRow>
-              ))}
-            </TableBody>
-          </Table>
+          <DataTable
+            label="Lines"
+            rows={doc.lines}
+            columns={LINE_COLUMNS}
+            rowKey={(l) => String(l.line_no)}
+          />
           <div className="ml-auto w-full max-w-sm">
             <TotalsPanel
               totals={doc.totals}

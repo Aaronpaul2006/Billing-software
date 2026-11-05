@@ -1,6 +1,6 @@
 {
  "base": "http://localhost:5173",
- "at": "2026-11-05T14:44:09.726Z",
+ "at": "2026-11-05T14:48:39.292Z",
  "sizes": [
   {
    "name": "desktop",
@@ -20,115 +20,78 @@
  ],
  "pages": [
   {
-   "name": "Settings: company",
-   "path": "/settings/company",
+   "name": "Client portal: overview",
+   "path": "/portal",
    "sizes": {
     "desktop": {
-     "screenshot": "settings-company--desktop.jpg",
-     "url": "/settings/company",
+     "screenshot": "portal-overview--desktop.jpg",
+     "url": "/portal",
      "metrics": {
       "pageHeight": 900,
       "sidewaysScroll": false,
       "overflowing": [],
       "tooWide": [],
-      "tapTargets": 27,
-      "smallTapTargets": 0,
-      "smallTapExamples": [],
+      "tapTargets": 11,
+      "smallTapTargets": 4,
+      "smallTapExamples": [
+       "a \"statement\"",
+       "button \"Date\"",
+       "a \"INV/0002\"",
+       "a \"INV/0001\""
+      ],
       "tinyText": 0,
       "fontSizes": [
        "12px",
+       "13px",
        "14px",
-       "24px"
+       "16px",
+       "17px",
+       "18px",
+       "24px",
+       "30px"
       ],
-      "textColours": 6,
+      "textColours": 4,
       "radii": [
        "6px",
-       "12px"
+       "12px",
+       "4px"
       ],
       "buttonHeights": [
-       36
+       16,
+       32
       ],
-      "tables": 0,
-      "widestTable": 0,
+      "tables": 1,
+      "widestTable": 974,
       "h1": [
-       "Company"
+       "Overview"
       ]
      },
      "axe": [],
      "consoleErrors": []
     },
     "tablet": {
-     "screenshot": "settings-company--tablet.jpg",
-     "url": "/settings/company",
+     "screenshot": "portal-overview--tablet.jpg",
+     "url": "/portal",
      "metrics": {
       "pageHeight": 1024,
       "sidewaysScroll": false,
-      "overflowing": [
-       "li \"Number series\"",
-       "li \"Bill printing\"",
-       "li \"Tally export\""
+      "overflowing": [],
+      "tooWide": [],
+      "tapTargets": 9,
+      "smallTapTargets": 1,
+      "smallTapExamples": [
+       "a \"statement\""
       ],
-      "tooWide": [
-       "a \"Number series\" [145 px, class hover:bg-accent flex min-h-9 items-center gap-2 rounded-md p]",
-       "path [13 px, class [object SVGAnimatedString]]",
-       "path [8 px, class [object SVGAnimatedString]]",
-       "rect [8 px, class [object SVGAnimatedString]]",
-       "path [13 px, class [object SVGAnimatedString]]"
-      ],
-      "tapTargets": 27,
-      "smallTapTargets": 0,
-      "smallTapExamples": [],
       "tinyText": 0,
       "fontSizes": [
        "12px",
+       "13px",
        "14px",
-       "24px"
-      ],
-      "textColours": 6,
-      "radii": [
-       "6px",
-       "12px"
-      ],
-      "buttonHeights": [
-       36
-      ],
-      "tables": 0,
-      "widestTable": 0,
-      "h1": [
-       "Company"
-      ]
-     },
-     "axe": null,
-     "consoleErrors": []
-    },
-    "phone": {
-     "screenshot": "settings-company--phone.jpg",
-     "url": "/settings/company",
-     "metrics": {
-      "pageHeight": 844,
-      "sidewaysScroll": false,
-      "overflowing": [
-       "li \"GST registrations\"",
-       "li \"Number series\"",
-       "li \"Bill printing\"",
-       "li \"Tally export\""
-      ],
-      "tooWide": [
-       "a \"GST registrations\" [162 px, class hover:bg-accent flex min-h-9 items-center gap-2 rounded-md p]",
-       "line [1 px, class [object SVGAnimatedString]]",
-       "line [1 px, class [object SVGAnimatedString]]",
-       "path [13 px, class [object SVGAnimatedString]]",
-       "path [8 px, class [object SVGAnimatedString]]",
-       "rect [8 px, class [object SVGAnimatedString]]"
-      ],
-      "tapTargets": 13,
-      "smallTapTargets": 0,
-      "smallTapExamples": [],
-      "tinyText": 0,
-      "fontSizes": [
-       "12px",
-       "14px",
-       "24px"
+       "16px",
+       "17px",
+       "18px",
+       "24px",
+       "30px"
       ],
       "textColours": 4,
       "radii": [
@@ -136,13 +99,53 @@
        "12px"
       ],
       "buttonHeights": [
-       36,
-       44
+       32
       ],
       "tables": 0,
       "widestTable": 0,
       "h1": [
-       "Company"
+       "Overview"
+      ]
+     },
+     "axe": null,
+     "consoleErrors": []
+    },
+    "phone": {
+     "screenshot": "portal-overview--phone.jpg",
+     "url": "/portal",
+     "metrics": {
+      "pageHeight": 1075,
+      "sidewaysScroll": false,
+      "overflowing": [],
+      "tooWide": [],
+      "tapTargets": 9,
+      "smallTapTargets": 1,
+      "smallTapExamples": [
+       "a \"statement\""
+      ],
+      "tinyText": 0,
+      "fontSizes": [
+       "12px",
+       "13px",
+       "14px",
+       "16px",
+       "17px",
+       "18px",
+       "24px",
+       "30px"
+      ],
+      "textColours": 5,
+      "radii": [
+       "6px",
+       "12px"
+      ],
+      "buttonHeights": [
+       32
+      ],
+      "tables": 0,
+      "widestTable": 0,
+      "h1": [
+       "Overview"
       ]
      },
      "axe": [],
@@ -151,132 +154,111 @@
    }
   },
   {
-   "name": "Settings: members",
-   "path": "/settings/members",
+   "name": "Client portal: statement",
+   "path": "/portal/statement",
    "sizes": {
     "desktop": {
-     "screenshot": "settings-members--desktop.jpg",
-     "url": "/settings/members",
+     "screenshot": "portal-statement--desktop.jpg",
+     "url": "/portal/statement",
      "metrics": {
       "pageHeight": 900,
       "sidewaysScroll": false,
       "overflowing": [],
       "tooWide": [],
-      "tapTargets": 25,
+      "tapTargets": 7,
       "smallTapTargets": 0,
       "smallTapExamples": [],
       "tinyText": 0,
       "fontSizes": [
        "12px",
        "14px",
+       "16px",
        "24px"
       ],
-      "textColours": 6,
+      "textColours": 2,
       "radii": [
        "6px",
-       "8px",
-       "4px"
+       "12px"
       ],
       "buttonHeights": [
-       36
+       32
       ],
       "tables": 1,
-      "widestTable": 936,
+      "widestTable": 974,
       "h1": [
-       "Members"
+       "Statement of account"
       ]
      },
      "axe": [],
      "consoleErrors": []
     },
     "tablet": {
-     "screenshot": "settings-members--tablet.jpg",
-     "url": "/settings/members",
+     "screenshot": "portal-statement--tablet.jpg",
+     "url": "/portal/statement",
      "metrics": {
-      "pageHeight": 1024,
+      "pageHeight": 1227,
       "sidewaysScroll": false,
-      "overflowing": [
-       "li \"Number series\"",
-       "li \"Bill printing\"",
-       "li \"Tally export\""
-      ],
-      "tooWide": [
-       "a \"Number series\" [145 px, class hover:bg-accent flex min-h-9 items-center gap-2 rounded-md p]",
-       "path [13 px, class [object SVGAnimatedString]]",
-       "path [8 px, class [object SVGAnimatedString]]",
-       "rect [8 px, class [object SVGAnimatedString]]",
-       "path [13 px, class [object SVGAnimatedString]]"
-      ],
-      "tapTargets": 25,
+      "overflowing": [],
+      "tooWide": [],
+      "tapTargets": 6,
       "smallTapTargets": 0,
       "smallTapExamples": [],
       "tinyText": 0,
       "fontSizes": [
        "12px",
+       "13px",
        "14px",
+       "16px",
        "24px"
       ],
-      "textColours": 6,
+      "textColours": 2,
       "radii": [
        "6px",
-       "8px",
-       "4px"
+       "12px"
       ],
       "buttonHeights": [
-       36
+       32
       ],
-      "tables": 1,
-      "widestTable": 480,
+      "tables": 0,
+      "widestTable": 0,
       "h1": [
-       "Members"
+       "Statement of account"
       ]
      },
      "axe": null,
      "consoleErrors": []
     },
     "phone": {
-     "screenshot": "settings-members--phone.jpg",
-     "url": "/settings/members",
+     "screenshot": "portal-statement--phone.jpg",
+     "url": "/portal/statement",
      "metrics": {
-      "pageHeight": 844,
+      "pageHeight": 1343,
       "sidewaysScroll": false,
-      "overflowing": [
-       "li \"GST registrations\"",
-       "li \"Number series\"",
-       "li \"Bill printing\"",
-       "li \"Tally export\""
-      ],
-      "tooWide": [
-       "a \"GST registrations\" [162 px, class hover:bg-accent flex min-h-9 items-center gap-2 rounded-md p]",
-       "line [1 px, class [object SVGAnimatedString]]",
-       "line [1 px, class [object SVGAnimatedString]]",
-       "path [13 px, class [object SVGAnimatedString]]",
-       "path [8 px, class [object SVGAnimatedString]]",
-       "rect [8 px, class [object SVGAnimatedString]]"
-      ],
-      "tapTargets": 11,
+      "overflowing": [],
+      "tooWide": [],
+      "tapTargets": 6,
       "smallTapTargets": 0,
       "smallTapExamples": [],
       "tinyText": 0,
       "fontSizes": [
        "12px",
+       "13px",
        "14px",
+       "16px",
        "24px"
       ],
-      "textColours": 4,
+      "textColours": 3,
       "radii": [
        "6px",
-       "8px",
-       "4px"
+       "12px"
       ],
       "buttonHeights": [
-       36,
-       44
+       32
       ],
-      "tables": 1,
-      "widestTable": 358,
+      "tables": 0,
+      "widestTable": 0,
       "h1": [
-       "Members"
+       "Statement of account"
       ]
      },
      "axe": [],
@@ -285,5 +267,5 @@
    }
   }
  ],
- "step": "D.11 (settings, dark)"
+ "step": "D.12 (client portal, dark)"
 }

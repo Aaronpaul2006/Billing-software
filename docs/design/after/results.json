@@ -1,6 +1,6 @@
 {
  "base": "http://localhost:5173",
- "at": "2026-11-05T14:43:56.793Z",
+ "at": "2026-11-05T14:50:27.526Z",
  "sizes": [
   {
    "name": "desktop",
@@ -20,263 +20,132 @@
  ],
  "pages": [
   {
-   "name": "Settings: company",
-   "path": "/settings/company",
+   "name": "Client portal: overview",
+   "path": "/portal",
    "sizes": {
     "desktop": {
-     "screenshot": "settings-company--desktop.jpg",
-     "url": "/settings/company",
+     "screenshot": "portal-overview--desktop.jpg",
+     "url": "/portal",
      "metrics": {
       "pageHeight": 900,
       "sidewaysScroll": false,
       "overflowing": [],
       "tooWide": [],
-      "tapTargets": 27,
-      "smallTapTargets": 0,
-      "smallTapExamples": [],
-      "tinyText": 0,
-      "fontSizes": [
-       "12px",
-       "14px",
-       "24px"
-      ],
-      "textColours": 6,
-      "radii": [
-       "6px",
-       "12px"
-      ],
-      "buttonHeights": [
-       36
-      ],
-      "tables": 0,
-      "widestTable": 0,
-      "h1": [
-       "Company"
-      ]
-     },
-     "axe": [],
-     "consoleErrors": []
-    },
-    "tablet": {
-     "screenshot": "settings-company--tablet.jpg",
-     "url": "/settings/company",
-     "metrics": {
-      "pageHeight": 1024,
-      "sidewaysScroll": false,
-      "overflowing": [
-       "li \"Number series\"",
-       "li \"Bill printing\"",
-       "li \"Tally export\""
-      ],
-      "tooWide": [
-       "a \"Number series\" [145 px, class hover:bg-accent flex min-h-9 items-center gap-2 rounded-md p]",
-       "path [13 px, class [object SVGAnimatedString]]",
-       "path [8 px, class [object SVGAnimatedString]]",
-       "rect [8 px, class [object SVGAnimatedString]]",
-       "path [13 px, class [object SVGAnimatedString]]"
-      ],
-      "tapTargets": 27,
-      "smallTapTargets": 0,
-      "smallTapExamples": [],
-      "tinyText": 0,
-      "fontSizes": [
-       "12px",
-       "14px",
-       "24px"
-      ],
-      "textColours": 6,
-      "radii": [
-       "6px",
-       "12px"
-      ],
-      "buttonHeights": [
-       36
-      ],
-      "tables": 0,
-      "widestTable": 0,
-      "h1": [
-       "Company"
-      ]
-     },
-     "axe": null,
-     "consoleErrors": []
-    },
-    "phone": {
-     "screenshot": "settings-company--phone.jpg",
-     "url": "/settings/company",
-     "metrics": {
-      "pageHeight": 844,
-      "sidewaysScroll": false,
-      "overflowing": [
-       "li \"GST registrations\"",
-       "li \"Number series\"",
-       "li \"Bill printing\"",
-       "li \"Tally export\""
-      ],
-      "tooWide": [
-       "a \"GST registrations\" [162 px, class hover:bg-accent flex min-h-9 items-center gap-2 rounded-md p]",
-       "line [1 px, class [object SVGAnimatedString]]",
-       "line [1 px, class [object SVGAnimatedString]]",
-       "path [13 px, class [object SVGAnimatedString]]",
-       "path [8 px, class [object SVGAnimatedString]]",
-       "rect [8 px, class [object SVGAnimatedString]]"
-      ],
-      "tapTargets": 13,
-      "smallTapTargets": 0,
-      "smallTapExamples": [],
-      "tinyText": 0,
-      "fontSizes": [
-       "12px",
-       "14px",
-       "24px"
-      ],
-      "textColours": 4,
-      "radii": [
-       "6px",
-       "12px"
-      ],
-      "buttonHeights": [
-       36,
-       44
-      ],
-      "tables": 0,
-      "widestTable": 0,
-      "h1": [
-       "Company"
-      ]
-     },
-     "axe": [],
-     "consoleErrors": []
-    }
-   }
-  },
-  {
-   "name": "Settings: members",
-   "path": "/settings/members",
-   "sizes": {
-    "desktop": {
-     "screenshot": "settings-members--desktop.jpg",
-     "url": "/settings/members",
-     "metrics": {
-      "pageHeight": 900,
-      "sidewaysScroll": false,
-      "overflowing": [],
-      "tooWide": [],
-      "tapTargets": 25,
-      "smallTapTargets": 0,
-      "smallTapExamples": [],
-      "tinyText": 0,
-      "fontSizes": [
-       "12px",
-       "14px",
-       "24px"
-      ],
-      "textColours": 6,
-      "radii": [
-       "6px",
-       "8px",
-       "4px"
-      ],
-      "buttonHeights": [
-       36
-      ],
-      "tables": 1,
-      "widestTable": 936,
-      "h1": [
-       "Members"
-      ]
-     },
-     "axe": [],
-     "consoleErrors": []
-    },
-    "tablet": {
-     "screenshot": "settings-members--tablet.jpg",
-     "url": "/settings/members",
-     "metrics": {
-      "pageHeight": 1024,
-      "sidewaysScroll": false,
-      "overflowing": [
-       "li \"Number series\"",
-       "li \"Bill printing\"",
-       "li \"Tally export\""
-      ],
-      "tooWide": [
-       "a \"Number series\" [145 px, class hover:bg-accent flex min-h-9 items-center gap-2 rounded-md p]",
-       "path [13 px, class [object SVGAnimatedString]]",
-       "path [8 px, class [object SVGAnimatedString]]",
-       "rect [8 px, class [object SVGAnimatedString]]",
-       "path [13 px, class [object SVGAnimatedString]]"
-      ],
-      "tapTargets": 25,
-      "smallTapTargets": 0,
-      "smallTapExamples": [],
-      "tinyText": 0,
-      "fontSizes": [
-       "12px",
-       "14px",
-       "24px"
-      ],
-      "textColours": 6,
-      "radii": [
-       "6px",
-       "8px",
-       "4px"
-      ],
-      "buttonHeights": [
-       36
-      ],
-      "tables": 1,
-      "widestTable": 480,
-      "h1": [
-       "Members"
-      ]
-     },
-     "axe": null,
-     "consoleErrors": []
-    },
-    "phone": {
-     "screenshot": "settings-members--phone.jpg",
-     "url": "/settings/members",
-     "metrics": {
-      "pageHeight": 844,
-      "sidewaysScroll": false,
-      "overflowing": [
-       "li \"GST registrations\"",
-       "li \"Number series\"",
-       "li \"Bill printing\"",
-       "li \"Tally export\""
-      ],
-      "tooWide": [
-       "a \"GST registrations\" [162 px, class hover:bg-accent flex min-h-9 items-center gap-2 rounded-md p]",
-       "line [1 px, class [object SVGAnimatedString]]",
-       "line [1 px, class [object SVGAnimatedString]]",
-       "path [13 px, class [object SVGAnimatedString]]",
-       "path [8 px, class [object SVGAnimatedString]]",
-       "rect [8 px, class [object SVGAnimatedString]]"
-      ],
       "tapTargets": 11,
-      "smallTapTargets": 0,
-      "smallTapExamples": [],
+      "smallTapTargets": 4,
+      "smallTapExamples": [
+       "a \"statement\"",
+       "button \"Date\"",
+       "a \"INV/0002\"",
+       "a \"INV/0001\""
+      ],
       "tinyText": 0,
       "fontSizes": [
        "12px",
+       "13px",
        "14px",
-       "24px"
+       "16px",
+       "17px",
+       "18px",
+       "24px",
+       "30px"
       ],
       "textColours": 4,
       "radii": [
        "6px",
-       "8px",
+       "12px",
        "4px"
       ],
       "buttonHeights": [
-       36,
-       44
+       16,
+       32
       ],
       "tables": 1,
-      "widestTable": 358,
+      "widestTable": 974,
       "h1": [
-       "Members"
+       "Overview"
+      ]
+     },
+     "axe": [],
+     "consoleErrors": []
+    },
+    "tablet": {
+     "screenshot": "portal-overview--tablet.jpg",
+     "url": "/portal",
+     "metrics": {
+      "pageHeight": 1024,
+      "sidewaysScroll": false,
+      "overflowing": [],
+      "tooWide": [],
+      "tapTargets": 9,
+      "smallTapTargets": 1,
+      "smallTapExamples": [
+       "a \"statement\""
+      ],
+      "tinyText": 0,
+      "fontSizes": [
+       "12px",
+       "13px",
+       "14px",
+       "16px",
+       "17px",
+       "18px",
+       "24px",
+       "30px"
+      ],
+      "textColours": 4,
+      "radii": [
+       "6px",
+       "12px"
+      ],
+      "buttonHeights": [
+       32
+      ],
+      "tables": 0,
+      "widestTable": 0,
+      "h1": [
+       "Overview"
+      ]
+     },
+     "axe": null,
+     "consoleErrors": []
+    },
+    "phone": {
+     "screenshot": "portal-overview--phone.jpg",
+     "url": "/portal",
+     "metrics": {
+      "pageHeight": 1075,
+      "sidewaysScroll": false,
+      "overflowing": [],
+      "tooWide": [],
+      "tapTargets": 9,
+      "smallTapTargets": 1,
+      "smallTapExamples": [
+       "a \"statement\""
+      ],
+      "tinyText": 0,
+      "fontSizes": [
+       "12px",
+       "13px",
+       "14px",
+       "16px",
+       "17px",
+       "18px",
+       "24px",
+       "30px"
+      ],
+      "textColours": 5,
+      "radii": [
+       "6px",
+       "12px"
+      ],
+      "buttonHeights": [
+       32
+      ],
+      "tables": 0,
+      "widestTable": 0,
+      "h1": [
+       "Overview"
       ]
      },
      "axe": [],
@@ -285,427 +154,118 @@
    }
   },
   {
-   "name": "Settings: GST registrations",
-   "path": "/settings/gst-registrations",
+   "name": "Client portal: bills & quotes",
+   "path": "/portal/bills",
    "sizes": {
     "desktop": {
-     "screenshot": "settings-gst--desktop.jpg",
-     "url": "/settings/gst-registrations",
+     "screenshot": "portal-bills--desktop.jpg",
+     "url": "/portal/bills",
      "metrics": {
       "pageHeight": 900,
       "sidewaysScroll": false,
       "overflowing": [],
       "tooWide": [],
-      "tapTargets": 24,
-      "smallTapTargets": 0,
-      "smallTapExamples": [],
-      "tinyText": 0,
-      "fontSizes": [
-       "12px",
-       "14px",
-       "24px"
-      ],
-      "textColours": 6,
-      "radii": [
-       "6px",
-       "4px"
-      ],
-      "buttonHeights": [
-       32,
-       36
-      ],
-      "tables": 1,
-      "widestTable": 936,
-      "h1": [
-       "GST registrations"
-      ]
-     },
-     "axe": [],
-     "consoleErrors": []
-    },
-    "tablet": {
-     "screenshot": "settings-gst--tablet.jpg",
-     "url": "/settings/gst-registrations",
-     "metrics": {
-      "pageHeight": 1024,
-      "sidewaysScroll": false,
-      "overflowing": [
-       "li \"Number series\"",
-       "li \"Bill printing\"",
-       "li \"Tally export\"",
-       "table \"GSTINNameStateTypeStatusActions32AAKFD12\""
-      ],
-      "tooWide": [
-       "a \"Number series\" [145 px, class hover:bg-accent flex min-h-9 items-center gap-2 rounded-md p]",
-       "path [13 px, class [object SVGAnimatedString]]",
-       "path [8 px, class [object SVGAnimatedString]]",
-       "rect [8 px, class [object SVGAnimatedString]]",
-       "path [13 px, class [object SVGAnimatedString]]",
-       "th \"Type\" [167 px, class text-foreground h-10 px-2 text-left align-middle font-medium]"
-      ],
-      "tapTargets": 24,
-      "smallTapTargets": 0,
-      "smallTapExamples": [],
-      "tinyText": 0,
-      "fontSizes": [
-       "12px",
-       "14px",
-       "24px"
-      ],
-      "textColours": 6,
-      "radii": [
-       "6px",
-       "4px"
-      ],
-      "buttonHeights": [
-       32,
-       36
-      ],
-      "tables": 1,
-      "widestTable": 647,
-      "h1": [
-       "GST registrations"
-      ]
-     },
-     "axe": null,
-     "consoleErrors": []
-    },
-    "phone": {
-     "screenshot": "settings-gst--phone.jpg",
-     "url": "/settings/gst-registrations",
-     "metrics": {
-      "pageHeight": 844,
-      "sidewaysScroll": false,
-      "overflowing": [
-       "li \"GST registrations\"",
-       "li \"Number series\"",
-       "li \"Bill printing\"",
-       "li \"Tally export\"",
-       "table \"GSTINNameStateTypeStatusActions32AAKFD12\""
-      ],
-      "tooWide": [
-       "a \"GST registrations\" [164 px, class hover:bg-accent flex min-h-9 items-center gap-2 rounded-md p]",
-       "line [1 px, class [object SVGAnimatedString]]",
-       "line [1 px, class [object SVGAnimatedString]]",
-       "path [13 px, class [object SVGAnimatedString]]",
-       "path [8 px, class [object SVGAnimatedString]]",
-       "rect [8 px, class [object SVGAnimatedString]]"
-      ],
-      "tapTargets": 10,
-      "smallTapTargets": 0,
-      "smallTapExamples": [],
-      "tinyText": 0,
-      "fontSizes": [
-       "12px",
-       "14px",
-       "24px"
-      ],
-      "textColours": 4,
-      "radii": [
-       "6px",
-       "4px"
-      ],
-      "buttonHeights": [
-       32,
-       36,
-       44
-      ],
-      "tables": 1,
-      "widestTable": 647,
-      "h1": [
-       "GST registrations"
-      ]
-     },
-     "axe": [],
-     "consoleErrors": []
-    }
-   }
-  },
-  {
-   "name": "Settings: number series",
-   "path": "/settings/series",
-   "sizes": {
-    "desktop": {
-     "screenshot": "settings-series--desktop.jpg",
-     "url": "/settings/series",
-     "metrics": {
-      "pageHeight": 900,
-      "sidewaysScroll": false,
-      "overflowing": [],
-      "tooWide": [],
-      "tapTargets": 28,
-      "smallTapTargets": 0,
-      "smallTapExamples": [],
-      "tinyText": 0,
-      "fontSizes": [
-       "12px",
-       "14px",
-       "24px"
-      ],
-      "textColours": 6,
-      "radii": [
-       "6px",
-       "4px"
-      ],
-      "buttonHeights": [
-       32,
-       36
-      ],
-      "tables": 1,
-      "widestTable": 936,
-      "h1": [
-       "Number series"
-      ]
-     },
-     "axe": [],
-     "consoleErrors": []
-    },
-    "tablet": {
-     "screenshot": "settings-series--tablet.jpg",
-     "url": "/settings/series",
-     "metrics": {
-      "pageHeight": 1024,
-      "sidewaysScroll": false,
-      "overflowing": [
-       "li \"Number series\"",
-       "li \"Bill printing\"",
-       "li \"Tally export\"",
-       "table \"Document typeRegistrationFinancial yearN\""
-      ],
-      "tooWide": [
-       "a \"Number series\" [146 px, class hover:bg-accent flex min-h-9 items-center gap-2 rounded-md p]",
-       "path [13 px, class [object SVGAnimatedString]]",
-       "path [8 px, class [object SVGAnimatedString]]",
-       "rect [8 px, class [object SVGAnimatedString]]",
-       "path [13 px, class [object SVGAnimatedString]]",
-       "th \"Status\" [65 px, class text-foreground h-10 px-2 text-left align-middle font-medium]"
-      ],
-      "tapTargets": 28,
-      "smallTapTargets": 0,
-      "smallTapExamples": [],
-      "tinyText": 0,
-      "fontSizes": [
-       "12px",
-       "14px",
-       "24px"
-      ],
-      "textColours": 6,
-      "radii": [
-       "6px",
-       "4px"
-      ],
-      "buttonHeights": [
-       32,
-       36
-      ],
-      "tables": 1,
-      "widestTable": 520,
-      "h1": [
-       "Number series"
-      ]
-     },
-     "axe": null,
-     "consoleErrors": []
-    },
-    "phone": {
-     "screenshot": "settings-series--phone.jpg",
-     "url": "/settings/series",
-     "metrics": {
-      "pageHeight": 844,
-      "sidewaysScroll": false,
-      "overflowing": [
-       "li \"GST registrations\"",
-       "li \"Number series\"",
-       "li \"Bill printing\"",
-       "li \"Tally export\"",
-       "table \"Document typeRegistrationFinancial yearN\""
-      ],
-      "tooWide": [
-       "a \"GST registrations\" [162 px, class hover:bg-accent flex min-h-9 items-center gap-2 rounded-md p]",
-       "line [1 px, class [object SVGAnimatedString]]",
-       "line [1 px, class [object SVGAnimatedString]]",
-       "path [13 px, class [object SVGAnimatedString]]",
-       "path [8 px, class [object SVGAnimatedString]]",
-       "rect [8 px, class [object SVGAnimatedString]]"
-      ],
       "tapTargets": 14,
-      "smallTapTargets": 0,
-      "smallTapExamples": [],
-      "tinyText": 0,
-      "fontSizes": [
-       "12px",
-       "14px",
-       "24px"
-      ],
-      "textColours": 4,
-      "radii": [
-       "6px",
-       "4px"
-      ],
-      "buttonHeights": [
-       32,
-       36,
-       44
-      ],
-      "tables": 1,
-      "widestTable": 520,
-      "h1": [
-       "Number series"
-      ]
-     },
-     "axe": [],
-     "consoleErrors": []
-    }
-   }
-  },
-  {
-   "name": "Settings: bill printing",
-   "path": "/settings/print",
-   "sizes": {
-    "desktop": {
-     "screenshot": "settings-print--desktop.jpg",
-     "url": "/settings/print",
-     "metrics": {
-      "pageHeight": 1318,
-      "sidewaysScroll": false,
-      "overflowing": [],
-      "tooWide": [],
-      "tapTargets": 34,
-      "smallTapTargets": 2,
+      "smallTapTargets": 3,
       "smallTapExamples": [
-       "input",
-       "input"
+       "button \"Date\"",
+       "a \"INV/0002\"",
+       "a \"INV/0001\""
       ],
       "tinyText": 0,
       "fontSizes": [
        "12px",
+       "13px",
        "14px",
        "16px",
-       "17px",
        "24px"
       ],
-      "textColours": 6,
+      "textColours": 5,
       "radii": [
        "6px",
        "12px",
-       "50%",
        "4px"
       ],
       "buttonHeights": [
-       32,
-       36
+       16,
+       32
       ],
-      "tables": 0,
-      "widestTable": 0,
+      "tables": 1,
+      "widestTable": 974,
       "h1": [
-       "Bill printing"
+       "Bills & quotes"
       ]
      },
      "axe": [],
      "consoleErrors": []
     },
     "tablet": {
-     "screenshot": "settings-print--tablet.jpg",
-     "url": "/settings/print",
+     "screenshot": "portal-bills--tablet.jpg",
+     "url": "/portal/bills",
      "metrics": {
-      "pageHeight": 1422,
+      "pageHeight": 1024,
       "sidewaysScroll": false,
-      "overflowing": [
-       "li \"Number series\"",
-       "li \"Bill printing\"",
-       "li \"Tally export\""
-      ],
-      "tooWide": [
-       "a \"Number series\" [145 px, class hover:bg-accent flex min-h-9 items-center gap-2 rounded-md p]",
-       "path [13 px, class [object SVGAnimatedString]]",
-       "path [8 px, class [object SVGAnimatedString]]",
-       "rect [8 px, class [object SVGAnimatedString]]",
-       "path [13 px, class [object SVGAnimatedString]]"
-      ],
-      "tapTargets": 34,
-      "smallTapTargets": 2,
-      "smallTapExamples": [
-       "input",
-       "input"
-      ],
+      "overflowing": [],
+      "tooWide": [],
+      "tapTargets": 12,
+      "smallTapTargets": 0,
+      "smallTapExamples": [],
       "tinyText": 0,
       "fontSizes": [
        "12px",
+       "13px",
        "14px",
        "16px",
-       "17px",
        "24px"
       ],
-      "textColours": 6,
+      "textColours": 5,
       "radii": [
        "6px",
-       "12px",
-       "50%",
-       "4px"
+       "12px"
       ],
       "buttonHeights": [
-       32,
-       36
+       32
       ],
       "tables": 0,
       "widestTable": 0,
       "h1": [
-       "Bill printing"
+       "Bills & quotes"
       ]
      },
      "axe": null,
      "consoleErrors": []
     },
     "phone": {
-     "screenshot": "settings-print--phone.jpg",
-     "url": "/settings/print",
+     "screenshot": "portal-bills--phone.jpg",
+     "url": "/portal/bills",
      "metrics": {
-      "pageHeight": 1819,
+      "pageHeight": 844,
       "sidewaysScroll": false,
-      "overflowing": [
-       "li \"GST registrations\"",
-       "li \"Number series\"",
-       "li \"Bill printing\"",
-       "li \"Tally export\""
-      ],
-      "tooWide": [
-       "a \"GST registrations\" [162 px, class hover:bg-accent flex min-h-9 items-center gap-2 rounded-md p]",
-       "line [1 px, class [object SVGAnimatedString]]",
-       "line [1 px, class [object SVGAnimatedString]]",
-       "path [13 px, class [object SVGAnimatedString]]",
-       "path [8 px, class [object SVGAnimatedString]]",
-       "rect [8 px, class [object SVGAnimatedString]]"
-      ],
-      "tapTargets": 20,
-      "smallTapTargets": 2,
-      "smallTapExamples": [
-       "input",
-       "input"
-      ],
+      "overflowing": [],
+      "tooWide": [],
+      "tapTargets": 12,
+      "smallTapTargets": 0,
+      "smallTapExamples": [],
       "tinyText": 0,
       "fontSizes": [
        "12px",
+       "13px",
        "14px",
        "16px",
-       "17px",
        "24px"
       ],
-      "textColours": 4,
+      "textColours": 6,
       "radii": [
        "6px",
-       "12px",
-       "50%",
-       "4px"
+       "12px"
       ],
       "buttonHeights": [
-       32,
-       36,
-       44
+       32
       ],
       "tables": 0,
       "widestTable": 0,
       "h1": [
-       "Bill printing"
+       "Bills & quotes"
       ]
      },
      "axe": [],
@@ -714,114 +274,106 @@
    }
   },
   {
-   "name": "Settings: Tally export",
-   "path": "/settings/tally",
+   "name": "Client portal: a bill",
+   "path": "/portal/bills/01a1a478-09fc-7450-97e3-a204d97028a6",
    "sizes": {
     "desktop": {
-     "screenshot": "settings-tally--desktop.jpg",
-     "url": "/settings/tally",
+     "screenshot": "portal-bill--desktop.jpg",
+     "url": "/portal/bills/01a1a478-09fc-7450-97e3-a204d97028a6",
      "metrics": {
       "pageHeight": 900,
       "sidewaysScroll": false,
       "overflowing": [],
       "tooWide": [],
-      "tapTargets": 35,
-      "smallTapTargets": 0,
-      "smallTapExamples": [],
+      "tapTargets": 9,
+      "smallTapTargets": 1,
+      "smallTapExamples": [
+       "a \"Bills & quotes\""
+      ],
       "tinyText": 0,
       "fontSizes": [
        "12px",
+       "13px",
        "14px",
+       "16px",
        "24px"
       ],
-      "textColours": 6,
+      "textColours": 3,
       "radii": [
        "6px",
        "12px"
       ],
       "buttonHeights": [
+       32,
        36
       ],
-      "tables": 0,
-      "widestTable": 0,
+      "tables": 1,
+      "widestTable": 924,
       "h1": [
-       "Tally export"
+       "Tax invoice INV/0002"
       ]
      },
      "axe": [],
      "consoleErrors": []
     },
     "tablet": {
-     "screenshot": "settings-tally--tablet.jpg",
-     "url": "/settings/tally",
+     "screenshot": "portal-bill--tablet.jpg",
+     "url": "/portal/bills/01a1a478-09fc-7450-97e3-a204d97028a6",
      "metrics": {
       "pageHeight": 1024,
       "sidewaysScroll": false,
-      "overflowing": [
-       "li \"Number series\"",
-       "li \"Bill printing\"",
-       "li \"Tally export\""
+      "overflowing": [],
+      "tooWide": [],
+      "tapTargets": 8,
+      "smallTapTargets": 1,
+      "smallTapExamples": [
+       "a \"Bills & quotes\""
       ],
-      "tooWide": [
-       "a \"Number series\" [145 px, class hover:bg-accent flex min-h-9 items-center gap-2 rounded-md p]",
-       "path [13 px, class [object SVGAnimatedString]]",
-       "path [8 px, class [object SVGAnimatedString]]",
-       "rect [8 px, class [object SVGAnimatedString]]",
-       "path [13 px, class [object SVGAnimatedString]]"
-      ],
-      "tapTargets": 35,
-      "smallTapTargets": 0,
-      "smallTapExamples": [],
       "tinyText": 0,
       "fontSizes": [
        "12px",
+       "13px",
        "14px",
+       "16px",
        "24px"
       ],
-      "textColours": 6,
+      "textColours": 3,
       "radii": [
        "6px",
        "12px"
       ],
       "buttonHeights": [
+       32,
        36
       ],
       "tables": 0,
       "widestTable": 0,
       "h1": [
-       "Tally export"
+       "Tax invoice INV/0002"
       ]
      },
      "axe": null,
      "consoleErrors": []
     },
     "phone": {
-     "screenshot": "settings-tally--phone.jpg",
-     "url": "/settings/tally",
+     "screenshot": "portal-bill--phone.jpg",
+     "url": "/portal/bills/01a1a478-09fc-7450-97e3-a204d97028a6",
      "metrics": {
-      "pageHeight": 1399,
+      "pageHeight": 1106,
       "sidewaysScroll": false,
-      "overflowing": [
-       "li \"GST registrations\"",
-       "li \"Number series\"",
-       "li \"Bill printing\"",
-       "li \"Tally export\""
+      "overflowing": [],
+      "tooWide": [],
+      "tapTargets": 8,
+      "smallTapTargets": 1,
+      "smallTapExamples": [
+       "a \"Bills & quotes\""
       ],
-      "tooWide": [
-       "a \"GST registrations\" [162 px, class hover:bg-accent flex min-h-9 items-center gap-2 rounded-md p]",
-       "line [1 px, class [object SVGAnimatedString]]",
-       "line [1 px, class [object SVGAnimatedString]]",
-       "path [13 px, class [object SVGAnimatedString]]",
-       "path [8 px, class [object SVGAnimatedString]]",
-       "rect [8 px, class [object SVGAnimatedString]]"
-      ],
-      "tapTargets": 21,
-      "smallTapTargets": 0,
-      "smallTapExamples": [],
       "tinyText": 0,
       "fontSizes": [
        "12px",
+       "13px",
        "14px",
+       "16px",
        "24px"
       ],
       "textColours": 4,
@@ -830,13 +382,471 @@
        "12px"
       ],
       "buttonHeights": [
-       36,
-       44
+       32,
+       36
       ],
       "tables": 0,
       "widestTable": 0,
       "h1": [
-       "Tally export"
+       "Tax invoice INV/0002"
+      ]
+     },
+     "axe": [],
+     "consoleErrors": []
+    }
+   }
+  },
+  {
+   "name": "Client portal: payments",
+   "path": "/portal/payments",
+   "sizes": {
+    "desktop": {
+     "screenshot": "portal-payments--desktop.jpg",
+     "url": "/portal/payments",
+     "metrics": {
+      "pageHeight": 900,
+      "sidewaysScroll": false,
+      "overflowing": [],
+      "tooWide": [],
+      "tapTargets": 8,
+      "smallTapTargets": 1,
+      "smallTapExamples": [
+       "button \"Date\""
+      ],
+      "tinyText": 0,
+      "fontSizes": [
+       "12px",
+       "14px",
+       "16px",
+       "24px"
+      ],
+      "textColours": 2,
+      "radii": [
+       "6px",
+       "12px",
+       "4px"
+      ],
+      "buttonHeights": [
+       16,
+       32
+      ],
+      "tables": 1,
+      "widestTable": 974,
+      "h1": [
+       "Payments"
+      ]
+     },
+     "axe": [],
+     "consoleErrors": []
+    },
+    "tablet": {
+     "screenshot": "portal-payments--tablet.jpg",
+     "url": "/portal/payments",
+     "metrics": {
+      "pageHeight": 1024,
+      "sidewaysScroll": false,
+      "overflowing": [],
+      "tooWide": [],
+      "tapTargets": 6,
+      "smallTapTargets": 0,
+      "smallTapExamples": [],
+      "tinyText": 0,
+      "fontSizes": [
+       "12px",
+       "13px",
+       "14px",
+       "16px",
+       "24px"
+      ],
+      "textColours": 2,
+      "radii": [
+       "6px",
+       "12px"
+      ],
+      "buttonHeights": [
+       32
+      ],
+      "tables": 0,
+      "widestTable": 0,
+      "h1": [
+       "Payments"
+      ]
+     },
+     "axe": null,
+     "consoleErrors": []
+    },
+    "phone": {
+     "screenshot": "portal-payments--phone.jpg",
+     "url": "/portal/payments",
+     "metrics": {
+      "pageHeight": 844,
+      "sidewaysScroll": false,
+      "overflowing": [],
+      "tooWide": [],
+      "tapTargets": 6,
+      "smallTapTargets": 0,
+      "smallTapExamples": [],
+      "tinyText": 0,
+      "fontSizes": [
+       "12px",
+       "13px",
+       "14px",
+       "16px",
+       "24px"
+      ],
+      "textColours": 3,
+      "radii": [
+       "6px",
+       "12px"
+      ],
+      "buttonHeights": [
+       32
+      ],
+      "tables": 0,
+      "widestTable": 0,
+      "h1": [
+       "Payments"
+      ]
+     },
+     "axe": [],
+     "consoleErrors": []
+    }
+   }
+  },
+  {
+   "name": "Client portal: statement",
+   "path": "/portal/statement",
+   "sizes": {
+    "desktop": {
+     "screenshot": "portal-statement--desktop.jpg",
+     "url": "/portal/statement",
+     "metrics": {
+      "pageHeight": 900,
+      "sidewaysScroll": false,
+      "overflowing": [],
+      "tooWide": [],
+      "tapTargets": 7,
+      "smallTapTargets": 0,
+      "smallTapExamples": [],
+      "tinyText": 0,
+      "fontSizes": [
+       "12px",
+       "14px",
+       "16px",
+       "24px"
+      ],
+      "textColours": 2,
+      "radii": [
+       "6px",
+       "12px"
+      ],
+      "buttonHeights": [
+       32
+      ],
+      "tables": 1,
+      "widestTable": 974,
+      "h1": [
+       "Statement of account"
+      ]
+     },
+     "axe": [],
+     "consoleErrors": []
+    },
+    "tablet": {
+     "screenshot": "portal-statement--tablet.jpg",
+     "url": "/portal/statement",
+     "metrics": {
+      "pageHeight": 1227,
+      "sidewaysScroll": false,
+      "overflowing": [],
+      "tooWide": [],
+      "tapTargets": 6,
+      "smallTapTargets": 0,
+      "smallTapExamples": [],
+      "tinyText": 0,
+      "fontSizes": [
+       "12px",
+       "13px",
+       "14px",
+       "16px",
+       "24px"
+      ],
+      "textColours": 2,
+      "radii": [
+       "6px",
+       "12px"
+      ],
+      "buttonHeights": [
+       32
+      ],
+      "tables": 0,
+      "widestTable": 0,
+      "h1": [
+       "Statement of account"
+      ]
+     },
+     "axe": null,
+     "consoleErrors": []
+    },
+    "phone": {
+     "screenshot": "portal-statement--phone.jpg",
+     "url": "/portal/statement",
+     "metrics": {
+      "pageHeight": 1343,
+      "sidewaysScroll": false,
+      "overflowing": [],
+      "tooWide": [],
+      "tapTargets": 6,
+      "smallTapTargets": 0,
+      "smallTapExamples": [],
+      "tinyText": 0,
+      "fontSizes": [
+       "12px",
+       "13px",
+       "14px",
+       "16px",
+       "24px"
+      ],
+      "textColours": 3,
+      "radii": [
+       "6px",
+       "12px"
+      ],
+      "buttonHeights": [
+       32
+      ],
+      "tables": 0,
+      "widestTable": 0,
+      "h1": [
+       "Statement of account"
+      ]
+     },
+     "axe": [],
+     "consoleErrors": []
+    }
+   }
+  },
+  {
+   "name": "Client portal: projects",
+   "path": "/portal/projects",
+   "sizes": {
+    "desktop": {
+     "screenshot": "portal-projects--desktop.jpg",
+     "url": "/portal/projects",
+     "metrics": {
+      "pageHeight": 900,
+      "sidewaysScroll": false,
+      "overflowing": [],
+      "tooWide": [],
+      "tapTargets": 7,
+      "smallTapTargets": 0,
+      "smallTapExamples": [],
+      "tinyText": 0,
+      "fontSizes": [
+       "12px",
+       "14px",
+       "16px",
+       "24px"
+      ],
+      "textColours": 2,
+      "radii": [
+       "6px"
+      ],
+      "buttonHeights": [
+       32
+      ],
+      "tables": 0,
+      "widestTable": 0,
+      "h1": [
+       "Projects"
+      ]
+     },
+     "axe": [],
+     "consoleErrors": []
+    },
+    "tablet": {
+     "screenshot": "portal-projects--tablet.jpg",
+     "url": "/portal/projects",
+     "metrics": {
+      "pageHeight": 1024,
+      "sidewaysScroll": false,
+      "overflowing": [],
+      "tooWide": [],
+      "tapTargets": 7,
+      "smallTapTargets": 0,
+      "smallTapExamples": [],
+      "tinyText": 0,
+      "fontSizes": [
+       "12px",
+       "14px",
+       "16px",
+       "24px"
+      ],
+      "textColours": 2,
+      "radii": [
+       "6px"
+      ],
+      "buttonHeights": [
+       32
+      ],
+      "tables": 0,
+      "widestTable": 0,
+      "h1": [
+       "Projects"
+      ]
+     },
+     "axe": null,
+     "consoleErrors": []
+    },
+    "phone": {
+     "screenshot": "portal-projects--phone.jpg",
+     "url": "/portal/projects",
+     "metrics": {
+      "pageHeight": 844,
+      "sidewaysScroll": false,
+      "overflowing": [],
+      "tooWide": [],
+      "tapTargets": 7,
+      "smallTapTargets": 0,
+      "smallTapExamples": [],
+      "tinyText": 0,
+      "fontSizes": [
+       "12px",
+       "14px",
+       "16px",
+       "24px"
+      ],
+      "textColours": 3,
+      "radii": [
+       "6px"
+      ],
+      "buttonHeights": [
+       32
+      ],
+      "tables": 0,
+      "widestTable": 0,
+      "h1": [
+       "Projects"
+      ]
+     },
+     "axe": [],
+     "consoleErrors": []
+    }
+   }
+  },
+  {
+   "name": "Client portal: a project",
+   "path": "/portal/projects/01a1a478-0101-75ac-a97a-e8c776d370db",
+   "sizes": {
+    "desktop": {
+     "screenshot": "portal-project--desktop.jpg",
+     "url": "/portal/projects/01a1a478-0101-75ac-a97a-e8c776d370db",
+     "metrics": {
+      "pageHeight": 900,
+      "sidewaysScroll": false,
+      "overflowing": [],
+      "tooWide": [],
+      "tapTargets": 6,
+      "smallTapTargets": 0,
+      "smallTapExamples": [],
+      "tinyText": 0,
+      "fontSizes": [
+       "12px",
+       "14px",
+       "16px",
+       "24px"
+      ],
+      "textColours": 2,
+      "radii": [
+       "6px",
+       "4px"
+      ],
+      "buttonHeights": [
+       32
+      ],
+      "tables": 1,
+      "widestTable": 976,
+      "h1": [
+       "Skyline Towers, Kakkanad"
+      ]
+     },
+     "axe": [],
+     "consoleErrors": []
+    },
+    "tablet": {
+     "screenshot": "portal-project--tablet.jpg",
+     "url": "/portal/projects/01a1a478-0101-75ac-a97a-e8c776d370db",
+     "metrics": {
+      "pageHeight": 1024,
+      "sidewaysScroll": false,
+      "overflowing": [],
+      "tooWide": [],
+      "tapTargets": 6,
+      "smallTapTargets": 0,
+      "smallTapExamples": [],
+      "tinyText": 0,
+      "fontSizes": [
+       "12px",
+       "14px",
+       "16px",
+       "24px"
+      ],
+      "textColours": 2,
+      "radii": [
+       "6px",
+       "4px"
+      ],
+      "buttonHeights": [
+       32
+      ],
+      "tables": 1,
+      "widestTable": 720,
+      "h1": [
+       "Skyline Towers, Kakkanad"
+      ]
+     },
+     "axe": null,
+     "consoleErrors": []
+    },
+    "phone": {
+     "screenshot": "portal-project--phone.jpg",
+     "url": "/portal/projects/01a1a478-0101-75ac-a97a-e8c776d370db",
+     "metrics": {
+      "pageHeight": 844,
+      "sidewaysScroll": false,
+      "overflowing": [
+       "table \"ItemContractBilledDone1.1Earthwork excav\""
+      ],
+      "tooWide": [
+       "th \"Contract\" [88 px, class text-foreground h-10 px-2 align-middle font-medium whitespac]",
+       "th \"Billed\" [57 px, class text-foreground h-10 px-2 align-middle font-medium whitespac]",
+       "th \"Done\" [65 px, class text-foreground h-10 px-2 align-middle font-medium whitespac]",
+       "td \"850 cum\" [88 px, class p-2 align-middle whitespace-nowrap text-right tabular-nums]",
+       "td \"0 cum\" [57 px, class p-2 align-middle whitespace-nowrap text-right tabular-nums]",
+       "td \"0.00 %\" [65 px, class p-2 align-middle whitespace-nowrap text-right tabular-nums]"
+      ],
+      "tapTargets": 6,
+      "smallTapTargets": 0,
+      "smallTapExamples": [],
+      "tinyText": 0,
+      "fontSizes": [
+       "12px",
+       "14px",
+       "16px",
+       "24px"
+      ],
+      "textColours": 3,
+      "radii": [
+       "6px",
+       "4px"
+      ],
+      "buttonHeights": [
+       32
+      ],
+      "tables": 1,
+      "widestTable": 516,
+      "h1": [
+       "Skyline Towers, Kakkanad"
       ]
      },
      "axe": [],
@@ -845,5 +855,5 @@
    }
   }
  ],
- "step": "D.11 (settings)"
+ "step": "D.12 (client portal)"
 }
