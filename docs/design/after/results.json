@@ -1,6 +1,6 @@
 {
  "base": "http://localhost:5173",
- "at": "2026-11-05T08:58:52.379Z",
+ "at": "2026-11-05T09:12:53.164Z",
  "sizes": [
   {
    "name": "desktop",
@@ -513,7 +513,7 @@
       "pageHeight": 1588,
       "sidewaysScroll": false,
       "overflowing": [],
-      "tapTargets": 28,
+      "tapTargets": 31,
       "smallTapTargets": 5,
       "smallTapExamples": [
        "a \"Invite your team\"",
@@ -562,7 +562,7 @@
        "div \"Projects losing moneyCosts so far are mo\"",
        "div \"Receivables by partyWhat each client owe\""
       ],
-      "tapTargets": 28,
+      "tapTargets": 31,
       "smallTapTargets": 5,
       "smallTapExamples": [
        "a \"Invite your team\"",
@@ -657,10 +657,10 @@
      "screenshot": "documents--desktop.jpg",
      "url": "/documents",
      "metrics": {
-      "pageHeight": 900,
+      "pageHeight": 944,
       "sidewaysScroll": false,
       "overflowing": [],
-      "tapTargets": 35,
+      "tapTargets": 38,
       "smallTapTargets": 9,
       "smallTapExamples": [
        "button \"Number\"",
@@ -703,7 +703,7 @@
       "pageHeight": 1926,
       "sidewaysScroll": false,
       "overflowing": [],
-      "tapTargets": 32,
+      "tapTargets": 35,
       "smallTapTargets": 7,
       "smallTapExamples": [
        "a \"Draft\"",
@@ -789,17 +789,17 @@
      "screenshot": "document-new--desktop.jpg",
      "url": "/documents/new",
      "metrics": {
-      "pageHeight": 1066,
+      "pageHeight": 1054,
       "sidewaysScroll": false,
       "overflowing": [],
-      "tapTargets": 49,
-      "smallTapTargets": 5,
+      "tapTargets": 52,
+      "smallTapTargets": 6,
       "smallTapExamples": [
+       "a \"Bills\"",
        "button \"New client\"",
        "input",
        "input",
-       "input",
-       "button \"Add a measurement sheet (number \u00c3\u2014 length\""
+       "input"
       ],
       "tinyText": 0,
       "fontSizes": [
@@ -833,14 +833,15 @@
      "screenshot": "document-new--tablet.jpg",
      "url": "/documents/new",
      "metrics": {
-      "pageHeight": 1244,
+      "pageHeight": 1232,
       "sidewaysScroll": true,
       "overflowing": [
        "div"
       ],
-      "tapTargets": 49,
-      "smallTapTargets": 4,
+      "tapTargets": 52,
+      "smallTapTargets": 5,
       "smallTapExamples": [
+       "a \"Bills\"",
        "input",
        "input",
        "input",
@@ -878,7 +879,7 @@
      "screenshot": "document-new--phone.jpg",
      "url": "/documents/new",
      "metrics": {
-      "pageHeight": 1973,
+      "pageHeight": 1965,
       "sidewaysScroll": true,
       "overflowing": [
        "div \"TypeTax invoiceBill of supplyProforma in\"",
@@ -887,13 +888,13 @@
        "div \"Save draftSave and keep workingCancelNot\""
       ],
       "tapTargets": 33,
-      "smallTapTargets": 5,
+      "smallTapTargets": 6,
       "smallTapExamples": [
+       "a \"Bills\"",
        "button \"New client\"",
        "input",
        "input",
-       "input",
-       "button \"Add a measurement sheet (number \u00c3\u2014 length\""
+       "input"
       ],
       "tinyText": 0,
       "fontSizes": [
@@ -934,17 +935,17 @@
      "screenshot": "document-edit--desktop.jpg",
      "url": "/documents/01a1a478-0ffb-7791-bedd-bb89480540eb/edit",
      "metrics": {
-      "pageHeight": 1588,
+      "pageHeight": 1576,
       "sidewaysScroll": true,
       "overflowing": [
        "div"
       ],
-      "tapTargets": 82,
-      "smallTapTargets": 11,
+      "tapTargets": 86,
+      "smallTapTargets": 13,
       "smallTapExamples": [
+       "a \"Bills\"",
+       "a \"Draft\"",
        "button \"New client\"",
-       "input",
-       "input",
        "input",
        "input"
       ],
@@ -980,19 +981,19 @@
      "screenshot": "document-edit--tablet.jpg",
      "url": "/documents/01a1a478-0ffb-7791-bedd-bb89480540eb/edit",
      "metrics": {
-      "pageHeight": 1776,
+      "pageHeight": 1764,
       "sidewaysScroll": true,
       "overflowing": [
        "div",
        "div",
        "div"
       ],
-      "tapTargets": 82,
-      "smallTapTargets": 11,
+      "tapTargets": 86,
+      "smallTapTargets": 13,
       "smallTapExamples": [
+       "a \"Bills\"",
+       "a \"Draft\"",
        "button \"New client\"",
-       "input",
-       "input",
        "input",
        "input"
       ],
@@ -1028,7 +1029,7 @@
      "screenshot": "document-edit--phone.jpg",
      "url": "/documents/01a1a478-0ffb-7791-bedd-bb89480540eb/edit",
      "metrics": {
-      "pageHeight": 3385,
+      "pageHeight": 3377,
       "sidewaysScroll": true,
       "overflowing": [
        "div \"TypeTax invoiceBill of supplyProforma in\"",
@@ -1037,10 +1038,10 @@
        "div \"Save draftSave and keep workingCancel\""
       ],
       "tapTargets": 66,
-      "smallTapTargets": 11,
+      "smallTapTargets": 12,
       "smallTapExamples": [
+       "a \"Draft\"",
        "button \"New client\"",
-       "input",
        "input",
        "input",
        "input"
@@ -1084,12 +1085,13 @@
      "screenshot": "document-issued--desktop.jpg",
      "url": "/documents/01a1a478-09fc-7450-97e3-a204d97028a6",
      "metrics": {
-      "pageHeight": 1312,
+      "pageHeight": 1300,
       "sidewaysScroll": false,
       "overflowing": [],
-      "tapTargets": 32,
-      "smallTapTargets": 3,
+      "tapTargets": 35,
+      "smallTapTargets": 4,
       "smallTapExamples": [
+       "a \"Bills\"",
        "a \"Skyline Developers\"",
        "a \"Skyline Towers, Kakkanad\"",
        "a \"Payment\""
@@ -1125,14 +1127,15 @@
      "screenshot": "document-issued--tablet.jpg",
      "url": "/documents/01a1a478-09fc-7450-97e3-a204d97028a6",
      "metrics": {
-      "pageHeight": 1576,
+      "pageHeight": 1564,
       "sidewaysScroll": false,
       "overflowing": [
        "table \"#DescriptionQuantityRateTaxableGST %Amou\""
       ],
-      "tapTargets": 32,
-      "smallTapTargets": 2,
+      "tapTargets": 35,
+      "smallTapTargets": 3,
       "smallTapExamples": [
+       "a \"Bills\"",
        "a \"Skyline Developers\"",
        "a \"Payment\""
       ],
@@ -1167,14 +1170,15 @@
      "screenshot": "document-issued--phone.jpg",
      "url": "/documents/01a1a478-09fc-7450-97e3-a204d97028a6",
      "metrics": {
-      "pageHeight": 1901,
+      "pageHeight": 1893,
       "sidewaysScroll": false,
       "overflowing": [
        "table \"#DescriptionQuantityRateTaxableGST %Amou\""
       ],
       "tapTargets": 16,
-      "smallTapTargets": 3,
+      "smallTapTargets": 4,
       "smallTapExamples": [
+       "a \"Bills\"",
        "a \"Skyline Developers\"",
        "a \"Skyline Towers, Kakkanad\"",
        "a \"Payment\""
@@ -1217,12 +1221,13 @@
      "screenshot": "document-review--desktop.jpg",
      "url": "/documents/01a1a478-1039-72ea-96e0-19de89d02673?review=1",
      "metrics": {
-      "pageHeight": 1319,
+      "pageHeight": 1307,
       "sidewaysScroll": false,
       "overflowing": [],
-      "tapTargets": 32,
-      "smallTapTargets": 4,
+      "tapTargets": 35,
+      "smallTapTargets": 5,
       "smallTapExamples": [
+       "a \"Bills\"",
        "a \"Open the client\"",
        "a \"Edit the bill\"",
        "a \"Edit the bill\"",
@@ -1259,14 +1264,15 @@
      "screenshot": "document-review--tablet.jpg",
      "url": "/documents/01a1a478-1039-72ea-96e0-19de89d02673?review=1",
      "metrics": {
-      "pageHeight": 1599,
+      "pageHeight": 1587,
       "sidewaysScroll": false,
       "overflowing": [
        "table \"#DescriptionQuantityRateTaxableGST %Amou\""
       ],
-      "tapTargets": 32,
-      "smallTapTargets": 3,
+      "tapTargets": 35,
+      "smallTapTargets": 4,
       "smallTapExamples": [
+       "a \"Bills\"",
        "a \"Open the client\"",
        "a \"Edit the bill\"",
        "a \"Lakshmi Traders\""
@@ -1302,14 +1308,15 @@
      "screenshot": "document-review--phone.jpg",
      "url": "/documents/01a1a478-1039-72ea-96e0-19de89d02673?review=1",
      "metrics": {
-      "pageHeight": 1946,
+      "pageHeight": 1938,
       "sidewaysScroll": false,
       "overflowing": [
        "table \"#DescriptionQuantityRateTaxableGST %Amou\""
       ],
       "tapTargets": 16,
-      "smallTapTargets": 3,
+      "smallTapTargets": 4,
       "smallTapExamples": [
+       "a \"Bills\"",
        "a \"Open the client\"",
        "a \"Edit the bill\"",
        "a \"Lakshmi Traders\""
@@ -1352,12 +1359,13 @@
      "screenshot": "document-quotation--desktop.jpg",
      "url": "/documents/01a1a478-0ed1-70f9-be9c-1b0644e3fe04",
      "metrics": {
-      "pageHeight": 900,
+      "pageHeight": 944,
       "sidewaysScroll": false,
       "overflowing": [],
-      "tapTargets": 31,
-      "smallTapTargets": 2,
+      "tapTargets": 34,
+      "smallTapTargets": 3,
       "smallTapExamples": [
+       "a \"Quotations\"",
        "a \"Anil Kumar\"",
        "a \"Anil's house renovation\""
       ],
@@ -1390,14 +1398,15 @@
      "screenshot": "document-quotation--tablet.jpg",
      "url": "/documents/01a1a478-0ed1-70f9-be9c-1b0644e3fe04",
      "metrics": {
-      "pageHeight": 1200,
+      "pageHeight": 1188,
       "sidewaysScroll": false,
       "overflowing": [
        "table \"#DescriptionQuantityRateTaxableGST %Amou\""
       ],
-      "tapTargets": 31,
-      "smallTapTargets": 1,
+      "tapTargets": 34,
+      "smallTapTargets": 2,
       "smallTapExamples": [
+       "a \"Quotations\"",
        "a \"Anil Kumar\""
       ],
       "tinyText": 0,
@@ -1429,14 +1438,15 @@
      "screenshot": "document-quotation--phone.jpg",
      "url": "/documents/01a1a478-0ed1-70f9-be9c-1b0644e3fe04",
      "metrics": {
-      "pageHeight": 1525,
+      "pageHeight": 1517,
       "sidewaysScroll": false,
       "overflowing": [
        "table \"#DescriptionQuantityRateTaxableGST %Amou\""
       ],
       "tapTargets": 15,
-      "smallTapTargets": 2,
+      "smallTapTargets": 3,
       "smallTapExamples": [
+       "a \"Quotations\"",
        "a \"Anil Kumar\"",
        "a \"Anil's house renovation\""
       ],
@@ -1476,10 +1486,10 @@
      "screenshot": "templates--desktop.jpg",
      "url": "/templates",
      "metrics": {
-      "pageHeight": 900,
+      "pageHeight": 944,
       "sidewaysScroll": false,
       "overflowing": [],
-      "tapTargets": 18,
+      "tapTargets": 20,
       "smallTapTargets": 0,
       "smallTapExamples": [],
       "tinyText": 0,
@@ -1488,7 +1498,7 @@
        "14px",
        "24px"
       ],
-      "textColours": 3,
+      "textColours": 4,
       "radii": [
        "6px"
       ],
@@ -1511,7 +1521,7 @@
       "pageHeight": 1024,
       "sidewaysScroll": false,
       "overflowing": [],
-      "tapTargets": 18,
+      "tapTargets": 20,
       "smallTapTargets": 0,
       "smallTapExamples": [],
       "tinyText": 0,
@@ -1520,7 +1530,7 @@
        "14px",
        "24px"
       ],
-      "textColours": 3,
+      "textColours": 4,
       "radii": [
        "6px"
       ],
@@ -1543,7 +1553,7 @@
       "pageHeight": 844,
       "sidewaysScroll": false,
       "overflowing": [],
-      "tapTargets": 2,
+      "tapTargets": 1,
       "smallTapTargets": 0,
       "smallTapExamples": [],
       "tinyText": 0,
@@ -1577,10 +1587,10 @@
      "screenshot": "catalog--desktop.jpg",
      "url": "/catalog",
      "metrics": {
-      "pageHeight": 900,
+      "pageHeight": 944,
       "sidewaysScroll": false,
       "overflowing": [],
-      "tapTargets": 34,
+      "tapTargets": 37,
       "smallTapTargets": 0,
       "smallTapExamples": [],
       "tinyText": 0,
@@ -1615,7 +1625,7 @@
       "pageHeight": 1024,
       "sidewaysScroll": false,
       "overflowing": [],
-      "tapTargets": 34,
+      "tapTargets": 37,
       "smallTapTargets": 0,
       "smallTapExamples": [],
       "tinyText": 0,
@@ -1688,10 +1698,10 @@
      "screenshot": "payments--desktop.jpg",
      "url": "/payments",
      "metrics": {
-      "pageHeight": 900,
+      "pageHeight": 944,
       "sidewaysScroll": false,
       "overflowing": [],
-      "tapTargets": 22,
+      "tapTargets": 25,
       "smallTapTargets": 2,
       "smallTapExamples": [
        "a \"2 Nov 2026\"",
@@ -1729,7 +1739,7 @@
       "overflowing": [
        "table \"DateClientModeAmountUnallocated2 Nov 202\""
       ],
-      "tapTargets": 22,
+      "tapTargets": 25,
       "smallTapTargets": 2,
       "smallTapExamples": [
        "a \"2 Nov 2026\"",
@@ -1806,12 +1816,14 @@
      "screenshot": "payment-new--desktop.jpg",
      "url": "/payments/new",
      "metrics": {
-      "pageHeight": 900,
+      "pageHeight": 944,
       "sidewaysScroll": false,
       "overflowing": [],
-      "tapTargets": 27,
-      "smallTapTargets": 0,
-      "smallTapExamples": [],
+      "tapTargets": 30,
+      "smallTapTargets": 1,
+      "smallTapExamples": [
+       "a \"Payments\""
+      ],
       "tinyText": 0,
       "fontSizes": [
        "12px",
@@ -1842,9 +1854,11 @@
       "pageHeight": 1024,
       "sidewaysScroll": false,
       "overflowing": [],
-      "tapTargets": 27,
-      "smallTapTargets": 0,
-      "smallTapExamples": [],
+      "tapTargets": 30,
+      "smallTapTargets": 1,
+      "smallTapExamples": [
+       "a \"Payments\""
+      ],
       "tinyText": 0,
       "fontSizes": [
        "12px",
@@ -1876,8 +1890,10 @@
       "sidewaysScroll": false,
       "overflowing": [],
       "tapTargets": 11,
-      "smallTapTargets": 0,
-      "smallTapExamples": [],
+      "smallTapTargets": 1,
+      "smallTapExamples": [
+       "a \"Payments\""
+      ],
       "tinyText": 0,
       "fontSizes": [
        "12px",
@@ -1912,12 +1928,13 @@
      "screenshot": "payment--desktop.jpg",
      "url": "/payments/01a1a478-0d8d-75d4-b72c-fd71f1df6074",
      "metrics": {
-      "pageHeight": 900,
+      "pageHeight": 944,
       "sidewaysScroll": false,
       "overflowing": [],
-      "tapTargets": 22,
-      "smallTapTargets": 2,
+      "tapTargets": 25,
+      "smallTapTargets": 3,
       "smallTapExamples": [
+       "a \"Payments\"",
        "a \"Skyline Developers\"",
        "a \"INV/0002\""
       ],
@@ -1954,9 +1971,10 @@
       "pageHeight": 1024,
       "sidewaysScroll": false,
       "overflowing": [],
-      "tapTargets": 22,
-      "smallTapTargets": 1,
+      "tapTargets": 25,
+      "smallTapTargets": 2,
       "smallTapExamples": [
+       "a \"Payments\"",
        "a \"INV/0002\""
       ],
       "tinyText": 0,
@@ -1993,8 +2011,9 @@
       "sidewaysScroll": false,
       "overflowing": [],
       "tapTargets": 6,
-      "smallTapTargets": 2,
+      "smallTapTargets": 3,
       "smallTapExamples": [
+       "a \"Payments\"",
        "a \"Skyline Developers\"",
        "a \"INV/0002\""
       ],
@@ -2035,10 +2054,10 @@
      "screenshot": "parties--desktop.jpg",
      "url": "/parties",
      "metrics": {
-      "pageHeight": 900,
+      "pageHeight": 944,
       "sidewaysScroll": false,
       "overflowing": [],
-      "tapTargets": 27,
+      "tapTargets": 30,
       "smallTapTargets": 6,
       "smallTapExamples": [
        "input",
@@ -2079,7 +2098,7 @@
       "overflowing": [
        "table \"NameGSTINStateTypePhoneAnil Kumar\u00e2\u20ac\u201cKerala\""
       ],
-      "tapTargets": 27,
+      "tapTargets": 30,
       "smallTapTargets": 6,
       "smallTapExamples": [
        "input",
@@ -2163,12 +2182,13 @@
      "screenshot": "party-new--desktop.jpg",
      "url": "/parties/new",
      "metrics": {
-      "pageHeight": 1199,
+      "pageHeight": 1187,
       "sidewaysScroll": false,
       "overflowing": [],
-      "tapTargets": 35,
-      "smallTapTargets": 3,
+      "tapTargets": 38,
+      "smallTapTargets": 4,
       "smallTapExamples": [
+       "a \"Clients & vendors\"",
        "input",
        "input",
        "input"
@@ -2201,12 +2221,13 @@
      "screenshot": "party-new--tablet.jpg",
      "url": "/parties/new",
      "metrics": {
-      "pageHeight": 1247,
+      "pageHeight": 1235,
       "sidewaysScroll": false,
       "overflowing": [],
-      "tapTargets": 35,
-      "smallTapTargets": 3,
+      "tapTargets": 38,
+      "smallTapTargets": 4,
       "smallTapExamples": [
+       "a \"Clients & vendors\"",
        "input",
        "input",
        "input"
@@ -2239,12 +2260,13 @@
      "screenshot": "party-new--phone.jpg",
      "url": "/parties/new",
      "metrics": {
-      "pageHeight": 1666,
+      "pageHeight": 1658,
       "sidewaysScroll": false,
       "overflowing": [],
       "tapTargets": 19,
-      "smallTapTargets": 3,
+      "smallTapTargets": 4,
       "smallTapExamples": [
+       "a \"Clients & vendors\"",
        "input",
        "input",
        "input"
@@ -2284,12 +2306,13 @@
      "screenshot": "party--desktop.jpg",
      "url": "/parties/01a1a478-0088-7443-9bd2-0621e69cadba",
      "metrics": {
-      "pageHeight": 1474,
+      "pageHeight": 1462,
       "sidewaysScroll": false,
       "overflowing": [],
-      "tapTargets": 40,
-      "smallTapTargets": 3,
+      "tapTargets": 43,
+      "smallTapTargets": 4,
       "smallTapExamples": [
+       "a \"Clients & vendors\"",
        "input",
        "input",
        "input"
@@ -2323,12 +2346,13 @@
      "screenshot": "party--tablet.jpg",
      "url": "/parties/01a1a478-0088-7443-9bd2-0621e69cadba",
      "metrics": {
-      "pageHeight": 1610,
+      "pageHeight": 1598,
       "sidewaysScroll": false,
       "overflowing": [],
-      "tapTargets": 40,
-      "smallTapTargets": 3,
+      "tapTargets": 43,
+      "smallTapTargets": 4,
       "smallTapExamples": [
+       "a \"Clients & vendors\"",
        "input",
        "input",
        "input"
@@ -2362,12 +2386,13 @@
      "screenshot": "party--phone.jpg",
      "url": "/parties/01a1a478-0088-7443-9bd2-0621e69cadba",
      "metrics": {
-      "pageHeight": 2093,
+      "pageHeight": 2085,
       "sidewaysScroll": false,
       "overflowing": [],
       "tapTargets": 24,
-      "smallTapTargets": 3,
+      "smallTapTargets": 4,
       "smallTapExamples": [
+       "a \"Clients & vendors\"",
        "input",
        "input",
        "input"
@@ -2408,16 +2433,17 @@
      "screenshot": "party-statement--desktop.jpg",
      "url": "/parties/01a1a478-0088-7443-9bd2-0621e69cadba/statement",
      "metrics": {
-      "pageHeight": 900,
+      "pageHeight": 944,
       "sidewaysScroll": false,
       "overflowing": [],
-      "tapTargets": 27,
-      "smallTapTargets": 4,
+      "tapTargets": 31,
+      "smallTapTargets": 6,
       "smallTapExamples": [
+       "a \"Clients & vendors\"",
+       "a \"Skyline Developers\"",
        "a \"Tax invoice INV/0001 (less retention 24,\"",
        "a \"Payment received \u00c2\u00b7 Bank transfer \u00c2\u00b7 UTR S\"",
-       "a \"Tax invoice INV/0002 (less retention 17,\"",
-       "a \"Payment received \u00c2\u00b7 UPI \u00c2\u00b7 UPI 63051234567\""
+       "a \"Tax invoice INV/0002 (less retention 17,\""
       ],
       "tinyText": 0,
       "fontSizes": [
@@ -2452,9 +2478,12 @@
       "overflowing": [
        "table \"Statement\""
       ],
-      "tapTargets": 27,
-      "smallTapTargets": 0,
-      "smallTapExamples": [],
+      "tapTargets": 31,
+      "smallTapTargets": 2,
+      "smallTapExamples": [
+       "a \"Clients & vendors\"",
+       "a \"Skyline Developers\""
+      ],
       "tinyText": 0,
       "fontSizes": [
        "12px",
@@ -2483,14 +2512,16 @@
      "screenshot": "party-statement--phone.jpg",
      "url": "/parties/01a1a478-0088-7443-9bd2-0621e69cadba/statement",
      "metrics": {
-      "pageHeight": 1035,
+      "pageHeight": 1027,
       "sidewaysScroll": false,
       "overflowing": [
        "table \"Statement\""
       ],
       "tapTargets": 11,
-      "smallTapTargets": 0,
-      "smallTapExamples": [],
+      "smallTapTargets": 1,
+      "smallTapExamples": [
+       "a \"Skyline Developers\""
+      ],
       "tinyText": 0,
       "fontSizes": [
        "12px",
@@ -2526,10 +2557,10 @@
      "screenshot": "projects--desktop.jpg",
      "url": "/projects",
      "metrics": {
-      "pageHeight": 900,
+      "pageHeight": 944,
       "sidewaysScroll": false,
       "overflowing": [],
-      "tapTargets": 23,
+      "tapTargets": 26,
       "smallTapTargets": 3,
       "smallTapExamples": [
        "a \"Anil's house renovation\"",
@@ -2568,7 +2599,7 @@
       "overflowing": [
        "table \"ProjectClientSiteStatusContract valueAni\""
       ],
-      "tapTargets": 23,
+      "tapTargets": 26,
       "smallTapTargets": 3,
       "smallTapExamples": [
        "a \"Anil's house renovation\"",
@@ -2647,12 +2678,13 @@
      "screenshot": "project-new--desktop.jpg",
      "url": "/projects/new",
      "metrics": {
-      "pageHeight": 1239,
+      "pageHeight": 1227,
       "sidewaysScroll": false,
       "overflowing": [],
-      "tapTargets": 37,
-      "smallTapTargets": 1,
+      "tapTargets": 40,
+      "smallTapTargets": 2,
       "smallTapExamples": [
+       "a \"Projects\"",
        "input"
       ],
       "tinyText": 0,
@@ -2683,12 +2715,13 @@
      "screenshot": "project-new--tablet.jpg",
      "url": "/projects/new",
      "metrics": {
-      "pageHeight": 1287,
+      "pageHeight": 1275,
       "sidewaysScroll": false,
       "overflowing": [],
-      "tapTargets": 37,
-      "smallTapTargets": 1,
+      "tapTargets": 40,
+      "smallTapTargets": 2,
       "smallTapExamples": [
+       "a \"Projects\"",
        "input"
       ],
       "tinyText": 0,
@@ -2719,12 +2752,13 @@
      "screenshot": "project-new--phone.jpg",
      "url": "/projects/new",
      "metrics": {
-      "pageHeight": 1970,
+      "pageHeight": 1962,
       "sidewaysScroll": false,
       "overflowing": [],
       "tapTargets": 21,
-      "smallTapTargets": 1,
+      "smallTapTargets": 2,
       "smallTapExamples": [
+       "a \"Projects\"",
        "input"
       ],
       "tinyText": 0,
@@ -2762,12 +2796,13 @@
      "screenshot": "project--desktop.jpg",
      "url": "/projects/01a1a478-0101-75ac-a97a-e8c776d370db",
      "metrics": {
-      "pageHeight": 1327,
+      "pageHeight": 1315,
       "sidewaysScroll": false,
       "overflowing": [],
-      "tapTargets": 42,
-      "smallTapTargets": 1,
+      "tapTargets": 45,
+      "smallTapTargets": 2,
       "smallTapExamples": [
+       "a \"Projects\"",
        "input"
       ],
       "tinyText": 0,
@@ -2798,12 +2833,13 @@
      "screenshot": "project--tablet.jpg",
      "url": "/projects/01a1a478-0101-75ac-a97a-e8c776d370db",
      "metrics": {
-      "pageHeight": 1375,
+      "pageHeight": 1363,
       "sidewaysScroll": false,
       "overflowing": [],
-      "tapTargets": 42,
-      "smallTapTargets": 1,
+      "tapTargets": 45,
+      "smallTapTargets": 2,
       "smallTapExamples": [
+       "a \"Projects\"",
        "input"
       ],
       "tinyText": 0,
@@ -2834,12 +2870,13 @@
      "screenshot": "project--phone.jpg",
      "url": "/projects/01a1a478-0101-75ac-a97a-e8c776d370db",
      "metrics": {
-      "pageHeight": 2058,
+      "pageHeight": 2050,
       "sidewaysScroll": false,
       "overflowing": [],
       "tapTargets": 26,
-      "smallTapTargets": 1,
+      "smallTapTargets": 2,
       "smallTapExamples": [
+       "a \"Projects\"",
        "input"
       ],
       "tinyText": 0,
@@ -2877,12 +2914,14 @@
      "screenshot": "project-boq--desktop.jpg",
      "url": "/projects/01a1a478-0101-75ac-a97a-e8c776d370db/boq",
      "metrics": {
-      "pageHeight": 900,
+      "pageHeight": 944,
       "sidewaysScroll": false,
       "overflowing": [],
-      "tapTargets": 36,
-      "smallTapTargets": 0,
-      "smallTapExamples": [],
+      "tapTargets": 39,
+      "smallTapTargets": 1,
+      "smallTapExamples": [
+       "a \"Projects\""
+      ],
       "tinyText": 0,
       "fontSizes": [
        "12px",
@@ -2915,9 +2954,11 @@
       "overflowing": [
        "table \"CodeDescriptionUnitContract qtyRateGST %\""
       ],
-      "tapTargets": 36,
-      "smallTapTargets": 0,
-      "smallTapExamples": [],
+      "tapTargets": 39,
+      "smallTapTargets": 1,
+      "smallTapExamples": [
+       "a \"Projects\""
+      ],
       "tinyText": 0,
       "fontSizes": [
        "12px",
@@ -2951,8 +2992,10 @@
        "table \"CodeDescriptionUnitContract qtyRateGST %\""
       ],
       "tapTargets": 20,
-      "smallTapTargets": 0,
-      "smallTapExamples": [],
+      "smallTapTargets": 1,
+      "smallTapExamples": [
+       "a \"Projects\""
+      ],
       "tinyText": 0,
       "fontSizes": [
        "12px",
@@ -2987,12 +3030,13 @@
      "screenshot": "project-progress--desktop.jpg",
      "url": "/projects/01a1a478-0101-75ac-a97a-e8c776d370db/progress",
      "metrics": {
-      "pageHeight": 900,
+      "pageHeight": 944,
       "sidewaysScroll": false,
       "overflowing": [],
-      "tapTargets": 23,
-      "smallTapTargets": 1,
+      "tapTargets": 26,
+      "smallTapTargets": 2,
       "smallTapExamples": [
+       "a \"Projects\"",
        "a \"Export to Excel or CSV\""
       ],
       "tinyText": 0,
@@ -3030,9 +3074,10 @@
       "overflowing": [
        "div \"BOQ progressBilled in issued tax invoice\""
       ],
-      "tapTargets": 23,
-      "smallTapTargets": 1,
+      "tapTargets": 26,
+      "smallTapTargets": 2,
       "smallTapExamples": [
+       "a \"Projects\"",
        "a \"Export to Excel or CSV\""
       ],
       "tinyText": 0,
@@ -3065,14 +3110,15 @@
      "screenshot": "project-progress--phone.jpg",
      "url": "/projects/01a1a478-0101-75ac-a97a-e8c776d370db/progress",
      "metrics": {
-      "pageHeight": 995,
+      "pageHeight": 987,
       "sidewaysScroll": true,
       "overflowing": [
        "div \"BOQ progressBilled in issued tax invoice\""
       ],
       "tapTargets": 7,
-      "smallTapTargets": 1,
+      "smallTapTargets": 2,
       "smallTapExamples": [
+       "a \"Projects\"",
        "a \"Export to Excel or CSV\""
       ],
       "tinyText": 0,
@@ -3111,12 +3157,14 @@
      "screenshot": "project-retention--desktop.jpg",
      "url": "/projects/01a1a478-0101-75ac-a97a-e8c776d370db/retention",
      "metrics": {
-      "pageHeight": 900,
+      "pageHeight": 944,
       "sidewaysScroll": false,
       "overflowing": [],
-      "tapTargets": 23,
-      "smallTapTargets": 0,
-      "smallTapExamples": [],
+      "tapTargets": 26,
+      "smallTapTargets": 1,
+      "smallTapExamples": [
+       "a \"Projects\""
+      ],
       "tinyText": 0,
       "fontSizes": [
        "12px",
@@ -3149,9 +3197,11 @@
       "pageHeight": 1024,
       "sidewaysScroll": false,
       "overflowing": [],
-      "tapTargets": 23,
-      "smallTapTargets": 0,
-      "smallTapExamples": [],
+      "tapTargets": 26,
+      "smallTapTargets": 1,
+      "smallTapExamples": [
+       "a \"Projects\""
+      ],
       "tinyText": 0,
       "fontSizes": [
        "12px",
@@ -3188,8 +3238,10 @@
        "div \"ReleasesRecord releaseNo retention relea\""
       ],
       "tapTargets": 7,
-      "smallTapTargets": 0,
-      "smallTapExamples": [],
+      "smallTapTargets": 1,
+      "smallTapExamples": [
+       "a \"Projects\""
+      ],
       "tinyText": 0,
       "fontSizes": [
        "12px",
@@ -3226,10 +3278,10 @@
      "screenshot": "expenses--desktop.jpg",
      "url": "/expenses",
      "metrics": {
-      "pageHeight": 900,
+      "pageHeight": 944,
       "sidewaysScroll": false,
       "overflowing": [],
-      "tapTargets": 23,
+      "tapTargets": 26,
       "smallTapTargets": 3,
       "smallTapExamples": [
        "input",
@@ -3268,7 +3320,7 @@
       "overflowing": [
        "table \"DateDescriptionVendor / projectTotalTo p\""
       ],
-      "tapTargets": 23,
+      "tapTargets": 26,
       "smallTapTargets": 1,
       "smallTapExamples": [
        "input"
@@ -3343,12 +3395,13 @@
      "screenshot": "expense-new--desktop.jpg",
      "url": "/expenses/new",
      "metrics": {
-      "pageHeight": 900,
+      "pageHeight": 944,
       "sidewaysScroll": false,
       "overflowing": [],
-      "tapTargets": 32,
-      "smallTapTargets": 1,
+      "tapTargets": 35,
+      "smallTapTargets": 2,
       "smallTapExamples": [
+       "a \"Expenses\"",
        "input"
       ],
       "tinyText": 0,
@@ -3381,9 +3434,10 @@
       "pageHeight": 1024,
       "sidewaysScroll": false,
       "overflowing": [],
-      "tapTargets": 32,
-      "smallTapTargets": 1,
+      "tapTargets": 35,
+      "smallTapTargets": 2,
       "smallTapExamples": [
+       "a \"Expenses\"",
        "input"
       ],
       "tinyText": 0,
@@ -3413,12 +3467,13 @@
      "screenshot": "expense-new--phone.jpg",
      "url": "/expenses/new",
      "metrics": {
-      "pageHeight": 1289,
+      "pageHeight": 1281,
       "sidewaysScroll": false,
       "overflowing": [],
       "tapTargets": 16,
-      "smallTapTargets": 1,
+      "smallTapTargets": 2,
       "smallTapExamples": [
+       "a \"Expenses\"",
        "input"
       ],
       "tinyText": 0,
@@ -3455,12 +3510,13 @@
      "screenshot": "expense--desktop.jpg",
      "url": "/expenses/01a1aaa1-76b9-742d-825c-ed2505d95bfd",
      "metrics": {
-      "pageHeight": 900,
+      "pageHeight": 944,
       "sidewaysScroll": false,
       "overflowing": [],
-      "tapTargets": 33,
-      "smallTapTargets": 1,
+      "tapTargets": 36,
+      "smallTapTargets": 2,
       "smallTapExamples": [
+       "a \"Expenses\"",
        "input"
       ],
       "tinyText": 0,
@@ -3493,9 +3549,10 @@
       "pageHeight": 1024,
       "sidewaysScroll": false,
       "overflowing": [],
-      "tapTargets": 33,
-      "smallTapTargets": 1,
+      "tapTargets": 36,
+      "smallTapTargets": 2,
       "smallTapExamples": [
+       "a \"Expenses\"",
        "input"
       ],
       "tinyText": 0,
@@ -3525,12 +3582,13 @@
      "screenshot": "expense--phone.jpg",
      "url": "/expenses/01a1aaa1-76b9-742d-825c-ed2505d95bfd",
      "metrics": {
-      "pageHeight": 1289,
+      "pageHeight": 1281,
       "sidewaysScroll": false,
       "overflowing": [],
       "tapTargets": 17,
-      "smallTapTargets": 1,
+      "smallTapTargets": 2,
       "smallTapExamples": [
+       "a \"Expenses\"",
        "input"
       ],
       "tinyText": 0,
@@ -3567,10 +3625,10 @@
      "screenshot": "reports--desktop.jpg",
      "url": "/reports",
      "metrics": {
-      "pageHeight": 900,
+      "pageHeight": 944,
       "sidewaysScroll": false,
       "overflowing": [],
-      "tapTargets": 23,
+      "tapTargets": 26,
       "smallTapTargets": 0,
       "smallTapExamples": [],
       "tinyText": 0,
@@ -3603,7 +3661,7 @@
       "pageHeight": 1024,
       "sidewaysScroll": false,
       "overflowing": [],
-      "tapTargets": 23,
+      "tapTargets": 26,
       "smallTapTargets": 1,
       "smallTapExamples": [
        "a \"Make the GSTR-1 file for this month\""
@@ -3675,10 +3733,10 @@
      "screenshot": "exports--desktop.jpg",
      "url": "/exports",
      "metrics": {
-      "pageHeight": 900,
+      "pageHeight": 944,
       "sidewaysScroll": false,
       "overflowing": [],
-      "tapTargets": 23,
+      "tapTargets": 26,
       "smallTapTargets": 0,
       "smallTapExamples": [],
       "tinyText": 0,
@@ -3712,7 +3770,7 @@
       "pageHeight": 1024,
       "sidewaysScroll": false,
       "overflowing": [],
-      "tapTargets": 23,
+      "tapTargets": 26,
       "smallTapTargets": 0,
       "smallTapExamples": [],
       "tinyText": 0,
@@ -3783,10 +3841,10 @@
      "screenshot": "tds--desktop.jpg",
      "url": "/tds-certificates",
      "metrics": {
-      "pageHeight": 900,
+      "pageHeight": 944,
       "sidewaysScroll": false,
       "overflowing": [],
-      "tapTargets": 20,
+      "tapTargets": 22,
       "smallTapTargets": 0,
       "smallTapExamples": [],
       "tinyText": 0,
@@ -3795,7 +3853,7 @@
        "14px",
        "24px"
       ],
-      "textColours": 4,
+      "textColours": 5,
       "radii": [
        "6px"
       ],
@@ -3818,7 +3876,7 @@
       "pageHeight": 1024,
       "sidewaysScroll": false,
       "overflowing": [],
-      "tapTargets": 20,
+      "tapTargets": 22,
       "smallTapTargets": 0,
       "smallTapExamples": [],
       "tinyText": 0,
@@ -3827,7 +3885,7 @@
        "14px",
        "24px"
       ],
-      "textColours": 4,
+      "textColours": 5,
       "radii": [
        "6px"
       ],
@@ -3850,7 +3908,7 @@
       "pageHeight": 844,
       "sidewaysScroll": false,
       "overflowing": [],
-      "tapTargets": 4,
+      "tapTargets": 3,
       "smallTapTargets": 0,
       "smallTapExamples": [],
       "tinyText": 0,
@@ -3885,10 +3943,10 @@
      "screenshot": "settings-company--desktop.jpg",
      "url": "/settings/company",
      "metrics": {
-      "pageHeight": 900,
+      "pageHeight": 944,
       "sidewaysScroll": false,
       "overflowing": [],
-      "tapTargets": 22,
+      "tapTargets": 25,
       "smallTapTargets": 0,
       "smallTapExamples": [],
       "tinyText": 0,
@@ -3921,7 +3979,7 @@
       "pageHeight": 1024,
       "sidewaysScroll": false,
       "overflowing": [],
-      "tapTargets": 22,
+      "tapTargets": 25,
       "smallTapTargets": 0,
       "smallTapExamples": [],
       "tinyText": 0,
@@ -3991,10 +4049,10 @@
      "screenshot": "settings-members--desktop.jpg",
      "url": "/settings/members",
      "metrics": {
-      "pageHeight": 900,
+      "pageHeight": 944,
       "sidewaysScroll": false,
       "overflowing": [],
-      "tapTargets": 20,
+      "tapTargets": 23,
       "smallTapTargets": 0,
       "smallTapExamples": [],
       "tinyText": 0,
@@ -4028,7 +4086,7 @@
       "pageHeight": 1024,
       "sidewaysScroll": false,
       "overflowing": [],
-      "tapTargets": 20,
+      "tapTargets": 23,
       "smallTapTargets": 0,
       "smallTapExamples": [],
       "tinyText": 0,
@@ -4100,10 +4158,10 @@
      "screenshot": "settings-gst--desktop.jpg",
      "url": "/settings/gst-registrations",
      "metrics": {
-      "pageHeight": 900,
+      "pageHeight": 944,
       "sidewaysScroll": false,
       "overflowing": [],
-      "tapTargets": 19,
+      "tapTargets": 22,
       "smallTapTargets": 0,
       "smallTapExamples": [],
       "tinyText": 0,
@@ -4139,7 +4197,7 @@
       "overflowing": [
        "table \"GSTINNameStateTypeStatusActions32AAKFD12\""
       ],
-      "tapTargets": 19,
+      "tapTargets": 22,
       "smallTapTargets": 0,
       "smallTapExamples": [],
       "tinyText": 0,
@@ -4213,10 +4271,10 @@
      "screenshot": "settings-series--desktop.jpg",
      "url": "/settings/series",
      "metrics": {
-      "pageHeight": 900,
+      "pageHeight": 944,
       "sidewaysScroll": false,
       "overflowing": [],
-      "tapTargets": 23,
+      "tapTargets": 26,
       "smallTapTargets": 0,
       "smallTapExamples": [],
       "tinyText": 0,
@@ -4252,7 +4310,7 @@
       "overflowing": [
        "table \"Document typeRegistrationFinancial yearN\""
       ],
-      "tapTargets": 23,
+      "tapTargets": 26,
       "smallTapTargets": 0,
       "smallTapExamples": [],
       "tinyText": 0,
@@ -4329,7 +4387,7 @@
       "pageHeight": 1318,
       "sidewaysScroll": false,
       "overflowing": [],
-      "tapTargets": 29,
+      "tapTargets": 32,
       "smallTapTargets": 2,
       "smallTapExamples": [
        "input",
@@ -4370,7 +4428,7 @@
       "pageHeight": 1358,
       "sidewaysScroll": false,
       "overflowing": [],
-      "tapTargets": 29,
+      "tapTargets": 32,
       "smallTapTargets": 2,
       "smallTapExamples": [
        "input",
@@ -4456,10 +4514,10 @@
      "screenshot": "settings-tally--desktop.jpg",
      "url": "/settings/tally",
      "metrics": {
-      "pageHeight": 900,
+      "pageHeight": 944,
       "sidewaysScroll": false,
       "overflowing": [],
-      "tapTargets": 30,
+      "tapTargets": 33,
       "smallTapTargets": 0,
       "smallTapExamples": [],
       "tinyText": 0,
@@ -4492,7 +4550,7 @@
       "pageHeight": 1024,
       "sidewaysScroll": false,
       "overflowing": [],
-      "tapTargets": 30,
+      "tapTargets": 33,
       "smallTapTargets": 0,
       "smallTapExamples": [],
       "tinyText": 0,
@@ -4562,10 +4620,10 @@
      "screenshot": "account--desktop.jpg",
      "url": "/account",
      "metrics": {
-      "pageHeight": 2562,
+      "pageHeight": 2751,
       "sidewaysScroll": false,
       "overflowing": [],
-      "tapTargets": 44,
+      "tapTargets": 50,
       "smallTapTargets": 0,
       "smallTapExamples": [],
       "tinyText": 0,
@@ -4597,10 +4655,10 @@
      "screenshot": "account--tablet.jpg",
      "url": "/account",
      "metrics": {
-      "pageHeight": 2870,
+      "pageHeight": 3107,
       "sidewaysScroll": false,
       "overflowing": [],
-      "tapTargets": 44,
+      "tapTargets": 50,
       "smallTapTargets": 0,
       "smallTapExamples": [],
       "tinyText": 0,
@@ -4632,10 +4690,10 @@
      "screenshot": "account--phone.jpg",
      "url": "/account",
      "metrics": {
-      "pageHeight": 3235,
+      "pageHeight": 3520,
       "sidewaysScroll": false,
       "overflowing": [],
-      "tapTargets": 28,
+      "tapTargets": 31,
       "smallTapTargets": 0,
       "smallTapExamples": [],
       "tinyText": 0,
@@ -4683,7 +4741,7 @@
        "div \"Projects losing moneyCosts so far are mo\"",
        "div \"Receivables by partyWhat each client owe\""
       ],
-      "tapTargets": 30,
+      "tapTargets": 33,
       "smallTapTargets": 5,
       "smallTapExamples": [
        "a \"Invite your team\"",
@@ -5552,5 +5610,5 @@
    }
   }
  ],
- "step": "D.4"
+ "step": "D.5"
 }

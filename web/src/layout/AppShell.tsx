@@ -1,15 +1,19 @@
 import {
+  BadgePercent,
   BarChart3,
   BookOpen,
   Building2,
   ChevronsUpDown,
+  ClipboardList,
   Download,
   FileText,
   FolderKanban,
   Hash,
   IndianRupee,
+  Keyboard,
   Landmark,
   LayoutDashboard,
+  LayoutTemplate,
   LogOut,
   Menu,
   Package,
@@ -22,7 +26,7 @@ import {
 } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
 import { useState } from "react";
-import { NavLink, Outlet, useNavigate } from "react-router";
+import { Link, NavLink, Outlet, useLocation, useNavigate, useSearchParams } from "react-router";
 
 import { useMe } from "@/api/me";
 import { useAuth, useSession } from "@/auth/context";
@@ -45,60 +49,124 @@ import {
 } from "@/components/ui/sheet";
 import { setTextSize, setThemeChoice, textSize, themeChoice } from "@/lib/appearance";
 import type { TextSize, ThemeChoice } from "@/lib/appearance";
+import { can } from "@/lib/permissions";
+import type { Action } from "@/lib/permissions";
 import { cn } from "@/lib/utils";
 
 import { InvitationsBanner } from "./InvitationsBanner";
+import { ShortcutsHelp } from "./ShortcutsHelp";
 import { VerifyEmailBanner } from "./VerifyEmailBanner";
 
-const NAV = [
-  { to: "/", label: "Dashboard", icon: LayoutDashboard, end: true },
-  { to: "/documents", label: "Invoices & quotes", icon: FileText },
-  { to: "/payments", label: "Payments", icon: IndianRupee },
-  { to: "/parties", label: "Parties", icon: Users },
-  { to: "/projects", label: "Projects", icon: FolderKanban },
-  { to: "/catalog", label: "Catalog", icon: Package },
-  { to: "/expenses", label: "Expenses", icon: Receipt },
-  { to: "/reports", label: "Reports", icon: BarChart3 },
-  { to: "/exports", label: "Exports", icon: Download },
-] as const;
-
-/** Business settings: OWNER and ADMIN only (the API refuses the others anyway). */
-const SETTINGS_NAV = [
-  { to: "/settings/company", label: "Company", icon: Settings },
-  { to: "/settings/members", label: "Members", icon: UserCog },
-  { to: "/settings/gst-registrations", label: "GST registrations", icon: Landmark },
-  { to: "/settings/series", label: "Number series", icon: Hash },
-  { to: "/settings/print", label: "Bill printing", icon: Printer },
-  { to: "/settings/tally", label: "Tally export", icon: BookOpen },
-] as const;
-
-function NavItem({
-  to,
-  label,
-  icon: Icon,
-  end,
-  onNavigate,
-}: {
+interface NavEntry {
   to: string;
   label: string;
   icon: LucideIcon;
   end?: boolean;
-  onNavigate?: () => void;
-}) {
+  /** Shown only to roles that may do this (the server checks too). */
+  action?: Action;
+  /** For links that share a page (Bills and Quotations are both /documents). */
+  match?: (path: string, query: URLSearchParams) => boolean;
+}
+
+/** The sidebar, grouped by job (D.5). */
+const GROUPS: { title: string; items: NavEntry[] }[] = [
+  {
+    title: "Sell",
+    items: [
+      {
+        to: "/documents?type=quotations",
+        label: "Quotations",
+        icon: ClipboardList,
+        match: (path, q) => path === "/documents" && q.get("type") === "quotations",
+      },
+      {
+        to: "/documents?type=bills",
+        label: "Bills",
+        icon: FileText,
+        match: (path, q) => path.startsWith("/documents") && q.get("type") !== "quotations",
+      },
+      { to: "/templates", label: "Templates", icon: LayoutTemplate },
+    ],
+  },
+  {
+    title: "Money",
+    items: [
+      { to: "/payments", label: "Payments", icon: IndianRupee },
+      { to: "/expenses", label: "Expenses", icon: Receipt },
+      { to: "/tds-certificates", label: "TDS certificates", icon: BadgePercent },
+    ],
+  },
+  {
+    title: "Work",
+    items: [
+      { to: "/projects", label: "Projects", icon: FolderKanban },
+      { to: "/parties", label: "Clients & vendors", icon: Users },
+      { to: "/catalog", label: "Catalog", icon: Package },
+    ],
+  },
+  {
+    title: "Insight",
+    items: [
+      { to: "/", label: "Dashboard", icon: LayoutDashboard, end: true },
+      { to: "/reports", label: "Reports", icon: BarChart3, action: "reports.view" },
+      { to: "/exports", label: "Exports", icon: Download, action: "reports.view" },
+    ],
+  },
+  {
+    title: "Settings",
+    items: [
+      { to: "/settings/company", label: "Company", icon: Settings, action: "tenant.settings" },
+      { to: "/settings/members", label: "Members", icon: UserCog, action: "members.manage" },
+      {
+        to: "/settings/gst-registrations",
+        label: "GST registrations",
+        icon: Landmark,
+        action: "tenant.settings",
+      },
+      { to: "/settings/series", label: "Number series", icon: Hash, action: "tenant.settings" },
+      { to: "/settings/print", label: "Bill printing", icon: Printer, action: "tenant.settings" },
+      { to: "/settings/tally", label: "Tally export", icon: BookOpen, action: "tenant.settings" },
+    ],
+  },
+];
+
+const itemClass = (active: boolean) =>
+  cn(
+    "hover:bg-sidebar-accent flex items-center gap-2 rounded-md px-2 py-1.5 text-sm",
+    active && "bg-sidebar-accent text-sidebar-accent-foreground font-medium",
+  );
+
+function NavItem({ entry, onNavigate }: { entry: NavEntry; onNavigate?: () => void }) {
+  const { pathname } = useLocation();
+  const [query] = useSearchParams();
+  const { to, label, icon: Icon, end, match } = entry;
+  const body = (
+    <>
+      <Icon className="size-4" aria-hidden />
+      {label}
+    </>
+  );
+  if (match) {
+    const active = match(pathname, query);
+    return (
+      <Link
+        to={to}
+        onClick={onNavigate}
+        aria-current={active ? "page" : undefined}
+        className={itemClass(active)}
+      >
+        {body}
+      </Link>
+    );
+  }
   return (
     <NavLink
       to={to}
       end={end}
       onClick={onNavigate}
-      className={({ isActive }) =>
-        cn(
-          "hover:bg-sidebar-accent flex items-center gap-2 rounded-md px-2 py-1.5 text-sm",
-          isActive && "bg-sidebar-accent text-sidebar-accent-foreground font-medium",
-        )
-      }
+      className={({ isActive }) => itemClass(isActive)}
     >
-      <Icon className="size-4" aria-hidden />
-      {label}
+      {body}
     </NavLink>
   );
 }
@@ -153,7 +221,7 @@ const SIZES: { value: TextSize; label: string }[] = [
   { value: "large", label: "Large text" },
 ];
 
-function UserMenu() {
+function UserMenu({ onHelp }: { onHelp: () => void }) {
   const { logout } = useAuth();
   const navigate = useNavigate();
   const session = useSession();
@@ -180,6 +248,10 @@ function UserMenu() {
         <DropdownMenuSeparator />
         <DropdownMenuItem onSelect={() => void navigate("/account")}>
           <UserRound aria-hidden /> Your account
+        </DropdownMenuItem>
+        <DropdownMenuItem onSelect={onHelp}>
+          <Keyboard aria-hidden /> Keyboard shortcuts
+          <kbd className="text-muted-foreground ml-auto text-xs">?</kbd>
         </DropdownMenuItem>
         <DropdownMenuSeparator />
         <DropdownMenuLabel className="text-muted-foreground text-xs font-normal">
@@ -224,34 +296,34 @@ function UserMenu() {
 }
 
 /** The sidebar's contents: on wide screens beside the page, on phones in the menu panel. */
-function SidebarBody({ onNavigate }: { onNavigate?: () => void }) {
+function SidebarBody({ onNavigate, onHelp }: { onNavigate?: () => void; onHelp: () => void }) {
   const session = useSession();
-  const manages = session.role === "OWNER" || session.role === "ADMIN";
   return (
     <>
       <TenantSwitcher />
-      <nav className="mt-4 grid gap-1" aria-label="Main">
-        {NAV.map((item) => (
-          <NavItem key={item.to} {...item} onNavigate={onNavigate} />
-        ))}
-      </nav>
-      {manages && (
-        <nav className="mt-6 grid gap-1" aria-label="Settings">
-          <p className="text-muted-foreground px-2 text-xs font-medium">Settings</p>
-          {SETTINGS_NAV.map((item) => (
-            <NavItem key={item.to} {...item} onNavigate={onNavigate} />
-          ))}
-        </nav>
-      )}
+      <div className="mt-4 grid gap-5">
+        {GROUPS.map((group) => {
+          const items = group.items.filter((i) => !i.action || can(session.role, i.action));
+          if (items.length === 0) return null;
+          return (
+            <nav key={group.title} className="grid gap-1" aria-label={group.title}>
+              <p className="text-muted-foreground px-2 text-xs font-medium">{group.title}</p>
+              {items.map((item) => (
+                <NavItem key={item.label} entry={item} onNavigate={onNavigate} />
+              ))}
+            </nav>
+          );
+        })}
+      </div>
       <div className="mt-auto pt-6">
-        <UserMenu />
+        <UserMenu onHelp={onHelp} />
       </div>
     </>
   );
 }
 
 /** Phones and small tablets: a menu button opening the sidebar as a panel (D.1). */
-function MobileMenu() {
+function MobileMenu({ onHelp }: { onHelp: () => void }) {
   const [open, setOpen] = useState(false);
   const me = useMe();
   const session = useSession();
@@ -274,6 +346,10 @@ function MobileMenu() {
             onNavigate={() => {
               setOpen(false);
             }}
+            onHelp={() => {
+              setOpen(false);
+              onHelp();
+            }}
           />
         </SheetContent>
       </Sheet>
@@ -283,18 +359,28 @@ function MobileMenu() {
 }
 
 export function AppShell() {
+  const [help, setHelp] = useState(false);
   return (
     <div className="flex min-h-svh">
       <aside className="bg-sidebar text-sidebar-foreground border-sidebar-border hidden w-60 shrink-0 flex-col border-r p-3 md:flex">
-        <SidebarBody />
+        <SidebarBody
+          onHelp={() => {
+            setHelp(true);
+          }}
+        />
       </aside>
       <div className="flex min-w-0 flex-1 flex-col">
-        <MobileMenu />
+        <MobileMenu
+          onHelp={() => {
+            setHelp(true);
+          }}
+        />
         <VerifyEmailBanner />
         <InvitationsBanner />
         <main className="flex-1 p-4 md:p-6">
           <Outlet />
         </main>
+        <ShortcutsHelp open={help} onOpenChange={setHelp} />
       </div>
     </div>
   );

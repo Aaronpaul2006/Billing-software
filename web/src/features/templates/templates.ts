@@ -11,10 +11,3 @@ export const TEMPLATE_TYPES: ReadonlySet<string> = new Set([
 ]);
 
 // backend: masters.edit saves / edits templates; documents.draft uses them
-export const CAN_EDIT: ReadonlySet<string> = new Set(["OWNER", "ADMIN", "ACCOUNTANT"]);
-export const CAN_USE: ReadonlySet<string> = new Set([
-  "OWNER",
-  "ADMIN",
-  "ACCOUNTANT",
-  "SITE_ENGINEER",
-]);

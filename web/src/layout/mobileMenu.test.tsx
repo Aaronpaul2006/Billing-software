@@ -13,13 +13,14 @@ describe("menu on phones (D.1)", () => {
     const router = renderSignedIn("/");
     await user.click(await screen.findByRole("button", { name: "Open the menu" }));
     const panel = await screen.findByRole("dialog", { name: "Menu" });
-    const main = within(panel).getByRole("navigation", { name: "Main" });
-    expect(within(main).getByRole("link", { name: "Invoices & quotes" })).toBeInTheDocument();
+    const sell = within(panel).getByRole("navigation", { name: "Sell" });
+    expect(within(sell).getByRole("link", { name: "Bills" })).toBeInTheDocument();
+    const money = within(panel).getByRole("navigation", { name: "Money" });
     expect(within(panel).getByRole("navigation", { name: "Settings" })).toBeInTheDocument();
     expect(
       within(panel).getByRole("button", { name: /your account and sign out/ }),
     ).toBeInTheDocument();
-    await user.click(within(main).getByRole("link", { name: "Payments" }));
+    await user.click(within(money).getByRole("link", { name: "Payments" }));
     await waitFor(() => {
       expect(router.state.location.pathname).toBe("/payments");
     });

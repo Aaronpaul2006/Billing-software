@@ -1,7 +1,6 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { AlertCircle, ArrowLeft, Pencil, Plus, Trash2 } from "lucide-react";
+import { AlertCircle, Pencil, Plus, Trash2 } from "lucide-react";
 import { useState } from "react";
-import { Link } from "react-router";
 
 import { useConfirm } from "@/components/confirm-context";
 import { api, newIdempotencyKey, unwrap } from "@/api/client";
@@ -268,11 +267,6 @@ export function TdsCertificatesPage() {
 
   return (
     <>
-      <Button variant="ghost" size="sm" asChild className="mb-2 -ml-2">
-        <Link to="/reports?tab=tds">
-          <ArrowLeft aria-hidden /> TDS reconciliation
-        </Link>
-      </Button>
       <PageHeader
         title="TDS certificates"
         description="Form 16A from clients for the TDS (s.194C) they deducted from your bills."

@@ -1,7 +1,7 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { AlertCircle, ArrowLeft, Trash2 } from "lucide-react";
+import { AlertCircle, Trash2 } from "lucide-react";
 import { useState } from "react";
-import { Link, useNavigate } from "react-router";
+import { useNavigate } from "react-router";
 
 import { useConfirm } from "@/components/confirm-context";
 import { api, newIdempotencyKey, unwrap } from "@/api/client";
@@ -22,8 +22,8 @@ import { DOC_TYPE_LABELS } from "@/features/documents/api";
 import type { DocType } from "@/features/documents/api";
 import { errorMessage } from "@/lib/errors";
 import { ifMatch } from "@/lib/forms";
+import { can } from "@/lib/permissions";
 
-import { CAN_EDIT, CAN_USE } from "./templates";
 import type { Template } from "./templates";
 
 function problemText(e: unknown): string {
@@ -206,15 +206,10 @@ export function TemplatesPage() {
       void queryClient.invalidateQueries({ queryKey: ["templates"] });
     },
   });
-  const canEdit = CAN_EDIT.has(session.role);
-  const canUse = CAN_USE.has(session.role);
+  const canEdit = can(session.role, "masters.edit");
+  const canUse = can(session.role, "documents.draft");
   return (
     <>
-      <Button variant="ghost" size="sm" asChild className="mb-2 -ml-2">
-        <Link to="/documents">
-          <ArrowLeft aria-hidden /> Invoices & quotes
-        </Link>
-      </Button>
       <PageHeader
         title="Templates"
         description="Standard quotes and bills. Save one from any quote or invoice (“Save as template”), then start new drafts from it."

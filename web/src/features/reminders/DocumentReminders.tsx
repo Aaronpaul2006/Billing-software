@@ -11,6 +11,7 @@ import { Button } from "@/components/ui/button";
 import { errorMessage } from "@/lib/errors";
 import { compareMoney, formatInr } from "@/lib/money";
 import { formatDateTime } from "@/lib/dates";
+import { can } from "@/lib/permissions";
 
 const STAGES: Record<string, string> = {
   BEFORE_DUE: "3 days before the due date",
@@ -20,9 +21,6 @@ const STAGES: Record<string, string> = {
   OVERDUE_30: "30 days overdue",
   MANUAL: "Sent by hand",
 };
-
-// Same roles as recording payments (backend: payments.record).
-const CAN_SEND = new Set(["OWNER", "ADMIN", "ACCOUNTANT"]);
 
 function problemText(e: unknown, partyId: string) {
   if (e instanceof ApiError && e.problem.errors?.some((x) => x.code === "no_client_email")) {
@@ -83,7 +81,7 @@ export function DocumentReminders({
     <section aria-label="Payment reminders" className="mt-6 max-w-3xl">
       <div className="mb-2 flex flex-wrap items-center gap-3">
         <h2 className="font-medium">Payment reminders</h2>
-        {due && CAN_SEND.has(session.role) && (
+        {due && can(session.role, "payments.record") && (
           <Button
             size="sm"
             variant="outline"

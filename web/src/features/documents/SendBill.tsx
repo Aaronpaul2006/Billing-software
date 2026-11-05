@@ -11,10 +11,11 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { usePrintSettings } from "@/features/settings/printSettings";
 import { errorMessage } from "@/lib/errors";
+import { can } from "@/lib/permissions";
 
 import { documentKey } from "./api";
 import type { Document } from "./api";
-import { MAY_EMAIL, pdfName, whatsappLink, whatsappMessage } from "./sending";
+import { pdfName, whatsappLink, whatsappMessage } from "./sending";
 import type { PrintCopy } from "./sending";
 
 function problemText(e: unknown): string {
@@ -199,7 +200,7 @@ export function SendBill({ doc, copy }: { doc: Document; copy: PrintCopy }) {
         >
           <Download aria-hidden /> Download
         </Button>
-        {MAY_EMAIL.has(role) && (
+        {can(role, "documents.issue") && (
           <Button
             variant="outline"
             onClick={() => {

@@ -1,9 +1,10 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { AlertCircle, ArrowLeft } from "lucide-react";
+import { AlertCircle } from "lucide-react";
 import { useState } from "react";
 import type { ReactNode } from "react";
 import { Link, useParams } from "react-router";
 
+import { Breadcrumbs } from "@/components/Breadcrumbs";
 import { useConfirm } from "@/components/confirm-context";
 import { api, newIdempotencyKey, unwrap } from "@/api/client";
 import { ApiError } from "@/api/problem";
@@ -191,11 +192,12 @@ export function PaymentPage() {
 
   return (
     <>
-      <Button variant="ghost" size="sm" asChild className="mb-2 -ml-2">
-        <Link to="/payments">
-          <ArrowLeft aria-hidden /> Payments
-        </Link>
-      </Button>
+      <Breadcrumbs
+        items={[
+          { label: "Payments", to: "/payments" },
+          { label: `${formatDate(p.payment_date)} · ${p.party_name}` },
+        ]}
+      />
       <PageHeader
         title={`${formatInr(p.amount)} from ${p.party_name}`}
         description={

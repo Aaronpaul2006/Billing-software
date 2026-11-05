@@ -2,7 +2,6 @@ import { keepPreviousData, useMutation, useQuery, useQueryClient } from "@tansta
 import {
   AlertCircle,
   ArrowDown,
-  ArrowLeft,
   ArrowUp,
   CheckCircle2,
   FileUp,
@@ -17,6 +16,7 @@ import { Controller, useFieldArray, useForm, useWatch } from "react-hook-form";
 import type { UseFormRegister } from "react-hook-form";
 import { Link, useNavigate, useParams, useSearchParams } from "react-router";
 
+import { Breadcrumbs } from "@/components/Breadcrumbs";
 import { useToast } from "@/components/toast-context";
 import { useConfirm } from "@/components/confirm-context";
 import { api, newIdempotencyKey, unwrap } from "@/api/client";
@@ -44,7 +44,7 @@ import { useDebounced } from "@/lib/useDebounced";
 
 import { DOC_TYPE_LABELS, documentKey, DRAFTABLE, supplyNote, useDocument } from "./api";
 import { ItemPicker } from "./ItemPicker";
-import { catalogChoices, LINE_FIELD_LABELS, MAY_ADD_MASTERS } from "./items";
+import { catalogChoices, LINE_FIELD_LABELS } from "./items";
 import { LinesImport } from "./LinesImport";
 import type { ParsedLine } from "./LinesImport";
 import type { PickedItem } from "./items";
@@ -54,6 +54,7 @@ import { NewClientDialog, NewItemDialog } from "./QuickAdd";
 import type { Document, DraftableType } from "./api";
 import { usePrintSettings } from "@/features/settings/printSettings";
 import { formatDate, formatTime } from "@/lib/dates";
+import { can } from "@/lib/permissions";
 
 import { TotalsPanel } from "./TotalsPanel";
 
@@ -110,7 +111,6 @@ interface FormValues {
 
 const QTY = /^\d{1,11}(\.\d{1,3})?$/;
 /** Roles that may see reports (the client's balance), docs/01-architecture.md §3. */
-const REPORT_ROLES: ReadonlySet<string> = new Set(["OWNER", "ADMIN", "ACCOUNTANT", "VIEWER"]);
 const RA_TYPES: ReadonlySet<string> = new Set(["TAX_INVOICE", "BILL_OF_SUPPLY", "PROFORMA"]);
 const NOTE_TYPES: ReadonlySet<string> = new Set(["CREDIT_NOTE", "DEBIT_NOTE"]);
 const EMPTY_LINE: LineForm = {
@@ -507,7 +507,7 @@ function Editor({ doc, defaultTerms }: { doc?: Document; defaultTerms?: string }
   const [message, setMessage] = useState<string | null>(null);
   const [key, setKey] = useState(newIdempotencyKey);
   const { role } = useSession();
-  const mayAddMasters = MAY_ADD_MASTERS.has(role);
+  const mayAddMasters = can(role, "masters.edit");
   /** "New item" popup: for which line, starting with what was typed. */
   const [newItem, setNewItem] = useState<{ line: number; name: string } | null>(null);
   const [newClient, setNewClient] = useState(false);
@@ -524,7 +524,7 @@ function Editor({ doc, defaultTerms }: { doc?: Document; defaultTerms?: string }
    * "review" (Ctrl+Enter) shows it with the final review open, ready to issue. */
   const after = useRef<"stay" | "open" | "review">("open");
   const formRef = useRef<HTMLFormElement>(null);
-  const mayViewBalance = REPORT_ROLES.has(role);
+  const mayViewBalance = can(role, "reports.view");
 
   const form = useForm<FormValues>({ defaultValues: toForm(doc, startType, defaultTerms) });
   const { register, handleSubmit, control, setValue, setError, formState, getValues } = form;
@@ -953,11 +953,19 @@ function Editor({ doc, defaultTerms }: { doc?: Document; defaultTerms?: string }
 
   return (
     <>
-      <Button variant="ghost" size="sm" asChild className="mb-2 -ml-2">
-        <Link to={current ? `/documents/${current.id}` : "/documents"}>
-          <ArrowLeft aria-hidden /> {doc ? "Back to the draft" : "Invoices & quotes"}
-        </Link>
-      </Button>
+      <Breadcrumbs
+        items={[
+          values.doc_type === "QUOTATION"
+            ? { label: "Quotations", to: "/documents?type=quotations" }
+            : { label: "Bills", to: "/documents?type=bills" },
+          ...(current
+            ? [
+                { label: current.doc_number ?? "Draft", to: `/documents/${current.id}` },
+                { label: "Edit" },
+              ]
+            : [{ label: "New" }]),
+        ]}
+      />
       <PageHeader
         title={title}
         description="Totals and tax update as you type. Enter moves to the next box."

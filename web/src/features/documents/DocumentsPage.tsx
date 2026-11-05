@@ -1,7 +1,7 @@
 import { useInfiniteQuery } from "@tanstack/react-query";
 import { Plus, Search } from "lucide-react";
 import { useDeferredValue, useState } from "react";
-import { Link } from "react-router";
+import { Link, useSearchParams } from "react-router";
 
 import { api, unwrap } from "@/api/client";
 import { ErrorState } from "@/components/ErrorState";
@@ -24,6 +24,11 @@ import type { DocStatus, DocType } from "./api";
 
 const TYPE_FILTERS: { value: string; label: string; types: DocType[] }[] = [
   { value: "all", label: "All documents", types: [] },
+  {
+    value: "bills",
+    label: "Bills and notes",
+    types: ["TAX_INVOICE", "BILL_OF_SUPPLY", "PROFORMA", "CREDIT_NOTE", "DEBIT_NOTE"],
+  },
   {
     value: "invoices",
     label: "Invoices & bills of supply",
@@ -113,8 +118,17 @@ interface Filters extends Record<string, string> {
 }
 const NO_FILTERS: Filters = { type: "all", status: "", paymentState: "", search: "" };
 
+/** The page's title follows the menu item it was opened from (D.5). */
+const TITLES: Record<string, string> = { bills: "Bills", quotations: "Quotations" };
+
 export function DocumentsPage() {
-  const [type, setType] = useState("all");
+  // the type filter lives in the address (?type=), so the menu shows where you are
+  const [params, setParams] = useSearchParams();
+  const asked = params.get("type") ?? "all";
+  const type = TYPE_FILTERS.some((t) => t.value === asked) ? asked : "all";
+  const setType = (value: string) => {
+    setParams(value === "all" ? {} : { type: value }, { replace: true });
+  };
   const [status, setStatus] = useState<DocStatus | "">("");
   const [paymentState, setPaymentState] = useState<PaymentState>("");
   const [search, setSearch] = useState("");
@@ -155,7 +169,7 @@ export function DocumentsPage() {
   return (
     <>
       <PageHeader
-        title="Invoices & quotes"
+        title={TITLES[type] ?? "Invoices & quotes"}
         description="Drafts get their number when issued."
         actions={
           <>

@@ -19,7 +19,7 @@ describe("settings navigation", () => {
     server.use(http.get(`${API}/reports/summary`, () => problem(403, "permission_denied")));
     server.use(http.get(`${API}/reports/receivables`, () => problem(403, "permission_denied")));
     renderSignedIn("/", { role: "ACCOUNTANT" });
-    await screen.findByRole("navigation", { name: "Main" });
+    await screen.findByRole("navigation", { name: "Sell" });
     expect(screen.queryByRole("navigation", { name: "Settings" })).not.toBeInTheDocument();
   });
 });

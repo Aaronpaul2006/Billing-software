@@ -7,7 +7,6 @@ import type { Document } from "./api";
 export type PrintCopy = "original" | "duplicate" | "triplicate";
 
 /** Roles that may email a bill out (backend: documents.issue). */
-export const MAY_EMAIL: ReadonlySet<string> = new Set(["OWNER", "ADMIN", "ACCOUNTANT"]);
 
 /** Indian numbers for wa.me: digits only, with the 91 country code. */
 export function whatsappNumber(phone: string | null | undefined): string {

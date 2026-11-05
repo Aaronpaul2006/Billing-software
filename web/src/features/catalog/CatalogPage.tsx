@@ -18,13 +18,13 @@ import { errorMessage } from "@/lib/errors";
 import { ifMatch } from "@/lib/forms";
 import { cleanMoneyInput, formatInr, MONEY_INPUT, sumMoney } from "@/lib/money";
 import { useDebounced } from "@/lib/useDebounced";
+import { can } from "@/lib/permissions";
 
 import { CatalogImport } from "./CatalogImport";
 
 type Item = components["schemas"]["CatalogItem"];
 type Variant = components["schemas"]["CatalogVariant"];
 
-const CAN_EDIT = new Set(["OWNER", "ADMIN", "ACCOUNTANT"]); // backend: masters.edit
 const SIGNED_MONEY = /^-?\d{1,12}(\.\d{1,2})?$/;
 
 function problemText(e: unknown): string {
@@ -361,7 +361,7 @@ function Variants({ item, canEdit }: { item: Item; canEdit: boolean }) {
 /** Items and rates used on bills, with their variants (brand, grade...). */
 export function CatalogPage() {
   const session = useSession();
-  const canEdit = CAN_EDIT.has(session.role);
+  const canEdit = can(session.role, "masters.edit");
   // "new", "import", "edit:<id>", "variants:<id>"
   const [panel, setPanel] = useState<string | null>(null);
   const [search, setSearch] = useState("");

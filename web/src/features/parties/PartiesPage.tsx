@@ -12,6 +12,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { NativeSelect } from "@/components/ui/native-select";
 import { Skeleton } from "@/components/ui/skeleton";
+import { can } from "@/lib/permissions";
 import {
   Table,
   TableBody,
@@ -20,7 +21,6 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { MAY_ADD_MASTERS } from "@/features/documents/items";
 
 import { PartyImport } from "./PartyImport";
 
@@ -37,7 +37,7 @@ export function PartiesPage() {
   const [role, setRole] = useState<Role>("all");
   const [archived, setArchived] = useState(false);
   const [importing, setImporting] = useState(false);
-  const mayImport = MAY_ADD_MASTERS.has(useSession().role);
+  const mayImport = can(useSession().role, "masters.edit");
   const q = useDeferredValue(search.trim());
 
   const parties = useInfiniteQuery({

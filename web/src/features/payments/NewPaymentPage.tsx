@@ -1,8 +1,9 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { AlertCircle, ArrowLeft } from "lucide-react";
+import { AlertCircle } from "lucide-react";
 import { useState } from "react";
 import { Link, useNavigate } from "react-router";
 
+import { Breadcrumbs } from "@/components/Breadcrumbs";
 import { api, newIdempotencyKey, unwrap } from "@/api/client";
 import type { components } from "@/api/schema";
 import { Field } from "@/components/FormField";
@@ -98,11 +99,9 @@ export function NewPaymentPage() {
 
   return (
     <>
-      <Button variant="ghost" size="sm" asChild className="mb-2 -ml-2">
-        <Link to="/payments">
-          <ArrowLeft aria-hidden /> Payments
-        </Link>
-      </Button>
+      <Breadcrumbs
+        items={[{ label: "Payments", to: "/payments" }, { label: "Record a payment" }]}
+      />
       <PageHeader title="Record payment" />
       <form
         noValidate

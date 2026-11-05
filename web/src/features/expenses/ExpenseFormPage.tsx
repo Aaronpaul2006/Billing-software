@@ -1,11 +1,12 @@
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { AlertCircle, ArrowLeft } from "lucide-react";
+import { AlertCircle } from "lucide-react";
 import { useEffect, useState } from "react";
 import { Controller, useForm, useWatch } from "react-hook-form";
 import { Link, useNavigate, useParams } from "react-router";
 import { z } from "zod";
 
+import { Breadcrumbs } from "@/components/Breadcrumbs";
 import { useConfirm } from "@/components/confirm-context";
 import { api, newIdempotencyKey, unwrap } from "@/api/client";
 import { ApiError } from "@/api/problem";
@@ -397,11 +398,12 @@ export function ExpenseFormPage() {
     enabled: expenseId !== undefined,
   });
   const header = (
-    <Button variant="ghost" size="sm" asChild className="mb-2 -ml-2">
-      <Link to="/expenses">
-        <ArrowLeft aria-hidden /> Expenses
-      </Link>
-    </Button>
+    <Breadcrumbs
+      items={[
+        { label: "Expenses", to: "/expenses" },
+        { label: expenseId === undefined ? "New" : (expense.data?.description ?? "Expense") },
+      ]}
+    />
   );
   if (expenseId === undefined) {
     return (

@@ -1,9 +1,8 @@
-import { ArrowLeft } from "lucide-react";
-import { Link, NavLink, Outlet, useParams } from "react-router";
+import { NavLink, Outlet, useParams } from "react-router";
 
+import { Breadcrumbs } from "@/components/Breadcrumbs";
 import { ErrorState } from "@/components/ErrorState";
 import { PageHeader } from "@/components/PageHeader";
-import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import { cn } from "@/lib/utils";
 import { StatusBadge } from "@/components/StatusBadge";
@@ -27,11 +26,7 @@ export function ProjectLayout() {
   const p = project.data;
   return (
     <>
-      <Button variant="ghost" size="sm" asChild className="mb-2 -ml-2">
-        <Link to="/projects">
-          <ArrowLeft aria-hidden /> Projects
-        </Link>
-      </Button>
+      <Breadcrumbs items={[{ label: "Projects", to: "/projects" }, { label: p.code }]} />
       <PageHeader
         title={p.name}
         description={
@@ -73,11 +68,7 @@ export function ProjectDetailsTab() {
 export function NewProjectPage() {
   return (
     <>
-      <Button variant="ghost" size="sm" asChild className="mb-2 -ml-2">
-        <Link to="/projects">
-          <ArrowLeft aria-hidden /> Projects
-        </Link>
-      </Button>
+      <Breadcrumbs items={[{ label: "Projects", to: "/projects" }, { label: "New" }]} />
       <PageHeader title="New project" />
       <ProjectForm />
     </>

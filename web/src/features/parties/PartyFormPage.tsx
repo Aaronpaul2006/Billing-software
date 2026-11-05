@@ -1,11 +1,12 @@
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { AlertCircle, ArrowLeft, CheckCircle2 } from "lucide-react";
+import { AlertCircle, CheckCircle2 } from "lucide-react";
 import { useEffect, useState } from "react";
 import { useForm, useWatch } from "react-hook-form";
 import { Link, useNavigate, useParams } from "react-router";
 import { z } from "zod";
 
+import { Breadcrumbs } from "@/components/Breadcrumbs";
 import { api, newIdempotencyKey, unwrap } from "@/api/client";
 import { ApiError } from "@/api/problem";
 import type { components } from "@/api/schema";
@@ -266,11 +267,12 @@ export function PartyFormPage() {
 
   return (
     <>
-      <Button variant="ghost" size="sm" asChild className="mb-2 -ml-2">
-        <Link to="/parties">
-          <ArrowLeft aria-hidden /> Parties
-        </Link>
-      </Button>
+      <Breadcrumbs
+        items={[
+          { label: "Clients & vendors", to: "/parties" },
+          { label: isNew ? "New" : (party.data?.display_name ?? "…") },
+        ]}
+      />
       <PageHeader
         title={isNew ? "New party" : (party.data?.display_name ?? "")}
         description={

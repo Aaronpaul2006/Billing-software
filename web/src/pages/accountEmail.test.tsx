@@ -174,7 +174,7 @@ describe("email verification", () => {
       http.get(`${API}/parties`, () => HttpResponse.json({ results: [], next_cursor: null })),
     );
     renderSignedIn("/parties");
-    await screen.findByRole("navigation", { name: "Main" });
+    await screen.findByRole("navigation", { name: "Sell" });
     expect(screen.queryByText(/Confirm your email address/)).not.toBeInTheDocument();
   });
 

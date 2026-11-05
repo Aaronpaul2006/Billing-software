@@ -1,8 +1,9 @@
 import { useMutation, useQuery } from "@tanstack/react-query";
-import { AlertCircle, ArrowLeft, Download } from "lucide-react";
+import { AlertCircle, Download } from "lucide-react";
 import { useState } from "react";
 import { Link, useParams } from "react-router";
 
+import { Breadcrumbs } from "@/components/Breadcrumbs";
 import { api, newIdempotencyKey, unwrap } from "@/api/client";
 import { ApiError } from "@/api/problem";
 import type { components } from "@/api/schema";
@@ -83,11 +84,13 @@ export function StatementPage() {
   const s = statement.data;
   return (
     <>
-      <Button variant="ghost" size="sm" asChild className="mb-2 -ml-2">
-        <Link to={`/parties/${partyId}`}>
-          <ArrowLeft aria-hidden /> {s?.party.display_name ?? "Client"}
-        </Link>
-      </Button>
+      <Breadcrumbs
+        items={[
+          { label: "Clients & vendors", to: "/parties" },
+          { label: s?.party.display_name ?? "Client", to: `/parties/${partyId}` },
+          { label: "Statement" },
+        ]}
+      />
       <PageHeader
         title="Statement of account"
         description={

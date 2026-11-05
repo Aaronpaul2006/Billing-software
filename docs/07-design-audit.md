@@ -237,6 +237,7 @@ Screenshot names are `<page>--desktop.jpg`, `--tablet.jpg`, `--phone.jpg`.
 | D.2 | 4 / 5 | 0 (light and dark) | 75 | 170.3 KB (+ fonts, cached) |
 | D.3 | 4 / 5 | 0 (light and dark) | 75 | 172.7 KB |
 | D.4 | 4 / 5 (bills list fixed; other lists in D.7) | 0 | 75 | 173.0 KB |
+| D.5 | 4 / 5 | 0 | 75 | 174.9 KB |
 
 ## Proposed design steps
 

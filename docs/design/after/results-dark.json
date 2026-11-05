@@ -1,6 +1,6 @@
 {
  "base": "http://localhost:5173",
- "at": "2026-11-05T08:59:05.710Z",
+ "at": "2026-11-05T09:13:12.275Z",
  "sizes": [
   {
    "name": "desktop",
@@ -20,130 +20,339 @@
  ],
  "pages": [
   {
-   "name": "Invoices & quotes list",
-   "path": "/documents",
+   "name": "Dashboard (first page after sign-in)",
+   "path": "/",
    "sizes": {
     "desktop": {
-     "screenshot": "documents--desktop.jpg",
-     "url": "/documents",
+     "screenshot": "dashboard--desktop.jpg",
+     "url": "/",
      "metrics": {
-      "pageHeight": 900,
+      "pageHeight": 1588,
       "sidewaysScroll": false,
       "overflowing": [],
-      "tapTargets": 35,
-      "smallTapTargets": 9,
+      "tapTargets": 31,
+      "smallTapTargets": 5,
       "smallTapExamples": [
-       "button \"Number\"",
-       "button \"Date\"",
-       "a \"Draft\"",
-       "a \"Draft\"",
-       "a \"CN/0001\""
+       "a \"Invite your team\"",
+       "a \"Tax invoice \u00c2\u00b7 Anil Kumar\"",
+       "a \"Tax invoice \u00c2\u00b7 Lakshmi Traders\"",
+       "a \"Green Valley Homes\"",
+       "a \"Skyline Developers\""
       ],
-      "tinyText": 0,
+      "tinyText": 12,
       "fontSizes": [
+       "10px",
        "12px",
-       "13px",
        "14px",
+       "17px",
+       "18px",
        "24px"
       ],
-      "textColours": 8,
+      "textColours": 4,
       "radii": [
        "6px",
        "12px",
        "4px"
       ],
       "buttonHeights": [
-       16,
-       32,
        36
       ],
-      "tables": 1,
-      "widestTable": 1150,
+      "tables": 2,
+      "widestTable": 1102,
       "h1": [
-       "Invoices & quotes"
+       "Dashboard"
       ]
      },
      "axe": [],
      "consoleErrors": []
     },
     "tablet": {
-     "screenshot": "documents--tablet.jpg",
-     "url": "/documents",
+     "screenshot": "dashboard--tablet.jpg",
+     "url": "/",
      "metrics": {
-      "pageHeight": 1926,
-      "sidewaysScroll": false,
-      "overflowing": [],
-      "tapTargets": 32,
-      "smallTapTargets": 7,
-      "smallTapExamples": [
-       "a \"Draft\"",
-       "a \"Draft\"",
-       "a \"CN/0001\"",
-       "a \"QT/0001\"",
-       "a \"INV/0002\""
+      "pageHeight": 1973,
+      "sidewaysScroll": true,
+      "overflowing": [
+       "section \"Summary\"",
+       "div \"Billed and collectedThe last 12 months.D\"",
+       "div \"Overdue billsNothing is past due.\"",
+       "div \"Projects losing moneyCosts so far are mo\"",
+       "div \"Receivables by partyWhat each client owe\""
       ],
-      "tinyText": 0,
+      "tapTargets": 31,
+      "smallTapTargets": 5,
+      "smallTapExamples": [
+       "a \"Invite your team\"",
+       "a \"Tax invoice \u00c2\u00b7 Anil Kumar\"",
+       "a \"Tax invoice \u00c2\u00b7 Lakshmi Traders\"",
+       "a \"Green Valley Homes\"",
+       "a \"Skyline Developers\""
+      ],
+      "tinyText": 12,
       "fontSizes": [
+       "10px",
        "12px",
-       "13px",
        "14px",
-       "16px",
+       "17px",
+       "18px",
        "24px"
       ],
-      "textColours": 8,
+      "textColours": 4,
       "radii": [
        "6px",
-       "12px"
+       "12px",
+       "4px"
       ],
       "buttonHeights": [
        36
       ],
-      "tables": 0,
-      "widestTable": 0,
+      "tables": 2,
+      "widestTable": 667,
       "h1": [
-       "Invoices & quotes"
+       "Dashboard"
       ]
      },
      "axe": null,
      "consoleErrors": []
     },
     "phone": {
-     "screenshot": "documents--phone.jpg",
-     "url": "/documents",
+     "screenshot": "dashboard--phone.jpg",
+     "url": "/",
      "metrics": {
-      "pageHeight": 2099,
+      "pageHeight": 2522,
+      "sidewaysScroll": true,
+      "overflowing": [
+       "section \"Summary\"",
+       "div \"Billed and collectedThe last 12 months.D\"",
+       "div \"Overdue billsNothing is past due.\"",
+       "div \"Projects losing moneyCosts so far are mo\"",
+       "div \"Receivables by partyWhat each client owe\""
+      ],
+      "tapTargets": 12,
+      "smallTapTargets": 5,
+      "smallTapExamples": [
+       "a \"Invite your team\"",
+       "a \"Tax invoice \u00c2\u00b7 Anil Kumar\"",
+       "a \"Tax invoice \u00c2\u00b7 Lakshmi Traders\"",
+       "a \"Green Valley Homes\"",
+       "a \"Skyline Developers\""
+      ],
+      "tinyText": 12,
+      "fontSizes": [
+       "10px",
+       "12px",
+       "14px",
+       "17px",
+       "18px",
+       "24px"
+      ],
+      "textColours": 2,
+      "radii": [
+       "6px",
+       "12px",
+       "4px"
+      ],
+      "buttonHeights": [
+       44
+      ],
+      "tables": 2,
+      "widestTable": 667,
+      "h1": [
+       "Dashboard"
+      ]
+     },
+     "axe": [],
+     "consoleErrors": []
+    }
+   }
+  },
+  {
+   "name": "Issued bill (INV/0002)",
+   "path": "/documents/01a1a478-09fc-7450-97e3-a204d97028a6",
+   "sizes": {
+    "desktop": {
+     "screenshot": "document-issued--desktop.jpg",
+     "url": "/documents/01a1a478-09fc-7450-97e3-a204d97028a6",
+     "metrics": {
+      "pageHeight": 1300,
       "sidewaysScroll": false,
       "overflowing": [],
-      "tapTargets": 16,
-      "smallTapTargets": 7,
+      "tapTargets": 35,
+      "smallTapTargets": 4,
       "smallTapExamples": [
-       "a \"Draft\"",
-       "a \"Draft\"",
-       "a \"CN/0001\"",
-       "a \"QT/0001\"",
-       "a \"INV/0002\""
+       "a \"Bills\"",
+       "a \"Skyline Developers\"",
+       "a \"Skyline Towers, Kakkanad\"",
+       "a \"Payment\""
       ],
       "tinyText": 0,
       "fontSizes": [
        "12px",
-       "13px",
        "14px",
        "16px",
+       "17px",
        "24px"
       ],
-      "textColours": 6,
+      "textColours": 5,
       "radii": [
        "6px",
-       "12px"
+       "12px",
+       "4px"
       ],
       "buttonHeights": [
+       32,
+       36
+      ],
+      "tables": 2,
+      "widestTable": 1152,
+      "h1": [
+       "Tax invoice INV/0002"
+      ]
+     },
+     "axe": [],
+     "consoleErrors": []
+    },
+    "tablet": {
+     "screenshot": "document-issued--tablet.jpg",
+     "url": "/documents/01a1a478-09fc-7450-97e3-a204d97028a6",
+     "metrics": {
+      "pageHeight": 1564,
+      "sidewaysScroll": false,
+      "overflowing": [
+       "table \"#DescriptionQuantityRateTaxableGST %Amou\""
+      ],
+      "tapTargets": 35,
+      "smallTapTargets": 3,
+      "smallTapExamples": [
+       "a \"Bills\"",
+       "a \"Skyline Developers\"",
+       "a \"Payment\""
+      ],
+      "tinyText": 0,
+      "fontSizes": [
+       "12px",
+       "14px",
+       "16px",
+       "17px",
+       "24px"
+      ],
+      "textColours": 5,
+      "radii": [
+       "6px",
+       "12px",
+       "4px"
+      ],
+      "buttonHeights": [
+       32,
+       36
+      ],
+      "tables": 2,
+      "widestTable": 578,
+      "h1": [
+       "Tax invoice INV/0002"
+      ]
+     },
+     "axe": null,
+     "consoleErrors": []
+    },
+    "phone": {
+     "screenshot": "document-issued--phone.jpg",
+     "url": "/documents/01a1a478-09fc-7450-97e3-a204d97028a6",
+     "metrics": {
+      "pageHeight": 1893,
+      "sidewaysScroll": false,
+      "overflowing": [
+       "table \"#DescriptionQuantityRateTaxableGST %Amou\""
+      ],
+      "tapTargets": 16,
+      "smallTapTargets": 4,
+      "smallTapExamples": [
+       "a \"Bills\"",
+       "a \"Skyline Developers\"",
+       "a \"Skyline Towers, Kakkanad\"",
+       "a \"Payment\""
+      ],
+      "tinyText": 0,
+      "fontSizes": [
+       "12px",
+       "14px",
+       "16px",
+       "17px",
+       "24px"
+      ],
+      "textColours": 3,
+      "radii": [
+       "6px",
+       "12px",
+       "4px"
+      ],
+      "buttonHeights": [
+       32,
        36,
        44
       ],
-      "tables": 0,
-      "widestTable": 0,
+      "tables": 2,
+      "widestTable": 578,
       "h1": [
-       "Invoices & quotes"
+       "Tax invoice INV/0002"
+      ]
+     },
+     "axe": [],
+     "consoleErrors": []
+    }
+   }
+  },
+  {
+   "name": "Menu open on a phone",
+   "path": "/",
+   "sizes": {
+    "phone": {
+     "screenshot": "menu-open--phone.jpg",
+     "url": "/",
+     "metrics": {
+      "pageHeight": 2522,
+      "sidewaysScroll": true,
+      "overflowing": [
+       "section \"Summary\"",
+       "div \"Billed and collectedThe last 12 months.D\"",
+       "div \"Overdue billsNothing is past due.\"",
+       "div \"Projects losing moneyCosts so far are mo\"",
+       "div \"Receivables by partyWhat each client owe\""
+      ],
+      "tapTargets": 33,
+      "smallTapTargets": 5,
+      "smallTapExamples": [
+       "a \"Invite your team\"",
+       "a \"Tax invoice \u00c2\u00b7 Anil Kumar\"",
+       "a \"Tax invoice \u00c2\u00b7 Lakshmi Traders\"",
+       "a \"Green Valley Homes\"",
+       "a \"Skyline Developers\""
+      ],
+      "tinyText": 12,
+      "fontSizes": [
+       "10px",
+       "12px",
+       "14px",
+       "16px",
+       "17px",
+       "18px",
+       "24px"
+      ],
+      "textColours": 4,
+      "radii": [
+       "6px",
+       "12px",
+       "4px"
+      ],
+      "buttonHeights": [
+       28,
+       36,
+       44
+      ],
+      "tables": 2,
+      "widestTable": 667,
+      "h1": [
+       "Dashboard"
       ]
      },
      "axe": [],
@@ -152,5 +361,5 @@
    }
   }
  ],
- "step": "D.4 (bills list)"
+ "step": "D.5 (sample)"
 }

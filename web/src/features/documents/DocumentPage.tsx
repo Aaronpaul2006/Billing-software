@@ -1,9 +1,10 @@
 import { useMutation, useQueryClient } from "@tanstack/react-query";
-import { AlertCircle, ArrowLeft, Copy, FileDown, Pencil } from "lucide-react";
+import { AlertCircle, Copy, FileDown, Pencil } from "lucide-react";
 import { useState } from "react";
 import type { ReactNode } from "react";
 import { Link, useNavigate, useParams, useSearchParams } from "react-router";
 
+import { Breadcrumbs } from "@/components/Breadcrumbs";
 import { useConfirm } from "@/components/confirm-context";
 import { api, newIdempotencyKey, unwrap } from "@/api/client";
 import { ApiError } from "@/api/problem";
@@ -711,11 +712,16 @@ export function DocumentPage() {
   const receivable = RECEIVABLE_TYPES.has(doc.doc_type) && doc.status === "ISSUED";
   return (
     <>
-      <Button variant="ghost" size="sm" asChild className="mb-2 -ml-2">
-        <Link to="/documents">
-          <ArrowLeft aria-hidden /> Invoices & quotes
-        </Link>
-      </Button>
+      <Breadcrumbs
+        items={
+          doc.doc_type === "QUOTATION"
+            ? [
+                { label: "Quotations", to: "/documents?type=quotations" },
+                { label: documentTitle(doc) },
+              ]
+            : [{ label: "Bills", to: "/documents?type=bills" }, { label: documentTitle(doc) }]
+        }
+      />
       <PageHeader
         title={documentTitle(doc)}
         badges={<StatusBadge status={documentStatus(doc)} />}

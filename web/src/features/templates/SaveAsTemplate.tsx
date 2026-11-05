@@ -11,8 +11,9 @@ import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { errorMessage } from "@/lib/errors";
+import { can } from "@/lib/permissions";
 
-import { CAN_EDIT, TEMPLATE_TYPES } from "./templates";
+import { TEMPLATE_TYPES } from "./templates";
 
 /** "Save as template" on a quote or bill: its lines, notes and terms under a name. */
 export function SaveAsTemplate({ documentId, docType }: { documentId: string; docType: string }) {
@@ -37,7 +38,7 @@ export function SaveAsTemplate({ documentId, docType }: { documentId: string; do
       void queryClient.invalidateQueries({ queryKey: ["templates"] });
     },
   });
-  if (!TEMPLATE_TYPES.has(docType) || !CAN_EDIT.has(session.role)) return null;
+  if (!TEMPLATE_TYPES.has(docType) || !can(session.role, "masters.edit")) return null;
   const quotation = docType === "QUOTATION";
   return (
     <div className="grid gap-2">
