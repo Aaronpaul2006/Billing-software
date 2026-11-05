@@ -145,6 +145,120 @@
                 }
             }
         },
+        "/api/v1/audit-log": {
+            "get": {
+                "operationId": "audit_log_list",
+                "description": "Permission by action name (docs/01-architecture.md §3): `read_action`\nfor GET/HEAD/OPTIONS, `write_action` for everything else. Generic, so list\nendpoints get pagination and filtering from the DRF defaults.",
+                "parameters": [
+                    {
+                        "in": "query",
+                        "name": "actor_id",
+                        "schema": {
+                            "type": "string",
+                            "format": "uuid"
+                        },
+                        "description": "Only what this person did"
+                    },
+                    {
+                        "name": "cursor",
+                        "required": false,
+                        "in": "query",
+                        "description": "The pagination cursor value.",
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    {
+                        "in": "query",
+                        "name": "date_from",
+                        "schema": {
+                            "type": "string",
+                            "format": "date"
+                        },
+                        "description": "YYYY-MM-DD, India time"
+                    },
+                    {
+                        "in": "query",
+                        "name": "date_to",
+                        "schema": {
+                            "type": "string",
+                            "format": "date"
+                        },
+                        "description": "YYYY-MM-DD, India time"
+                    },
+                    {
+                        "name": "limit",
+                        "required": false,
+                        "in": "query",
+                        "description": "Number of results to return per page.",
+                        "schema": {
+                            "type": "integer"
+                        }
+                    },
+                    {
+                        "in": "query",
+                        "name": "record_id",
+                        "schema": {
+                            "type": "string",
+                            "format": "uuid"
+                        },
+                        "description": "One record's changes"
+                    },
+                    {
+                        "in": "query",
+                        "name": "record_type",
+                        "schema": {
+                            "enum": [
+                                "boq_items",
+                                "catalog_item_variants",
+                                "catalog_items",
+                                "document_emails",
+                                "document_series",
+                                "document_templates",
+                                "documents",
+                                "email_invitations",
+                                "expenses",
+                                "exports",
+                                "gst_registrations",
+                                "memberships",
+                                "parties",
+                                "payment_reminders",
+                                "payments",
+                                "print_settings",
+                                "projects",
+                                "retention_releases",
+                                "tally_settings",
+                                "tds_certificates",
+                                "tenants"
+                            ],
+                            "type": "string",
+                            "minLength": 1
+                        },
+                        "description": "* `boq_items` - boq_items\n* `catalog_item_variants` - catalog_item_variants\n* `catalog_items` - catalog_items\n* `document_emails` - document_emails\n* `document_series` - document_series\n* `document_templates` - document_templates\n* `documents` - documents\n* `email_invitations` - email_invitations\n* `expenses` - expenses\n* `exports` - exports\n* `gst_registrations` - gst_registrations\n* `memberships` - memberships\n* `parties` - parties\n* `payment_reminders` - payment_reminders\n* `payments` - payments\n* `print_settings` - print_settings\n* `projects` - projects\n* `retention_releases` - retention_releases\n* `tally_settings` - tally_settings\n* `tds_certificates` - tds_certificates\n* `tenants` - tenants"
+                    }
+                ],
+                "tags": [
+                    "audit"
+                ],
+                "security": [
+                    {
+                        "bearerAuth": []
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/PaginatedAuditEntryList"
+                                }
+                            }
+                        },
+                        "description": ""
+                    }
+                }
+            }
+        },
         "/api/v1/auth/email/confirm": {
             "post": {
                 "operationId": "auth_email_confirm_create",
@@ -6969,6 +7083,69 @@
                 "type": "string",
                 "description": "* `PENDING` - Pending\n* `AVAILABLE` - Available\n* `QUARANTINED` - Quarantined"
             },
+            "AuditEntry": {
+                "type": "object",
+                "properties": {
+                    "id": {
+                        "type": "integer"
+                    },
+                    "occurred_at": {
+                        "type": "string",
+                        "format": "date-time"
+                    },
+                    "actor_id": {
+                        "type": [
+                            "string",
+                            "null"
+                        ],
+                        "format": "uuid"
+                    },
+                    "actor_name": {
+                        "type": [
+                            "string",
+                            "null"
+                        ],
+                        "description": "Null: done by the system (a scheduled job)"
+                    },
+                    "record_type": {
+                        "$ref": "#/components/schemas/RecordTypeEnum"
+                    },
+                    "record_type_label": {
+                        "type": "string"
+                    },
+                    "record_id": {
+                        "type": "string",
+                        "format": "uuid"
+                    },
+                    "record": {
+                        "type": "string",
+                        "description": "The record in words, e.g. 'Tax invoice INV/0002'"
+                    },
+                    "action": {
+                        "type": "string",
+                        "description": "added, changed, deleted, or a status: issued, cancelled, voided..."
+                    },
+                    "changed_fields": {
+                        "type": "array",
+                        "items": {
+                            "type": "string"
+                        },
+                        "description": "Names of the fields changed (never values)"
+                    }
+                },
+                "required": [
+                    "action",
+                    "actor_id",
+                    "actor_name",
+                    "changed_fields",
+                    "id",
+                    "occurred_at",
+                    "record",
+                    "record_id",
+                    "record_type",
+                    "record_type_label"
+                ]
+            },
             "BoqImportRequest": {
                 "type": "object",
                 "properties": {
@@ -10741,6 +10918,28 @@
             "NullEnum": {
                 "type": "null"
             },
+            "PaginatedAuditEntryList": {
+                "type": "object",
+                "required": [
+                    "results",
+                    "next_cursor"
+                ],
+                "properties": {
+                    "results": {
+                        "type": "array",
+                        "items": {
+                            "$ref": "#/components/schemas/AuditEntry"
+                        }
+                    },
+                    "next_cursor": {
+                        "type": [
+                            "string",
+                            "null"
+                        ],
+                        "description": "Pass as ?cursor="
+                    }
+                }
+            },
             "PaginatedBoqItemList": {
                 "type": "object",
                 "required": [
@@ -14077,6 +14276,33 @@
                 ],
                 "type": "string",
                 "description": "* `RECORDED` - Recorded\n* `VOIDED` - Voided"
+            },
+            "RecordTypeEnum": {
+                "enum": [
+                    "boq_items",
+                    "catalog_item_variants",
+                    "catalog_items",
+                    "document_emails",
+                    "document_series",
+                    "document_templates",
+                    "documents",
+                    "email_invitations",
+                    "expenses",
+                    "exports",
+                    "gst_registrations",
+                    "memberships",
+                    "parties",
+                    "payment_reminders",
+                    "payments",
+                    "print_settings",
+                    "projects",
+                    "retention_releases",
+                    "tally_settings",
+                    "tds_certificates",
+                    "tenants"
+                ],
+                "type": "string",
+                "description": "* `boq_items` - boq_items\n* `catalog_item_variants` - catalog_item_variants\n* `catalog_items` - catalog_items\n* `document_emails` - document_emails\n* `document_series` - document_series\n* `document_templates` - document_templates\n* `documents` - documents\n* `email_invitations` - email_invitations\n* `expenses` - expenses\n* `exports` - exports\n* `gst_registrations` - gst_registrations\n* `memberships` - memberships\n* `parties` - parties\n* `payment_reminders` - payment_reminders\n* `payments` - payments\n* `print_settings` - print_settings\n* `projects` - projects\n* `retention_releases` - retention_releases\n* `tally_settings` - tally_settings\n* `tds_certificates` - tds_certificates\n* `tenants` - tenants"
             },
             "RecoveryCodes": {
                 "type": "object",

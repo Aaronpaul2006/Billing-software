@@ -260,6 +260,7 @@ function staffPages(ids) {
     p("settings-series", "Settings: number series", "/settings/series"),
     p("settings-print", "Settings: bill printing", "/settings/print"),
     p("settings-tally", "Settings: Tally export", "/settings/tally"),
+    p("settings-activity", "Settings: activity log", "/settings/activity"),
     p("account", "Your account", "/account"),
     {
       ...p("menu-open", "Menu open on a phone", "/"),

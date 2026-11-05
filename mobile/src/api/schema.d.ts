@@ -82,6 +82,27 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/audit-log": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * @description Permission by action name (docs/01-architecture.md §3): `read_action`
+         *     for GET/HEAD/OPTIONS, `write_action` for everything else. Generic, so list
+         *     endpoints get pagination and filtering from the DRF defaults.
+         */
+        get: operations["audit_log_list"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/auth/email/confirm": {
         parameters: {
             query?: never;
@@ -2514,6 +2535,25 @@ export interface components {
          * @enum {string}
          */
         AttachmentStatusEnum: "PENDING" | "AVAILABLE" | "QUARANTINED";
+        AuditEntry: {
+            id: number;
+            /** Format: date-time */
+            occurred_at: string;
+            /** Format: uuid */
+            actor_id: string | null;
+            /** @description Null: done by the system (a scheduled job) */
+            actor_name: string | null;
+            record_type: components["schemas"]["RecordTypeEnum"];
+            record_type_label: string;
+            /** Format: uuid */
+            record_id: string;
+            /** @description The record in words, e.g. 'Tax invoice INV/0002' */
+            record: string;
+            /** @description added, changed, deleted, or a status: issued, cancelled, voided... */
+            action: string;
+            /** @description Names of the fields changed (never values) */
+            changed_fields: string[];
+        };
         BoqImportRequest: {
             /**
              * Format: uri
@@ -3784,6 +3824,11 @@ export interface components {
             lines?: components["schemas"]["LineIn"][];
         };
         NullEnum: null;
+        PaginatedAuditEntryList: {
+            results: components["schemas"]["AuditEntry"][];
+            /** @description Pass as ?cursor= */
+            next_cursor: string | null;
+        };
         PaginatedBoqItemList: {
             results: components["schemas"]["BoqItem"][];
             /** @description Pass as ?cursor= */
@@ -4821,6 +4866,31 @@ export interface components {
          * @enum {string}
          */
         RecordStatusEnum: "RECORDED" | "VOIDED";
+        /**
+         * @description * `boq_items` - boq_items
+         *     * `catalog_item_variants` - catalog_item_variants
+         *     * `catalog_items` - catalog_items
+         *     * `document_emails` - document_emails
+         *     * `document_series` - document_series
+         *     * `document_templates` - document_templates
+         *     * `documents` - documents
+         *     * `email_invitations` - email_invitations
+         *     * `expenses` - expenses
+         *     * `exports` - exports
+         *     * `gst_registrations` - gst_registrations
+         *     * `memberships` - memberships
+         *     * `parties` - parties
+         *     * `payment_reminders` - payment_reminders
+         *     * `payments` - payments
+         *     * `print_settings` - print_settings
+         *     * `projects` - projects
+         *     * `retention_releases` - retention_releases
+         *     * `tally_settings` - tally_settings
+         *     * `tds_certificates` - tds_certificates
+         *     * `tenants` - tenants
+         * @enum {string}
+         */
+        RecordTypeEnum: "boq_items" | "catalog_item_variants" | "catalog_items" | "document_emails" | "document_series" | "document_templates" | "documents" | "email_invitations" | "expenses" | "exports" | "gst_registrations" | "memberships" | "parties" | "payment_reminders" | "payments" | "print_settings" | "projects" | "retention_releases" | "tally_settings" | "tds_certificates" | "tenants";
         RecoveryCodes: {
             /** @description Shown once. Each works one time. */
             recovery_codes: string[];
@@ -6189,6 +6259,62 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["Attachment"];
+                };
+            };
+        };
+    };
+    audit_log_list: {
+        parameters: {
+            query?: {
+                /** @description Only what this person did */
+                actor_id?: string;
+                /** @description The pagination cursor value. */
+                cursor?: string;
+                /** @description YYYY-MM-DD, India time */
+                date_from?: string;
+                /** @description YYYY-MM-DD, India time */
+                date_to?: string;
+                /** @description Number of results to return per page. */
+                limit?: number;
+                /** @description One record's changes */
+                record_id?: string;
+                /**
+                 * @description * `boq_items` - boq_items
+                 *     * `catalog_item_variants` - catalog_item_variants
+                 *     * `catalog_items` - catalog_items
+                 *     * `document_emails` - document_emails
+                 *     * `document_series` - document_series
+                 *     * `document_templates` - document_templates
+                 *     * `documents` - documents
+                 *     * `email_invitations` - email_invitations
+                 *     * `expenses` - expenses
+                 *     * `exports` - exports
+                 *     * `gst_registrations` - gst_registrations
+                 *     * `memberships` - memberships
+                 *     * `parties` - parties
+                 *     * `payment_reminders` - payment_reminders
+                 *     * `payments` - payments
+                 *     * `print_settings` - print_settings
+                 *     * `projects` - projects
+                 *     * `retention_releases` - retention_releases
+                 *     * `tally_settings` - tally_settings
+                 *     * `tds_certificates` - tds_certificates
+                 *     * `tenants` - tenants
+                 */
+                record_type?: "boq_items" | "catalog_item_variants" | "catalog_items" | "document_emails" | "document_series" | "document_templates" | "documents" | "email_invitations" | "expenses" | "exports" | "gst_registrations" | "memberships" | "parties" | "payment_reminders" | "payments" | "print_settings" | "projects" | "retention_releases" | "tally_settings" | "tds_certificates" | "tenants";
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PaginatedAuditEntryList"];
                 };
             };
         };

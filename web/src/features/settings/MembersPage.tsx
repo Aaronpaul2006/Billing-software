@@ -34,7 +34,7 @@ const ROLE_LABELS: Record<Role, { label: string; can: string }> = {
   ADMIN: { label: "Admin", can: "everything except owners" },
   ACCOUNTANT: { label: "Accountant", can: "billing, payments, reports" },
   SITE_ENGINEER: { label: "Site engineer", can: "drafts, BOQ, expenses" },
-  VIEWER: { label: "Viewer", can: "read only, reports" },
+  VIEWER: { label: "Viewer", can: "read only: every bill, report and export (for your CA)" },
 };
 
 function problemText(e: unknown): string {
@@ -231,6 +231,22 @@ export function MembersPage() {
         title="Members"
         description="People who can sign in to this company, and what they may do."
       />
+      <div className="mb-4 flex max-w-3xl flex-wrap items-center gap-3 rounded-lg border p-4">
+        <p className="min-w-60 flex-1 text-sm">
+          <span className="font-medium">Your CA or auditor?</span> Invite them as a viewer: they see
+          every bill, payment and report and can make every export (GSTR-1, Tally), but cannot
+          change anything.
+        </p>
+        <Button
+          variant="outline"
+          onClick={() => {
+            setRole("VIEWER");
+            document.getElementById("invite-email")?.focus();
+          }}
+        >
+          Invite your CA
+        </Button>
+      </div>
       <form
         aria-label="Invite member"
         className="bg-muted/40 mb-6 grid max-w-3xl gap-4 rounded-lg border p-4 sm:grid-cols-3"

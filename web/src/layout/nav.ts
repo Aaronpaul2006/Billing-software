@@ -8,6 +8,7 @@ import {
   FileText,
   FolderKanban,
   FolderPlus,
+  History,
   Hash,
   IndianRupee,
   Landmark,
@@ -164,6 +165,13 @@ export const SETTINGS_TABS: NavEntry[] = [
     icon: BookOpen,
     action: "tenant.settings",
     keywords: "ledgers accounts",
+  },
+  {
+    to: "/settings/activity",
+    label: "Activity log",
+    icon: History,
+    action: "audit.view",
+    keywords: "audit who changed history trail",
   },
 ];
 

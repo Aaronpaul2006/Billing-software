@@ -14,7 +14,8 @@ export type Action =
   | "documents.issue"
   | "payments.record"
   | "expenses.record"
-  | "reports.view";
+  | "reports.view"
+  | "audit.view";
 
 const ACTIONS: Record<Action, ReadonlySet<string>> = {
   "tenant.settings": new Set(["OWNER", "ADMIN"]),
@@ -25,6 +26,7 @@ const ACTIONS: Record<Action, ReadonlySet<string>> = {
   "payments.record": new Set(["OWNER", "ADMIN", "ACCOUNTANT"]),
   "expenses.record": new Set(["OWNER", "ADMIN", "ACCOUNTANT", "SITE_ENGINEER"]),
   "reports.view": new Set(["OWNER", "ADMIN", "ACCOUNTANT", "VIEWER"]),
+  "audit.view": new Set(["OWNER", "ADMIN"]),
 };
 
 export function can(role: string | null | undefined, action: Action): boolean {

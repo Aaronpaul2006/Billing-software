@@ -1184,3 +1184,6 @@ COLLECTION_ROUTES["tenant-tally-settings"] = lambda w: None
 
 # --- D.6 command palette search: tests/search/test_search.py::test_another_business_sees_nothing
 COLLECTION_ROUTES["search"] = lambda w: None
+
+# --- Part B activity log: tests/audit/test_activity_log.py::test_another_business_sees_nothing_of_it
+COLLECTION_ROUTES["audit-log"] = lambda w: None

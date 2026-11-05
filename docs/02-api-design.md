@@ -839,6 +839,18 @@ at billing.
 
 ---
 
+### Activity log (Part B)
+
+`GET /audit-log` (owners and admins: `audit.view`; cursor pages, newest first) reads the
+audit trail the database triggers write for every change, in words: `{id, occurred_at,
+actor_id, actor_name (null for the system), record_type, record_type_label ("Bill or
+quotation"), record_id, record ("Tax invoice INV/0002"), action (added, changed, deleted,
+or issued / cancelled / voided / marked accepted...), changed_fields}`. Only the **names**
+of changed fields are given, never their values (bank details stay on their own screens).
+Filters: `actor_id`, `record_type` (documents, payments, expenses, parties, projects, …),
+`record_id`, `date_from` / `date_to` (India time). A bill's lines, allocations and
+measurement rows are left out: they are rewritten with every save.
+
 ## 7. Files
 
 | Method & path | Purpose |

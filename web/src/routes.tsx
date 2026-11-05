@@ -346,6 +346,13 @@ export const routes: RouteObject[] = [
                 ),
               },
               {
+                path: "activity",
+                lazy: lazyPage(
+                  () => import("@/features/settings/ActivityLogPage"),
+                  (m) => m.ActivityLogPage,
+                ),
+              },
+              {
                 path: "tally",
                 lazy: lazyPage(
                   () => import("@/features/settings/TallySettingsPage"),

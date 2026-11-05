@@ -42,6 +42,7 @@ describe("settings screen (D.11)", () => {
       "Number series",
       "Bill printing",
       "Tally export",
+      "Activity log",
     ]);
     // marked once the redirect from /settings has rendered
     await waitFor(() => {
