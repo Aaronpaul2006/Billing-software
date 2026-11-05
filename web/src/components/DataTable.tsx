@@ -28,6 +28,8 @@ export interface Column<T> {
   /** For sorting in the browser: amounts as paise (bigint), dates as "YYYY-MM-DD". */
   sortValue?: (row: T) => string | number | bigint | null;
   card?: CardSlot;
+  /** Only on the cards (e.g. a summary of several columns), not in the wide table. */
+  cardOnly?: boolean;
   className?: string;
 }
 
@@ -151,6 +153,7 @@ export function DataTable<T>({
     else setLocalSort(next);
   };
 
+  const tableColumns = columns.filter((c) => !c.cardOnly);
   const nameOf = (row: T) => (rowLabel ? rowLabel(row) : rowKey(row));
   const pad = density === "compact" ? "py-1.5" : "py-3";
 
@@ -281,7 +284,7 @@ export function DataTable<T>({
           <caption className="sr-only">{label}</caption>
           <thead className="bg-card sticky top-0 z-10 shadow-[0_1px_0_var(--border)]">
             <tr>
-              {columns.map((c) => {
+              {tableColumns.map((c) => {
                 const direction = current?.column === c.id ? current.direction : null;
                 return (
                   <th
@@ -330,7 +333,7 @@ export function DataTable<T>({
             {loading
               ? Array.from({ length: 5 }, (_, i) => (
                   <tr key={i} className="border-t">
-                    {columns.map((c) => (
+                    {tableColumns.map((c) => (
                       <td key={c.id} className={cn("px-3", pad)}>
                         <Skeleton className="h-4 w-full max-w-32" />
                       </td>
@@ -340,7 +343,7 @@ export function DataTable<T>({
                 ))
               : sorted.map((row) => (
                   <tr key={rowKey(row)} className="hover:bg-muted/40 border-t align-top">
-                    {columns.map((c) => (
+                    {tableColumns.map((c) => (
                       <td
                         key={c.id}
                         className={cn(
@@ -366,7 +369,7 @@ export function DataTable<T>({
           {totals && !loading && (
             <tfoot>
               <tr className="bg-muted/60 border-t font-semibold">
-                {columns.map((c, i) => (
+                {tableColumns.map((c, i) => (
                   <td key={c.id} className={cn("px-3 py-2.5", c.align === "right" && "text-right")}>
                     {i === 0 ? totals.label : totals.cells[c.id]}
                   </td>

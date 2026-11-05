@@ -1,6 +1,6 @@
 {
  "base": "http://localhost:5173",
- "at": "2026-11-05T14:32:05.871Z",
+ "at": "2026-11-05T14:40:05.871Z",
  "sizes": [
   {
    "name": "desktop",
@@ -20,142 +20,134 @@
  ],
  "pages": [
   {
-   "name": "Draft bill in the editor",
-   "path": "/documents/01a1a478-0ffb-7791-bedd-bb89480540eb/edit",
+   "name": "Dashboard (first page after sign-in)",
+   "path": "/",
    "sizes": {
     "desktop": {
-     "screenshot": "document-edit--desktop.jpg",
-     "url": "/documents/01a1a478-0ffb-7791-bedd-bb89480540eb/edit",
+     "screenshot": "dashboard--desktop.jpg",
+     "url": "/",
      "metrics": {
-      "pageHeight": 1375,
+      "pageHeight": 1657,
       "sidewaysScroll": false,
       "overflowing": [],
       "tooWide": [],
-      "tapTargets": 78,
-      "smallTapTargets": 11,
+      "tapTargets": 35,
+      "smallTapTargets": 5,
       "smallTapExamples": [
-       "button \"New client\"",
-       "input",
-       "input",
-       "input",
-       "input"
+       "a \"Invite your team\"",
+       "button \"Party\"",
+       "button \"Total\"",
+       "a \"Green Valley Homes\"",
+       "a \"Skyline Developers\""
       ],
-      "tinyText": 0,
+      "tinyText": 12,
       "fontSizes": [
+       "10px",
        "12px",
-       "13px",
        "14px",
        "17px",
-       "24px"
-      ],
-      "textColours": 6,
-      "radii": [
-       "6px",
-       "12px",
-       "8px"
-      ],
-      "buttonHeights": [
-       16,
-       20,
-       32,
-       36
-      ],
-      "tables": 0,
-      "widestTable": 0,
-      "h1": [
-       "Edit draft tax invoice"
-      ]
-     },
-     "axe": [],
-     "consoleErrors": []
-    },
-    "tablet": {
-     "screenshot": "document-edit--tablet.jpg",
-     "url": "/documents/01a1a478-0ffb-7791-bedd-bb89480540eb/edit",
-     "metrics": {
-      "pageHeight": 2581,
-      "sidewaysScroll": false,
-      "overflowing": [],
-      "tooWide": [],
-      "tapTargets": 78,
-      "smallTapTargets": 11,
-      "smallTapExamples": [
-       "button \"New client\"",
-       "input",
-       "input",
-       "input",
-       "input"
-      ],
-      "tinyText": 0,
-      "fontSizes": [
-       "12px",
-       "13px",
-       "14px",
-       "17px",
-       "24px"
-      ],
-      "textColours": 6,
-      "radii": [
-       "6px",
-       "12px",
-       "8px"
-      ],
-      "buttonHeights": [
-       16,
-       20,
-       32,
-       36
-      ],
-      "tables": 0,
-      "widestTable": 0,
-      "h1": [
-       "Edit draft tax invoice"
-      ]
-     },
-     "axe": null,
-     "consoleErrors": []
-    },
-    "phone": {
-     "screenshot": "document-edit--phone.jpg",
-     "url": "/documents/01a1a478-0ffb-7791-bedd-bb89480540eb/edit",
-     "metrics": {
-      "pageHeight": 2718,
-      "sidewaysScroll": false,
-      "overflowing": [],
-      "tooWide": [],
-      "tapTargets": 58,
-      "smallTapTargets": 8,
-      "smallTapExamples": [
-       "button \"New client\"",
-       "input",
-       "input",
-       "input",
-       "input"
-      ],
-      "tinyText": 0,
-      "fontSizes": [
-       "12px",
-       "13px",
-       "14px",
-       "17px",
+       "18px",
        "24px"
       ],
       "textColours": 4,
       "radii": [
        "6px",
        "12px",
-       "8px"
+       "4px"
       ],
       "buttonHeights": [
-       20,
+       16,
        32,
-       36,
+       36
+      ],
+      "tables": 2,
+      "widestTable": 1102,
+      "h1": [
+       "Dashboard"
+      ]
+     },
+     "axe": [],
+     "consoleErrors": []
+    },
+    "tablet": {
+     "screenshot": "dashboard--tablet.jpg",
+     "url": "/",
+     "metrics": {
+      "pageHeight": 2264,
+      "sidewaysScroll": false,
+      "overflowing": [],
+      "tooWide": [],
+      "tapTargets": 32,
+      "smallTapTargets": 1,
+      "smallTapExamples": [
+       "a \"Invite your team\""
+      ],
+      "tinyText": 12,
+      "fontSizes": [
+       "10px",
+       "12px",
+       "13px",
+       "14px",
+       "16px",
+       "17px",
+       "18px",
+       "24px"
+      ],
+      "textColours": 4,
+      "radii": [
+       "6px",
+       "12px",
+       "4px"
+      ],
+      "buttonHeights": [
+       36
+      ],
+      "tables": 1,
+      "widestTable": 430,
+      "h1": [
+       "Dashboard"
+      ]
+     },
+     "axe": null,
+     "consoleErrors": []
+    },
+    "phone": {
+     "screenshot": "dashboard--phone.jpg",
+     "url": "/",
+     "metrics": {
+      "pageHeight": 2873,
+      "sidewaysScroll": false,
+      "overflowing": [],
+      "tooWide": [],
+      "tapTargets": 13,
+      "smallTapTargets": 1,
+      "smallTapExamples": [
+       "a \"Invite your team\""
+      ],
+      "tinyText": 12,
+      "fontSizes": [
+       "10px",
+       "12px",
+       "13px",
+       "14px",
+       "16px",
+       "17px",
+       "18px",
+       "24px"
+      ],
+      "textColours": 2,
+      "radii": [
+       "6px",
+       "12px",
+       "4px"
+      ],
+      "buttonHeights": [
        44
       ],
-      "tables": 0,
-      "widestTable": 0,
+      "tables": 1,
+      "widestTable": 308,
       "h1": [
-       "Edit draft tax invoice"
+       "Dashboard"
       ]
      },
      "axe": [],
@@ -164,5 +156,5 @@
    }
   }
  ],
- "step": "D.9 (bill editor, dark)"
+ "step": "D.10 (dashboard, dark)"
 }

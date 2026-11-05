@@ -1,9 +1,12 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { Link } from "react-router";
 import { useState } from "react";
+import type { ReactNode } from "react";
 
 import { api, newIdempotencyKey, unwrap } from "@/api/client";
 import type { components } from "@/api/schema";
+import { DataTable } from "@/components/DataTable";
+import type { Column } from "@/components/DataTable";
 import { ErrorState } from "@/components/ErrorState";
 import { PageHeader } from "@/components/PageHeader";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -14,7 +17,6 @@ import {
   Table,
   TableBody,
   TableCell,
-  TableFooter,
   TableHead,
   TableHeader,
   TableRow,
@@ -35,6 +37,7 @@ type Dashboard = components["schemas"]["Dashboard"];
 type Month = components["schemas"]["DashboardMonth"];
 type OverdueRow = components["schemas"]["DashboardOverdueRow"];
 type Receivable = components["schemas"]["Receivable"];
+type ReceivablesReport = components["schemas"]["Receivables"];
 
 const BOOKS: { value: Book; label: string }[] = [
   { value: "ALL", label: "All books" },
@@ -81,7 +84,10 @@ function Summary({ data }: { data: Dashboard | undefined }) {
   const before = data?.previous;
   const overdueCount = data?.overdue.count ?? 0;
   return (
-    <section aria-label="Summary" className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
+    <section
+      aria-label="Summary"
+      className="grid grid-cols-[minmax(0,1fr)] gap-4 sm:grid-cols-2 xl:grid-cols-3"
+    >
       <StatCard title="Billed" value={now?.billed} previous={before?.billed} />
       <StatCard title="Collected" value={now?.collected} previous={before?.collected} />
       <StatCard title="Outstanding" value={now?.outstanding} note="Owed to you today" />
@@ -207,7 +213,10 @@ function OverdueBill({ row }: { row: OverdueRow }) {
   return (
     <TableRow>
       <TableCell>
-        <Link to={`/documents/${row.document_id}`} className="font-medium hover:underline">
+        <Link
+          to={`/documents/${row.document_id}`}
+          className="inline-flex min-h-6 items-center font-medium hover:underline"
+        >
           {row.doc_number}
         </Link>
         <div className="text-muted-foreground text-xs">
@@ -293,7 +302,10 @@ function LosingProjects({ data }: { data: Dashboard }) {
           <ul className="grid gap-2">
             {data.losing_projects.map((p) => (
               <li key={p.project_id} className="flex justify-between gap-2 text-sm">
-                <Link to={`/projects/${p.project_id}`} className="hover:underline">
+                <Link
+                  to={`/projects/${p.project_id}`}
+                  className="inline-flex min-h-6 items-center hover:underline"
+                >
                   {p.name} <span className="text-muted-foreground">{p.code}</span>
                 </Link>
                 <span className="text-destructive tabular-nums">{formatInr(p.margin)}</span>
@@ -325,7 +337,10 @@ function Drafts({ data }: { data: Dashboard }) {
           <ul className="grid gap-2">
             {results.map((d) => (
               <li key={d.id} className="flex justify-between gap-2 text-sm">
-                <Link to={`/documents/${d.id}/edit`} className="hover:underline">
+                <Link
+                  to={`/documents/${d.id}/edit`}
+                  className="inline-flex min-h-6 items-center hover:underline"
+                >
                   {DOC_TYPE_LABELS[d.doc_type as DocType]} · {d.party_name}
                 </Link>
                 <span className="tabular-nums">{formatInr(d.grand_total)}</span>
@@ -365,55 +380,98 @@ function Receivables({ book }: { book: Book }) {
         ) : receivables.data.results.length === 0 ? (
           <p className="text-muted-foreground text-sm">Nothing outstanding.</p>
         ) : (
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead>Party</TableHead>
-                {BUCKETS.map((b) => (
-                  <TableHead key={b.key} className="text-right">
-                    {b.label}
-                  </TableHead>
-                ))}
-                <TableHead className="text-right">Total</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {receivables.data.results.map((row) => (
-                <TableRow key={row.party_id}>
-                  <TableCell>
-                    <Link to={`/parties/${row.party_id}`} className="font-medium hover:underline">
-                      {row.display_name}
-                    </Link>
-                    <span className="text-muted-foreground ml-2 text-xs">
-                      {row.document_count} {row.document_count === 1 ? "bill" : "bills"}
-                    </span>
-                  </TableCell>
-                  {BUCKETS.map((b) => (
-                    <Amount
-                      key={b.key}
-                      value={String(row[b.key])}
-                      late={b.key === "days_90_plus"}
-                    />
-                  ))}
-                  <Amount value={row.total} strong />
-                </TableRow>
-              ))}
-            </TableBody>
-            <TableFooter>
-              <TableRow>
-                <TableCell>All parties</TableCell>
-                {BUCKETS.map((b) => (
-                  <Amount key={b.key} value={String(receivables.data.totals[b.key])} />
-                ))}
-                <Amount value={receivables.data.totals.total} strong />
-              </TableRow>
-            </TableFooter>
-          </Table>
+          <DataTable
+            label="Receivables by party"
+            rows={receivables.data.results}
+            columns={RECEIVABLE_COLUMNS}
+            rowKey={(r) => r.party_id}
+            rowLabel={(r) => r.display_name}
+            defaultSort={{ column: "total", direction: "desc" }}
+            totals={{
+              label: "All parties",
+              cells: totalCells(receivables.data.totals),
+            }}
+          />
         )}
       </CardContent>
     </Card>
   );
 }
+
+function Aged({ value, strong, late }: { value: string; strong?: boolean; late?: boolean }) {
+  const zero = /^0+(\.0+)?$/.test(value);
+  return (
+    <span
+      className={cn(
+        "tabular-nums",
+        zero && "text-muted-foreground",
+        strong && "font-medium",
+        late && !zero && "text-destructive",
+      )}
+    >
+      {zero ? "–" : formatInr(value)}
+    </span>
+  );
+}
+
+/** The "All parties" row: each bucket and the total. */
+function totalCells(totals: ReceivablesReport["totals"]): Partial<Record<string, ReactNode>> {
+  const cells: Partial<Record<string, ReactNode>> = {
+    total: <Aged value={totals.total} strong />,
+  };
+  for (const b of BUCKETS) cells[b.key] = <Aged value={String(totals[b.key])} />;
+  return cells;
+}
+
+const RECEIVABLE_COLUMNS: Column<Receivable>[] = [
+  {
+    id: "party",
+    header: "Party",
+    card: "title",
+    sortable: true,
+    sortValue: (r) => r.display_name,
+    cell: (r) => (
+      <>
+        <Link to={`/parties/${r.party_id}`} className="font-medium hover:underline">
+          {r.display_name}
+        </Link>
+        <span className="text-muted-foreground ml-2 text-xs">
+          {r.document_count} {r.document_count === 1 ? "bill" : "bills"}
+        </span>
+      </>
+    ),
+  },
+  ...BUCKETS.map((b): Column<Receivable> => ({
+    id: b.key,
+    header: b.label,
+    align: "right",
+    card: "hidden",
+    cell: (r) => <Aged value={String(r[b.key])} late={b.key === "days_90_plus"} />,
+  })),
+  {
+    id: "aging",
+    header: "Owed",
+    cardOnly: true,
+    cell: (r) => (
+      <span className="grid gap-0.5">
+        {BUCKETS.filter((b) => !/^0+(\.0+)?$/.test(String(r[b.key]))).map((b) => (
+          <span key={b.key} className={cn(b.key === "days_90_plus" && "text-destructive")}>
+            {b.label}: {formatInr(String(r[b.key]))}
+          </span>
+        ))}
+      </span>
+    ),
+  },
+  {
+    id: "total",
+    header: "Total",
+    align: "right",
+    card: "amount",
+    sortable: true,
+    sortValue: (r) => toPaise(r.total),
+    cell: (r) => <Aged value={r.total} strong />,
+  },
+];
 
 function Amount({ value, strong, late }: { value: string; strong?: boolean; late?: boolean }) {
   const zero = /^0+(\.0+)?$/.test(value);
@@ -442,7 +500,7 @@ function Main({ from, to, book }: { from: string; to: string; book: Book }) {
   }
   const data = dashboard.data;
   return (
-    <div className="grid gap-6">
+    <div className="grid grid-cols-[minmax(0,1fr)] gap-6">
       <Summary data={data} />
       {data ? (
         <>
@@ -458,7 +516,7 @@ function Main({ from, to, book }: { from: string; to: string; book: Book }) {
             </CardContent>
           </Card>
           <Overdue data={data} />
-          <div className="grid gap-6 lg:grid-cols-2">
+          <div className="grid grid-cols-[minmax(0,1fr)] gap-6 lg:grid-cols-[minmax(0,1fr)_minmax(0,1fr)]">
             <LosingProjects data={data} />
             <Drafts data={data} />
           </div>

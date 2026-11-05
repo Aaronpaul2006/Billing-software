@@ -120,6 +120,43 @@ describe("dashboard", () => {
     expect(queries[0]?.get("from")).toMatch(/^\d{4}-04-01$/); // this financial year
   });
 
+  it("lists receivables biggest first, with a total for all parties (D.10)", async () => {
+    const party = (id: string, name: string, notDue: string, late: string, total: string) => ({
+      ...noReceivables.totals,
+      party_id: id,
+      display_name: name,
+      document_count: 1,
+      not_due: notDue,
+      days_90_plus: late,
+      total,
+    });
+    server.use(
+      http.get(`${API}/reports/dashboard`, () => HttpResponse.json(dashboard())),
+      http.get(`${API}/reports/receivables`, () =>
+        HttpResponse.json({
+          results: [
+            party("p1", "Anil Kumar", "50000.00", "0.00", "50000.00"),
+            party("p2", "Skyline Developers", "100000.00", "20000.50", "120000.50"),
+          ],
+          totals: {
+            ...noReceivables.totals,
+            not_due: "150000.00",
+            days_90_plus: "20000.50",
+            total: "170000.50",
+          },
+        }),
+      ),
+    );
+    renderSignedIn("/");
+    const table = await screen.findByRole("table", { name: "Receivables by party" });
+    const rows = within(table).getAllByRole("row");
+    expect(rows[1]).toHaveTextContent("Skyline Developers");
+    expect(rows[2]).toHaveTextContent("Anil Kumar");
+    const all = within(table).getByText("All parties").closest("tr") as HTMLElement;
+    expect(all).toHaveTextContent("₹1,70,000.50");
+    expect(within(rows[1] as HTMLElement).getByText("₹20,000.50")).toHaveClass("text-destructive");
+  });
+
   it("sends a reminder for an overdue bill, once per click", async () => {
     const user = userEvent.setup();
     const keys: (string | null)[] = [];

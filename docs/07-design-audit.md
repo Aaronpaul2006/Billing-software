@@ -242,6 +242,7 @@ Screenshot names are `<page>--desktop.jpg`, `--tablet.jpg`, `--phone.jpg`.
 | D.7 | 4 / 5 (every list now cards on phones) | 0 (light and dark) | 3 on the 9 list pages (24 before) | 181.7 KB |
 | D.8 | 4 / 5 (the bill's lines no longer cut off) | 0 (light and dark) | 3 on the 4 bill pages (13 before) | 181.8 KB |
 | D.9 | 2 / 3 (the bill editor no longer scrolls sideways at any size) | 0 (light and dark) | unchanged on the editor (checkboxes, "New client") | 182.0 KB |
+| D.10 | 1 / 2 (the dashboard fits at every size) | 0 (light and dark) | 1 on the dashboard on phones (5 before) | 182.1 KB |
 
 From D.6 on, first load is measured with `tools/design-audit/first-load.mjs`
 (every script and stylesheet `index.html` loads or preloads, gzip level 9), so
