@@ -4,13 +4,13 @@ import { useState } from "react";
 import type { ReactNode } from "react";
 import { Link, useParams } from "react-router";
 
+import { useConfirm } from "@/components/confirm-context";
 import { api, newIdempotencyKey, unwrap } from "@/api/client";
 import { ApiError } from "@/api/problem";
 import type { components } from "@/api/schema";
 import { ErrorState } from "@/components/ErrorState";
 import { PageHeader } from "@/components/PageHeader";
 import { Alert, AlertDescription } from "@/components/ui/alert";
-import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -28,6 +28,7 @@ import { errorMessage } from "@/lib/errors";
 import { ifMatch } from "@/lib/forms";
 import { compareMoney, formatInr } from "@/lib/money";
 import { formatDate } from "@/lib/dates";
+import { StatusBadge } from "@/components/StatusBadge";
 
 import { allocationProblems, toAllocationItems, useOpenItems } from "./allocations";
 import type { Allocations } from "./allocations";
@@ -126,6 +127,7 @@ function AllocateRest({ payment }: { payment: Payment }) {
 }
 
 export function PaymentPage() {
+  const confirm = useConfirm();
   const { paymentId = "" } = useParams();
   const queryClient = useQueryClient();
   const [notice, setNotice] = useState<string | null>(null);
@@ -201,7 +203,7 @@ export function PaymentPage() {
             `${MODE_LABELS[p.mode]} on ${formatDate(p.payment_date)}`
           ) : (
             <span className="flex items-center gap-2">
-              <Badge variant="secondary">Voided</Badge>
+              <StatusBadge status="voided" />
               {p.void_reason}
             </span>
           )
@@ -331,12 +333,15 @@ export function PaymentPage() {
                             size="sm"
                             disabled={unwind.isPending}
                             onClick={() => {
-                              if (
-                                window.confirm(
-                                  "Unwind this allocation? The document becomes unpaid by this amount.",
-                                )
-                              )
-                                unwind.mutate(a.id);
+                              void confirm({
+                                title: "Unwind this allocation?",
+                                description:
+                                  "The bill becomes unpaid by this amount, and the payment has it to allocate again.",
+                                confirmLabel: "Unwind",
+                                tone: "danger",
+                              }).then((yes) => {
+                                if (yes) unwind.mutate(a.id);
+                              });
                             }}
                           >
                             Unwind

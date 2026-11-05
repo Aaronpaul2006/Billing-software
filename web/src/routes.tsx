@@ -15,7 +15,22 @@ const documents = () => import("@/features/documents/DocumentPage");
 const portalShell = () => import("@/features/portal/PortalShell");
 const portalPages = () => import("@/features/portal/PortalPages");
 
+/** The living style guide (D.3): development builds, or builds made with VITE_DESIGN_PAGE=true. */
+const designPage: RouteObject[] =
+  import.meta.env.DEV || import.meta.env.VITE_DESIGN_PAGE === "true"
+    ? [
+        {
+          path: "/design",
+          lazy: lazyPage(
+            () => import("@/pages/DesignPage"),
+            (m) => m.DesignPage,
+          ),
+        },
+      ]
+    : [];
+
 export const routes: RouteObject[] = [
+  ...designPage,
   {
     path: "/login",
     lazy: lazyPage(

@@ -1,6 +1,7 @@
 import { cleanup, screen, waitFor, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 
+import { answerConfirm } from "@/test/confirm";
 import { renderSignedIn } from "@/test/render";
 import { API, http, HttpResponse, problem, server } from "@/test/server";
 
@@ -138,7 +139,6 @@ describe("members", () => {
         return new HttpResponse(null, { status: 204 });
       }),
     );
-    vi.spyOn(window, "confirm").mockReturnValue(true);
     const user = userEvent.setup();
     renderSignedIn("/settings/members");
     const self = (await screen.findByText("(you)")).closest("tr") as HTMLElement;
@@ -155,6 +155,7 @@ describe("members", () => {
       expect(calls).toContain('role {"role":"VIEWER"}');
     });
     await user.click(screen.getByRole("button", { name: "Remove" }));
+    await answerConfirm(user, "Remove");
     await waitFor(() => {
       expect(calls).toContain("remove");
     });

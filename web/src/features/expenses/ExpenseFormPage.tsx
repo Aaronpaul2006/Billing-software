@@ -6,6 +6,7 @@ import { Controller, useForm, useWatch } from "react-hook-form";
 import { Link, useNavigate, useParams } from "react-router";
 import { z } from "zod";
 
+import { useConfirm } from "@/components/confirm-context";
 import { api, newIdempotencyKey, unwrap } from "@/api/client";
 import { ApiError } from "@/api/problem";
 import type { components } from "@/api/schema";
@@ -15,7 +16,6 @@ import { PageHeader } from "@/components/PageHeader";
 import { PartyPicker } from "@/components/PartyPicker";
 import type { PickedParty } from "@/components/PartyPicker";
 import { Alert, AlertDescription } from "@/components/ui/alert";
-import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { NativeSelect } from "@/components/ui/native-select";
@@ -25,6 +25,7 @@ import { AttachmentField } from "@/features/files/AttachmentField";
 import { MODE_LABELS } from "@/features/payments/modes";
 import { applyServerErrors, blankToNull, ifMatch } from "@/lib/forms";
 import { cleanMoneyInput, formatInr, sumMoney } from "@/lib/money";
+import { StatusBadge } from "@/components/StatusBadge";
 
 import { CATEGORY_LABELS } from "./labels";
 
@@ -111,6 +112,7 @@ function toApi(v: FormValues): ExpenseWrite {
 }
 
 function ExpenseForm({ expense }: { expense?: Expense }) {
+  const confirm = useConfirm();
   const navigate = useNavigate();
   const queryClient = useQueryClient();
   const [vendor, setVendor] = useState<PickedParty | null>(
@@ -363,13 +365,14 @@ function ExpenseForm({ expense }: { expense?: Expense }) {
               className="ml-auto"
               disabled={voidIt.isPending}
               onClick={() => {
-                if (
-                  window.confirm(
-                    "Void this expense? It is kept, marked voided, and stops counting.",
-                  )
-                ) {
-                  voidIt.mutate(expense);
-                }
+                void confirm({
+                  title: "Void this expense?",
+                  description: "It is kept, marked voided, and stops counting in reports.",
+                  confirmLabel: "Void expense",
+                  tone: "danger",
+                }).then((yes) => {
+                  if (yes) voidIt.mutate(expense);
+                });
               }}
             >
               Void expense
@@ -416,9 +419,7 @@ export function ExpenseFormPage() {
       {header}
       <PageHeader
         title={expense.data.description}
-        description={
-          expense.data.status === "VOIDED" ? <Badge variant="secondary">Voided</Badge> : undefined
-        }
+        description={expense.data.status === "VOIDED" ? <StatusBadge status="voided" /> : undefined}
       />
       <ExpenseForm expense={expense.data} />
     </>

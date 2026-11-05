@@ -1,6 +1,6 @@
 {
  "base": "http://localhost:5173",
- "at": "2026-11-05T08:10:54.931Z",
+ "at": "2026-11-05T08:42:47.018Z",
  "sizes": [
   {
    "name": "desktop",
@@ -63,7 +63,6 @@
      },
      "axe": [],
      "consoleErrors": [
-      "Failed to load resource: the server responded with a status of 404 (Not Found)",
       "Failed to load resource: the server responded with a status of 401 (Unauthorized)"
      ]
     },
@@ -504,6 +503,138 @@
    }
   },
   {
+   "name": "Design system (/design)",
+   "path": "/design",
+   "sizes": {
+    "desktop": {
+     "screenshot": "design--desktop.jpg",
+     "url": "/design",
+     "metrics": {
+      "pageHeight": 1983,
+      "sidewaysScroll": false,
+      "overflowing": [],
+      "tapTargets": 18,
+      "smallTapTargets": 0,
+      "smallTapExamples": [],
+      "tinyText": 0,
+      "fontSizes": [
+       "12px",
+       "13px",
+       "14px",
+       "16px",
+       "17px",
+       "24px",
+       "28px"
+      ],
+      "textColours": 10,
+      "radii": [
+       "6px",
+       "8px",
+       "4px",
+       "12px"
+      ],
+      "buttonHeights": [
+       32,
+       36
+      ],
+      "tables": 1,
+      "widestTable": 960,
+      "h1": [
+       "Design system"
+      ]
+     },
+     "axe": [],
+     "consoleErrors": [
+      "Failed to load resource: the server responded with a status of 401 (Unauthorized)"
+     ]
+    },
+    "tablet": {
+     "screenshot": "design--tablet.jpg",
+     "url": "/design",
+     "metrics": {
+      "pageHeight": 2121,
+      "sidewaysScroll": false,
+      "overflowing": [],
+      "tapTargets": 18,
+      "smallTapTargets": 0,
+      "smallTapExamples": [],
+      "tinyText": 0,
+      "fontSizes": [
+       "12px",
+       "13px",
+       "14px",
+       "16px",
+       "17px",
+       "24px",
+       "28px"
+      ],
+      "textColours": 10,
+      "radii": [
+       "6px",
+       "8px",
+       "4px",
+       "12px"
+      ],
+      "buttonHeights": [
+       32,
+       36
+      ],
+      "tables": 1,
+      "widestTable": 704,
+      "h1": [
+       "Design system"
+      ]
+     },
+     "axe": null,
+     "consoleErrors": [
+      "Failed to load resource: the server responded with a status of 401 (Unauthorized)"
+     ]
+    },
+    "phone": {
+     "screenshot": "design--phone.jpg",
+     "url": "/design",
+     "metrics": {
+      "pageHeight": 2889,
+      "sidewaysScroll": false,
+      "overflowing": [],
+      "tapTargets": 18,
+      "smallTapTargets": 0,
+      "smallTapExamples": [],
+      "tinyText": 0,
+      "fontSizes": [
+       "12px",
+       "13px",
+       "14px",
+       "16px",
+       "17px",
+       "24px",
+       "28px"
+      ],
+      "textColours": 10,
+      "radii": [
+       "6px",
+       "8px",
+       "4px",
+       "12px"
+      ],
+      "buttonHeights": [
+       32,
+       36
+      ],
+      "tables": 1,
+      "widestTable": 358,
+      "h1": [
+       "Design system"
+      ]
+     },
+     "axe": [],
+     "consoleErrors": [
+      "Failed to load resource: the server responded with a status of 401 (Unauthorized)"
+     ]
+    }
+   }
+  },
+  {
    "name": "Dashboard (first page after sign-in)",
    "path": "/",
    "sizes": {
@@ -676,7 +807,7 @@
        "14px",
        "24px"
       ],
-      "textColours": 5,
+      "textColours": 8,
       "radii": [
        "6px",
        "4px"
@@ -717,7 +848,7 @@
        "14px",
        "24px"
       ],
-      "textColours": 5,
+      "textColours": 8,
       "radii": [
        "6px",
        "4px"
@@ -758,7 +889,7 @@
        "14px",
        "24px"
       ],
-      "textColours": 3,
+      "textColours": 6,
       "radii": [
        "6px",
        "4px"
@@ -1080,7 +1211,7 @@
      "screenshot": "document-issued--desktop.jpg",
      "url": "/documents/01a1a478-09fc-7450-97e3-a204d97028a6",
      "metrics": {
-      "pageHeight": 1314,
+      "pageHeight": 1312,
       "sidewaysScroll": false,
       "overflowing": [],
       "tapTargets": 32,
@@ -1121,7 +1252,7 @@
      "screenshot": "document-issued--tablet.jpg",
      "url": "/documents/01a1a478-09fc-7450-97e3-a204d97028a6",
      "metrics": {
-      "pageHeight": 1578,
+      "pageHeight": 1576,
       "sidewaysScroll": false,
       "overflowing": [
        "table \"#DescriptionQuantityRateTaxableGST %Amou\""
@@ -1163,7 +1294,7 @@
      "screenshot": "document-issued--phone.jpg",
      "url": "/documents/01a1a478-09fc-7450-97e3-a204d97028a6",
      "metrics": {
-      "pageHeight": 1903,
+      "pageHeight": 1901,
       "sidewaysScroll": false,
       "overflowing": [
        "table \"#DescriptionQuantityRateTaxableGST %Amou\""
@@ -1213,7 +1344,7 @@
      "screenshot": "document-review--desktop.jpg",
      "url": "/documents/01a1a478-1039-72ea-96e0-19de89d02673?review=1",
      "metrics": {
-      "pageHeight": 1321,
+      "pageHeight": 1319,
       "sidewaysScroll": false,
       "overflowing": [],
       "tapTargets": 32,
@@ -1255,7 +1386,7 @@
      "screenshot": "document-review--tablet.jpg",
      "url": "/documents/01a1a478-1039-72ea-96e0-19de89d02673?review=1",
      "metrics": {
-      "pageHeight": 1601,
+      "pageHeight": 1599,
       "sidewaysScroll": false,
       "overflowing": [
        "table \"#DescriptionQuantityRateTaxableGST %Amou\""
@@ -1298,7 +1429,7 @@
      "screenshot": "document-review--phone.jpg",
      "url": "/documents/01a1a478-1039-72ea-96e0-19de89d02673?review=1",
      "metrics": {
-      "pageHeight": 1948,
+      "pageHeight": 1946,
       "sidewaysScroll": false,
       "overflowing": [
        "table \"#DescriptionQuantityRateTaxableGST %Amou\""
@@ -1363,7 +1494,7 @@
        "14px",
        "24px"
       ],
-      "textColours": 5,
+      "textColours": 6,
       "radii": [
        "6px",
        "12px",
@@ -1386,7 +1517,7 @@
      "screenshot": "document-quotation--tablet.jpg",
      "url": "/documents/01a1a478-0ed1-70f9-be9c-1b0644e3fe04",
      "metrics": {
-      "pageHeight": 1202,
+      "pageHeight": 1200,
       "sidewaysScroll": false,
       "overflowing": [
        "table \"#DescriptionQuantityRateTaxableGST %Amou\""
@@ -1402,7 +1533,7 @@
        "14px",
        "24px"
       ],
-      "textColours": 5,
+      "textColours": 6,
       "radii": [
        "6px",
        "12px",
@@ -1425,7 +1556,7 @@
      "screenshot": "document-quotation--phone.jpg",
      "url": "/documents/01a1a478-0ed1-70f9-be9c-1b0644e3fe04",
      "metrics": {
-      "pageHeight": 1527,
+      "pageHeight": 1525,
       "sidewaysScroll": false,
       "overflowing": [
        "table \"#DescriptionQuantityRateTaxableGST %Amou\""
@@ -1442,7 +1573,7 @@
        "14px",
        "24px"
       ],
-      "textColours": 3,
+      "textColours": 4,
       "radii": [
        "6px",
        "12px",
@@ -2538,7 +2669,7 @@
        "14px",
        "24px"
       ],
-      "textColours": 5,
+      "textColours": 6,
       "radii": [
        "6px",
        "4px"
@@ -2577,7 +2708,7 @@
        "14px",
        "24px"
       ],
-      "textColours": 5,
+      "textColours": 6,
       "radii": [
        "6px",
        "4px"
@@ -2616,7 +2747,7 @@
        "14px",
        "24px"
       ],
-      "textColours": 3,
+      "textColours": 4,
       "radii": [
        "6px",
        "4px"
@@ -2773,7 +2904,7 @@
        "17px",
        "24px"
       ],
-      "textColours": 5,
+      "textColours": 6,
       "radii": [
        "6px",
        "12px"
@@ -2809,7 +2940,7 @@
        "17px",
        "24px"
       ],
-      "textColours": 5,
+      "textColours": 6,
       "radii": [
        "6px",
        "12px"
@@ -2845,7 +2976,7 @@
        "17px",
        "24px"
       ],
-      "textColours": 3,
+      "textColours": 4,
       "radii": [
        "6px",
        "12px"
@@ -2885,7 +3016,7 @@
        "14px",
        "24px"
       ],
-      "textColours": 5,
+      "textColours": 6,
       "radii": [
        "6px",
        "4px"
@@ -2920,7 +3051,7 @@
        "14px",
        "24px"
       ],
-      "textColours": 5,
+      "textColours": 6,
       "radii": [
        "6px",
        "4px"
@@ -2955,7 +3086,7 @@
        "14px",
        "24px"
       ],
-      "textColours": 3,
+      "textColours": 4,
       "radii": [
        "6px",
        "4px"
@@ -3120,7 +3251,7 @@
        "17px",
        "24px"
       ],
-      "textColours": 5,
+      "textColours": 6,
       "radii": [
        "6px",
        "12px",
@@ -3155,7 +3286,7 @@
        "17px",
        "24px"
       ],
-      "textColours": 5,
+      "textColours": 6,
       "radii": [
        "6px",
        "12px",
@@ -3193,7 +3324,7 @@
        "17px",
        "24px"
       ],
-      "textColours": 3,
+      "textColours": 4,
       "radii": [
        "6px",
        "12px",
@@ -4558,10 +4689,10 @@
      "screenshot": "account--desktop.jpg",
      "url": "/account",
      "metrics": {
-      "pageHeight": 2184,
+      "pageHeight": 2436,
       "sidewaysScroll": false,
       "overflowing": [],
-      "tapTargets": 38,
+      "tapTargets": 42,
       "smallTapTargets": 0,
       "smallTapExamples": [],
       "tinyText": 0,
@@ -4593,10 +4724,10 @@
      "screenshot": "account--tablet.jpg",
      "url": "/account",
      "metrics": {
-      "pageHeight": 2396,
+      "pageHeight": 2712,
       "sidewaysScroll": false,
       "overflowing": [],
-      "tapTargets": 38,
+      "tapTargets": 42,
       "smallTapTargets": 0,
       "smallTapExamples": [],
       "tinyText": 0,
@@ -4628,10 +4759,10 @@
      "screenshot": "account--phone.jpg",
      "url": "/account",
      "metrics": {
-      "pageHeight": 2665,
+      "pageHeight": 3045,
       "sidewaysScroll": false,
       "overflowing": [],
-      "tapTargets": 22,
+      "tapTargets": 26,
       "smallTapTargets": 0,
       "smallTapExamples": [],
       "tinyText": 0,
@@ -4748,7 +4879,7 @@
        "24px",
        "30px"
       ],
-      "textColours": 3,
+      "textColours": 4,
       "radii": [
        "6px",
        "12px",
@@ -4790,7 +4921,7 @@
        "24px",
        "30px"
       ],
-      "textColours": 3,
+      "textColours": 4,
       "radii": [
        "6px",
        "12px",
@@ -4836,7 +4967,7 @@
        "24px",
        "30px"
       ],
-      "textColours": 3,
+      "textColours": 4,
       "radii": [
        "6px",
        "12px",
@@ -4846,7 +4977,7 @@
        32
       ],
       "tables": 1,
-      "widestTable": 658,
+      "widestTable": 671,
       "h1": [
        "Overview"
       ]
@@ -4880,7 +5011,7 @@
        "16px",
        "24px"
       ],
-      "textColours": 3,
+      "textColours": 5,
       "radii": [
        "6px",
        "4px"
@@ -4917,7 +5048,7 @@
        "16px",
        "24px"
       ],
-      "textColours": 3,
+      "textColours": 5,
       "radii": [
        "6px",
        "4px"
@@ -4958,7 +5089,7 @@
        "16px",
        "24px"
       ],
-      "textColours": 3,
+      "textColours": 5,
       "radii": [
        "6px",
        "4px"
@@ -4967,7 +5098,7 @@
        32
       ],
       "tables": 1,
-      "widestTable": 658,
+      "widestTable": 671,
       "h1": [
        "Bills & quotes"
       ]
@@ -5548,5 +5679,5 @@
    }
   }
  ],
- "step": "D.2"
+ "step": "D.3"
 }

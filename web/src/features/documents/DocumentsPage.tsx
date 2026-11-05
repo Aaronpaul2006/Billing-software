@@ -6,7 +6,6 @@ import { Link } from "react-router";
 import { api, unwrap } from "@/api/client";
 import { ErrorState } from "@/components/ErrorState";
 import { PageHeader } from "@/components/PageHeader";
-import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { NativeSelect } from "@/components/ui/native-select";
@@ -22,8 +21,10 @@ import {
 import { formatInr } from "@/lib/money";
 import { cn } from "@/lib/utils";
 import { formatDate } from "@/lib/dates";
+import { StatusBadge } from "@/components/StatusBadge";
+import { documentStatus } from "@/features/documents/status";
 
-import { DOC_TYPE_LABELS, RECEIVABLE_TYPES, STATUS_LABELS, statusVariant } from "./api";
+import { DOC_TYPE_LABELS, RECEIVABLE_TYPES, STATUS_LABELS } from "./api";
 import type { DocStatus, DocType } from "./api";
 
 const TYPE_FILTERS: { value: string; label: string; types: DocType[] }[] = [
@@ -191,7 +192,7 @@ export function DocumentsPage() {
                       )}
                     </TableCell>
                     <TableCell>
-                      <Badge variant={statusVariant(d.status)}>{STATUS_LABELS[d.status]}</Badge>
+                      <StatusBadge status={documentStatus(d)} />
                     </TableCell>
                     <TableCell className="text-right tabular-nums">
                       {formatInr(d.totals.grand_total)}

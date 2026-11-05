@@ -17,6 +17,8 @@ import { Controller, useFieldArray, useForm, useWatch } from "react-hook-form";
 import type { UseFormRegister } from "react-hook-form";
 import { Link, useNavigate, useParams, useSearchParams } from "react-router";
 
+import { useToast } from "@/components/toast-context";
+import { useConfirm } from "@/components/confirm-context";
 import { api, newIdempotencyKey, unwrap } from "@/api/client";
 import { ApiError } from "@/api/problem";
 import type { components } from "@/api/schema";
@@ -491,6 +493,7 @@ function BulkEdit({
 }
 
 function Editor({ doc, defaultTerms }: { doc?: Document; defaultTerms?: string }) {
+  const confirm = useConfirm();
   const isNote = doc !== undefined && NOTE_TYPES.has(doc.doc_type);
   const [params] = useSearchParams();
   const requested = params.get("type") as DraftableType | null;
@@ -527,6 +530,7 @@ function Editor({ doc, defaultTerms }: { doc?: Document; defaultTerms?: string }
   const { register, handleSubmit, control, setValue, setError, formState, getValues } = form;
   const errors = formState.errors;
   const lines = useFieldArray({ control, name: "lines" });
+  const toast = useToast();
   const values = useWatch({ control }) as FormValues;
 
   const projects = useQuery({
@@ -786,8 +790,17 @@ function Editor({ doc, defaultTerms }: { doc?: Document; defaultTerms?: string }
     after.current = mode;
     void onSubmit();
   };
-  const leave = () => {
-    if (unsaved && !window.confirm("Leave this bill? Changes not saved will be lost.")) {
+  const leave = async () => {
+    if (
+      unsaved &&
+      !(await confirm({
+        title: "Leave this bill?",
+        description: "Changes not saved yet will be lost.",
+        confirmLabel: "Leave without saving",
+        cancelLabel: "Stay",
+        tone: "danger",
+      }))
+    ) {
       return;
     }
     void navigate(current ? `/documents/${current.id}` : "/documents");
@@ -812,7 +825,7 @@ function Editor({ doc, defaultTerms }: { doc?: Document; defaultTerms?: string }
     } else if (e.key === "Escape" && !newItem && !newClient) {
       e.preventDefault();
       if (showKeys) setShowKeys(false);
-      else leave();
+      else void leave();
     }
   };
   useEffect(() => {
@@ -1416,7 +1429,18 @@ function Editor({ doc, defaultTerms }: { doc?: Document; defaultTerms?: string }
                         aria-label={`Remove line ${String(i + 1)}`}
                         disabled={lines.fields.length === 1}
                         onClick={() => {
+                          const removed = getValues(`lines.${i}`);
                           lines.remove(i);
+                          toast({
+                            message: `Line ${String(i + 1)} removed${removed.description ? `: ${removed.description}` : ""}.`,
+                            tone: "info",
+                            action: {
+                              label: "Undo",
+                              onClick: () => {
+                                lines.insert(i, removed, { shouldFocus: false });
+                              },
+                            },
+                          });
                         }}
                       >
                         <Trash2 aria-hidden />
@@ -1532,7 +1556,13 @@ function Editor({ doc, defaultTerms }: { doc?: Document; defaultTerms?: string }
           >
             Save and keep working
           </Button>
-          <Button type="button" variant="ghost" onClick={leave}>
+          <Button
+            type="button"
+            variant="ghost"
+            onClick={() => {
+              void leave();
+            }}
+          >
             Cancel
           </Button>
           <span role="status" className="text-muted-foreground flex items-center gap-1 text-sm">

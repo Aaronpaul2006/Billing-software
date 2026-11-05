@@ -3,6 +3,7 @@ import { AlertCircle, ArrowLeft, Trash2 } from "lucide-react";
 import { useState } from "react";
 import { Link, useNavigate } from "react-router";
 
+import { useConfirm } from "@/components/confirm-context";
 import { api, newIdempotencyKey, unwrap } from "@/api/client";
 import { ApiError } from "@/api/problem";
 import { useSession } from "@/auth/context";
@@ -180,6 +181,7 @@ function Rename({ template, onClose }: { template: Template; onClose: () => void
 
 /** Saved quotes and bills to start new drafts from. */
 export function TemplatesPage() {
+  const confirm = useConfirm();
   const session = useSession();
   const queryClient = useQueryClient();
   const [panel, setPanel] = useState<{ id: string; kind: "use" | "rename" } | null>(null);
@@ -271,7 +273,14 @@ export function TemplatesPage() {
                       aria-label={`Delete ${t.name}`}
                       disabled={remove.isPending}
                       onClick={() => {
-                        if (window.confirm(`Delete the template “${t.name}”?`)) remove.mutate(t.id);
+                        void confirm({
+                          title: `Delete the template “${t.name}”?`,
+                          description: "Bills already made from it are not affected.",
+                          confirmLabel: "Delete template",
+                          tone: "danger",
+                        }).then((yes) => {
+                          if (yes) remove.mutate(t.id);
+                        });
                       }}
                     >
                       <Trash2 aria-hidden />

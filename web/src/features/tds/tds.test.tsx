@@ -1,6 +1,7 @@
 import { screen, waitFor, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 
+import { answerConfirm } from "@/test/confirm";
 import { renderSignedIn } from "@/test/render";
 import { API, http, HttpResponse, problem, server } from "@/test/server";
 
@@ -70,7 +71,6 @@ describe("TDS certificates", () => {
         return new HttpResponse(null, { status: 204 });
       }),
     );
-    vi.spyOn(window, "confirm").mockReturnValue(true);
     const user = userEvent.setup();
     renderSignedIn("/tds-certificates");
     const row = (await screen.findByText("QWERTYU")).closest("tr") as HTMLElement;
@@ -92,6 +92,7 @@ describe("TDS certificates", () => {
     expect(calls[0]).toContain('"tds_amount":"780"');
 
     await user.click(screen.getByRole("button", { name: "Delete certificate QWERTYU" }));
+    await answerConfirm(user, "Delete certificate");
     await waitFor(() => {
       expect(calls).toContain("delete");
     });

@@ -3,6 +3,7 @@ import { AlertCircle, ArrowLeft, Pencil, Plus, Trash2 } from "lucide-react";
 import { useState } from "react";
 import { Link } from "react-router";
 
+import { useConfirm } from "@/components/confirm-context";
 import { api, newIdempotencyKey, unwrap } from "@/api/client";
 import { ApiError } from "@/api/problem";
 import type { components } from "@/api/schema";
@@ -232,6 +233,7 @@ function CertificateForm({
 
 /** Form 16A certificates from clients, reconciled in Reports → TDS reconciliation. */
 export function TdsCertificatesPage() {
+  const confirm = useConfirm();
   const queryClient = useQueryClient();
   const current = fyStartYear(new Date());
   const [fy, setFy] = useState(current);
@@ -385,12 +387,14 @@ export function TdsCertificatesPage() {
                       aria-label={`Delete certificate ${c.certificate_number}`}
                       disabled={remove.isPending}
                       onClick={() => {
-                        if (
-                          window.confirm(
-                            `Delete certificate ${c.certificate_number}? Only for a wrong entry.`,
-                          )
-                        )
-                          remove.mutate(c.id);
+                        void confirm({
+                          title: `Delete certificate ${c.certificate_number}?`,
+                          description: "Only for a wrong entry: the record is removed for good.",
+                          confirmLabel: "Delete certificate",
+                          tone: "danger",
+                        }).then((yes) => {
+                          if (yes) remove.mutate(c.id);
+                        });
                       }}
                     >
                       <Trash2 aria-hidden />

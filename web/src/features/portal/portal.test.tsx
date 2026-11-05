@@ -2,6 +2,7 @@ import { screen, waitFor, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 
 import type { components } from "@/api/schema";
+import { answerConfirm } from "@/test/confirm";
 import { renderApp, renderSignedIn } from "@/test/render";
 import { API, http, HttpResponse, me, problem, server, tokens } from "@/test/server";
 
@@ -176,11 +177,11 @@ describe("client portal", () => {
         return HttpResponse.json(quote({ status: "ACCEPTED", version: 2 }));
       }),
     );
-    vi.spyOn(window, "confirm").mockReturnValue(true);
     renderSignedIn("/portal/bills/q1", CLIENT);
     expect(await screen.findByRole("heading", { name: "Quotation QT/0007" })).toBeInTheDocument();
     expect(screen.getByText("RCC work")).toBeInTheDocument();
     await user.click(screen.getByRole("button", { name: "Accept" }));
+    await answerConfirm(user, "Accept quotation");
     expect(await screen.findByText("Accepted")).toBeInTheDocument();
     expect(ifMatch).toBe('"v1"');
     expect(screen.queryByRole("button", { name: "Accept" })).not.toBeInTheDocument();
@@ -195,9 +196,9 @@ describe("client portal", () => {
         problem(409, "quotation_expired", "This quotation has expired."),
       ),
     );
-    vi.spyOn(window, "confirm").mockReturnValue(true);
     renderSignedIn("/portal/bills/q1", CLIENT);
     await user.click(await screen.findByRole("button", { name: "Decline" }));
+    await answerConfirm(user, "Decline quotation");
     expect(await screen.findByText(/Ask us for a new one/)).toBeInTheDocument();
   });
 });

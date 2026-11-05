@@ -4,7 +4,6 @@ import { Link, useParams } from "react-router";
 
 import { ErrorState } from "@/components/ErrorState";
 import { PageHeader } from "@/components/PageHeader";
-import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -17,9 +16,11 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { periodRange } from "@/features/dashboard/periods";
-import { DOC_TYPE_LABELS, STATUS_LABELS, statusVariant } from "@/features/documents/api";
+import { DOC_TYPE_LABELS } from "@/features/documents/api";
 import { formatInr, formatQty } from "@/lib/money";
 import { formatDate } from "@/lib/dates";
+import { StatusBadge } from "@/components/StatusBadge";
+import { documentStatus } from "@/features/documents/status";
 
 import {
   BILL_TYPES,
@@ -66,7 +67,7 @@ function DocumentsTable({ rows }: { rows: PortalDocument[] }) {
             <TableCell>{day(d.doc_date)}</TableCell>
             <TableCell>{d.project_name}</TableCell>
             <TableCell>
-              <Badge variant={statusVariant(d.status)}>{STATUS_LABELS[d.status]}</Badge>
+              <StatusBadge status={documentStatus(d)} />
             </TableCell>
             <TableCell className="text-right tabular-nums">
               {formatInr(d.totals.net_receivable)}

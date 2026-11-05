@@ -280,6 +280,8 @@ const PUBLIC = [
   { slug: "login", name: "Sign in", path: "/login" },
   { slug: "signup", name: "Create account", path: "/signup" },
   { slug: "forgot-password", name: "Forgot password", path: "/forgot-password" },
+  // the style guide (D.3): only in builds made with VITE_DESIGN_PAGE=true; AUDIT_DESIGN=1
+  ...(process.env.AUDIT_DESIGN ? [{ slug: "design", name: "Design system (/design)", path: "/design" }] : []),
 ];
 
 // --- run ----------------------------------------------------------------------------------

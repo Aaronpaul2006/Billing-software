@@ -2,6 +2,7 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { AlertCircle, CheckCircle2, MailPlus } from "lucide-react";
 import { useState } from "react";
 
+import { useConfirm } from "@/components/confirm-context";
 import { api, unwrap } from "@/api/client";
 import { ApiError } from "@/api/problem";
 import type { components } from "@/api/schema";
@@ -151,6 +152,7 @@ function WaitingToJoin({ notify }: { notify: (n: Notice) => void }) {
 type Notice = { ok: boolean; text: string } | null;
 
 export function MembersPage() {
+  const confirm = useConfirm();
   const session = useSession();
   const queryClient = useQueryClient();
   const [email, setEmail] = useState("");
@@ -361,12 +363,22 @@ export function MembersPage() {
                         size="sm"
                         disabled={revoke.isPending}
                         onClick={() => {
-                          if (
-                            window.confirm(
-                              `Remove ${m.full_name} from the company? They are signed out at once.`,
-                            )
-                          )
-                            revoke.mutate(m.id);
+                          void confirm(
+                            m.status === "INVITED"
+                              ? {
+                                  title: `Withdraw the invitation to ${m.full_name}?`,
+                                  confirmLabel: "Withdraw invitation",
+                                  tone: "danger",
+                                }
+                              : {
+                                  title: `Remove ${m.full_name} from the company?`,
+                                  description: "They are signed out at once.",
+                                  confirmLabel: "Remove",
+                                  tone: "danger",
+                                },
+                          ).then((yes) => {
+                            if (yes) revoke.mutate(m.id);
+                          });
                         }}
                       >
                         {m.status === "INVITED" ? "Withdraw invitation" : "Remove"}

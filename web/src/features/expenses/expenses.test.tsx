@@ -2,6 +2,7 @@ import { screen, waitFor, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 
 import type { components } from "@/api/schema";
+import { answerConfirm } from "@/test/confirm";
 import { renderSignedIn } from "@/test/render";
 import { API, http, HttpResponse, server } from "@/test/server";
 
@@ -122,7 +123,6 @@ describe("expenses", () => {
       }),
       http.get(`${API}/expenses`, () => HttpResponse.json({ results: [], next_cursor: null })),
     );
-    vi.spyOn(window, "confirm").mockReturnValue(true);
     const user = userEvent.setup();
     renderSignedIn("/expenses/e1");
     const paid = await screen.findByLabelText("Paid so far (₹)");
@@ -139,6 +139,7 @@ describe("expenses", () => {
     await user.click(
       (await screen.findAllByRole("button", { name: "Void expense" }))[0] as HTMLElement,
     );
+    await answerConfirm(user, "Void expense");
     await waitFor(() => {
       expect(calls).toContain('void "v1"');
     });

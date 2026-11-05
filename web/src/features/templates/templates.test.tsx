@@ -1,6 +1,7 @@
 import { screen, waitFor, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 
+import { answerConfirm } from "@/test/confirm";
 import { renderSignedIn } from "@/test/render";
 import { API, http, HttpResponse, problem, server } from "@/test/server";
 
@@ -109,7 +110,6 @@ describe("templates", () => {
         return new HttpResponse(null, { status: 204 });
       }),
     );
-    vi.spyOn(window, "confirm").mockReturnValue(true);
     const user = userEvent.setup();
     renderSignedIn("/templates");
     await user.click(await screen.findByRole("button", { name: "Rename" }));
@@ -119,6 +119,7 @@ describe("templates", () => {
     await user.click(screen.getByRole("button", { name: "Save" }));
     expect(await screen.findByText("2BHK interior (2026)")).toBeInTheDocument();
     await user.click(screen.getByRole("button", { name: "Delete 2BHK interior (2026)" }));
+    await answerConfirm(user, "Delete template");
     expect(await screen.findByText(/No templates yet/)).toBeInTheDocument();
     expect(calls).toEqual(['rename "v2" {"name":"2BHK interior (2026)"}', "delete"]);
   });

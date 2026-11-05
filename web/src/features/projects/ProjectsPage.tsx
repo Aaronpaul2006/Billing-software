@@ -6,7 +6,6 @@ import { Link } from "react-router";
 import { api, unwrap } from "@/api/client";
 import { ErrorState } from "@/components/ErrorState";
 import { PageHeader } from "@/components/PageHeader";
-import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { NativeSelect } from "@/components/ui/native-select";
@@ -21,6 +20,8 @@ import {
 } from "@/components/ui/table";
 import { STATES } from "@/lib/india";
 import { formatInr } from "@/lib/money";
+import { StatusBadge } from "@/components/StatusBadge";
+import { projectStatus } from "@/features/projects/status";
 
 import { STATUS_LABELS } from "./api";
 import type { ProjectStatus } from "./api";
@@ -127,9 +128,7 @@ export function ProjectsPage() {
                   <TableCell>{p.client_name}</TableCell>
                   <TableCell>{STATES[p.site_state_code] ?? p.site_state_code}</TableCell>
                   <TableCell>
-                    <Badge variant={p.status === "ACTIVE" ? "default" : "secondary"}>
-                      {STATUS_LABELS[p.status]}
-                    </Badge>
+                    <StatusBadge status={projectStatus(p.status)} />
                   </TableCell>
                   <TableCell className="text-right tabular-nums">
                     {p.contract_value ? formatInr(p.contract_value) : "–"}

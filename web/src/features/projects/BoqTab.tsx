@@ -2,6 +2,7 @@ import { useInfiniteQuery, useMutation, useQueryClient } from "@tanstack/react-q
 import { FileUp, Pencil, Plus, Trash2 } from "lucide-react";
 import { useState } from "react";
 
+import { useConfirm } from "@/components/confirm-context";
 import { api, unwrap } from "@/api/client";
 import { ApiError } from "@/api/problem";
 import { ErrorState } from "@/components/ErrorState";
@@ -26,6 +27,7 @@ import { BoqItemForm } from "./BoqItemForm";
 type Panel = { kind: "none" } | { kind: "add" } | { kind: "edit"; id: string } | { kind: "import" };
 
 export function BoqTab() {
+  const confirm = useConfirm();
   const { project } = useProjectOutlet();
   const queryClient = useQueryClient();
   const [panel, setPanel] = useState<Panel>({ kind: "none" });
@@ -170,8 +172,14 @@ export function BoqTab() {
                         aria-label={`Delete ${item.item_code}`}
                         disabled={remove.isPending}
                         onClick={() => {
-                          if (window.confirm(`Delete item ${item.item_code}?`))
-                            remove.mutate(item.id);
+                          void confirm({
+                            title: `Delete item ${item.item_code}?`,
+                            description: "Only items not billed yet can be deleted.",
+                            confirmLabel: "Delete item",
+                            tone: "danger",
+                          }).then((yes) => {
+                            if (yes) remove.mutate(item.id);
+                          });
                         }}
                       >
                         <Trash2 aria-hidden />

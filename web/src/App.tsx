@@ -5,6 +5,8 @@ import type { ReactNode } from "react";
 import { createBrowserRouter, RouterProvider } from "react-router";
 
 import { AuthProvider } from "@/auth/AuthProvider";
+import { ConfirmProvider } from "@/components/ConfirmDialog";
+import { ToastProvider } from "@/components/Toast";
 import { makeQueryClient } from "@/queryClient";
 import { routes } from "@/routes";
 
@@ -18,7 +20,11 @@ export function Providers({
 }) {
   return (
     <QueryClientProvider client={queryClient}>
-      <AuthProvider>{children}</AuthProvider>
+      <AuthProvider>
+        <ToastProvider>
+          <ConfirmProvider>{children}</ConfirmProvider>
+        </ToastProvider>
+      </AuthProvider>
     </QueryClientProvider>
   );
 }

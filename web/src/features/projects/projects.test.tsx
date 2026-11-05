@@ -3,6 +3,7 @@ import userEvent from "@testing-library/user-event";
 import { delay } from "msw";
 
 import type { components } from "@/api/schema";
+import { answerConfirm } from "@/test/confirm";
 import { renderSignedIn } from "@/test/render";
 import { API, http, HttpResponse, problem, server } from "@/test/server";
 
@@ -226,7 +227,6 @@ describe("project page", () => {
       ),
     );
     const user = userEvent.setup();
-    vi.spyOn(window, "confirm").mockReturnValue(true);
     renderSignedIn(`/projects/${PID}/boq`);
     await user.click(await screen.findByRole("button", { name: "Add item" }));
     const form = screen.getByRole("form", { name: "New BOQ item" });
@@ -248,6 +248,7 @@ describe("project page", () => {
     });
 
     await user.click(screen.getByRole("button", { name: "Delete 2.1" }));
+    await answerConfirm(user, "Delete item");
     expect(
       await screen.findByText(/This item has been billed, so it cannot be deleted/),
     ).toBeInTheDocument();

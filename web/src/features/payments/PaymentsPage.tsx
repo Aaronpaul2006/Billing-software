@@ -7,7 +7,6 @@ import { api, unwrap } from "@/api/client";
 import type { components } from "@/api/schema";
 import { ErrorState } from "@/components/ErrorState";
 import { PageHeader } from "@/components/PageHeader";
-import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { NativeSelect } from "@/components/ui/native-select";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -21,6 +20,7 @@ import {
 } from "@/components/ui/table";
 import { compareMoney, formatInr } from "@/lib/money";
 import { formatDate } from "@/lib/dates";
+import { StatusBadge } from "@/components/StatusBadge";
 
 import { MODE_LABELS } from "./modes";
 
@@ -132,11 +132,7 @@ export function PaymentsPage() {
                   </TableCell>
                   <TableCell className="text-right tabular-nums">
                     {formatInr(p.amount)}
-                    {p.status === "VOIDED" && (
-                      <Badge variant="secondary" className="ml-2">
-                        Voided
-                      </Badge>
-                    )}
+                    {p.status === "VOIDED" && <StatusBadge status="voided" className="ml-2" />}
                   </TableCell>
                   <TableCell className="text-right tabular-nums">
                     {compareMoney(p.unallocated, "0") === 1 ? formatInr(p.unallocated) : "–"}

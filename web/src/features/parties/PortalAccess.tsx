@@ -2,6 +2,7 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { AlertCircle, MailPlus, UserX } from "lucide-react";
 import { useState } from "react";
 
+import { useConfirm } from "@/components/confirm-context";
 import { api, unwrap } from "@/api/client";
 import { ApiError } from "@/api/problem";
 import { ErrorState } from "@/components/ErrorState";
@@ -39,6 +40,7 @@ const STATUS: Record<string, string> = {
  * payments, statement and BOQ progress, and answering quotations. OWNER / ADMIN.
  */
 export function PortalAccess({ partyId, partyName }: { partyId: string; partyName: string }) {
+  const confirm = useConfirm();
   const queryClient = useQueryClient();
   const key = ["portal-users", partyId];
   const [email, setEmail] = useState("");
@@ -124,9 +126,14 @@ export function PortalAccess({ partyId, partyName }: { partyId: string; partyNam
                     aria-label={`Remove ${u.email}`}
                     disabled={revoke.isPending}
                     onClick={() => {
-                      if (window.confirm(`Remove portal access for ${u.email}?`)) {
-                        revoke.mutate(u.id);
-                      }
+                      void confirm({
+                        title: `Remove portal access for ${u.email}?`,
+                        description: "They can no longer sign in to see this client's bills.",
+                        confirmLabel: "Remove access",
+                        tone: "danger",
+                      }).then((yes) => {
+                        if (yes) revoke.mutate(u.id);
+                      });
                     }}
                   >
                     <UserX aria-hidden />

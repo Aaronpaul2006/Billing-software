@@ -9,7 +9,6 @@ import type { components } from "@/api/schema";
 import { ErrorState } from "@/components/ErrorState";
 import { Field } from "@/components/FormField";
 import { Alert, AlertDescription } from "@/components/ui/alert";
-import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -28,6 +27,7 @@ import { errorMessage } from "@/lib/errors";
 import { ifMatch } from "@/lib/forms";
 import { cleanMoneyInput, compareMoney, formatInr, MONEY_INPUT } from "@/lib/money";
 import { formatDate } from "@/lib/dates";
+import { StatusBadge } from "@/components/StatusBadge";
 
 import { useProjectOutlet } from "./api";
 
@@ -353,7 +353,7 @@ export function RetentionTab() {
                     <TableCell className="text-right tabular-nums">{formatInr(r.amount)}</TableCell>
                     <TableCell className="text-right tabular-nums">
                       {r.status === "CANCELLED" ? (
-                        <Badge variant="secondary">Cancelled</Badge>
+                        <StatusBadge status="cancelled" />
                       ) : compareMoney(r.outstanding, "0") === 1 ? (
                         formatInr(r.outstanding)
                       ) : (

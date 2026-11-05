@@ -1,6 +1,7 @@
 import { screen, waitFor, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 
+import { answerConfirm } from "@/test/confirm";
 import { CLIENT, doc, DOC, PROJECT, useDoc } from "@/test/documents";
 import { renderSignedIn } from "@/test/render";
 import { API, http, HttpResponse, problem, server } from "@/test/server";
@@ -163,13 +164,14 @@ describe("keyboard-first bill screen", () => {
 
   it("asks before leaving with unsaved changes", async () => {
     base();
-    const ask = vi.spyOn(window, "confirm").mockReturnValue(false);
     const user = userEvent.setup();
     const router = renderSignedIn("/documents/new");
     const line = await screen.findByRole("group", { name: "Line 1" });
     await user.type(within(line).getByLabelText("Description"), "RCC");
     await user.click(screen.getByRole("button", { name: "Cancel" }));
-    expect(ask).toHaveBeenCalled();
+    const dialog = await screen.findByRole("alertdialog", { name: "Leave this bill?" });
+    expect(dialog).toHaveTextContent("Changes not saved yet will be lost.");
+    await answerConfirm(user, "Stay");
     expect(router.state.location.pathname).toBe("/documents/new");
   });
 });

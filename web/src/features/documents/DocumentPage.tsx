@@ -4,6 +4,7 @@ import { useState } from "react";
 import type { ReactNode } from "react";
 import { Link, useNavigate, useParams, useSearchParams } from "react-router";
 
+import { useConfirm } from "@/components/confirm-context";
 import { api, newIdempotencyKey, unwrap } from "@/api/client";
 import { ApiError } from "@/api/problem";
 import { ErrorState } from "@/components/ErrorState";
@@ -33,14 +34,14 @@ import { DocumentSettlement } from "@/features/payments/DocumentSettlement";
 import { DocumentReminders } from "@/features/reminders/DocumentReminders";
 import { SaveAsTemplate } from "@/features/templates/SaveAsTemplate";
 import { formatDate, formatDateTime } from "@/lib/dates";
+import { StatusBadge } from "@/components/StatusBadge";
+import { documentStatus } from "@/features/documents/status";
 
 import {
   DOC_TYPE_LABELS,
   documentKey,
   documentTitle,
   RECEIVABLE_TYPES,
-  STATUS_LABELS,
-  statusVariant,
   supplyNote,
   useDocument,
 } from "./api";
@@ -163,6 +164,7 @@ const DUPLICABLE: ReadonlySet<DocType> = new Set([
 const ALTERABLE: ReadonlySet<DocType> = new Set(["TAX_INVOICE", "BILL_OF_SUPPLY"]);
 
 function Actions({ doc }: { doc: Document }) {
+  const confirm = useConfirm();
   const queryClient = useQueryClient();
   const navigate = useNavigate();
   const [params] = useSearchParams();
@@ -482,7 +484,14 @@ function Actions({ doc }: { doc: Document }) {
             variant="ghost"
             disabled={busy}
             onClick={() => {
-              if (window.confirm("Delete this draft?")) remove.mutate();
+              void confirm({
+                title: "Delete this draft?",
+                description: "The draft is removed for good. Issued bills are never deleted.",
+                confirmLabel: "Delete draft",
+                tone: "danger",
+              }).then((yes) => {
+                if (yes) remove.mutate();
+              });
             }}
           >
             Delete draft
@@ -709,9 +718,9 @@ export function DocumentPage() {
       </Button>
       <PageHeader
         title={documentTitle(doc)}
+        badges={<StatusBadge status={documentStatus(doc)} />}
         description={
           <span className="flex items-center gap-2">
-            <Badge variant={statusVariant(doc.status)}>{STATUS_LABELS[doc.status]}</Badge>
             {doc.is_gst_document ? "GST book" : "Non-GST book"}
             {doc.supply_category === "SEZ" && <Badge variant="outline">SEZ</Badge>}
             {doc.supply_category === "EXPORT" && <Badge variant="outline">Export</Badge>}

@@ -3,12 +3,12 @@ import { AlertCircle, ArrowLeft, Check, FileDown, X } from "lucide-react";
 import { useState } from "react";
 import { Link, useParams } from "react-router";
 
+import { useConfirm } from "@/components/confirm-context";
 import { api, unwrap } from "@/api/client";
 import { ApiError } from "@/api/problem";
 import { ErrorState } from "@/components/ErrorState";
 import { PageHeader } from "@/components/PageHeader";
 import { Alert, AlertDescription } from "@/components/ui/alert";
-import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -20,12 +20,14 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { DOC_TYPE_LABELS, STATUS_LABELS, statusVariant } from "@/features/documents/api";
+import { DOC_TYPE_LABELS } from "@/features/documents/api";
 import { TotalsPanel } from "@/features/documents/TotalsPanel";
 import { errorMessage } from "@/lib/errors";
 import { ifMatch } from "@/lib/forms";
 import { formatInr, formatQty } from "@/lib/money";
 import { formatDate } from "@/lib/dates";
+import { StatusBadge } from "@/components/StatusBadge";
+import { documentStatus } from "@/features/documents/status";
 
 import { portalDocumentKey, portalDocumentQuery } from "./api";
 import type { PortalDocumentDetail } from "./api";
@@ -53,6 +55,7 @@ export function PortalDocumentPage() {
 }
 
 function DocumentView({ doc }: { doc: PortalDocumentDetail }) {
+  const confirm = useConfirm();
   const queryClient = useQueryClient();
   const [notice, setNotice] = useState<string | null>(null);
   const path = { document_id: doc.id };
@@ -102,10 +105,22 @@ function DocumentView({ doc }: { doc: PortalDocumentDetail }) {
 
   const openQuote = doc.doc_type === "QUOTATION" && doc.status === "ISSUED";
   const confirmAndAnswer = (accept: boolean) => {
-    const question = accept
-      ? `Accept quotation ${doc.doc_number} for ${formatInr(doc.totals.grand_total)}?`
-      : `Decline quotation ${doc.doc_number}?`;
-    if (window.confirm(question)) answer.mutate(accept);
+    void confirm(
+      accept
+        ? {
+            title: `Accept quotation ${doc.doc_number ?? ""}?`,
+            description: `For ${formatInr(doc.totals.grand_total)}. The business is told at once.`,
+            confirmLabel: "Accept quotation",
+          }
+        : {
+            title: `Decline quotation ${doc.doc_number ?? ""}?`,
+            description: "The business is told at once.",
+            confirmLabel: "Decline quotation",
+            tone: "danger",
+          },
+    ).then((yes) => {
+      if (yes) answer.mutate(accept);
+    });
   };
 
   return (
@@ -120,8 +135,7 @@ function DocumentView({ doc }: { doc: PortalDocumentDetail }) {
         title={`${DOC_TYPE_LABELS[doc.doc_type]} ${doc.doc_number ?? ""}`}
         description={
           <>
-            <Badge variant={statusVariant(doc.status)}>{STATUS_LABELS[doc.status]}</Badge>{" "}
-            {formatDate(doc.doc_date)}
+            <StatusBadge status={documentStatus(doc)} /> {formatDate(doc.doc_date)}
             {doc.project_name ? ` · ${doc.project_name}` : ""}
             {doc.due_date ? ` · due ${formatDate(doc.due_date)}` : ""}
             {doc.valid_until ? ` · valid until ${doc.valid_until}` : ""}

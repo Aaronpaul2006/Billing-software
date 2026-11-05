@@ -3,12 +3,13 @@ import { Link, NavLink, Outlet, useParams } from "react-router";
 
 import { ErrorState } from "@/components/ErrorState";
 import { PageHeader } from "@/components/PageHeader";
-import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import { cn } from "@/lib/utils";
+import { StatusBadge } from "@/components/StatusBadge";
+import { projectStatus } from "@/features/projects/status";
 
-import { STATUS_LABELS, useProject, useProjectOutlet } from "./api";
+import { useProject, useProjectOutlet } from "./api";
 import { ProjectForm } from "./ProjectForm";
 
 const TABS = [
@@ -36,9 +37,7 @@ export function ProjectLayout() {
         description={
           <span className="flex flex-wrap items-center gap-2">
             <span className="font-mono">{p.code}</span>·<span>{p.client_name}</span>
-            <Badge variant={p.status === "ACTIVE" ? "default" : "secondary"}>
-              {STATUS_LABELS[p.status]}
-            </Badge>
+            <StatusBadge status={projectStatus(p.status)} />
           </span>
         }
       />

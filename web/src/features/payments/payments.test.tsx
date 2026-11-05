@@ -2,6 +2,7 @@ import { screen, waitFor, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 
 import type { components } from "@/api/schema";
+import { answerConfirm } from "@/test/confirm";
 import { renderSignedIn } from "@/test/render";
 import { API, http, HttpResponse, server } from "@/test/server";
 
@@ -197,10 +198,10 @@ describe("payments", () => {
         return HttpResponse.json(current);
       }),
     );
-    vi.spyOn(window, "confirm").mockReturnValue(true);
     const user = userEvent.setup();
     renderSignedIn(`/payments/${PAY}`);
     await user.click(await screen.findByRole("button", { name: "Unwind" }));
+    await answerConfirm(user, "Unwind");
     expect(
       await screen.findByText("Not allocated: an advance from the client."),
     ).toBeInTheDocument();
