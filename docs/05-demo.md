@@ -3,20 +3,35 @@
 A local demo of the billing features on this PC, with a business full of
 sample data. Nothing here is for production.
 
-## 1. Start the servers
+## 1. Start and stop the demo
 
-Docker Desktop must be running.
+Double-click **`scripts\demo-up.cmd`**. It starts Docker Desktop if needed,
+stops other projects' containers that compete for memory (only stopped,
+never deleted; the list is `$StopOthers` in `scripts/demo-up.ps1`), builds
+the web app if it changed, starts everything in Docker, updates the
+database and opens http://localhost:5173. **`scripts\demo-down.cmd`** stops
+it (the data stays); `scripts\demo-down.ps1 -QuitDocker` also closes Docker
+Desktop to give all its memory back.
 
-```bash
-docker compose up -d                          # Postgres, Redis, storage, Mailpit
-docker compose --profile app up -d api worker # the API and the worker (PDFs, emails)
-cd web && npm run dev                         # the web app on http://localhost:5173
-```
+Everything runs in Docker, nothing in a terminal, and with
+`restart: unless-stopped`: after a PC or Docker restart the demo comes back
+by itself, until it is stopped with demo-down.
 
-The API in Docker renders PDFs with WeasyPrint (it does not run on Windows).
-Emails go to Mailpit, http://127.0.0.1:8025, never to real inboxes.
+| Service | Where |
+|---|---|
+| Web app (built files served by Caddy, `/api` proxied; production security headers) | http://localhost:5173 |
+| API (renders PDFs with WeasyPrint, which does not run on Windows) | http://127.0.0.1:8000 |
+| Worker (PDFs, emails, upload checks) | - |
+| Mailpit: every email the demo sends (never to real inboxes) | http://127.0.0.1:8025 |
 
-To free memory afterwards: `docker compose --profile app stop api worker`.
+Memory: Docker runs inside WSL 2, capped at 4 GB in `%USERPROFILE%\.wslconfig`
+(`memory=4GB`, `swap=4GB`, `autoMemoryReclaim=gradual` under
+`[experimental]`); the demo itself uses about 0.7 GB. A change to that file
+applies after `wsl --shutdown`.
+
+While coding the web app with live reloading, stop the `web` service
+(`docker compose stop web`) and run `npm run dev` in `web/` instead: both
+use port 5173.
 
 ## 2. Fill a demo business
 

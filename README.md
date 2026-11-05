@@ -42,6 +42,7 @@ uv run python manage.py runserver   # http://127.0.0.1:8000/healthz, /api/v1/doc
 cd web
 npm ci
 npm run dev        # http://localhost:5173 ; /api is proxied to the backend on 127.0.0.1:8000
+                   # (stop the demo's web container first: docker compose stop web)
 npm test           # Vitest + Testing Library, API mocked with MSW
 npm run lint && npm run typecheck && npm run build
 ```
@@ -71,8 +72,10 @@ without a worker.
 
 ## Demo
 
-A demo business full of sample data, and what to try in it:
-[`docs/05-demo.md`](docs/05-demo.md) (`backend/scripts/seed_demo.py`).
+Start / stop everything in Docker with `scripts\demo-up.cmd` /
+`scripts\demo-down.cmd` (http://localhost:5173). A demo business full of
+sample data, and what to try in it: [`docs/05-demo.md`](docs/05-demo.md)
+(`backend/scripts/seed_demo.py`).
 
 ## Production
 

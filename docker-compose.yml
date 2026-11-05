@@ -126,6 +126,8 @@ services:
     build: ./backend
     image: billing-backend:dev  # one image for api and worker
     command: ["python", "manage.py", "runserver", "0.0.0.0:8000"]
+    # Back by itself after Docker or the PC restarts (until stopped on purpose).
+    restart: unless-stopped
     env_file: .env
     environment: &backend-env
       DJANGO_ALLOWED_HOSTS: localhost,127.0.0.1,api
@@ -160,6 +162,23 @@ services:
     <<: *backend
     command: ["celery", "-A", "config", "beat", "--loglevel=info", "--schedule=/tmp/celerybeat-schedule"]
     ports: []
+
+  # The web app as built files (`npm run build` in web/), served by Caddy with
+  # /api proxied to the API: the demo on http://localhost:5173, like
+  # production (same security headers), and independent of any terminal.
+  # Rebuild web/dist after changing the web app; scripts/demo-up.ps1 does it.
+  # For live reloading while coding, stop this service and use `npm run dev`.
+  web:
+    profiles: ["app"]
+    image: caddy:2.11.7-alpine
+    volumes:
+      - ./deploy/Caddyfile.local:/etc/caddy/Caddyfile:ro
+      - ./web/dist:/srv:ro
+    ports:
+      - "127.0.0.1:5173:5173"
+    restart: unless-stopped
+    depends_on:
+      api: {condition: service_started}
 
 volumes:
   clamav-data:

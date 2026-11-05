@@ -140,6 +140,8 @@ Last updated: 2026-10-22
 
 - [x] Demo guide (owner request 2026-11-04): `docs/05-demo.md` (start the servers, fill a demo business, things to try) and `backend/scripts/seed_demo.py`, which signs up a demo owner if needed (email confirmed from Mailpit, 2-step sign-in on, key and recovery codes printed once) and adds sample data through the API: GSTIN, series, 4 clients, 3 projects, 7 items, bill printing with a logo, paid / part-paid / unpaid bills, a credit note, an accepted quotation turned into a draft, and a draft whose review shows warnings. No passwords or keys in the repository.
 
+- [x] Reliable demo on this PC (owner request 2026-11-05: the dev server and Docker kept being stopped for low memory): everything now runs in Docker with `restart: unless-stopped` (api, worker, beat; new `web` service: Caddy serving `web/dist` with `/api` proxied and the production security headers, `deploy/Caddyfile.local`, 24 MB instead of a Vite dev server); `scripts/demo-up.cmd` / `demo-down.cmd` (start Docker Desktop if needed, stop the other project's containers, build the web app when it changed, start, migrate, wait for health, open the browser; stop, optionally close Docker). Docker capped at 4 GB in `%USERPROFILE%\.wslconfig` (outside the repository; documented in `docs/05-demo.md`). Found on the way: the production Content-Security-Policy blocked the logo / signature previews (images from storage, B.12) and the hidden print frame (`blob:`, B.15); `deploy/Caddyfile` now allows the storage origin in `img-src` and `frame-src 'self' blob:`. Both Caddyfiles validated; the start script run from everything stopped.
+
 ## In progress
 
 - Web additions (owner decision 2026-11-01): W.1–W.7 done. Main web page (2026-11-03): H.1 and H.2 done. 

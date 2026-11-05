@@ -1,0 +1,39 @@
+# The demo on this PC (docker-compose.yml, service "web"): the built web app
+# and /api proxied to the API, with the production security headers (bar
+# HTTPS), so the demo behaves like the real site. http://localhost:5173
+{
+	admin off
+	auto_https off
+}
+
+:5173 {
+	encode zstd gzip
+
+	handle /api/* {
+		reverse_proxy api:8000
+	}
+	handle /healthz {
+		reverse_proxy api:8000
+	}
+
+	# The web app: built files, and index.html for every app route.
+	handle {
+		root * /srv
+		@assets path /assets/*
+		header @assets Cache-Control "public, max-age=31536000, immutable"
+		@pages not path /assets/*
+		header @pages Cache-Control "no-cache"
+		try_files {path} /index.html
+		file_server
+	}
+
+	header {
+		X-Content-Type-Options "nosniff"
+		X-Frame-Options "DENY"
+		Referrer-Policy "strict-origin-when-cross-origin"
+		Permissions-Policy "camera=(), microphone=(), geolocation=(), payment=()"
+		# As in production; the storage origin here is SeaweedFS on this PC.
+		Content-Security-Policy "default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob: http://127.0.0.1:8333; font-src 'self'; connect-src 'self' http://127.0.0.1:8333; frame-src 'self' blob:; frame-ancestors 'none'; base-uri 'self'; form-action 'self'; object-src 'none'"
+		-Server
+	}
+}
