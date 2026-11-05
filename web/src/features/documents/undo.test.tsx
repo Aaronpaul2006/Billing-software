@@ -1,6 +1,7 @@
 import { screen, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 
+import { chooseLineAction } from "@/test/menu";
 import { renderSignedIn } from "@/test/render";
 import { API, http, HttpResponse, problem, server } from "@/test/server";
 
@@ -19,7 +20,7 @@ describe("removing a line (D.3)", () => {
     const second = await screen.findByRole("group", { name: "Line 2" });
     await user.type(within(second).getByLabelText("Description"), "Plastering");
 
-    await user.click(screen.getByRole("button", { name: "Remove line 2" }));
+    await chooseLineAction(user, 2, "Remove line");
     expect(screen.queryByRole("group", { name: "Line 2" })).toBeNull();
     expect(screen.getByText("Line 2 removed: Plastering.")).toBeInTheDocument();
 

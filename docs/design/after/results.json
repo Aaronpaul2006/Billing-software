@@ -1,6 +1,6 @@
 {
  "base": "http://localhost:5173",
- "at": "2026-11-05T14:18:48.290Z",
+ "at": "2026-11-05T14:31:41.196Z",
  "sizes": [
   {
    "name": "desktop",
@@ -20,359 +20,133 @@
  ],
  "pages": [
   {
-   "name": "Issued bill (INV/0002)",
-   "path": "/documents/01a1a478-09fc-7450-97e3-a204d97028a6",
+   "name": "New bill (editor)",
+   "path": "/documents/new",
    "sizes": {
     "desktop": {
-     "screenshot": "document-issued--desktop.jpg",
-     "url": "/documents/01a1a478-09fc-7450-97e3-a204d97028a6",
+     "screenshot": "document-new--desktop.jpg",
+     "url": "/documents/new",
      "metrics": {
-      "pageHeight": 1439,
+      "pageHeight": 1025,
       "sidewaysScroll": false,
       "overflowing": [],
-      "tapTargets": 37,
-      "smallTapTargets": 1,
+      "tooWide": [],
+      "tapTargets": 50,
+      "smallTapTargets": 5,
       "smallTapExamples": [
-       "a \"Payment\""
+       "button \"New client\"",
+       "input",
+       "input",
+       "input",
+       "button \"Add a measurement sheet (number \u00c3\u2014 length\""
       ],
       "tinyText": 0,
       "fontSizes": [
        "12px",
        "13px",
        "14px",
-       "16px",
        "17px",
-       "24px"
-      ],
-      "textColours": 7,
-      "radii": [
-       "6px",
-       "12px",
-       "4px"
-      ],
-      "buttonHeights": [
-       32,
-       36
-      ],
-      "tables": 3,
-      "widestTable": 1150,
-      "h1": [
-       "Tax invoice INV/0002"
-      ]
-     },
-     "axe": [],
-     "consoleErrors": []
-    },
-    "tablet": {
-     "screenshot": "document-issued--tablet.jpg",
-     "url": "/documents/01a1a478-09fc-7450-97e3-a204d97028a6",
-     "metrics": {
-      "pageHeight": 1819,
-      "sidewaysScroll": false,
-      "overflowing": [],
-      "tapTargets": 36,
-      "smallTapTargets": 1,
-      "smallTapExamples": [
-       "a \"Payment\""
-      ],
-      "tinyText": 0,
-      "fontSizes": [
-       "12px",
-       "13px",
-       "14px",
-       "16px",
-       "17px",
-       "24px"
-      ],
-      "textColours": 7,
-      "radii": [
-       "6px",
-       "12px",
-       "4px"
-      ],
-      "buttonHeights": [
-       32,
-       36
-      ],
-      "tables": 2,
-      "widestTable": 430,
-      "h1": [
-       "Tax invoice INV/0002"
-      ]
-     },
-     "axe": null,
-     "consoleErrors": []
-    },
-    "phone": {
-     "screenshot": "document-issued--phone.jpg",
-     "url": "/documents/01a1a478-09fc-7450-97e3-a204d97028a6",
-     "metrics": {
-      "pageHeight": 2138,
-      "sidewaysScroll": false,
-      "overflowing": [],
-      "tapTargets": 17,
-      "smallTapTargets": 1,
-      "smallTapExamples": [
-       "a \"Payment\""
-      ],
-      "tinyText": 0,
-      "fontSizes": [
-       "12px",
-       "13px",
-       "14px",
-       "16px",
-       "17px",
-       "24px"
-      ],
-      "textColours": 5,
-      "radii": [
-       "6px",
-       "12px",
-       "4px"
-      ],
-      "buttonHeights": [
-       32,
-       36,
-       44
-      ],
-      "tables": 2,
-      "widestTable": 308,
-      "h1": [
-       "Tax invoice INV/0002"
-      ]
-     },
-     "axe": [],
-     "consoleErrors": []
-    }
-   }
-  },
-  {
-   "name": "Draft bill with the final review open",
-   "path": "/documents/01a1a478-1039-72ea-96e0-19de89d02673?review=1",
-   "sizes": {
-    "desktop": {
-     "screenshot": "document-review--desktop.jpg",
-     "url": "/documents/01a1a478-1039-72ea-96e0-19de89d02673?review=1",
-     "metrics": {
-      "pageHeight": 1421,
-      "sidewaysScroll": false,
-      "overflowing": [],
-      "tapTargets": 36,
-      "smallTapTargets": 3,
-      "smallTapExamples": [
-       "a \"Open the client\"",
-       "a \"Edit the bill\"",
-       "a \"Edit the bill\""
-      ],
-      "tinyText": 0,
-      "fontSizes": [
-       "12px",
-       "13px",
-       "14px",
-       "16px",
-       "24px"
-      ],
-      "textColours": 5,
-      "radii": [
-       "6px",
-       "8px",
-       "12px"
-      ],
-      "buttonHeights": [
-       32,
-       36
-      ],
-      "tables": 1,
-      "widestTable": 1150,
-      "h1": [
-       "Tax invoice (draft)"
-      ]
-     },
-     "axe": [],
-     "consoleErrors": []
-    },
-    "tablet": {
-     "screenshot": "document-review--tablet.jpg",
-     "url": "/documents/01a1a478-1039-72ea-96e0-19de89d02673?review=1",
-     "metrics": {
-      "pageHeight": 1729,
-      "sidewaysScroll": false,
-      "overflowing": [],
-      "tapTargets": 35,
-      "smallTapTargets": 2,
-      "smallTapExamples": [
-       "a \"Open the client\"",
-       "a \"Edit the bill\""
-      ],
-      "tinyText": 0,
-      "fontSizes": [
-       "12px",
-       "13px",
-       "14px",
-       "16px",
-       "24px"
-      ],
-      "textColours": 5,
-      "radii": [
-       "6px",
-       "8px",
-       "12px"
-      ],
-      "buttonHeights": [
-       32,
-       36
-      ],
-      "tables": 0,
-      "widestTable": 0,
-      "h1": [
-       "Tax invoice (draft)"
-      ]
-     },
-     "axe": null,
-     "consoleErrors": []
-    },
-    "phone": {
-     "screenshot": "document-review--phone.jpg",
-     "url": "/documents/01a1a478-1039-72ea-96e0-19de89d02673?review=1",
-     "metrics": {
-      "pageHeight": 2126,
-      "sidewaysScroll": false,
-      "overflowing": [],
-      "tapTargets": 16,
-      "smallTapTargets": 2,
-      "smallTapExamples": [
-       "a \"Open the client\"",
-       "a \"Edit the bill\""
-      ],
-      "tinyText": 0,
-      "fontSizes": [
-       "12px",
-       "13px",
-       "14px",
-       "16px",
-       "24px"
-      ],
-      "textColours": 3,
-      "radii": [
-       "6px",
-       "8px",
-       "12px"
-      ],
-      "buttonHeights": [
-       32,
-       36,
-       44
-      ],
-      "tables": 0,
-      "widestTable": 0,
-      "h1": [
-       "Tax invoice (draft)"
-      ]
-     },
-     "axe": [],
-     "consoleErrors": []
-    }
-   }
-  },
-  {
-   "name": "Accepted quotation",
-   "path": "/documents/01a1a478-0ed1-70f9-be9c-1b0644e3fe04",
-   "sizes": {
-    "desktop": {
-     "screenshot": "document-quotation--desktop.jpg",
-     "url": "/documents/01a1a478-0ed1-70f9-be9c-1b0644e3fe04",
-     "metrics": {
-      "pageHeight": 998,
-      "sidewaysScroll": false,
-      "overflowing": [],
-      "tapTargets": 34,
-      "smallTapTargets": 0,
-      "smallTapExamples": [],
-      "tinyText": 0,
-      "fontSizes": [
-       "12px",
-       "13px",
-       "14px",
        "24px"
       ],
       "textColours": 6,
       "radii": [
        "6px",
-       "12px"
-      ],
-      "buttonHeights": [
-       32,
-       36
-      ],
-      "tables": 1,
-      "widestTable": 1150,
-      "h1": [
-       "Quotation QT/0001"
-      ]
-     },
-     "axe": [],
-     "consoleErrors": []
-    },
-    "tablet": {
-     "screenshot": "document-quotation--tablet.jpg",
-     "url": "/documents/01a1a478-0ed1-70f9-be9c-1b0644e3fe04",
-     "metrics": {
-      "pageHeight": 1469,
-      "sidewaysScroll": false,
-      "overflowing": [],
-      "tapTargets": 33,
-      "smallTapTargets": 0,
-      "smallTapExamples": [],
-      "tinyText": 0,
-      "fontSizes": [
        "12px",
-       "13px",
-       "14px",
-       "16px",
-       "24px"
-      ],
-      "textColours": 6,
-      "radii": [
-       "6px",
-       "12px"
+       "8px"
       ],
       "buttonHeights": [
+       16,
+       20,
        32,
        36
       ],
       "tables": 0,
       "widestTable": 0,
       "h1": [
-       "Quotation QT/0001"
+       "New tax invoice"
+      ]
+     },
+     "axe": [],
+     "consoleErrors": []
+    },
+    "tablet": {
+     "screenshot": "document-new--tablet.jpg",
+     "url": "/documents/new",
+     "metrics": {
+      "pageHeight": 1677,
+      "sidewaysScroll": false,
+      "overflowing": [],
+      "tooWide": [],
+      "tapTargets": 50,
+      "smallTapTargets": 5,
+      "smallTapExamples": [
+       "button \"New client\"",
+       "input",
+       "input",
+       "input",
+       "button \"Add a measurement sheet (number \u00c3\u2014 length\""
+      ],
+      "tinyText": 0,
+      "fontSizes": [
+       "12px",
+       "13px",
+       "14px",
+       "17px",
+       "24px"
+      ],
+      "textColours": 6,
+      "radii": [
+       "6px",
+       "12px",
+       "8px"
+      ],
+      "buttonHeights": [
+       16,
+       20,
+       32,
+       36
+      ],
+      "tables": 0,
+      "widestTable": 0,
+      "h1": [
+       "New tax invoice"
       ]
      },
      "axe": null,
      "consoleErrors": []
     },
     "phone": {
-     "screenshot": "document-quotation--phone.jpg",
-     "url": "/documents/01a1a478-0ed1-70f9-be9c-1b0644e3fe04",
+     "screenshot": "document-new--phone.jpg",
+     "url": "/documents/new",
      "metrics": {
-      "pageHeight": 1788,
+      "pageHeight": 1818,
       "sidewaysScroll": false,
       "overflowing": [],
-      "tapTargets": 14,
-      "smallTapTargets": 0,
-      "smallTapExamples": [],
+      "tooWide": [],
+      "tapTargets": 31,
+      "smallTapTargets": 4,
+      "smallTapExamples": [
+       "button \"New client\"",
+       "input",
+       "input",
+       "input"
+      ],
       "tinyText": 0,
       "fontSizes": [
        "12px",
        "13px",
        "14px",
-       "16px",
+       "17px",
        "24px"
       ],
       "textColours": 4,
       "radii": [
        "6px",
-       "12px"
+       "12px",
+       "8px"
       ],
       "buttonHeights": [
+       20,
        32,
        36,
        44
@@ -380,7 +154,7 @@
       "tables": 0,
       "widestTable": 0,
       "h1": [
-       "Quotation QT/0001"
+       "New tax invoice"
       ]
      },
      "axe": [],
@@ -389,104 +163,142 @@
    }
   },
   {
-   "name": "Record a payment",
-   "path": "/payments/new",
+   "name": "Draft bill in the editor",
+   "path": "/documents/01a1a478-0ffb-7791-bedd-bb89480540eb/edit",
    "sizes": {
     "desktop": {
-     "screenshot": "payment-new--desktop.jpg",
-     "url": "/payments/new",
+     "screenshot": "document-edit--desktop.jpg",
+     "url": "/documents/01a1a478-0ffb-7791-bedd-bb89480540eb/edit",
      "metrics": {
-      "pageHeight": 992,
+      "pageHeight": 1375,
       "sidewaysScroll": false,
       "overflowing": [],
-      "tapTargets": 31,
-      "smallTapTargets": 0,
-      "smallTapExamples": [],
+      "tooWide": [],
+      "tapTargets": 78,
+      "smallTapTargets": 11,
+      "smallTapExamples": [
+       "button \"New client\"",
+       "input",
+       "input",
+       "input",
+       "input"
+      ],
       "tinyText": 0,
       "fontSizes": [
        "12px",
+       "13px",
        "14px",
+       "17px",
        "24px"
       ],
-      "textColours": 5,
+      "textColours": 6,
       "radii": [
        "6px",
-       "12px"
+       "12px",
+       "8px"
       ],
       "buttonHeights": [
+       16,
+       20,
+       32,
        36
       ],
       "tables": 0,
       "widestTable": 0,
       "h1": [
-       "Record payment"
+       "Edit draft tax invoice"
       ]
      },
      "axe": [],
      "consoleErrors": []
     },
     "tablet": {
-     "screenshot": "payment-new--tablet.jpg",
-     "url": "/payments/new",
+     "screenshot": "document-edit--tablet.jpg",
+     "url": "/documents/01a1a478-0ffb-7791-bedd-bb89480540eb/edit",
      "metrics": {
-      "pageHeight": 1024,
+      "pageHeight": 2581,
       "sidewaysScroll": false,
       "overflowing": [],
-      "tapTargets": 31,
-      "smallTapTargets": 0,
-      "smallTapExamples": [],
+      "tooWide": [],
+      "tapTargets": 78,
+      "smallTapTargets": 11,
+      "smallTapExamples": [
+       "button \"New client\"",
+       "input",
+       "input",
+       "input",
+       "input"
+      ],
       "tinyText": 0,
       "fontSizes": [
        "12px",
+       "13px",
        "14px",
+       "17px",
        "24px"
       ],
-      "textColours": 5,
+      "textColours": 6,
       "radii": [
        "6px",
-       "12px"
+       "12px",
+       "8px"
       ],
       "buttonHeights": [
+       16,
+       20,
+       32,
        36
       ],
       "tables": 0,
       "widestTable": 0,
       "h1": [
-       "Record payment"
+       "Edit draft tax invoice"
       ]
      },
      "axe": null,
      "consoleErrors": []
     },
     "phone": {
-     "screenshot": "payment-new--phone.jpg",
-     "url": "/payments/new",
+     "screenshot": "document-edit--phone.jpg",
+     "url": "/documents/01a1a478-0ffb-7791-bedd-bb89480540eb/edit",
      "metrics": {
-      "pageHeight": 844,
+      "pageHeight": 2718,
       "sidewaysScroll": false,
       "overflowing": [],
-      "tapTargets": 12,
-      "smallTapTargets": 0,
-      "smallTapExamples": [],
+      "tooWide": [],
+      "tapTargets": 58,
+      "smallTapTargets": 8,
+      "smallTapExamples": [
+       "button \"New client\"",
+       "input",
+       "input",
+       "input",
+       "input"
+      ],
       "tinyText": 0,
       "fontSizes": [
        "12px",
+       "13px",
        "14px",
+       "17px",
        "24px"
       ],
-      "textColours": 3,
+      "textColours": 4,
       "radii": [
        "6px",
-       "12px"
+       "12px",
+       "8px"
       ],
       "buttonHeights": [
+       20,
+       32,
        36,
        44
       ],
       "tables": 0,
       "widestTable": 0,
       "h1": [
-       "Record payment"
+       "Edit draft tax invoice"
       ]
      },
      "axe": [],
@@ -495,5 +307,5 @@
    }
   }
  ],
- "step": "D.8 (bill page)"
+ "step": "D.9 (bill editor)"
 }

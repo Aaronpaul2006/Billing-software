@@ -3,6 +3,7 @@ import userEvent from "@testing-library/user-event";
 
 import { answerConfirm } from "@/test/confirm";
 import { CLIENT, doc, DOC, PROJECT, useDoc } from "@/test/documents";
+import { chooseLineAction } from "@/test/menu";
 import { renderSignedIn } from "@/test/render";
 import { API, http, HttpResponse, problem, server } from "@/test/server";
 
@@ -113,10 +114,10 @@ describe("keyboard-first bill screen", () => {
     renderSignedIn("/documents/new");
     const first = await screen.findByRole("group", { name: "Line 1" });
     await user.type(within(first).getByLabelText("Description"), "Excavation");
-    await user.click(screen.getByRole("button", { name: "Insert a line below line 1" }));
+    await chooseLineAction(user, 1, "Insert a line below");
     const second = await screen.findByRole("group", { name: "Line 2" });
     await user.type(within(second).getByLabelText("Description"), "Backfilling");
-    await user.click(screen.getByRole("button", { name: "Move line 2 up" }));
+    await chooseLineAction(user, 2, "Move up");
     expect(
       within(screen.getByRole("group", { name: "Line 1" })).getByLabelText("Description"),
     ).toHaveValue("Backfilling");

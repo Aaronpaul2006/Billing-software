@@ -1,6 +1,6 @@
 {
  "base": "http://localhost:5173",
- "at": "2026-11-05T14:17:35.822Z",
+ "at": "2026-11-05T14:32:05.871Z",
  "sizes": [
   {
    "name": "desktop",
@@ -20,133 +20,142 @@
  ],
  "pages": [
   {
-   "name": "Issued bill (INV/0002)",
-   "path": "/documents/01a1a478-09fc-7450-97e3-a204d97028a6",
+   "name": "Draft bill in the editor",
+   "path": "/documents/01a1a478-0ffb-7791-bedd-bb89480540eb/edit",
    "sizes": {
     "desktop": {
-     "screenshot": "document-issued--desktop.jpg",
-     "url": "/documents/01a1a478-09fc-7450-97e3-a204d97028a6",
+     "screenshot": "document-edit--desktop.jpg",
+     "url": "/documents/01a1a478-0ffb-7791-bedd-bb89480540eb/edit",
      "metrics": {
-      "pageHeight": 1431,
+      "pageHeight": 1375,
       "sidewaysScroll": false,
       "overflowing": [],
-      "tapTargets": 37,
-      "smallTapTargets": 4,
+      "tooWide": [],
+      "tapTargets": 78,
+      "smallTapTargets": 11,
       "smallTapExamples": [
-       "a \"Bills\"",
-       "a \"Skyline Developers\"",
-       "a \"Skyline Towers, Kakkanad\"",
-       "a \"Payment\""
+       "button \"New client\"",
+       "input",
+       "input",
+       "input",
+       "input"
       ],
       "tinyText": 0,
       "fontSizes": [
        "12px",
        "13px",
        "14px",
-       "16px",
        "17px",
        "24px"
       ],
-      "textColours": 7,
+      "textColours": 6,
       "radii": [
        "6px",
        "12px",
-       "4px"
+       "8px"
       ],
       "buttonHeights": [
+       16,
+       20,
        32,
        36
       ],
-      "tables": 3,
-      "widestTable": 1150,
+      "tables": 0,
+      "widestTable": 0,
       "h1": [
-       "Tax invoice INV/0002"
+       "Edit draft tax invoice"
       ]
      },
      "axe": [],
      "consoleErrors": []
     },
     "tablet": {
-     "screenshot": "document-issued--tablet.jpg",
-     "url": "/documents/01a1a478-09fc-7450-97e3-a204d97028a6",
+     "screenshot": "document-edit--tablet.jpg",
+     "url": "/documents/01a1a478-0ffb-7791-bedd-bb89480540eb/edit",
      "metrics": {
-      "pageHeight": 1815,
+      "pageHeight": 2581,
       "sidewaysScroll": false,
       "overflowing": [],
-      "tapTargets": 36,
-      "smallTapTargets": 3,
+      "tooWide": [],
+      "tapTargets": 78,
+      "smallTapTargets": 11,
       "smallTapExamples": [
-       "a \"Bills\"",
-       "a \"Skyline Developers\"",
-       "a \"Payment\""
+       "button \"New client\"",
+       "input",
+       "input",
+       "input",
+       "input"
       ],
       "tinyText": 0,
       "fontSizes": [
        "12px",
        "13px",
        "14px",
-       "16px",
        "17px",
        "24px"
       ],
-      "textColours": 7,
+      "textColours": 6,
       "radii": [
        "6px",
        "12px",
-       "4px"
+       "8px"
       ],
       "buttonHeights": [
+       16,
+       20,
        32,
        36
       ],
-      "tables": 2,
-      "widestTable": 430,
+      "tables": 0,
+      "widestTable": 0,
       "h1": [
-       "Tax invoice INV/0002"
+       "Edit draft tax invoice"
       ]
      },
      "axe": null,
      "consoleErrors": []
     },
     "phone": {
-     "screenshot": "document-issued--phone.jpg",
-     "url": "/documents/01a1a478-09fc-7450-97e3-a204d97028a6",
+     "screenshot": "document-edit--phone.jpg",
+     "url": "/documents/01a1a478-0ffb-7791-bedd-bb89480540eb/edit",
      "metrics": {
-      "pageHeight": 2128,
+      "pageHeight": 2718,
       "sidewaysScroll": false,
       "overflowing": [],
-      "tapTargets": 17,
-      "smallTapTargets": 4,
+      "tooWide": [],
+      "tapTargets": 58,
+      "smallTapTargets": 8,
       "smallTapExamples": [
-       "a \"Bills\"",
-       "a \"Skyline Developers\"",
-       "a \"Skyline Towers, Kakkanad\"",
-       "a \"Payment\""
+       "button \"New client\"",
+       "input",
+       "input",
+       "input",
+       "input"
       ],
       "tinyText": 0,
       "fontSizes": [
        "12px",
        "13px",
        "14px",
-       "16px",
        "17px",
        "24px"
       ],
-      "textColours": 5,
+      "textColours": 4,
       "radii": [
        "6px",
        "12px",
-       "4px"
+       "8px"
       ],
       "buttonHeights": [
+       20,
        32,
        36,
        44
       ],
-      "tables": 2,
-      "widestTable": 308,
+      "tables": 0,
+      "widestTable": 0,
       "h1": [
-       "Tax invoice INV/0002"
+       "Edit draft tax invoice"
       ]
      },
      "axe": [],
@@ -155,5 +164,5 @@
    }
   }
  ],
- "step": "D.8 (bill page, dark)"
+ "step": "D.9 (bill editor, dark)"
 }

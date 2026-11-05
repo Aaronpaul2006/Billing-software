@@ -1,17 +1,15 @@
 import { keepPreviousData, useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import {
   AlertCircle,
-  ArrowDown,
-  ArrowUp,
   CheckCircle2,
   FileUp,
   Keyboard,
-  ListPlus,
+  MoreHorizontal,
   Plus,
   Trash2,
 } from "lucide-react";
 import { useEffect, useMemo, useRef, useState } from "react";
-import type { KeyboardEvent as ReactKeyboardEvent } from "react";
+import type { KeyboardEvent as ReactKeyboardEvent, ReactNode } from "react";
 import { Controller, useFieldArray, useForm, useWatch } from "react-hook-form";
 import type { UseFormRegister } from "react-hook-form";
 import { Link, useNavigate, useParams, useSearchParams } from "react-router";
@@ -25,12 +23,20 @@ import type { components } from "@/api/schema";
 import { ErrorState } from "@/components/ErrorState";
 import { Field, TextField } from "@/components/FormField";
 import { PageHeader } from "@/components/PageHeader";
+import { SaveBar } from "@/components/SaveBar";
 import { useSession } from "@/auth/context";
 import { PartyPicker } from "@/components/PartyPicker";
 import type { PickedParty } from "@/components/PartyPicker";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 import { Input } from "@/components/ui/input";
 import { NativeSelect } from "@/components/ui/native-select";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -49,6 +55,24 @@ import { LinesImport } from "./LinesImport";
 import type { ParsedLine } from "./LinesImport";
 import type { PickedItem } from "./items";
 import { AUTOSAVE } from "./autosave";
+
+/**
+ * Bill lines are laid out by the room the form has (container queries, D.9):
+ * under 42rem a card with three boxes a row, from 42rem a card on a
+ * twelve-column grid, from 64rem one row per line (select, item and
+ * description, quantity, unit, rate, discount, GST %, HSN/SAC, amount,
+ * actions) with the titles shown once above the lines.
+ */
+const LINE_GRID =
+  "@5xl:grid-cols-[1.25rem_minmax(12rem,1fr)_5.5rem_4rem_6.5rem_7.5rem_4.75rem_5rem_6.5rem_2.25rem]";
+/** Where each number box sits in a line, at each size. */
+const BOX_SPAN: Record<"quantity" | "unit" | "rate" | "gst_rate" | "sac_hsn", string> = {
+  quantity: "col-span-2 @5xl:col-span-1",
+  unit: "col-span-2 @2xl:col-span-1 @5xl:col-span-1",
+  rate: "col-span-2 @5xl:col-span-1",
+  gst_rate: "col-span-2 @2xl:col-span-1 @5xl:col-span-1",
+  sac_hsn: "col-span-2 @5xl:col-span-1",
+};
 import { enterTarget, SHORTCUTS } from "./keyboard";
 import { NewClientDialog, NewItemDialog } from "./QuickAdd";
 import type { Document, DraftableType } from "./api";
@@ -952,6 +976,22 @@ function Editor({ doc, defaultTerms }: { doc?: Document; defaultTerms?: string }
     ? `Edit draft ${DOC_TYPE_LABELS[current.doc_type].toLowerCase()}`
     : `New ${DOC_TYPE_LABELS[values.doc_type].toLowerCase()}`;
 
+  // what the save bar says about saving (autosave, problems, last saved)
+  let saveState: ReactNode = null;
+  if (autosave.isPending) saveState = "Saving…";
+  else if (conflict) saveState = null;
+  else if (unsaved) {
+    if (autoProblem) saveState = `Not saved: ${autoProblem}`;
+    else if (!saveable(payload))
+      saveState = "Not saved yet: choose the client and fill in each line's quantity.";
+  } else if (savedAt) {
+    saveState = (
+      <span className="inline-flex items-center gap-1">
+        <CheckCircle2 className="size-4" aria-hidden /> Saved at {savedAt}
+      </span>
+    );
+  }
+
   return (
     <>
       <Breadcrumbs
@@ -1002,7 +1042,7 @@ function Editor({ doc, defaultTerms }: { doc?: Document; defaultTerms?: string }
       <form
         ref={formRef}
         noValidate
-        className="grid gap-6"
+        className="@container grid gap-6"
         onKeyDown={onFormKeyDown}
         onSubmit={(e) => {
           after.current = "open";
@@ -1017,7 +1057,7 @@ function Editor({ doc, defaultTerms }: { doc?: Document; defaultTerms?: string }
         )}
 
         <Card>
-          <CardContent className="grid gap-4 sm:grid-cols-3">
+          <CardContent className="grid gap-4 @2xl:grid-cols-3">
             <Field id="doc_type" label="Type" error={errors.doc_type?.message}>
               <NativeSelect id="doc_type" disabled={isNote} {...register("doc_type")}>
                 {isNote ? (
@@ -1183,7 +1223,7 @@ function Editor({ doc, defaultTerms }: { doc?: Document; defaultTerms?: string }
               </Button>
             )}
           </CardHeader>
-          <CardContent className="grid gap-3" onPaste={onLinesPaste}>
+          <CardContent className="@container grid gap-3" onPaste={onLinesPaste}>
             {importingLines && (
               <LinesImport
                 onLines={(parsed) => {
@@ -1245,6 +1285,21 @@ function Editor({ doc, defaultTerms }: { doc?: Document; defaultTerms?: string }
                 Select all lines (to change their rate, discount or GST together)
               </label>
             )}
+            <div
+              aria-hidden
+              className={`text-muted-foreground hidden gap-x-1.5 px-[9px] text-xs font-medium @5xl:grid ${LINE_GRID}`}
+            >
+              <span />
+              <span>Item and description</span>
+              <span>{ra ? "This bill qty" : "Quantity"}</span>
+              <span>Unit</span>
+              <span>Rate (₹)</span>
+              <span>Discount</span>
+              <span>GST %</span>
+              <span>HSN/SAC</span>
+              <span className="text-right">Amount</span>
+              <span />
+            </div>
             {lines.fields.map((field, i) => {
               const n = String(i);
               const lineErrors = errors.lines?.[i];
@@ -1255,13 +1310,9 @@ function Editor({ doc, defaultTerms }: { doc?: Document; defaultTerms?: string }
                 name: "quantity" | "unit" | "rate" | "gst_rate" | "sac_hsn",
                 label: string,
                 mode: "decimal" | "text" | "numeric",
-                span: 1 | 2,
               ) => (
-                <div
-                  key={name}
-                  className={span === 2 ? "grid gap-1 sm:col-span-2" : "grid gap-1 sm:col-span-1"}
-                >
-                  <label htmlFor={`line-${n}-${name}`} className="text-xs font-medium">
+                <div key={name} className={`grid gap-1 ${BOX_SPAN[name]}`}>
+                  <label htmlFor={`line-${n}-${name}`} className="text-xs font-medium @5xl:sr-only">
                     {label}
                   </label>
                   <Input
@@ -1286,9 +1337,9 @@ function Editor({ doc, defaultTerms }: { doc?: Document; defaultTerms?: string }
                   key={field.id}
                   data-line
                   aria-label={`Line ${String(i + 1)}`}
-                  className="grid gap-3 rounded-lg border p-3 sm:grid-cols-12"
+                  className={`grid grid-cols-6 gap-3 rounded-lg border p-3 @2xl:grid-cols-12 @5xl:items-start @5xl:gap-x-1.5 @5xl:gap-y-2 @5xl:p-2 ${LINE_GRID}`}
                 >
-                  <label className="text-muted-foreground flex items-center gap-2 text-xs sm:col-span-12">
+                  <label className="text-muted-foreground col-span-6 flex items-center gap-2 text-xs @2xl:col-span-12 @5xl:col-span-1 @5xl:h-9">
                     <input
                       type="checkbox"
                       checked={selected.has(field.id)}
@@ -1299,43 +1350,55 @@ function Editor({ doc, defaultTerms }: { doc?: Document; defaultTerms?: string }
                         setSelected(next);
                       }}
                     />
-                    Select line {i + 1}
+                    <span className="@5xl:sr-only">Select line {i + 1}</span>
                   </label>
-                  <div className="grid gap-1 sm:col-span-4">
-                    <label htmlFor={`line-${n}-item`} className="text-xs font-medium">
-                      Item
-                    </label>
-                    <ItemPicker
-                      id={`line-${n}-item`}
-                      label={values.lines[i]?.item_label ?? ""}
-                      boq={boqItems}
-                      boqOnly={ra}
-                      onPick={(picked) => {
-                        pickItem(i, picked);
-                      }}
-                      onCreate={
-                        mayAddMasters
-                          ? (name) => {
-                              setNewItem({ line: i, name });
-                            }
-                          : undefined
-                      }
-                    />
+                  <div className="col-span-6 grid gap-3 @2xl:col-span-12 @2xl:grid-cols-12 @5xl:col-span-1 @5xl:grid-cols-1 @5xl:gap-1.5">
+                    <div className="grid gap-1 @2xl:col-span-4 @5xl:col-span-1">
+                      <label
+                        htmlFor={`line-${n}-item`}
+                        className="text-xs font-medium @5xl:sr-only"
+                      >
+                        Item
+                      </label>
+                      <ItemPicker
+                        id={`line-${n}-item`}
+                        label={values.lines[i]?.item_label ?? ""}
+                        boq={boqItems}
+                        boqOnly={ra}
+                        onPick={(picked) => {
+                          pickItem(i, picked);
+                        }}
+                        onCreate={
+                          mayAddMasters
+                            ? (name) => {
+                                setNewItem({ line: i, name });
+                              }
+                            : undefined
+                        }
+                      />
+                    </div>
+                    <div className="grid gap-1 @2xl:col-span-8 @5xl:col-span-1">
+                      <label
+                        htmlFor={`line-${n}-description`}
+                        className="text-xs font-medium @5xl:sr-only"
+                      >
+                        Description
+                      </label>
+                      <Input
+                        id={`line-${n}-description`}
+                        placeholder="Description"
+                        {...register(`lines.${i}.description`)}
+                      />
+                    </div>
                   </div>
-                  <div className="grid gap-1 sm:col-span-8">
-                    <label htmlFor={`line-${n}-description`} className="text-xs font-medium">
-                      Description
-                    </label>
-                    <Input id={`line-${n}-description`} {...register(`lines.${i}.description`)} />
-                  </div>
-                  {box("quantity", ra ? "This bill qty" : "Quantity", "decimal", 2)}
-                  {box("unit", "Unit", "text", 1)}
-                  {box("rate", "Rate (₹)", "decimal", 2)}
+                  {box("quantity", ra ? "This bill qty" : "Quantity", "decimal")}
+                  {box("unit", "Unit", "text")}
+                  {box("rate", "Rate (₹)", "decimal")}
                   {(() => {
                     const last = lastRateFor(values.lines[i]);
                     if (!last) return null;
                     return (
-                      <p className="text-muted-foreground flex flex-wrap items-center gap-2 text-xs sm:order-last sm:col-span-12">
+                      <p className="text-muted-foreground flex flex-wrap items-center gap-2 text-xs col-span-6 order-last @2xl:col-span-12 @5xl:col-span-full">
                         Last charged to this client: {formatInr(last.rate)} on{" "}
                         {last.doc_number ?? "a bill"} ({shortDate(last.doc_date)})
                         <Button
@@ -1352,8 +1415,11 @@ function Editor({ doc, defaultTerms }: { doc?: Document; defaultTerms?: string }
                       </p>
                     );
                   })()}
-                  <div className="grid gap-1 sm:col-span-2">
-                    <label htmlFor={`line-${n}-discount_amount`} className="text-xs font-medium">
+                  <div className="col-span-2 grid gap-1 @2xl:col-span-2 @5xl:col-span-1">
+                    <label
+                      htmlFor={`line-${n}-discount_amount`}
+                      className="text-xs font-medium @5xl:sr-only"
+                    >
                       Discount
                     </label>
                     <div className="flex gap-1">
@@ -1365,7 +1431,7 @@ function Editor({ doc, defaultTerms }: { doc?: Document; defaultTerms?: string }
                       />
                       <NativeSelect
                         aria-label={`Discount of line ${String(i + 1)} in`}
-                        className="w-16"
+                        className="w-14 shrink-0"
                         {...register(`lines.${i}.discount_mode`)}
                       >
                         <option value="amount">₹</option>
@@ -1378,91 +1444,92 @@ function Editor({ doc, defaultTerms }: { doc?: Document; defaultTerms?: string }
                       </span>
                     )}
                   </div>
-                  {box("gst_rate", "GST %", "decimal", 1)}
-                  {box("sac_hsn", "HSN/SAC", "numeric", 2)}
-                  <div className="flex items-end justify-between gap-2 sm:col-span-2">
-                    <div className="text-right text-sm">
-                      {previewLine && (
-                        <>
-                          <div className="font-medium tabular-nums">
-                            {formatInr(previewLine.line_total)}
-                          </div>
-                          {ra && previewLine.prev_cumulative_qty !== undefined && (
-                            <div className="text-muted-foreground text-xs">
-                              billed before {formatQty(previewLine.prev_cumulative_qty)}
-                            </div>
-                          )}
-                        </>
-                      )}
-                    </div>
-                    <div className="flex">
-                      <Button
-                        type="button"
-                        variant="ghost"
-                        size="icon"
-                        aria-label={`Move line ${String(i + 1)} up`}
-                        disabled={i === 0}
-                        onClick={() => {
-                          lines.move(i, i - 1);
-                        }}
-                      >
-                        <ArrowUp aria-hidden />
-                      </Button>
-                      <Button
-                        type="button"
-                        variant="ghost"
-                        size="icon"
-                        aria-label={`Move line ${String(i + 1)} down`}
-                        disabled={i === lines.fields.length - 1}
-                        onClick={() => {
-                          lines.move(i, i + 1);
-                        }}
-                      >
-                        <ArrowDown aria-hidden />
-                      </Button>
-                      <Button
-                        type="button"
-                        variant="ghost"
-                        size="icon"
-                        aria-label={`Insert a line below line ${String(i + 1)}`}
-                        onClick={() => {
-                          addLine(i + 1);
-                        }}
-                      >
-                        <ListPlus aria-hidden />
-                      </Button>
-                      <Button
-                        type="button"
-                        variant="ghost"
-                        size="icon"
-                        aria-label={`Remove line ${String(i + 1)}`}
-                        disabled={lines.fields.length === 1}
-                        onClick={() => {
-                          const removed = getValues(`lines.${i}`);
-                          lines.remove(i);
-                          toast({
-                            message: `Line ${String(i + 1)} removed${removed.description ? `: ${removed.description}` : ""}.`,
-                            tone: "info",
-                            action: {
-                              label: "Undo",
-                              onClick: () => {
-                                lines.insert(i, removed, { shouldFocus: false });
-                              },
-                            },
-                          });
-                        }}
-                      >
-                        <Trash2 aria-hidden />
-                      </Button>
-                    </div>
+                  {box("gst_rate", "GST %", "decimal")}
+                  {box("sac_hsn", "HSN/SAC", "numeric")}
+                  <div className="col-span-4 grid content-end gap-1 text-sm @2xl:col-span-1 @2xl:text-right @5xl:col-span-1 @5xl:h-9 @5xl:content-center">
+                    <span className="text-muted-foreground text-xs @5xl:sr-only">Amount</span>
+                    {previewLine ? (
+                      <>
+                        <span className="font-medium tabular-nums">
+                          {formatInr(previewLine.line_total)}
+                        </span>
+                        {ra && previewLine.prev_cumulative_qty !== undefined && (
+                          <span className="text-muted-foreground text-xs">
+                            billed before {formatQty(previewLine.prev_cumulative_qty)}
+                          </span>
+                        )}
+                      </>
+                    ) : (
+                      <span className="text-muted-foreground">–</span>
+                    )}
                   </div>
-                  <div className="sm:order-last sm:col-span-12">
+                  <div className="col-span-2 flex items-end justify-end @2xl:col-span-1 @5xl:col-span-1 @5xl:h-9 @5xl:items-center">
+                    <DropdownMenu>
+                      <DropdownMenuTrigger asChild>
+                        <Button
+                          type="button"
+                          variant="ghost"
+                          size="icon"
+                          aria-label={`Actions for line ${String(i + 1)}`}
+                        >
+                          <MoreHorizontal aria-hidden />
+                        </Button>
+                      </DropdownMenuTrigger>
+                      <DropdownMenuContent align="end">
+                        <DropdownMenuItem
+                          disabled={i === 0}
+                          onSelect={() => {
+                            lines.move(i, i - 1);
+                          }}
+                        >
+                          Move up
+                        </DropdownMenuItem>
+                        <DropdownMenuItem
+                          disabled={i === lines.fields.length - 1}
+                          onSelect={() => {
+                            lines.move(i, i + 1);
+                          }}
+                        >
+                          Move down
+                        </DropdownMenuItem>
+                        <DropdownMenuItem
+                          onSelect={() => {
+                            addLine(i + 1);
+                          }}
+                        >
+                          Insert a line below
+                        </DropdownMenuItem>
+                        <DropdownMenuSeparator />
+                        <DropdownMenuItem
+                          className="text-destructive focus:text-destructive"
+                          disabled={lines.fields.length === 1}
+                          onSelect={() => {
+                            const removed = getValues(`lines.${i}`);
+                            lines.remove(i);
+                            toast({
+                              message: `Line ${String(i + 1)} removed${removed.description ? `: ${removed.description}` : ""}.`,
+                              tone: "info",
+                              action: {
+                                label: "Undo",
+                                onClick: () => {
+                                  lines.insert(i, removed, { shouldFocus: false });
+                                },
+                              },
+                            });
+                          }}
+                        >
+                          Remove line
+                        </DropdownMenuItem>
+                      </DropdownMenuContent>
+                    </DropdownMenu>
+                  </div>
+                  <div className="order-last col-span-6 @2xl:col-span-12 @5xl:col-span-full">
                     {rows.length === 0 && !measuring.has(field.id) ? (
                       <Button
                         type="button"
                         variant="link"
                         size="sm"
-                        className="h-auto p-0 text-xs"
+                        className="h-auto p-0 text-left text-xs whitespace-normal"
                         onClick={() => {
                           setMeasuring(new Set(measuring).add(field.id));
                           setValue(`lines.${i}.measurements`, [{ ...EMPTY_ROW }], {
@@ -1483,7 +1550,11 @@ function Editor({ doc, defaultTerms }: { doc?: Document; defaultTerms?: string }
                       />
                     )}
                   </div>
-                  {problem && <p className="text-destructive text-sm sm:col-span-12">{problem}</p>}
+                  {problem && (
+                    <p className="text-destructive col-span-6 text-sm @2xl:col-span-12 @5xl:col-span-full">
+                      {problem}
+                    </p>
+                  )}
                 </fieldset>
               );
             })}
@@ -1551,9 +1622,28 @@ function Editor({ doc, defaultTerms }: { doc?: Document; defaultTerms?: string }
           </div>
         </div>
 
-        <div className="flex flex-wrap items-center gap-2">
-          <Button type="submit" disabled={save.isPending}>
-            Save draft
+        <SaveBar
+          status={
+            <>
+              {preview.data && (
+                <span className="text-foreground font-semibold">
+                  Total {formatInr(preview.data.totals.grand_total)}
+                  {preview.isFetching ? "…" : ""}
+                </span>
+              )}
+              {preview.data && saveState ? " · " : ""}
+              {saveState}
+            </>
+          }
+        >
+          <Button
+            type="button"
+            variant="ghost"
+            onClick={() => {
+              void leave();
+            }}
+          >
+            Cancel
           </Button>
           <Button
             type="button"
@@ -1565,31 +1655,10 @@ function Editor({ doc, defaultTerms }: { doc?: Document; defaultTerms?: string }
           >
             Save and keep working
           </Button>
-          <Button
-            type="button"
-            variant="ghost"
-            onClick={() => {
-              void leave();
-            }}
-          >
-            Cancel
+          <Button type="submit" disabled={save.isPending}>
+            Save draft
           </Button>
-          <span role="status" className="text-muted-foreground flex items-center gap-1 text-sm">
-            {autosave.isPending ? (
-              "Saving…"
-            ) : conflict ? null : unsaved ? (
-              autoProblem ? (
-                `Not saved: ${autoProblem}`
-              ) : !saveable(payload) ? (
-                "Not saved yet: choose the client and fill in each line's quantity."
-              ) : null
-            ) : savedAt ? (
-              <>
-                <CheckCircle2 className="size-4" aria-hidden /> Saved at {savedAt}
-              </>
-            ) : null}
-          </span>
-        </div>
+        </SaveBar>
       </form>
       {newItem && (
         <NewItemDialog

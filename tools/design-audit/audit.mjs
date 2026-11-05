@@ -138,6 +138,12 @@ function measure() {
     .filter((el) => !all.some((p) => p !== el && p.contains(el) && p.getBoundingClientRect().right > vw + 1))
     .slice(0, 6)
     .map(describe);
+  // the innermost elements past the right edge: what makes the page scroll sideways
+  const tooWide = all
+    .filter((el) => el.getBoundingClientRect().right > vw + 1)
+    .filter((el) => ![...el.children].some((c) => visible(c) && c.getBoundingClientRect().right > vw + 1))
+    .slice(0, 6)
+    .map((el) => `${describe(el)} [${Math.round(el.getBoundingClientRect().width)} px, class ${String(el.className).slice(0, 60)}]`);
   const targets = [
     ...document.querySelectorAll('a[href], button, input:not([type="hidden"]), select, textarea, [role="button"], [role="tab"], [role="link"]'),
   ].filter(visible);
@@ -161,6 +167,7 @@ function measure() {
     pageHeight: document.documentElement.scrollHeight,
     sidewaysScroll: document.documentElement.scrollWidth > vw + 1,
     overflowing,
+    tooWide,
     tapTargets: targets.length,
     smallTapTargets: small.length,
     smallTapExamples: small.slice(0, 5).map(describe),
