@@ -15,3 +15,10 @@ createRoot(root).render(
     <App />
   </StrictMode>,
 );
+
+// Installable app (D.14): public/sw.js keeps the app's own files, never API data.
+if (import.meta.env.PROD && "serviceWorker" in navigator) {
+  window.addEventListener("load", () => {
+    void navigator.serviceWorker.register("/sw.js");
+  });
+}

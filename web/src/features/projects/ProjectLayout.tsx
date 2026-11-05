@@ -36,7 +36,7 @@ export function ProjectLayout() {
           </span>
         }
       />
-      <nav aria-label="Project" className="mb-6 flex gap-1 border-b">
+      <nav aria-label="Project" className="mb-6 flex flex-wrap gap-1 border-b">
         {TABS.map((t) => (
           <NavLink
             key={t.label}

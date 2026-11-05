@@ -18,7 +18,7 @@ export function SettingsLayout() {
         <p className="text-muted-foreground mb-2 hidden px-2 text-xs font-medium lg:block">
           Business settings
         </p>
-        <ul className="-mx-1 flex gap-1 overflow-x-auto px-1 pb-1 lg:mx-0 lg:grid lg:overflow-visible lg:px-0">
+        <ul className="flex flex-wrap gap-1 lg:grid">
           {tabs.map(({ to, label, icon: Icon }) => (
             <li key={to} className="shrink-0">
               <NavLink

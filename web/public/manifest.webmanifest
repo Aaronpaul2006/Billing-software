@@ -1,0 +1,21 @@
+{
+  "name": "SiteLedger · Billing for builders and contractors",
+  "short_name": "SiteLedger",
+  "description": "GST invoices, RA bills against your BOQ, payments, retention and TDS, with a portal for your clients.",
+  "start_url": "/",
+  "scope": "/",
+  "display": "standalone",
+  "background_color": "#f9fafc",
+  "theme_color": "#1659b2",
+  "icons": [
+    { "src": "/icons/icon.svg", "sizes": "any", "type": "image/svg+xml" },
+    { "src": "/icons/icon-192.png", "sizes": "192x192", "type": "image/png" },
+    { "src": "/icons/icon-512.png", "sizes": "512x512", "type": "image/png" },
+    {
+      "src": "/icons/icon-maskable-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "maskable"
+    }
+  ]
+}

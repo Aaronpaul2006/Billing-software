@@ -2,7 +2,8 @@
  * The product's name and public contact details, in one place.
  *
  * The name is a PLACEHOLDER (owner will choose it later): replace it and the
- * tagline before going live, then remove `noindex` from index.html so search
+ * tagline before going live (also in index.html's title and
+ * public/manifest.webmanifest), then remove `noindex` from index.html so search
  * engines may list the home page. Contact details: the owner's (2026-11-03).
  */
 export const BRAND = {

@@ -246,6 +246,7 @@ Screenshot names are `<page>--desktop.jpg`, `--tablet.jpg`, `--phone.jpg`.
 | D.11 | 1 / 2 | 0 (light and dark) | 2 on the six settings pages | 182.3 KB |
 | D.12 | 1 / 2 (portal: menu and statement fit phones) | 0 (light and dark) | 1 on portal pages on phones | 182.4 KB |
 | D.13 | 1 / 2 | 0 (light and dark) | 1–2 per public page (links inside sentences) | 182.4 KB |
+| **D.14 (final, 49 pages)** | **0 / 0** (wide tables scroll inside their own labelled box: statement, BOQ, progress) | **0 of any level** (light and dark) | **44** on phones (75 before) | **182.4 KB** (+7.0 % on 170.4 KB) |
 
 From D.6 on, first load is measured with `tools/design-audit/first-load.mjs`
 (every script and stylesheet `index.html` loads or preloads, gzip level 9), so

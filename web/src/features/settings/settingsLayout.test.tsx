@@ -43,10 +43,13 @@ describe("settings screen (D.11)", () => {
       "Bill printing",
       "Tally export",
     ]);
-    expect(within(tabs).getByRole("link", { name: "Company" })).toHaveAttribute(
-      "aria-current",
-      "page",
-    );
+    // marked once the redirect from /settings has rendered
+    await waitFor(() => {
+      expect(within(tabs).getByRole("link", { name: "Company" })).toHaveAttribute(
+        "aria-current",
+        "page",
+      );
+    });
     expect(await screen.findByLabelText("Legal name")).toHaveValue("Nair Constructions");
     // the sidebar has one entry for all of them, marked as where you are
     const sidebar = screen.getByRole("navigation", { name: "Settings" });
