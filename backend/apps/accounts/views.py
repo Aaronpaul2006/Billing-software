@@ -34,6 +34,7 @@ from .serializers import (
     PasswordChangeSerializer,
     PasswordForgotSerializer,
     PasswordResetSerializer,
+    RecoveryCodesSerializer,
     RefreshSerializer,
     SessionListSerializer,
     SignupSerializer,
@@ -311,6 +312,21 @@ class MfaDisableView(APIView):
             principal_of(request), data.validated_data["password"], data.validated_data["code"]
         )
         return Response(status=204)
+
+
+class MfaRecoveryCodesView(APIView):
+    """New recovery codes (password + a current code); the old ones stop working."""
+
+    @extend_schema(
+        request=MfaDisableSerializer, responses={200: RecoveryCodesSerializer}, tags=["mfa"]
+    )
+    def post(self, request: Request) -> Response:
+        data = MfaDisableSerializer(data=request.data)
+        data.is_valid(raise_exception=True)
+        codes = services.mfa_new_recovery_codes(
+            principal_of(request), data.validated_data["password"], data.validated_data["code"]
+        )
+        return Response({"recovery_codes": codes})
 
 
 class MeView(APIView):

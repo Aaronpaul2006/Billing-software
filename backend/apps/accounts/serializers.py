@@ -94,6 +94,12 @@ class MfaChallengeSerializer(serializers.Serializer[Any]):
     )
 
 
+class RecoveryCodesSerializer(serializers.Serializer[Any]):
+    recovery_codes = serializers.ListField(
+        child=serializers.CharField(), help_text="Shown once. Each works one time."
+    )
+
+
 class MfaEnabledSerializer(TokensSerializer):
     recovery_codes = serializers.ListField(
         child=serializers.CharField(), help_text="Shown once. Each works one time."

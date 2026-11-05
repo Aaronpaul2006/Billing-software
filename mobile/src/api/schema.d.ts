@@ -196,6 +196,23 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/auth/mfa/recovery-codes": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** @description New recovery codes (password + a current code); the old ones stop working. */
+        post: operations["auth_mfa_recovery_codes_create"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/auth/mfa/setup": {
         parameters: {
             query?: never;
@@ -4787,6 +4804,10 @@ export interface components {
          * @enum {string}
          */
         RecordStatusEnum: "RECORDED" | "VOIDED";
+        RecoveryCodes: {
+            /** @description Shown once. Each works one time. */
+            recovery_codes: string[];
+        };
         Refresh: {
             refresh_token?: string;
         };
@@ -6307,6 +6328,29 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["MfaEnabled"];
+                };
+            };
+        };
+    };
+    auth_mfa_recovery_codes_create: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["MfaDisable"];
+            };
+        };
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RecoveryCodes"];
                 };
             };
         };

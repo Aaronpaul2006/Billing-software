@@ -149,6 +149,29 @@ describe("your account", () => {
     expect(screen.queryByRole("form", { name: /Turn off/ })).not.toBeInTheDocument();
   });
 
+  it("makes new recovery codes with the password and a current code (Part B)", async () => {
+    let sent: unknown = null;
+    server.use(
+      http.post(`${API}/auth/mfa/recovery-codes`, async ({ request }) => {
+        sent = await request.json();
+        return HttpResponse.json({ recovery_codes: ["aaaaa-11111", "bbbbb-22222"] });
+      }),
+    );
+    const user = userEvent.setup();
+    renderSignedIn("/account");
+    await user.click(await screen.findByRole("button", { name: "Make new recovery codes" }));
+    const form = screen.getByRole("form", { name: "Make new recovery codes" });
+    const make = within(form).getByRole("button", { name: "Make new codes" });
+    expect(make).toBeDisabled(); // needs both
+    await user.type(within(form).getByLabelText("Your password"), "my passphrase");
+    await user.type(within(form).getByLabelText("6-digit code from your app"), "123456");
+    await user.click(make);
+    const codes = await screen.findByRole("list", { name: "Recovery codes" });
+    expect(within(codes).getByText("aaaaa-11111")).toBeInTheDocument();
+    expect(screen.getByText(/the old ones no longer work/)).toBeInTheDocument();
+    expect(sent).toEqual({ password: "my passphrase", code: "123456" });
+  });
+
   it("others may turn two-step off", async () => {
     let on = true;
     let sent: unknown;

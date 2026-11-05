@@ -124,6 +124,127 @@ function TurnOff() {
   );
 }
 
+/** New recovery codes (Part B): the old ones stop working; shown once. */
+function NewRecoveryCodes() {
+  const [open, setOpen] = useState(false);
+  const [password, setPassword] = useState("");
+  const [code, setCode] = useState("");
+  const make = useMutation({
+    mutationFn: async () =>
+      unwrap(
+        await api.POST("/api/v1/auth/mfa/recovery-codes", {
+          body: { password, code: code.trim() },
+        }),
+      ).recovery_codes,
+    onSuccess: () => {
+      setPassword("");
+      setCode("");
+    },
+  });
+  if (make.data) {
+    return (
+      <div className="grid gap-3">
+        <p className="text-sm">
+          Your new recovery codes. Save them now: they are shown only once, and the old ones no
+          longer work.
+        </p>
+        <RecoveryCodes codes={make.data} />
+        <div>
+          <Button
+            variant="outline"
+            onClick={() => {
+              make.reset();
+              setOpen(false);
+            }}
+          >
+            I have saved them
+          </Button>
+        </div>
+      </div>
+    );
+  }
+  if (!open) {
+    return (
+      <div className="grid gap-1">
+        <div>
+          <Button
+            variant="outline"
+            onClick={() => {
+              setOpen(true);
+            }}
+          >
+            Make new recovery codes
+          </Button>
+        </div>
+        <p className="text-help text-muted-foreground">
+          If you used some, lost them or think someone saw them. The old ones stop working.
+        </p>
+      </div>
+    );
+  }
+  return (
+    <form
+      aria-label="Make new recovery codes"
+      className="grid max-w-sm gap-3"
+      onSubmit={(e) => {
+        e.preventDefault();
+        make.mutate();
+      }}
+    >
+      {make.error && (
+        <Alert variant="destructive">
+          <AlertCircle aria-hidden />
+          <AlertDescription>
+            {make.error instanceof ApiError && make.error.problem.errors?.length
+              ? make.error.problem.errors.map((x) => x.message).join(" ")
+              : errorMessage(make.error)}
+          </AlertDescription>
+        </Alert>
+      )}
+      <Field id="codes-password" label="Your password">
+        <Input
+          id="codes-password"
+          type="password"
+          autoComplete="current-password"
+          value={password}
+          onChange={(e) => {
+            setPassword(e.target.value);
+          }}
+        />
+      </Field>
+      <Field id="codes-code" label="6-digit code from your app">
+        <Input
+          id="codes-code"
+          inputMode="numeric"
+          autoComplete="one-time-code"
+          value={code}
+          onChange={(e) => {
+            setCode(e.target.value);
+          }}
+        />
+      </Field>
+      <div className="flex gap-2">
+        <Button
+          type="submit"
+          disabled={make.isPending || !password || !/^\d{6}$/.test(code.trim())}
+        >
+          Make new codes
+        </Button>
+        <Button
+          type="button"
+          variant="ghost"
+          onClick={() => {
+            setOpen(false);
+            make.reset();
+          }}
+        >
+          Cancel
+        </Button>
+      </div>
+    </form>
+  );
+}
+
 export function TwoStepCard() {
   const me = useMe();
   const session = useSession();
@@ -147,6 +268,7 @@ export function TwoStepCard() {
               <CheckCircle2 className="text-success size-4" aria-hidden /> On.
               {required && " Owners and admins must keep it on."}
             </p>
+            <NewRecoveryCodes />
             {!required && <TurnOff />}
           </>
         ) : (

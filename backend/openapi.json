@@ -363,6 +363,42 @@
                 }
             }
         },
+        "/api/v1/auth/mfa/recovery-codes": {
+            "post": {
+                "operationId": "auth_mfa_recovery_codes_create",
+                "description": "New recovery codes (password + a current code); the old ones stop working.",
+                "tags": [
+                    "mfa"
+                ],
+                "requestBody": {
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/MfaDisable"
+                            }
+                        }
+                    },
+                    "required": true
+                },
+                "security": [
+                    {
+                        "bearerAuth": []
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/RecoveryCodes"
+                                }
+                            }
+                        },
+                        "description": ""
+                    }
+                }
+            }
+        },
         "/api/v1/auth/mfa/setup": {
             "post": {
                 "operationId": "auth_mfa_setup_create",
@@ -13985,6 +14021,21 @@
                 ],
                 "type": "string",
                 "description": "* `RECORDED` - Recorded\n* `VOIDED` - Voided"
+            },
+            "RecoveryCodes": {
+                "type": "object",
+                "properties": {
+                    "recovery_codes": {
+                        "type": "array",
+                        "items": {
+                            "type": "string"
+                        },
+                        "description": "Shown once. Each works one time."
+                    }
+                },
+                "required": [
+                    "recovery_codes"
+                ]
             },
             "Refresh": {
                 "type": "object",

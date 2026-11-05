@@ -37,6 +37,11 @@ urlpatterns = [
     path("auth/mfa/setup", views.MfaSetupView.as_view(), name="auth-mfa-setup"),
     path("auth/mfa/enable", views.MfaEnableView.as_view(), name="auth-mfa-enable"),
     path("auth/mfa/disable", views.MfaDisableView.as_view(), name="auth-mfa-disable"),
+    path(
+        "auth/mfa/recovery-codes",
+        views.MfaRecoveryCodesView.as_view(),
+        name="auth-mfa-recovery-codes",
+    ),
     path("me", views.MeView.as_view(), name="me"),
     path("me/email", views.EmailChangeView.as_view(), name="me-email"),
     path("auth/password/change", views.PasswordChangeView.as_view(), name="auth-password-change"),

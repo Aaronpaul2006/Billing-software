@@ -229,6 +229,7 @@ NOT_TENANT_DATA = {
     "auth-mfa-setup": "caller's own account",
     "auth-mfa-enable": "caller's own account",
     "auth-mfa-disable": "caller's own account",
+    "auth-mfa-recovery-codes": "caller's own account",
     "me": "caller's own account",
 }
 

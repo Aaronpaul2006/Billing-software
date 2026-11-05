@@ -144,6 +144,7 @@ lockout still guards passwords).
 | `POST /auth/password/forgot` | `{email}` → always `204` (no account enumeration) |
 | `POST /auth/password/reset` | `{token, password}` → `204`; signs out every session |
 | `POST /auth/mfa/setup` · `POST /auth/mfa/enable` · `POST /auth/mfa/disable` | TOTP enrolment (disable requires password + code) |
+| `POST /auth/mfa/recovery-codes` | New recovery codes `{password, code}` (a current authenticator code, not a recovery code) → `{recovery_codes}`, shown once; the old codes stop working. `409 mfa_not_enabled`, `422 invalid_password` / `invalid_mfa_code` |
 | `GET /me` · `PATCH /me` | Profile (`full_name`, `phone`), memberships |
 | `POST /me/email` · `POST /auth/email/confirm` | Change the sign-in email: `{new_email, password}` → a link to the new address; `{token}` from it switches (K.1) |
 | `POST /auth/password/change` | `{current_password, new_password}` while signed in; other devices signed out (K.1) |

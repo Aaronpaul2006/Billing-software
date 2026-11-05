@@ -455,3 +455,55 @@ def test_owner_cannot_disable_mfa(api: APIClient, make_account: MakeAccount, clo
     )
     assert _problem(response) == (409, "mfa_required_for_role")
     assert User.objects.get(email=account.email).mfa_enabled is True
+
+
+def test_new_recovery_codes_replace_the_old_ones(
+    api: APIClient, make_account: MakeAccount, clock: Clock
+) -> None:
+    account = make_account()
+    secret, enabled = enable_mfa(api, account, clock)
+    old = enabled["recovery_codes"][0]
+    clock.advance()
+    url, auth = "/api/v1/auth/mfa/recovery-codes", bearer(enabled["access_token"])
+    wrong = api.post(url, {"password": "not it", "code": clock.code(secret)}, format="json", **auth)
+    assert wrong.status_code == 422
+    assert wrong.json()["errors"][0] == {
+        "field": "password",
+        "code": "invalid_password",
+        "message": "The password is incorrect.",
+    }
+    clock.advance()
+    response = api.post(
+        url, {"password": PASSWORD, "code": clock.code(secret)}, format="json", **auth
+    )
+    assert response.status_code == 200, response.content
+    codes = response.json()["recovery_codes"]
+    assert len(codes) == 10
+    assert old not in codes
+    assert all(len(c) == 11 and c[5] == "-" for c in codes)
+
+    def sign_in_with(recovery: str) -> Any:
+        challenge = _login(api, account.email).json()["mfa_token"]
+        return api.post(
+            "/api/v1/auth/mfa/verify",
+            {"mfa_token": challenge, "recovery_code": recovery},
+            format="json",
+        )
+
+    assert _problem(sign_in_with(old)) == (401, "invalid_mfa_code")  # the old ones are gone
+    assert sign_in_with(codes[0]).status_code == 200
+
+
+def test_new_recovery_codes_need_a_current_app_code(
+    api: APIClient, make_account: MakeAccount, clock: Clock
+) -> None:
+    account = make_account()
+    _, enabled = enable_mfa(api, account, clock)
+    response = api.post(
+        "/api/v1/auth/mfa/recovery-codes",
+        {"password": PASSWORD, "code": enabled["recovery_codes"][0].replace("-", "")},
+        format="json",
+        **bearer(enabled["access_token"]),
+    )
+    assert response.status_code == 422
+    assert response.json()["errors"][0]["code"] == "invalid_mfa_code"

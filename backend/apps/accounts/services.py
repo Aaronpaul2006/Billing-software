@@ -856,6 +856,27 @@ def mfa_enable(
     return [f"{c[:5]}-{c[5:]}" for c in codes], tokens
 
 
+def mfa_new_recovery_codes(principal: Principal, password: str, code: str) -> list[str]:
+    """Replace the recovery codes (Part B): the old ones stop working at once.
+
+    Asks for the password and a current authenticator code (not a recovery
+    code), like turning MFA off. Sessions stay as they are.
+    """
+    user = User.objects.get(pk=principal.user_id)
+    if not user.mfa_enabled:
+        raise Conflict("Two-factor authentication is not on.", code="mfa_not_enabled")
+    if not check_password(password, user.password_hash):
+        raise Invalid("password", "The password is incorrect.", code="invalid_password")
+    if not _consume_second_factor(user, code=code, recovery_code=None):
+        raise Invalid("code", "The verification code is invalid.", code="invalid_mfa_code")
+    codes = [secrets.token_hex(5) for _ in range(RECOVERY_CODE_COUNT)]
+    User.objects.filter(pk=user.pk).update(
+        mfa_recovery_codes=[_hash_recovery_code(c) for c in codes], updated_at=timezone.now()
+    )
+    security_log.info("mfa_recovery_codes_replaced user=%s", user.pk)
+    return [f"{c[:5]}-{c[5:]}" for c in codes]
+
+
 def mfa_disable(principal: Principal, password: str, code: str) -> None:
     user = User.objects.get(pk=principal.user_id)
     if not user.mfa_enabled:
