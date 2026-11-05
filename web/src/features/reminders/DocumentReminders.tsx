@@ -10,6 +10,7 @@ import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
 import { errorMessage } from "@/lib/errors";
 import { compareMoney, formatInr } from "@/lib/money";
+import { formatDateTime } from "@/lib/dates";
 
 const STAGES: Record<string, string> = {
   BEFORE_DUE: "3 days before the due date",
@@ -123,13 +124,7 @@ export function DocumentReminders({
                 {r.sent_by_name ? ` (${r.sent_by_name})` : ""} · to {r.sent_to}
               </span>
               <span className="text-muted-foreground">
-                {formatInr(r.amount_due)} due ·{" "}
-                {new Date(r.sent_at).toLocaleString("en-IN", {
-                  day: "numeric",
-                  month: "short",
-                  hour: "numeric",
-                  minute: "2-digit",
-                })}
+                {formatInr(r.amount_due)} due · {formatDateTime(r.sent_at)}
               </span>
             </li>
           ))}

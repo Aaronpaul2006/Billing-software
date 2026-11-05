@@ -327,7 +327,12 @@ export function ProjectForm({ project }: { project?: Project }) {
                 first.
               </p>
             )}
-            <NativeSelect id="gst_registration_id" {...register("gst_registration_id")}>
+            {/* redrawn when the options arrive, so it shows the saved value (D.1) */}
+            <NativeSelect
+              key={registrations.data?.map((r) => r.id).join() ?? "loading"}
+              id="gst_registration_id"
+              {...register("gst_registration_id")}
+            >
               <option value="">–</option>
               {registrations.data?.map((r) => (
                 <option key={r.id} value={r.id}>

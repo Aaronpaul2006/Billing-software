@@ -28,6 +28,7 @@ import { fyStartYear } from "@/features/dashboard/periods";
 import { errorMessage } from "@/lib/errors";
 import { ifMatch } from "@/lib/forms";
 import { cleanMoneyInput, formatInr, MONEY_INPUT } from "@/lib/money";
+import { formatDate } from "@/lib/dates";
 
 type Certificate = components["schemas"]["TdsCertificate"];
 type CertificateWrite = components["schemas"]["TdsCertificateWrite"];
@@ -359,7 +360,9 @@ export function TdsCertificatesPage() {
                   <TableCell>
                     <span className="font-mono">{c.certificate_number}</span>
                     {c.certificate_date && (
-                      <div className="text-muted-foreground text-xs">{c.certificate_date}</div>
+                      <div className="text-muted-foreground text-xs">
+                        {formatDate(c.certificate_date)}
+                      </div>
                     )}
                   </TableCell>
                   <TableCell className="text-right tabular-nums">

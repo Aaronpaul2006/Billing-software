@@ -18,6 +18,7 @@ import {
 } from "@/components/ui/table";
 import { errorMessage } from "@/lib/errors";
 import { compareMoney, formatInr } from "@/lib/money";
+import { formatDate } from "@/lib/dates";
 
 import { allocationProblems, toAllocationItems, useOpenItems } from "./allocations";
 import type { Allocations } from "./allocations";
@@ -165,7 +166,7 @@ export function DocumentSettlement({
                       </Link>
                     )}
                   </TableCell>
-                  <TableCell>{a.created_at.slice(0, 10)}</TableCell>
+                  <TableCell>{formatDate(a.created_at)}</TableCell>
                   <TableCell className="text-right tabular-nums">{formatInr(a.amount)}</TableCell>
                 </TableRow>
               ))}

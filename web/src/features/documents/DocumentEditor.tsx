@@ -51,6 +51,7 @@ import { enterTarget, SHORTCUTS } from "./keyboard";
 import { NewClientDialog, NewItemDialog } from "./QuickAdd";
 import type { Document, DraftableType } from "./api";
 import { usePrintSettings } from "@/features/settings/printSettings";
+import { formatDate, formatTime } from "@/lib/dates";
 
 import { TotalsPanel } from "./TotalsPanel";
 
@@ -244,13 +245,7 @@ function isEmptyLine(l: LineForm): boolean {
 }
 
 /** "2026-10-12" -> "12 Oct 2026". */
-function shortDate(iso: string): string {
-  return new Date(`${iso}T00:00:00`).toLocaleDateString("en-IN", {
-    day: "numeric",
-    month: "short",
-    year: "numeric",
-  });
-}
+const shortDate = (iso: string) => formatDate(iso);
 
 /** "rows[3].rate" -> "Row 3 · Rate". */
 function rowName(field: string | null | undefined): string {
@@ -629,8 +624,7 @@ function Editor({ doc, defaultTerms }: { doc?: Document; defaultTerms?: string }
     onSuccess: (saved, v) => {
       stored(saved, { json: JSON.stringify(toApi(v)), form: JSON.stringify(v) });
       if (after.current === "stay") {
-        const at = new Date().toLocaleTimeString("en-IN", { hour: "2-digit", minute: "2-digit" });
-        setSavedAt(at);
+        setSavedAt(formatTime(new Date()));
       } else {
         const review = after.current === "review" && saved.status === "DRAFT";
         void navigate(`/documents/${saved.id}${review ? "?review=1" : ""}`);
@@ -677,7 +671,7 @@ function Editor({ doc, defaultTerms }: { doc?: Document; defaultTerms?: string }
     onSuccess: (saved, sent) => {
       stored(saved, sent);
       setAutoProblem(null);
-      const at = new Date().toLocaleTimeString("en-IN", { hour: "2-digit", minute: "2-digit" });
+      const at = formatTime(new Date());
       setSavedAt(at);
     },
     onError: (e, sent) => {
@@ -1067,7 +1061,9 @@ function Editor({ doc, defaultTerms }: { doc?: Document; defaultTerms?: string }
               error={errors.project_id?.message}
               hint="Its site state is the place of supply; its deductions apply."
             >
+              {/* redrawn when the options arrive, so it shows the saved value (D.1) */}
               <NativeSelect
+                key={projects.data?.map((p) => p.id).join() ?? "loading"}
                 id="project_id"
                 disabled={isNote || !values.party_id}
                 {...register("project_id")}

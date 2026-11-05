@@ -24,6 +24,7 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { errorMessage } from "@/lib/errors";
+import { formatDate } from "@/lib/dates";
 
 type Role = components["schemas"]["RoleEnum"];
 
@@ -105,9 +106,7 @@ function WaitingToJoin({ notify }: { notify: (n: Notice) => void }) {
             <TableRow key={x.id}>
               <TableCell>
                 {x.email}
-                <div className="text-muted-foreground text-xs">
-                  sent {new Date(x.created_at).toLocaleDateString("en-IN")}
-                </div>
+                <div className="text-muted-foreground text-xs">sent {formatDate(x.created_at)}</div>
               </TableCell>
               <TableCell>
                 {ROLE_LABELS[x.role as Role].label}

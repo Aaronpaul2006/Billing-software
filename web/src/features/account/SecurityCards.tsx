@@ -17,6 +17,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Input } from "@/components/ui/input";
 import { Skeleton } from "@/components/ui/skeleton";
 import { errorMessage } from "@/lib/errors";
+import { formatDateTime } from "@/lib/dates";
 
 import { describeDevice } from "./devices";
 
@@ -205,9 +206,8 @@ export function DevicesCard() {
                     {describeDevice(s.user_agent, s.device_label)}
                   </span>
                   <span className="text-muted-foreground text-xs">
-                    {s.ip ? `${s.ip} · ` : ""}signed in{" "}
-                    {new Date(s.started_at).toLocaleString("en-IN")} · last active{" "}
-                    {new Date(s.last_refreshed_at).toLocaleString("en-IN")}
+                    {s.ip ? `${s.ip} · ` : ""}signed in {formatDateTime(s.started_at)} · last active{" "}
+                    {formatDateTime(s.last_refreshed_at)}
                   </span>
                 </div>
                 {s.current ? (

@@ -19,6 +19,7 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { compareMoney, formatInr } from "@/lib/money";
+import { formatDate } from "@/lib/dates";
 
 import { CATEGORY_LABELS } from "./labels";
 import type { Category } from "./labels";
@@ -126,7 +127,7 @@ export function ExpensesPage() {
             <TableBody>
               {rows.map((x) => (
                 <TableRow key={x.id}>
-                  <TableCell>{x.expense_date}</TableCell>
+                  <TableCell>{formatDate(x.expense_date)}</TableCell>
                   <TableCell className="max-w-80 whitespace-normal">
                     <Link to={`/expenses/${x.id}`} className="font-medium hover:underline">
                       {x.description}

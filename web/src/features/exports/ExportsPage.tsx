@@ -18,6 +18,7 @@ import { NativeSelect } from "@/components/ui/native-select";
 import { Skeleton } from "@/components/ui/skeleton";
 import { isoDate, periodRange } from "@/features/dashboard/periods";
 import { errorMessage } from "@/lib/errors";
+import { formatDateTime } from "@/lib/dates";
 
 import { FORM_KINDS, KIND_LABELS, downloadExport, fileSize, useExports } from "./exports";
 import type { Export } from "./exports";
@@ -288,7 +289,7 @@ export function ExportRow({ x }: { x: Export }) {
           {params.period ?? ""}
           {params.book && params.book !== "ALL" ? ` · ${params.book.replace("_", "-")} books` : ""}
           {" · "}
-          {new Date(x.created_at).toLocaleString("en-IN")}
+          {formatDateTime(x.created_at)}
         </span>
         {x.warnings.map((w) => (
           <span key={w} className="text-xs text-amber-700 dark:text-amber-400">

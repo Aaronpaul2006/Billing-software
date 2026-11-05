@@ -22,6 +22,7 @@ import {
   toPaise,
 } from "@/lib/money";
 import { cn } from "@/lib/utils";
+import { formatDate } from "@/lib/dates";
 
 import type { Allocations, OpenItem } from "./allocations";
 
@@ -97,7 +98,7 @@ export function AllocationTable({
                 )}
                 <div className="text-muted-foreground text-xs">{item.detail}</div>
               </TableCell>
-              <TableCell>{item.date}</TableCell>
+              <TableCell>{formatDate(item.date)}</TableCell>
               <TableCell className="text-right tabular-nums">
                 {formatInr(item.outstanding)}
               </TableCell>

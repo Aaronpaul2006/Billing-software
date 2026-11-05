@@ -1,4 +1,5 @@
 import { formatInr } from "@/lib/money";
+import { formatDate } from "@/lib/dates";
 
 import { DOC_TYPE_LABELS } from "./api";
 import type { Document } from "./api";
@@ -16,10 +17,7 @@ export function whatsappNumber(phone: string | null | undefined): string {
   return digits;
 }
 
-function day(iso: string): string {
-  const [y, m, d] = iso.split("-");
-  return `${d ?? ""}-${m ?? ""}-${y ?? ""}`;
-}
+const day = (iso: string) => formatDate(iso);
 
 /** The message staff send with the PDF (they attach the file themselves). */
 export function whatsappMessage(doc: Document, upiId: string | null | undefined): string {

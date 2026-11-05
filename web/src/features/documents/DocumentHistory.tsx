@@ -6,18 +6,11 @@ import { api, unwrap } from "@/api/client";
 import { ErrorState } from "@/components/ErrorState";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
+import { formatDateTime } from "@/lib/dates";
 
 import { documentKey } from "./api";
 
-function when(iso: string): string {
-  return new Date(iso).toLocaleString("en-IN", {
-    day: "numeric",
-    month: "short",
-    year: "numeric",
-    hour: "numeric",
-    minute: "2-digit",
-  });
-}
+const when = (iso: string) => formatDateTime(iso);
 
 /** Who changed what on the bill, and when, in plain words (B.11). Loaded when opened. */
 export function DocumentHistory({ documentId }: { documentId: string }) {

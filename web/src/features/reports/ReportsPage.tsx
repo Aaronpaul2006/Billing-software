@@ -24,6 +24,7 @@ import {
 import { fyStartYear, isoDate, periodRange } from "@/features/dashboard/periods";
 import { compareMoney, formatInr, formatQty, toPaise } from "@/lib/money";
 import { cn } from "@/lib/utils";
+import { formatMonthYear } from "@/lib/dates";
 
 type TdsStatus = components["schemas"]["TdsRowStatusEnum"];
 type Supply = components["schemas"]["GstRow"]["supply"];
@@ -329,12 +330,7 @@ function BillingByMonth() {
           const pct = p > 0n ? Number((p * 100n) / largest) : 0;
           return (
             <TableRow key={`${r.month}-${r.book}`}>
-              <TableCell>
-                {new Date(`${r.month}T00:00:00`).toLocaleDateString("en-IN", {
-                  month: "short",
-                  year: "numeric",
-                })}
-              </TableCell>
+              <TableCell>{formatMonthYear(r.month)}</TableCell>
               <TableCell>{r.book === "GST" ? "GST" : "Non-GST"}</TableCell>
               <TableCell className="text-right">{r.document_count}</TableCell>
               <Money value={r.billed} />

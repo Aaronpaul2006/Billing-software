@@ -24,6 +24,7 @@ import type { DocType } from "@/features/documents/api";
 import { errorMessage } from "@/lib/errors";
 import { formatInr, toPaise } from "@/lib/money";
 import { cn } from "@/lib/utils";
+import { formatDayMonth } from "@/lib/dates";
 
 import { formatRange, PERIOD_LABELS, periodRange } from "./periods";
 import { Welcome } from "./Welcome";
@@ -202,9 +203,7 @@ function OverdueBill({ row }: { row: OverdueRow }) {
       ),
     onSuccess: () => void queryClient.invalidateQueries({ queryKey: ["reports", "dashboard"] }),
   });
-  const last = row.last_reminder_at
-    ? new Date(row.last_reminder_at).toLocaleDateString("en-IN", { day: "numeric", month: "short" })
-    : null;
+  const last = row.last_reminder_at ? formatDayMonth(row.last_reminder_at) : null;
   return (
     <TableRow>
       <TableCell>

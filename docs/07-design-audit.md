@@ -228,6 +228,13 @@ Screenshot names are `<page>--desktop.jpg`, `--tablet.jpg`, `--phone.jpg`.
 | Corner radii in use | 6 + pills |
 | First load (gzip): JS + CSS on the first page | 166 KB (`index` 135 KB, CSS 7 KB) |
 
+## Progress against the baseline
+
+| After step | Sideways scroll (tablet / phone) | axe serious + critical | Small taps (phone) | First load (gzip) |
+|---|---|---|---|---|
+| Before (A.0) | 4 / 5 | 91 nodes | 75 | 166 KB |
+| D.1 | 4 / 5 | **0** | 75 | 168.8 KB |
+
 ## Proposed design steps
 
 In the recommended order; each is small enough to build, test, screenshot and

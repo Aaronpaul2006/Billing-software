@@ -19,6 +19,7 @@ import {
 import { periodRange } from "@/features/dashboard/periods";
 import { DOC_TYPE_LABELS, STATUS_LABELS, statusVariant } from "@/features/documents/api";
 import { formatInr, formatQty } from "@/lib/money";
+import { formatDate } from "@/lib/dates";
 
 import {
   BILL_TYPES,
@@ -30,14 +31,7 @@ import {
 } from "./api";
 import type { PortalDocument } from "./api";
 
-function day(iso: string | null | undefined): string {
-  if (!iso) return "";
-  return new Date(`${iso}T00:00:00`).toLocaleDateString("en-IN", {
-    day: "numeric",
-    month: "short",
-    year: "numeric",
-  });
-}
+const day = (iso: string | null | undefined) => formatDate(iso, "");
 
 function Loading() {
   return <Skeleton className="h-32 w-full" />;

@@ -96,7 +96,7 @@ describe("payments", () => {
       ),
     );
     renderSignedIn("/payments");
-    const row = (await screen.findByRole("link", { name: "2026-10-25" })).closest(
+    const row = (await screen.findByRole("link", { name: "25 Oct 2026" })).closest(
       "tr",
     ) as HTMLElement;
     expect(within(row).getByText("Skyline Developers")).toBeInTheDocument();

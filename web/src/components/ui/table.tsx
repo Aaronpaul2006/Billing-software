@@ -1,10 +1,43 @@
+import { useEffect, useRef, useState } from "react";
 import type * as React from "react";
 
 import { cn } from "@/lib/utils";
 
+/**
+ * True while the element is wider inside than outside (a table on a phone):
+ * the scroll area then takes keyboard focus, so it can be scrolled with the
+ * arrow keys (WCAG 2.1.1; axe "scrollable-region-focusable").
+ */
+function useScrolls<T extends HTMLElement>() {
+  const ref = useRef<T>(null);
+  const [scrolls, setScrolls] = useState(false);
+  useEffect(() => {
+    const el = ref.current;
+    if (!el || typeof ResizeObserver === "undefined") return;
+    const observer = new ResizeObserver(() => {
+      setScrolls(el.scrollWidth > el.clientWidth + 1);
+    });
+    observer.observe(el);
+    const table = el.firstElementChild;
+    if (table) observer.observe(table);
+    return () => {
+      observer.disconnect();
+    };
+  }, []);
+  return [ref, scrolls] as const;
+}
+
 function Table({ className, ...props }: React.ComponentProps<"table">) {
+  const [ref, scrolls] = useScrolls<HTMLDivElement>();
   return (
-    <div data-slot="table-container" className="relative w-full overflow-x-auto">
+    <div
+      ref={ref}
+      data-slot="table-container"
+      className="focus-visible:ring-ring/50 relative w-full overflow-x-auto rounded-sm outline-none focus-visible:ring-[3px]"
+      {...(scrolls
+        ? { tabIndex: 0, role: "region", "aria-label": "Table (scrolls sideways)" }
+        : {})}
+    >
       <table
         data-slot="table"
         className={cn("w-full caption-bottom text-sm", className)}

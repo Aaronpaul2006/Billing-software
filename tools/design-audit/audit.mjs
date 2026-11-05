@@ -175,11 +175,15 @@ function measure() {
 
 async function audit(page, pageDef, results, consoleErrors) {
   const entry = { name: pageDef.name, path: pageDef.path, sizes: {} };
-  for (const size of SIZES) {
+  for (const size of SIZES.filter((s) => !pageDef.sizes || pageDef.sizes.includes(s.name))) {
     await page.setViewportSize({ width: size.width, height: size.height });
     consoleErrors.length = 0;
     await page.goto(`${BASE}${pageDef.path}`);
     await settle(page);
+    if (pageDef.action) {
+      await pageDef.action(page); // e.g. open a menu before the screenshot
+      await settle(page);
+    }
     const file = `${pageDef.slug}--${size.name}.jpg`;
     await page.screenshot({ path: path.join(OUT, file), fullPage: true, type: "jpeg", quality: 55 });
     const metrics = await page.evaluate(measure);
@@ -248,6 +252,11 @@ function staffPages(ids) {
     p("settings-print", "Settings: bill printing", "/settings/print"),
     p("settings-tally", "Settings: Tally export", "/settings/tally"),
     p("account", "Your account", "/account"),
+    {
+      ...p("menu-open", "Menu open on a phone", "/"),
+      sizes: ["phone"],
+      action: (page) => page.getByRole("button", { name: "Open the menu" }).click(),
+    },
   ];
 }
 
@@ -341,4 +350,4 @@ fs.writeFileSync(
   path.join(OUT, "results.json"),
   JSON.stringify({ base: BASE, at: new Date().toISOString(), sizes: SIZES, pages: results }, null, 1),
 );
-console.log(`Done: ${results.length} pages, ${results.length * SIZES.length} screenshots in ${OUT}`);
+console.log(`Done: ${results.length} pages, ${results.reduce((n, r) => n + Object.keys(r.sizes).length, 0)} screenshots in ${OUT}`);

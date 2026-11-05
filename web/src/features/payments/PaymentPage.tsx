@@ -27,6 +27,7 @@ import {
 import { errorMessage } from "@/lib/errors";
 import { ifMatch } from "@/lib/forms";
 import { compareMoney, formatInr } from "@/lib/money";
+import { formatDate } from "@/lib/dates";
 
 import { allocationProblems, toAllocationItems, useOpenItems } from "./allocations";
 import type { Allocations } from "./allocations";
@@ -197,7 +198,7 @@ export function PaymentPage() {
         title={`${formatInr(p.amount)} from ${p.party_name}`}
         description={
           recorded ? (
-            `${MODE_LABELS[p.mode]} on ${p.payment_date}`
+            `${MODE_LABELS[p.mode]} on ${formatDate(p.payment_date)}`
           ) : (
             <span className="flex items-center gap-2">
               <Badge variant="secondary">Voided</Badge>

@@ -109,7 +109,7 @@ export function ItemPicker({
         id={id}
         role="combobox"
         aria-expanded={open}
-        aria-controls={listId}
+        aria-controls={open ? listId : undefined}
         aria-autocomplete="list"
         aria-activedescendant={open && count > 0 ? optionId(active) : undefined}
         aria-invalid={invalid}

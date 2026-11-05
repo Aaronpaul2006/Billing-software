@@ -27,6 +27,7 @@ import { isoDate } from "@/features/dashboard/periods";
 import { errorMessage } from "@/lib/errors";
 import { ifMatch } from "@/lib/forms";
 import { cleanMoneyInput, compareMoney, formatInr, MONEY_INPUT } from "@/lib/money";
+import { formatDate } from "@/lib/dates";
 
 import { useProjectOutlet } from "./api";
 
@@ -343,7 +344,7 @@ export function RetentionTab() {
                 {releases.data.map((r) => (
                   <TableRow key={r.id}>
                     <TableCell>
-                      {r.release_date}
+                      {formatDate(r.release_date)}
                       <div className="text-muted-foreground text-xs">
                         {r.book === "GST" ? "GST" : "Non-GST"}
                       </div>

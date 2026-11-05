@@ -25,6 +25,7 @@ import { TotalsPanel } from "@/features/documents/TotalsPanel";
 import { errorMessage } from "@/lib/errors";
 import { ifMatch } from "@/lib/forms";
 import { formatInr, formatQty } from "@/lib/money";
+import { formatDate } from "@/lib/dates";
 
 import { portalDocumentKey, portalDocumentQuery } from "./api";
 import type { PortalDocumentDetail } from "./api";
@@ -120,9 +121,9 @@ function DocumentView({ doc }: { doc: PortalDocumentDetail }) {
         description={
           <>
             <Badge variant={statusVariant(doc.status)}>{STATUS_LABELS[doc.status]}</Badge>{" "}
-            {doc.doc_date}
+            {formatDate(doc.doc_date)}
             {doc.project_name ? ` · ${doc.project_name}` : ""}
-            {doc.due_date ? ` · due ${doc.due_date}` : ""}
+            {doc.due_date ? ` · due ${formatDate(doc.due_date)}` : ""}
             {doc.valid_until ? ` · valid until ${doc.valid_until}` : ""}
           </>
         }

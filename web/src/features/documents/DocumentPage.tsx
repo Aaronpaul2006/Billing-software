@@ -32,6 +32,7 @@ import { formatInr, formatQty } from "@/lib/money";
 import { DocumentSettlement } from "@/features/payments/DocumentSettlement";
 import { DocumentReminders } from "@/features/reminders/DocumentReminders";
 import { SaveAsTemplate } from "@/features/templates/SaveAsTemplate";
+import { formatDate, formatDateTime } from "@/lib/dates";
 
 import {
   DOC_TYPE_LABELS,
@@ -54,16 +55,6 @@ const CONVERT_TO: Partial<Record<DocType, DocType[]>> = {
   QUOTATION: ["TAX_INVOICE", "PROFORMA", "BILL_OF_SUPPLY"],
   PROFORMA: ["TAX_INVOICE", "BILL_OF_SUPPLY"],
 };
-
-function formatDate(iso: string | null): string {
-  if (!iso) return "–";
-  const [y = 0, m = 1, d = 1] = iso.split("-").map(Number);
-  return new Date(y, m - 1, d).toLocaleDateString("en-IN", {
-    day: "numeric",
-    month: "short",
-    year: "numeric",
-  });
-}
 
 /** What went wrong, and what to do about it. */
 function actionMessage(error: unknown): ReactNode {
@@ -759,9 +750,7 @@ export function DocumentPage() {
               ) : (
                 <Info label="Due">{formatDate(doc.due_date)}</Info>
               )}
-              {doc.issued_at && (
-                <Info label="Issued">{new Date(doc.issued_at).toLocaleString("en-IN")}</Info>
-              )}
+              {doc.issued_at && <Info label="Issued">{formatDateTime(doc.issued_at)}</Info>}
             </dl>
           </CardContent>
         </Card>

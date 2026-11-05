@@ -73,13 +73,18 @@ export function PartyPicker({
     );
   }
 
+  const listShown = open && q.length > 0;
   return (
     <div className="relative">
       <div className="flex items-center gap-2">
         <Input
           id={id}
           type="search"
-          aria-controls={listId}
+          role="combobox"
+          aria-autocomplete="list"
+          aria-expanded={listShown}
+          // only while the list is on the page (an id that does not exist is an error)
+          aria-controls={listShown ? listId : undefined}
           aria-invalid={invalid}
           aria-describedby={describedBy}
           autoComplete="off"
@@ -107,7 +112,7 @@ export function PartyPicker({
           </Button>
         )}
       </div>
-      {open && q.length > 0 && (
+      {listShown && (
         <ul
           id={listId}
           aria-label="Matching parties"

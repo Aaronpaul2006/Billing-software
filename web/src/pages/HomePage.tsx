@@ -150,7 +150,7 @@ function MockRow({
           strong
             ? "font-semibold tabular-nums"
             : warn
-              ? "text-destructive tabular-nums"
+              ? "font-medium text-red-700 tabular-nums dark:text-red-400" // AA contrast on the grey row
               : "tabular-nums"
         }
       >

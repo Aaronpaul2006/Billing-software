@@ -20,6 +20,7 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { compareMoney, formatInr } from "@/lib/money";
+import { formatDate } from "@/lib/dates";
 
 import { MODE_LABELS } from "./modes";
 
@@ -114,7 +115,7 @@ export function PaymentsPage() {
                 <TableRow key={p.id}>
                   <TableCell>
                     <Link to={`/payments/${p.id}`} className="font-medium hover:underline">
-                      {p.payment_date}
+                      {formatDate(p.payment_date)}
                     </Link>
                   </TableCell>
                   <TableCell>

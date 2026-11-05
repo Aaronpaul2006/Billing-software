@@ -93,8 +93,8 @@ describe("sending a bill", () => {
       expect(tab.location.href).toMatch(/^https:\/\/wa\.me\/919847012345\?text=/);
     });
     const text = decodeURIComponent(tab.location.href.split("?text=")[1] ?? "");
-    expect(text).toContain("Tax invoice INV/0001 dated 19-10-2026 for ₹3,23,680.00");
-    expect(text).toContain("due on 18-11-2026");
+    expect(text).toContain("Tax invoice INV/0001 dated 19 Oct 2026 for ₹3,23,680.00");
+    expect(text).toContain("due on 18 Nov 2026");
     expect(text).toContain("Pay by UPI: nair@okaxis");
     expect(asked).toEqual(["?copy=original"]); // the PDF to attach
     expect(screen.getByText(/attach it in WhatsApp/)).toBeInTheDocument();

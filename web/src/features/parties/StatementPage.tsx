@@ -30,20 +30,14 @@ import { makeAndDownload } from "@/features/exports/exports";
 import { errorMessage } from "@/lib/errors";
 import { formatInr } from "@/lib/money";
 import { cn } from "@/lib/utils";
+import { formatDate } from "@/lib/dates";
 
 type Entry = components["schemas"]["StatementEntry"];
 type FileFormat = "PDF" | "XLSX";
 
 const QUICK: PeriodKey[] = ["this_fy", "last_fy", "this_month", "last_month"];
 
-function day(iso: string): string {
-  const [y = 0, m = 1, d = 1] = iso.split("-").map(Number);
-  return new Date(y, m - 1, d).toLocaleDateString("en-IN", {
-    day: "numeric",
-    month: "short",
-    year: "numeric",
-  });
-}
+const day = (iso: string) => formatDate(iso);
 
 /** Where an entry's own page is, if it has one. */
 function entryLink(e: Entry): string | null {

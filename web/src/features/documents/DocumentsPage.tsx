@@ -21,6 +21,7 @@ import {
 } from "@/components/ui/table";
 import { formatInr } from "@/lib/money";
 import { cn } from "@/lib/utils";
+import { formatDate } from "@/lib/dates";
 
 import { DOC_TYPE_LABELS, RECEIVABLE_TYPES, STATUS_LABELS, statusVariant } from "./api";
 import type { DocStatus, DocType } from "./api";
@@ -38,15 +39,6 @@ const TYPE_FILTERS: { value: string; label: string; types: DocType[] }[] = [
 ];
 
 type PaymentState = "" | "UNPAID" | "PARTIAL" | "PAID";
-
-function formatDate(iso: string): string {
-  const [y = 0, m = 1, d = 1] = iso.split("-").map(Number);
-  return new Date(y, m - 1, d).toLocaleDateString("en-IN", {
-    day: "numeric",
-    month: "short",
-    year: "numeric",
-  });
-}
 
 export function DocumentsPage() {
   const [type, setType] = useState("all");

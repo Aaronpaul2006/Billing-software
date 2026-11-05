@@ -1,5 +1,6 @@
 import { screen, waitFor, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
+import { delay } from "msw";
 
 import type { components } from "@/api/schema";
 import { renderSignedIn } from "@/test/render";
@@ -172,6 +173,22 @@ describe("project page", () => {
       http.get(`${API}/gst-registrations`, () => HttpResponse.json(registrations)),
     );
   }
+
+  it("shows the saved 'Bill from' even when the registrations arrive late (D.1)", async () => {
+    server.use(
+      http.get(`${API}/projects/${PID}`, () => HttpResponse.json(project())),
+      http.get(`${API}/gst-registrations`, async () => {
+        await delay(150); // after the form has been drawn
+        return HttpResponse.json(registrations);
+      }),
+    );
+    renderSignedIn(`/projects/${PID}`);
+    await waitFor(() => {
+      expect(screen.getByLabelText("Bill from")).toHaveDisplayValue(
+        "32AAACN1234A1Z5 · Kerala (default)",
+      );
+    });
+  });
 
   it("shows details and moves between tabs", async () => {
     common();

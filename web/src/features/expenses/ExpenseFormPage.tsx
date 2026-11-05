@@ -261,7 +261,12 @@ function ExpenseForm({ expense }: { expense?: Expense }) {
               registration={register("vendor_bill_number")}
             />
             <Field id="project_id" label="Project" error={errors.project_id?.message}>
-              <NativeSelect id="project_id" {...register("project_id")}>
+              {/* redrawn when the options arrive, so it shows the saved value (D.1) */}
+              <NativeSelect
+                key={projects.data?.map((p) => p.id).join() ?? "loading"}
+                id="project_id"
+                {...register("project_id")}
+              >
                 <option value="">Office (no project)</option>
                 {projects.data?.map((p) => (
                   <option key={p.id} value={p.id}>

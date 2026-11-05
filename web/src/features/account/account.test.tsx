@@ -52,7 +52,7 @@ describe("your account", () => {
     const user = userEvent.setup();
     const router = renderSignedIn("/");
     server.use(http.get(`${API}/reports/summary`, () => HttpResponse.json({}, { status: 403 })));
-    await user.click(await screen.findByRole("button", { name: "Asha Nair" }));
+    await user.click(await screen.findByRole("button", { name: /^Asha Nair/ }));
     await user.click(await screen.findByRole("menuitem", { name: "Your account" }));
     expect(await screen.findByRole("heading", { name: "Your account" })).toBeInTheDocument();
     expect(router.state.location.pathname).toBe("/account");
