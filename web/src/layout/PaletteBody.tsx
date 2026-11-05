@@ -15,7 +15,7 @@ import { can } from "@/lib/permissions";
 import { useDebounced } from "@/lib/useDebounced";
 import { cn } from "@/lib/utils";
 
-import { CREATE, GROUPS } from "./nav";
+import { CREATE, GROUPS, SETTINGS_TABS } from "./nav";
 import type { NavEntry } from "./nav";
 
 type Results = components["schemas"]["SearchResult"];
@@ -137,7 +137,8 @@ export function PaletteBody({ onDone, onHelp }: { onDone: () => void; onHelp: ()
     },
     words: e.keywords,
   }));
-  const pages: Item[] = GROUPS.flatMap((g) =>
+  const sections = [...GROUPS, { title: "Settings", items: SETTINGS_TABS }];
+  const pages: Item[] = sections.flatMap((g) =>
     g.items.filter(allowed).map((e) => ({
       key: `go:${e.to}`,
       group: "Go to",

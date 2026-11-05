@@ -109,18 +109,61 @@ export const GROUPS: { title: string; items: NavEntry[] }[] = [
   {
     title: "Settings",
     items: [
-      { to: "/settings/company", label: "Company", icon: Settings, action: "tenant.settings" },
-      { to: "/settings/members", label: "Members", icon: UserCog, action: "members.manage" },
       {
-        to: "/settings/gst-registrations",
-        label: "GST registrations",
-        icon: Landmark,
+        to: "/settings",
+        label: "Business settings",
+        icon: Settings,
         action: "tenant.settings",
+        keywords: "company members gst series printing tally",
+        match: (path) => path.startsWith("/settings"),
       },
-      { to: "/settings/series", label: "Number series", icon: Hash, action: "tenant.settings" },
-      { to: "/settings/print", label: "Bill printing", icon: Printer, action: "tenant.settings" },
-      { to: "/settings/tally", label: "Tally export", icon: BookOpen, action: "tenant.settings" },
     ],
+  },
+];
+
+/** The settings pages, as tabs on the left of the settings screen (D.11). */
+export const SETTINGS_TABS: NavEntry[] = [
+  {
+    to: "/settings/company",
+    label: "Company",
+    icon: Settings,
+    action: "tenant.settings",
+    keywords: "business name address logo pan bank upi",
+  },
+  {
+    to: "/settings/members",
+    label: "Members",
+    icon: UserCog,
+    action: "members.manage",
+    keywords: "team users invite roles",
+  },
+  {
+    to: "/settings/gst-registrations",
+    label: "GST registrations",
+    icon: Landmark,
+    action: "tenant.settings",
+    keywords: "gstin state",
+  },
+  {
+    to: "/settings/series",
+    label: "Number series",
+    icon: Hash,
+    action: "tenant.settings",
+    keywords: "invoice numbering prefix",
+  },
+  {
+    to: "/settings/print",
+    label: "Bill printing",
+    icon: Printer,
+    action: "tenant.settings",
+    keywords: "pdf print layout signature",
+  },
+  {
+    to: "/settings/tally",
+    label: "Tally export",
+    icon: BookOpen,
+    action: "tenant.settings",
+    keywords: "ledgers accounts",
   },
 ];
 

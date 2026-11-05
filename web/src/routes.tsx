@@ -1,4 +1,5 @@
 import type { ComponentType } from "react";
+import { Navigate } from "react-router";
 import type { RouteObject } from "react-router";
 
 import { RequireAuth } from "@/auth/RequireAuth";
@@ -281,27 +282,6 @@ export const routes: RouteObject[] = [
             ),
           },
           {
-            path: "settings/gst-registrations",
-            lazy: lazyPage(
-              () => import("@/features/settings/GstRegistrationsPage"),
-              (m) => m.GstRegistrationsPage,
-            ),
-          },
-          {
-            path: "settings/company",
-            lazy: lazyPage(
-              () => import("@/features/settings/CompanyPage"),
-              (m) => m.CompanyPage,
-            ),
-          },
-          {
-            path: "settings/members",
-            lazy: lazyPage(
-              () => import("@/features/settings/MembersPage"),
-              (m) => m.MembersPage,
-            ),
-          },
-          {
             path: "account",
             lazy: lazyPage(
               () => import("@/features/account/AccountPage"),
@@ -323,25 +303,56 @@ export const routes: RouteObject[] = [
             ),
           },
           {
-            path: "settings/tally",
+            path: "settings",
             lazy: lazyPage(
-              () => import("@/features/settings/TallySettingsPage"),
-              (m) => m.TallySettingsPage,
+              () => import("@/features/settings/SettingsLayout"),
+              (m) => m.SettingsLayout,
             ),
-          },
-          {
-            path: "settings/print",
-            lazy: lazyPage(
-              () => import("@/features/settings/PrintSettingsPage"),
-              (m) => m.PrintSettingsPage,
-            ),
-          },
-          {
-            path: "settings/series",
-            lazy: lazyPage(
-              () => import("@/features/settings/SeriesPage"),
-              (m) => m.SeriesPage,
-            ),
+            children: [
+              { index: true, element: <Navigate to="company" replace /> },
+              {
+                path: "company",
+                lazy: lazyPage(
+                  () => import("@/features/settings/CompanyPage"),
+                  (m) => m.CompanyPage,
+                ),
+              },
+              {
+                path: "members",
+                lazy: lazyPage(
+                  () => import("@/features/settings/MembersPage"),
+                  (m) => m.MembersPage,
+                ),
+              },
+              {
+                path: "gst-registrations",
+                lazy: lazyPage(
+                  () => import("@/features/settings/GstRegistrationsPage"),
+                  (m) => m.GstRegistrationsPage,
+                ),
+              },
+              {
+                path: "series",
+                lazy: lazyPage(
+                  () => import("@/features/settings/SeriesPage"),
+                  (m) => m.SeriesPage,
+                ),
+              },
+              {
+                path: "print",
+                lazy: lazyPage(
+                  () => import("@/features/settings/PrintSettingsPage"),
+                  (m) => m.PrintSettingsPage,
+                ),
+              },
+              {
+                path: "tally",
+                lazy: lazyPage(
+                  () => import("@/features/settings/TallySettingsPage"),
+                  (m) => m.TallySettingsPage,
+                ),
+              },
+            ],
           },
           { path: "*", element: <NotFoundPage /> },
         ],

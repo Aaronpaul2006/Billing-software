@@ -1,6 +1,6 @@
 {
  "base": "http://localhost:5173",
- "at": "2026-11-05T14:40:05.871Z",
+ "at": "2026-11-05T14:44:09.726Z",
  "sizes": [
   {
    "name": "desktop",
@@ -20,134 +20,263 @@
  ],
  "pages": [
   {
-   "name": "Dashboard (first page after sign-in)",
-   "path": "/",
+   "name": "Settings: company",
+   "path": "/settings/company",
    "sizes": {
     "desktop": {
-     "screenshot": "dashboard--desktop.jpg",
-     "url": "/",
+     "screenshot": "settings-company--desktop.jpg",
+     "url": "/settings/company",
      "metrics": {
-      "pageHeight": 1657,
+      "pageHeight": 900,
       "sidewaysScroll": false,
       "overflowing": [],
       "tooWide": [],
-      "tapTargets": 35,
-      "smallTapTargets": 5,
-      "smallTapExamples": [
-       "a \"Invite your team\"",
-       "button \"Party\"",
-       "button \"Total\"",
-       "a \"Green Valley Homes\"",
-       "a \"Skyline Developers\""
-      ],
-      "tinyText": 12,
+      "tapTargets": 27,
+      "smallTapTargets": 0,
+      "smallTapExamples": [],
+      "tinyText": 0,
       "fontSizes": [
-       "10px",
        "12px",
        "14px",
-       "17px",
-       "18px",
        "24px"
       ],
-      "textColours": 4,
+      "textColours": 6,
       "radii": [
        "6px",
-       "12px",
-       "4px"
+       "12px"
       ],
       "buttonHeights": [
-       16,
-       32,
        36
       ],
-      "tables": 2,
-      "widestTable": 1102,
+      "tables": 0,
+      "widestTable": 0,
       "h1": [
-       "Dashboard"
+       "Company"
       ]
      },
      "axe": [],
      "consoleErrors": []
     },
     "tablet": {
-     "screenshot": "dashboard--tablet.jpg",
-     "url": "/",
+     "screenshot": "settings-company--tablet.jpg",
+     "url": "/settings/company",
      "metrics": {
-      "pageHeight": 2264,
+      "pageHeight": 1024,
       "sidewaysScroll": false,
-      "overflowing": [],
-      "tooWide": [],
-      "tapTargets": 32,
-      "smallTapTargets": 1,
-      "smallTapExamples": [
-       "a \"Invite your team\""
+      "overflowing": [
+       "li \"Number series\"",
+       "li \"Bill printing\"",
+       "li \"Tally export\""
       ],
-      "tinyText": 12,
+      "tooWide": [
+       "a \"Number series\" [145 px, class hover:bg-accent flex min-h-9 items-center gap-2 rounded-md p]",
+       "path [13 px, class [object SVGAnimatedString]]",
+       "path [8 px, class [object SVGAnimatedString]]",
+       "rect [8 px, class [object SVGAnimatedString]]",
+       "path [13 px, class [object SVGAnimatedString]]"
+      ],
+      "tapTargets": 27,
+      "smallTapTargets": 0,
+      "smallTapExamples": [],
+      "tinyText": 0,
       "fontSizes": [
-       "10px",
        "12px",
-       "13px",
        "14px",
-       "16px",
-       "17px",
-       "18px",
        "24px"
       ],
-      "textColours": 4,
+      "textColours": 6,
       "radii": [
        "6px",
-       "12px",
-       "4px"
+       "12px"
       ],
       "buttonHeights": [
        36
       ],
-      "tables": 1,
-      "widestTable": 430,
+      "tables": 0,
+      "widestTable": 0,
       "h1": [
-       "Dashboard"
+       "Company"
       ]
      },
      "axe": null,
      "consoleErrors": []
     },
     "phone": {
-     "screenshot": "dashboard--phone.jpg",
-     "url": "/",
+     "screenshot": "settings-company--phone.jpg",
+     "url": "/settings/company",
      "metrics": {
-      "pageHeight": 2873,
+      "pageHeight": 844,
+      "sidewaysScroll": false,
+      "overflowing": [
+       "li \"GST registrations\"",
+       "li \"Number series\"",
+       "li \"Bill printing\"",
+       "li \"Tally export\""
+      ],
+      "tooWide": [
+       "a \"GST registrations\" [162 px, class hover:bg-accent flex min-h-9 items-center gap-2 rounded-md p]",
+       "line [1 px, class [object SVGAnimatedString]]",
+       "line [1 px, class [object SVGAnimatedString]]",
+       "path [13 px, class [object SVGAnimatedString]]",
+       "path [8 px, class [object SVGAnimatedString]]",
+       "rect [8 px, class [object SVGAnimatedString]]"
+      ],
+      "tapTargets": 13,
+      "smallTapTargets": 0,
+      "smallTapExamples": [],
+      "tinyText": 0,
+      "fontSizes": [
+       "12px",
+       "14px",
+       "24px"
+      ],
+      "textColours": 4,
+      "radii": [
+       "6px",
+       "12px"
+      ],
+      "buttonHeights": [
+       36,
+       44
+      ],
+      "tables": 0,
+      "widestTable": 0,
+      "h1": [
+       "Company"
+      ]
+     },
+     "axe": [],
+     "consoleErrors": []
+    }
+   }
+  },
+  {
+   "name": "Settings: members",
+   "path": "/settings/members",
+   "sizes": {
+    "desktop": {
+     "screenshot": "settings-members--desktop.jpg",
+     "url": "/settings/members",
+     "metrics": {
+      "pageHeight": 900,
       "sidewaysScroll": false,
       "overflowing": [],
       "tooWide": [],
-      "tapTargets": 13,
-      "smallTapTargets": 1,
-      "smallTapExamples": [
-       "a \"Invite your team\""
-      ],
-      "tinyText": 12,
+      "tapTargets": 25,
+      "smallTapTargets": 0,
+      "smallTapExamples": [],
+      "tinyText": 0,
       "fontSizes": [
-       "10px",
        "12px",
-       "13px",
        "14px",
-       "16px",
-       "17px",
-       "18px",
        "24px"
       ],
-      "textColours": 2,
+      "textColours": 6,
       "radii": [
        "6px",
-       "12px",
+       "8px",
        "4px"
       ],
       "buttonHeights": [
+       36
+      ],
+      "tables": 1,
+      "widestTable": 936,
+      "h1": [
+       "Members"
+      ]
+     },
+     "axe": [],
+     "consoleErrors": []
+    },
+    "tablet": {
+     "screenshot": "settings-members--tablet.jpg",
+     "url": "/settings/members",
+     "metrics": {
+      "pageHeight": 1024,
+      "sidewaysScroll": false,
+      "overflowing": [
+       "li \"Number series\"",
+       "li \"Bill printing\"",
+       "li \"Tally export\""
+      ],
+      "tooWide": [
+       "a \"Number series\" [145 px, class hover:bg-accent flex min-h-9 items-center gap-2 rounded-md p]",
+       "path [13 px, class [object SVGAnimatedString]]",
+       "path [8 px, class [object SVGAnimatedString]]",
+       "rect [8 px, class [object SVGAnimatedString]]",
+       "path [13 px, class [object SVGAnimatedString]]"
+      ],
+      "tapTargets": 25,
+      "smallTapTargets": 0,
+      "smallTapExamples": [],
+      "tinyText": 0,
+      "fontSizes": [
+       "12px",
+       "14px",
+       "24px"
+      ],
+      "textColours": 6,
+      "radii": [
+       "6px",
+       "8px",
+       "4px"
+      ],
+      "buttonHeights": [
+       36
+      ],
+      "tables": 1,
+      "widestTable": 480,
+      "h1": [
+       "Members"
+      ]
+     },
+     "axe": null,
+     "consoleErrors": []
+    },
+    "phone": {
+     "screenshot": "settings-members--phone.jpg",
+     "url": "/settings/members",
+     "metrics": {
+      "pageHeight": 844,
+      "sidewaysScroll": false,
+      "overflowing": [
+       "li \"GST registrations\"",
+       "li \"Number series\"",
+       "li \"Bill printing\"",
+       "li \"Tally export\""
+      ],
+      "tooWide": [
+       "a \"GST registrations\" [162 px, class hover:bg-accent flex min-h-9 items-center gap-2 rounded-md p]",
+       "line [1 px, class [object SVGAnimatedString]]",
+       "line [1 px, class [object SVGAnimatedString]]",
+       "path [13 px, class [object SVGAnimatedString]]",
+       "path [8 px, class [object SVGAnimatedString]]",
+       "rect [8 px, class [object SVGAnimatedString]]"
+      ],
+      "tapTargets": 11,
+      "smallTapTargets": 0,
+      "smallTapExamples": [],
+      "tinyText": 0,
+      "fontSizes": [
+       "12px",
+       "14px",
+       "24px"
+      ],
+      "textColours": 4,
+      "radii": [
+       "6px",
+       "8px",
+       "4px"
+      ],
+      "buttonHeights": [
+       36,
        44
       ],
       "tables": 1,
-      "widestTable": 308,
+      "widestTable": 358,
       "h1": [
-       "Dashboard"
+       "Members"
       ]
      },
      "axe": [],
@@ -156,5 +285,5 @@
    }
   }
  ],
- "step": "D.10 (dashboard, dark)"
+ "step": "D.11 (settings, dark)"
 }
