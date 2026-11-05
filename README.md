@@ -72,6 +72,8 @@ without a worker.
 
 ## Demo
 
+Everything built so far, in one page: [`docs/06-project-summary.md`](docs/06-project-summary.md).
+
 Start / stop everything in Docker with `scripts\demo-up.cmd` /
 `scripts\demo-down.cmd` (http://localhost:5173). A demo business full of
 sample data, and what to try in it: [`docs/05-demo.md`](docs/05-demo.md)
