@@ -144,6 +144,8 @@ Last updated: 2026-10-22
 
 ## In progress
 
+- **Design and next features (owner brief 2026-11-05)**: STEP 0 done, **waiting for the owner's approval of the design steps D.1–D.14**. Design audit A.0: `docs/07-design-audit.md` (46 pages × 3 sizes, screenshots in `docs/design/before/`, axe and measurements in `results.json`; tool `tools/design-audit/audit.mjs`: Playwright with the installed Edge + axe-core, signs in as the demo owner and a portal user). Main findings: no navigation on phones, tables cut off on phones, five pages scroll sideways, the bill editor is a long form, no colour meaning per status, ten equal buttons on the bill page, no brand / colour, five date formats, browser confirm boxes; 4 axe rules (91 nodes); bug: a project's "Bill from" shows "–" although set (fix in D.1). Baseline first load 166 KB gzip. Feature analysis Part B: `docs/08-next-features.md` (recommended next after the design work: recovery codes, sign-in alerts, "Paid now", audit log + CA login; then payables, bank statement import, Tally masters import).
+
 - Web additions (owner decision 2026-11-01): W.1–W.7 done. Main web page (2026-11-03): H.1 and H.2 done. 
 - **Billing made complete and easy (owner brief 2026-11-03)**: B.0 gap report done (`docs/04-billing-ideas.md`); steps B.1–B.16 approved 2026-11-03. B.1–B.16 done (the billing brief is complete).
 - **Mobile stopped (owner decision 2026-11-03)**: the mobile build is stopped completely (M.4 dropped); M.1–M.3 stay in `mobile/` as they are. The web app comes first.
