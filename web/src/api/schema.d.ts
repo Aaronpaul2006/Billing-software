@@ -3483,6 +3483,10 @@ export interface components {
             email: string;
             role: components["schemas"]["RoleEnum"];
         };
+        Issue: {
+            /** @description Bills only: record this payment against the bill in the same step. */
+            paid_now?: components["schemas"]["PaidNow"] | null;
+        };
         Join: {
             /** @default mobile */
             client?: components["schemas"]["ClientEnum"];
@@ -3849,6 +3853,19 @@ export interface components {
             results: components["schemas"]["Template"][];
             /** @description Pass as ?cursor= */
             next_cursor: string | null;
+        };
+        /** @description Money received with the bill (cash, UPI at the counter), recorded as the bill is issued. */
+        PaidNow: {
+            /** Format: decimal */
+            amount: string;
+            mode: components["schemas"]["PaymentModeEnum"];
+            /** @description UTR / cheque number */
+            reference?: string | null;
+            /**
+             * Format: date
+             * @description Default: today
+             */
+            payment_date?: string;
         };
         ParseLinesRequest: {
             /**
@@ -7614,7 +7631,11 @@ export interface operations {
             };
             cookie?: never;
         };
-        requestBody?: never;
+        requestBody?: {
+            content: {
+                "application/json": components["schemas"]["Issue"];
+            };
+        };
         responses: {
             200: {
                 headers: {

@@ -52,6 +52,44 @@ describe("final review before issuing", () => {
     });
   });
 
+  it("Paid now: records the money received with the bill (Part B)", async () => {
+    useDoc(doc());
+    let body: unknown = null;
+    server.use(
+      http.post(`${API}/documents/${DOC}/issue`, async ({ request }) => {
+        body = await request.json();
+        return HttpResponse.json(doc({ status: "ISSUED", doc_number: "INV/0001", version: 2 }));
+      }),
+    );
+    const user = userEvent.setup();
+    renderSignedIn(`/documents/${DOC}`);
+    await user.click(await screen.findByRole("button", { name: "Issue…" }));
+    const panel = screen.getByRole("region", { name: "Review before issuing" });
+    await user.click(within(panel).getByRole("checkbox", { name: "Paid now, with the bill" }));
+    // what the client owes is filled in; cash unless changed
+    expect(within(panel).getByLabelText("Amount received (₹)")).toHaveValue(
+      doc().totals.net_receivable,
+    );
+    await user.selectOptions(within(panel).getByLabelText("How"), "UPI");
+    await user.type(within(panel).getByLabelText("Reference (optional)"), "UPI 4521");
+    await user.click(within(panel).getByRole("button", { name: "Issue and record the payment" }));
+    await waitFor(() => {
+      expect(body).toEqual({
+        paid_now: { amount: doc().totals.net_receivable, mode: "UPI", reference: "UPI 4521" },
+      });
+    });
+  });
+
+  it("Paid now is not offered on a quotation", async () => {
+    useDoc(doc({ doc_type: "QUOTATION" }));
+    const user = userEvent.setup();
+    renderSignedIn(`/documents/${DOC}`);
+    await user.click(await screen.findByRole("button", { name: "Issue…" }));
+    const panel = screen.getByRole("region", { name: "Review before issuing" });
+    await within(panel).findByText("Everything looks right.");
+    expect(within(panel).queryByRole("checkbox", { name: /Paid now/ })).toBeNull();
+  });
+
   it("says when everything looks right", async () => {
     useDoc(doc());
     const user = userEvent.setup();

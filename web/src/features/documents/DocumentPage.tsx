@@ -55,6 +55,7 @@ import type { DocType, Document } from "./api";
 import { BillTimeline } from "./BillTimeline";
 import { DocumentHistory } from "./DocumentHistory";
 import { IssueReview } from "./IssueReview";
+import type { PaidNow } from "./IssueReview";
 import { SendBill } from "./SendBill";
 import type { PrintCopy } from "./sending";
 import { TotalsPanel } from "./TotalsPanel";
@@ -276,10 +277,11 @@ function Actions({ doc }: { doc: Document }) {
   };
 
   const issue = useMutation({
-    mutationFn: async () =>
+    mutationFn: async (paid?: PaidNow) =>
       unwrap(
         await api.POST("/api/v1/documents/{document_id}/issue", {
           params: { path },
+          body: paid ? { paid_now: paid } : {},
           headers: versioned,
         }),
       ),
@@ -652,8 +654,8 @@ function Actions({ doc }: { doc: Document }) {
         <IssueReview
           doc={doc}
           busy={busy}
-          onIssue={() => {
-            issue.mutate();
+          onIssue={(paid) => {
+            issue.mutate(paid);
           }}
           onClose={() => {
             setPanel("none");

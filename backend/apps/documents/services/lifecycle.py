@@ -158,6 +158,49 @@ def issue(principal: Principal, doc_id: uuid.UUID, expected: int) -> Document:
     return get_or_404(Document, doc_id)
 
 
+PAID_NOW_TYPES = frozenset({"TAX_INVOICE", "BILL_OF_SUPPLY"})
+
+
+def issue_paid_now(
+    principal: Principal, doc_id: uuid.UUID, expected: int, paid: dict[str, Any]
+) -> Document:
+    """Issue a bill and record the money received with it, in one step (Part B).
+
+    One transaction: if the payment is refused, the bill stays a draft. The
+    payment is set against this bill up to what it asks for; anything more
+    stays on the payment as unallocated (an advance), as a payment recorded
+    on its own would.
+    """
+    from apps.payments.services import record_payment  # payments depend on documents
+
+    require(principal, "payments.record")
+    with transaction.atomic():
+        doc = issue(principal, doc_id, expected)
+        if doc.doc_type not in PAID_NOW_TYPES:
+            raise Invalid(
+                "paid_now",
+                "Only a tax invoice or a bill of supply can be paid as it is issued.",
+                code="not_payable_now",
+            )
+        owed = doc.net_receivable - doc.amount_settled
+        allocation = min(paid["amount"], owed)
+        record_payment(
+            principal,
+            {
+                "party_id": doc.party_id,
+                "project_id": doc.project_id,
+                "payment_date": paid.get("payment_date") or timezone.localdate(),
+                "amount": paid["amount"],
+                "mode": paid["mode"],
+                "reference": paid.get("reference"),
+                "allocations": (
+                    [{"document_id": doc.pk, "amount": allocation}] if allocation > 0 else []
+                ),
+            },
+        )
+    return get_or_404(Document, doc_id)
+
+
 def cancel(principal: Principal, doc_id: uuid.UUID, expected: int, reason: str) -> Document:
     require(principal, "documents.issue")
     with transaction.atomic():

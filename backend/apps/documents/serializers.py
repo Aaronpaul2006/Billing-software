@@ -5,6 +5,7 @@ from drf_spectacular.utils import extend_schema_field
 from rest_framework import serializers
 
 from apps.core.fields import MoneyField, PercentField, QuantityField
+from apps.payments.models import PaymentMode
 
 from .models import (
     Document,
@@ -485,4 +486,23 @@ class LastRateSerializer(serializers.Serializer[Any]):
 class LastRatesSerializer(serializers.Serializer[Any]):
     results = LastRateSerializer(
         many=True, help_text="Per catalog item and variant: the rate on the latest issued bill."
+    )
+
+
+class PaidNowSerializer(serializers.Serializer[Any]):
+    """Money received with the bill (cash, UPI at the counter), recorded as the bill is issued."""
+
+    amount = MoneyField(min_value=Decimal("0.01"))
+    mode = serializers.ChoiceField(choices=PaymentMode.choices)
+    reference = serializers.CharField(
+        max_length=100, required=False, allow_null=True, help_text="UTR / cheque number"
+    )
+    payment_date = serializers.DateField(required=False, help_text="Default: today")
+
+
+class IssueSerializer(serializers.Serializer[Any]):
+    paid_now = PaidNowSerializer(
+        required=False,
+        allow_null=True,
+        help_text="Bills only: record this payment against the bill in the same step.",
     )

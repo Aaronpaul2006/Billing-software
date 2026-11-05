@@ -2613,6 +2613,15 @@
                 "tags": [
                     "documents"
                 ],
+                "requestBody": {
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/Issue"
+                            }
+                        }
+                    }
+                },
                 "security": [
                     {
                         "bearerAuth": []
@@ -9778,6 +9787,22 @@
                     "role"
                 ]
             },
+            "Issue": {
+                "type": "object",
+                "properties": {
+                    "paid_now": {
+                        "oneOf": [
+                            {
+                                "$ref": "#/components/schemas/PaidNow"
+                            },
+                            {
+                                "type": "null"
+                            }
+                        ],
+                        "description": "Bills only: record this payment against the bill in the same step."
+                    }
+                }
+            },
             "Join": {
                 "type": "object",
                 "properties": {
@@ -11023,6 +11048,37 @@
                         "description": "Pass as ?cursor="
                     }
                 }
+            },
+            "PaidNow": {
+                "type": "object",
+                "description": "Money received with the bill (cash, UPI at the counter), recorded as the bill is issued.",
+                "properties": {
+                    "amount": {
+                        "type": "string",
+                        "format": "decimal",
+                        "pattern": "^-?\\d{0,12}(?:\\.\\d{0,2})?$"
+                    },
+                    "mode": {
+                        "$ref": "#/components/schemas/PaymentModeEnum"
+                    },
+                    "reference": {
+                        "type": [
+                            "string",
+                            "null"
+                        ],
+                        "description": "UTR / cheque number",
+                        "maxLength": 100
+                    },
+                    "payment_date": {
+                        "type": "string",
+                        "format": "date",
+                        "description": "Default: today"
+                    }
+                },
+                "required": [
+                    "amount",
+                    "mode"
+                ]
             },
             "ParseLinesRequest": {
                 "type": "object",

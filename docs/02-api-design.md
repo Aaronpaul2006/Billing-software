@@ -319,7 +319,7 @@ and `dry_run` (`true` validates and previews, saves nothing). Needs
 | `GET /documents/{id}` | Full document with lines, totals, settlements | read |
 | `PATCH /documents/{id}` | Edit a draft; `lines` replaces all lines. Server recomputes totals. | drafts |
 | `DELETE /documents/{id}` | Delete a draft | drafts |
-| `POST /documents/{id}/issue` | Assign number, snapshot, lock | issue |
+| `POST /documents/{id}/issue` | Assign number, snapshot, lock. Optional body `{paid_now: {amount, mode, reference?, payment_date?}}` (tax invoice / bill of supply only, `422 not_payable_now` otherwise; needs `payments.record` too): records the money received with the bill in the same transaction, set against it up to what it asks for (more stays on the payment as an advance); if the payment is refused the bill stays a draft | issue |
 | `POST /documents/{id}/cancel` | `{reason}`; must have no settlements | issue |
 | `POST /documents/{id}/accept` · `/decline` | Quotations only | issue |
 | `POST /documents/{id}/convert` | `{to: "TAX_INVOICE"}` → new draft copied from a quotation/proforma | drafts |

@@ -38,6 +38,7 @@ from .serializers import (
     EmailDocumentSerializer,
     HistoryEntrySerializer,
     HistorySerializer,
+    IssueSerializer,
     LastRateSerializer,
     LastRatesSerializer,
     NoteSerializer,
@@ -322,13 +323,20 @@ class _DocumentAction(ActionAPIView):
 
 
 class IssueView(_DocumentAction):
-    @extend_schema(request=None, responses={200: DocumentSerializer}, tags=["documents"])
+    @extend_schema(request=IssueSerializer, responses={200: DocumentSerializer}, tags=["documents"])
     @idempotent
     def post(self, request: Request, document_id: uuid.UUID) -> Response:
+        data = IssueSerializer(data=request.data or {})
+        data.is_valid(raise_exception=True)
+        paid = data.validated_data.get("paid_now")
         return versioned_action(
             request,
             load=lambda: self._load(document_id),
-            run=lambda v: lifecycle.issue(self.principal, document_id, v),
+            run=(
+                (lambda v: lifecycle.issue_paid_now(self.principal, document_id, v, paid))
+                if paid
+                else (lambda v: lifecycle.issue(self.principal, document_id, v))
+            ),
             output_serializer=DocumentSerializer,
         )
 
