@@ -238,6 +238,14 @@ Screenshot names are `<page>--desktop.jpg`, `--tablet.jpg`, `--phone.jpg`.
 | D.3 | 4 / 5 | 0 (light and dark) | 75 | 172.7 KB |
 | D.4 | 4 / 5 (bills list fixed; other lists in D.7) | 0 | 75 | 173.0 KB |
 | D.5 | 4 / 5 | 0 | 75 | 174.9 KB |
+| D.6 | 4 / 5 | 0 (light and dark) | 75 | 179.8 KB (see below) |
+
+From D.6 on, first load is measured with `tools/design-audit/first-load.mjs`
+(every script and stylesheet `index.html` loads or preloads, gzip level 9), so
+the figures can be repeated. Measured that way on the same commits: **before
+170.4 KB, after D.5 178.6 KB, after D.6 179.8 KB (+5.5 %)**; the earlier rows
+used a rougher sum and are a little lower. The command palette's contents load
+the first time it opens (2.4 KB), not with the first page.
 
 ## Proposed design steps
 

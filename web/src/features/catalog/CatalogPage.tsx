@@ -1,6 +1,7 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { AlertCircle, FileUp, Plus, Trash2 } from "lucide-react";
 import { useState } from "react";
+import { useSearchParams } from "react-router";
 
 import { api, newIdempotencyKey, unwrap } from "@/api/client";
 import { ApiError } from "@/api/problem";
@@ -364,7 +365,8 @@ export function CatalogPage() {
   const canEdit = can(session.role, "masters.edit");
   // "new", "import", "edit:<id>", "variants:<id>"
   const [panel, setPanel] = useState<string | null>(null);
-  const [search, setSearch] = useState("");
+  const [params] = useSearchParams();
+  const [search, setSearch] = useState(() => params.get("q") ?? ""); // the command palette links here
   const q = useDebounced(search.trim(), 300);
   const page = useQuery({
     queryKey: ["catalog-items", "all", q],

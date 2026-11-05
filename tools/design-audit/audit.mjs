@@ -259,6 +259,23 @@ function staffPages(ids) {
       sizes: ["phone"],
       action: (page) => page.getByRole("button", { name: "Open the menu" }).click(),
     },
+    {
+      ...p("palette", "Command palette (Ctrl+K)", "/"),
+      action: async (page) => {
+        await page.keyboard.press("Control+k");
+        await page.getByRole("combobox", { name: "Search, or jump to a page" }).waitFor();
+        // ready to type at once (fails the audit if the box is not focused)
+        await page.waitForFunction(() => document.activeElement?.getAttribute("role") === "combobox", null, { timeout: 5000 });
+      },
+    },
+    {
+      ...p("palette-search", "Command palette: searching", "/"),
+      action: async (page) => {
+        await page.keyboard.press("Control+k");
+        await page.getByRole("combobox", { name: "Search, or jump to a page" }).fill("sky");
+        await page.getByRole("group", { name: "Bills & quotations" }).waitFor();
+      },
+    },
   ];
 }
 

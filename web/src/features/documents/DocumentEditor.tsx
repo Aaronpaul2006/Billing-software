@@ -809,6 +809,7 @@ function Editor({ doc, defaultTerms }: { doc?: Document; defaultTerms?: string }
   // Shortcuts anywhere on the page (popups and item lists handle their own Esc).
   const shortcut = useRef<(e: KeyboardEvent) => void>(() => undefined);
   const onShortcut = (e: KeyboardEvent) => {
+    if (e.defaultPrevented) return; // a dialog already used it (Esc closing the shortcut help)
     const ctrl = e.ctrlKey || e.metaKey;
     if (ctrl && e.key.toLowerCase() === "s") {
       e.preventDefault();

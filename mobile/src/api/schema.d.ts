@@ -2254,6 +2254,27 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/search": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * @description Permission by action name (docs/01-architecture.md §3): `read_action`
+         *     for GET/HEAD/OPTIONS, `write_action` for everything else. Generic, so list
+         *     endpoints get pagination and filtering from the DRF defaults.
+         */
+        get: operations["search_retrieve"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/tds-certificates": {
         parameters: {
             query?: never;
@@ -4915,6 +4936,51 @@ export interface components {
         SaveAsTemplate: {
             name: string;
             valid_days?: number | null;
+        };
+        SearchCatalogItem: {
+            /** Format: uuid */
+            readonly id: string;
+            readonly name: string;
+            readonly unit: string | null;
+            readonly sac_hsn: string | null;
+            /** Format: decimal */
+            readonly default_rate: string | null;
+        };
+        SearchDocument: {
+            /** Format: uuid */
+            readonly id: string;
+            readonly doc_type: components["schemas"]["DocTypeEnum"];
+            readonly status: components["schemas"]["DocumentStatusEnum"];
+            readonly doc_number: string | null;
+            /** Format: date */
+            readonly doc_date: string;
+            /** @description As frozen at issue; the party's current name on drafts. */
+            readonly party_name: string;
+            /** Format: decimal */
+            readonly grand_total: string;
+        };
+        SearchParty: {
+            /** Format: uuid */
+            readonly id: string;
+            readonly display_name: string;
+            readonly gstin: string | null;
+            readonly is_customer: boolean;
+            readonly is_vendor: boolean;
+            readonly is_active: boolean;
+        };
+        SearchProject: {
+            /** Format: uuid */
+            readonly id: string;
+            readonly code: string;
+            readonly name: string;
+            readonly client_name: string;
+            readonly status: components["schemas"]["ProjectStatusEnum"];
+        };
+        SearchResult: {
+            documents: components["schemas"]["SearchDocument"][];
+            parties: components["schemas"]["SearchParty"][];
+            projects: components["schemas"]["SearchProject"][];
+            catalog_items: components["schemas"]["SearchCatalogItem"][];
         };
         Session: {
             /** Format: uuid */
@@ -9494,6 +9560,28 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["RetentionReleaseDetail"];
+                };
+            };
+        };
+    };
+    search_retrieve: {
+        parameters: {
+            query: {
+                /** @description 2 to 100 characters: a bill number, a name, a project code, an HSN */
+                q: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SearchResult"];
                 };
             };
         };

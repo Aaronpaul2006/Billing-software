@@ -23,6 +23,7 @@ urlpatterns: list[URLPattern | URLResolver] = [
     path("api/v1/", include("apps.reminders.urls")),
     path("api/v1/", include("apps.doc_templates.urls")),
     path("api/v1/", include("apps.portal.urls")),
+    path("api/v1/", include("apps.search.urls")),
 ]
 
 if settings.DEBUG:

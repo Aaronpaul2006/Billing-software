@@ -237,6 +237,21 @@ Implemented (Phase 0.5) as of 2026-10-19:
 | `GET /projects/{id}/boq-progress` | Per BOQ item: contract vs billed quantity and value, balance, progress %; plus totals. All items, not paginated. |
 | `GET/POST /catalog-items` · `PATCH/DELETE /catalog-items/{id}` | Reusable items and rates. Search (B.1): `?q=` (every word must match the name, description or a variant's value; or the start of the HSN/SAC), `is_active`, `sac_hsn`; `?used=true&ordering=-last_used_at` lists the items used most recently on a bill (`last_used_at` in each row) |
 
+### Search across the business (D.6)
+
+`GET /search?q=sky` (every member, `tenant.read`) is for the web app's Ctrl+K
+command palette: up to 5 of each kind, in the caller's tenant only.
+
+| Key | Matches | Each row |
+|---|---|---|
+| `documents` | number contains `q`, or the client's name (current, or as frozen at issue); newest first | `id, doc_type, status, doc_number, doc_date, party_name, grand_total` |
+| `parties` | name or legal name contains `q`, or the GSTIN equals it; active first | `id, display_name, gstin, is_customer, is_vendor, is_active` |
+| `projects` | name or code contains `q` | `id, code, name, client_name, status` |
+| `catalog_items` | active items whose name contains `q` or whose HSN/SAC starts with it | `id, name, unit, sac_hsn, default_rate` |
+
+`q` is 2 to 100 characters (else `422`, field `q`); case does not matter, and
+`%` / `_` match only themselves. Amounts are strings.
+
 ### Catalog item import (B.2)
 
 `POST /catalog-items:import` (`multipart/form-data`: `file`, `dry_run`), the

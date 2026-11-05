@@ -10,6 +10,10 @@ import { server } from "./server";
 // runner) the first import of a page can take over the default 1 s of findBy*.
 configure({ asyncUtilTimeout: 5000 });
 
+// jsdom lays nothing out, so it has no scrollIntoView (the command palette keeps
+// the chosen row in view with it).
+Element.prototype.scrollIntoView = () => undefined;
+
 beforeAll(() => {
   server.listen({ onUnhandledFrame: "error" }); // an unmocked API call fails the test
 });

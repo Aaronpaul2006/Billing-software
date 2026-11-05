@@ -3,7 +3,10 @@ import { useEffect } from "react";
 import { Dialog, DialogContent, DialogDescription, DialogTitle } from "@/components/ui/dialog";
 import { SHORTCUTS as EDITOR } from "@/features/documents/keyboard";
 
+import { MOD_KEY } from "./keys";
+
 const ANYWHERE: { keys: string; what: string }[] = [
+  { keys: `${MOD_KEY} + K`, what: "Search, or jump to a page" },
   { keys: "?", what: "Show these shortcuts" },
   { keys: "Esc", what: "Close a menu, dialog or panel" },
   { keys: "Tab / Shift + Tab", what: "Move to the next / previous control" },

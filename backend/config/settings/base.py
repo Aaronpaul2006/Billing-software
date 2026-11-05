@@ -48,6 +48,7 @@ INSTALLED_APPS = [
     "apps.reminders",
     "apps.doc_templates",
     "apps.portal",
+    "apps.search",
 ]
 
 MIDDLEWARE = [

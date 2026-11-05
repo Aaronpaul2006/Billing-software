@@ -1,30 +1,4 @@
-import {
-  BadgePercent,
-  BarChart3,
-  BookOpen,
-  Building2,
-  ChevronsUpDown,
-  ClipboardList,
-  Download,
-  FileText,
-  FolderKanban,
-  Hash,
-  IndianRupee,
-  Keyboard,
-  Landmark,
-  LayoutDashboard,
-  LayoutTemplate,
-  LogOut,
-  Menu,
-  Package,
-  Printer,
-  Receipt,
-  Settings,
-  UserCog,
-  UserRound,
-  Users,
-} from "lucide-react";
-import type { LucideIcon } from "lucide-react";
+import { Building2, ChevronsUpDown, Keyboard, LogOut, Menu, Search, UserRound } from "lucide-react";
 import { useState } from "react";
 import { Link, NavLink, Outlet, useLocation, useNavigate, useSearchParams } from "react-router";
 
@@ -50,85 +24,15 @@ import {
 import { setTextSize, setThemeChoice, textSize, themeChoice } from "@/lib/appearance";
 import type { TextSize, ThemeChoice } from "@/lib/appearance";
 import { can } from "@/lib/permissions";
-import type { Action } from "@/lib/permissions";
 import { cn } from "@/lib/utils";
 
+import { CommandPalette } from "./CommandPalette";
 import { InvitationsBanner } from "./InvitationsBanner";
+import { MOD_KEY } from "./keys";
+import { GROUPS } from "./nav";
+import type { NavEntry } from "./nav";
 import { ShortcutsHelp } from "./ShortcutsHelp";
 import { VerifyEmailBanner } from "./VerifyEmailBanner";
-
-interface NavEntry {
-  to: string;
-  label: string;
-  icon: LucideIcon;
-  end?: boolean;
-  /** Shown only to roles that may do this (the server checks too). */
-  action?: Action;
-  /** For links that share a page (Bills and Quotations are both /documents). */
-  match?: (path: string, query: URLSearchParams) => boolean;
-}
-
-/** The sidebar, grouped by job (D.5). */
-const GROUPS: { title: string; items: NavEntry[] }[] = [
-  {
-    title: "Sell",
-    items: [
-      {
-        to: "/documents?type=quotations",
-        label: "Quotations",
-        icon: ClipboardList,
-        match: (path, q) => path === "/documents" && q.get("type") === "quotations",
-      },
-      {
-        to: "/documents?type=bills",
-        label: "Bills",
-        icon: FileText,
-        match: (path, q) => path.startsWith("/documents") && q.get("type") !== "quotations",
-      },
-      { to: "/templates", label: "Templates", icon: LayoutTemplate },
-    ],
-  },
-  {
-    title: "Money",
-    items: [
-      { to: "/payments", label: "Payments", icon: IndianRupee },
-      { to: "/expenses", label: "Expenses", icon: Receipt },
-      { to: "/tds-certificates", label: "TDS certificates", icon: BadgePercent },
-    ],
-  },
-  {
-    title: "Work",
-    items: [
-      { to: "/projects", label: "Projects", icon: FolderKanban },
-      { to: "/parties", label: "Clients & vendors", icon: Users },
-      { to: "/catalog", label: "Catalog", icon: Package },
-    ],
-  },
-  {
-    title: "Insight",
-    items: [
-      { to: "/", label: "Dashboard", icon: LayoutDashboard, end: true },
-      { to: "/reports", label: "Reports", icon: BarChart3, action: "reports.view" },
-      { to: "/exports", label: "Exports", icon: Download, action: "reports.view" },
-    ],
-  },
-  {
-    title: "Settings",
-    items: [
-      { to: "/settings/company", label: "Company", icon: Settings, action: "tenant.settings" },
-      { to: "/settings/members", label: "Members", icon: UserCog, action: "members.manage" },
-      {
-        to: "/settings/gst-registrations",
-        label: "GST registrations",
-        icon: Landmark,
-        action: "tenant.settings",
-      },
-      { to: "/settings/series", label: "Number series", icon: Hash, action: "tenant.settings" },
-      { to: "/settings/print", label: "Bill printing", icon: Printer, action: "tenant.settings" },
-      { to: "/settings/tally", label: "Tally export", icon: BookOpen, action: "tenant.settings" },
-    ],
-  },
-];
 
 const itemClass = (active: boolean) =>
   cn(
@@ -296,11 +200,30 @@ function UserMenu({ onHelp }: { onHelp: () => void }) {
 }
 
 /** The sidebar's contents: on wide screens beside the page, on phones in the menu panel. */
-function SidebarBody({ onNavigate, onHelp }: { onNavigate?: () => void; onHelp: () => void }) {
+function SidebarBody({
+  onNavigate,
+  onHelp,
+  onSearch,
+}: {
+  onNavigate?: () => void;
+  onHelp: () => void;
+  onSearch: () => void;
+}) {
   const session = useSession();
   return (
     <>
       <TenantSwitcher />
+      <Button
+        variant="outline"
+        className="text-muted-foreground mt-3 w-full justify-start px-2 font-normal"
+        aria-keyshortcuts={MOD_KEY === "⌘" ? "Meta+K" : "Control+K"}
+        onClick={onSearch}
+      >
+        <Search aria-hidden /> Search
+        <kbd className="ml-auto font-sans text-xs" aria-hidden>
+          {MOD_KEY} K
+        </kbd>
+      </Button>
       <div className="mt-4 grid gap-5">
         {GROUPS.map((group) => {
           const items = group.items.filter((i) => !i.action || can(session.role, i.action));
@@ -323,7 +246,7 @@ function SidebarBody({ onNavigate, onHelp }: { onNavigate?: () => void; onHelp: 
 }
 
 /** Phones and small tablets: a menu button opening the sidebar as a panel (D.1). */
-function MobileMenu({ onHelp }: { onHelp: () => void }) {
+function MobileMenu({ onHelp, onSearch }: { onHelp: () => void; onSearch: () => void }) {
   const [open, setOpen] = useState(false);
   const me = useMe();
   const session = useSession();
@@ -350,37 +273,50 @@ function MobileMenu({ onHelp }: { onHelp: () => void }) {
               setOpen(false);
               onHelp();
             }}
+            onSearch={() => {
+              setOpen(false);
+              onSearch();
+            }}
           />
         </SheetContent>
       </Sheet>
       <span className="truncate text-sm font-semibold">{company}</span>
+      <Button
+        variant="ghost"
+        size="icon"
+        className="ml-auto size-11"
+        aria-label="Search"
+        onClick={onSearch}
+      >
+        <Search className="size-5" aria-hidden />
+      </Button>
     </header>
   );
 }
 
 export function AppShell() {
   const [help, setHelp] = useState(false);
+  const [search, setSearch] = useState(false);
+  const showHelp = () => {
+    setHelp(true);
+  };
+  const showSearch = () => {
+    setSearch(true);
+  };
   return (
     <div className="flex min-h-svh">
       <aside className="bg-sidebar text-sidebar-foreground border-sidebar-border hidden w-60 shrink-0 flex-col border-r p-3 md:flex">
-        <SidebarBody
-          onHelp={() => {
-            setHelp(true);
-          }}
-        />
+        <SidebarBody onHelp={showHelp} onSearch={showSearch} />
       </aside>
       <div className="flex min-w-0 flex-1 flex-col">
-        <MobileMenu
-          onHelp={() => {
-            setHelp(true);
-          }}
-        />
+        <MobileMenu onHelp={showHelp} onSearch={showSearch} />
         <VerifyEmailBanner />
         <InvitationsBanner />
         <main className="flex-1 p-4 md:p-6">
           <Outlet />
         </main>
         <ShortcutsHelp open={help} onOpenChange={setHelp} />
+        <CommandPalette open={search} onOpenChange={setSearch} onHelp={showHelp} />
       </div>
     </div>
   );

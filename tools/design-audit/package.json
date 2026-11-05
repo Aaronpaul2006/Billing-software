@@ -4,7 +4,8 @@
   "type": "module",
   "description": "Screenshots and accessibility checks of every web page at three sizes (docs/07-design-audit.md).",
   "scripts": {
-    "audit": "node audit.mjs"
+    "audit": "node audit.mjs",
+    "first-load": "node first-load.mjs"
   },
   "devDependencies": {
     "@axe-core/playwright": "4.14.0",

@@ -1,0 +1,171 @@
+import {
+  BadgePercent,
+  BarChart3,
+  BookOpen,
+  ClipboardList,
+  Download,
+  FilePlus,
+  FileText,
+  FolderKanban,
+  FolderPlus,
+  Hash,
+  IndianRupee,
+  Landmark,
+  LayoutDashboard,
+  LayoutTemplate,
+  Package,
+  Printer,
+  Receipt,
+  Settings,
+  UserCog,
+  UserPlus,
+  Users,
+} from "lucide-react";
+import type { LucideIcon } from "lucide-react";
+
+import type { Action } from "@/lib/permissions";
+
+export interface NavEntry {
+  to: string;
+  label: string;
+  icon: LucideIcon;
+  end?: boolean;
+  /** Shown only to roles that may do this (the server checks too). */
+  action?: Action;
+  /** For links that share a page (Bills and Quotations are both /documents). */
+  match?: (path: string, query: URLSearchParams) => boolean;
+  /** Other words the command palette finds it by. */
+  keywords?: string;
+}
+
+/** The sidebar, grouped by job (D.5). */
+export const GROUPS: { title: string; items: NavEntry[] }[] = [
+  {
+    title: "Sell",
+    items: [
+      {
+        to: "/documents?type=quotations",
+        label: "Quotations",
+        icon: ClipboardList,
+        keywords: "estimates quotes",
+        match: (path, q) => path === "/documents" && q.get("type") === "quotations",
+      },
+      {
+        to: "/documents?type=bills",
+        label: "Bills",
+        icon: FileText,
+        keywords: "invoices credit debit notes proforma",
+        match: (path, q) => path.startsWith("/documents") && q.get("type") !== "quotations",
+      },
+      { to: "/templates", label: "Templates", icon: LayoutTemplate },
+    ],
+  },
+  {
+    title: "Money",
+    items: [
+      { to: "/payments", label: "Payments", icon: IndianRupee, keywords: "receipts received" },
+      { to: "/expenses", label: "Expenses", icon: Receipt, keywords: "purchases costs" },
+      {
+        to: "/tds-certificates",
+        label: "TDS certificates",
+        icon: BadgePercent,
+        keywords: "form 16a 26as",
+      },
+    ],
+  },
+  {
+    title: "Work",
+    items: [
+      { to: "/projects", label: "Projects", icon: FolderKanban, keywords: "sites boq" },
+      {
+        to: "/parties",
+        label: "Clients & vendors",
+        icon: Users,
+        keywords: "parties customers suppliers subcontractors",
+      },
+      { to: "/catalog", label: "Catalog", icon: Package, keywords: "items rates materials" },
+    ],
+  },
+  {
+    title: "Insight",
+    items: [
+      { to: "/", label: "Dashboard", icon: LayoutDashboard, end: true },
+      {
+        to: "/reports",
+        label: "Reports",
+        icon: BarChart3,
+        action: "reports.view",
+        keywords: "gst gstr receivables outstanding",
+      },
+      {
+        to: "/exports",
+        label: "Exports",
+        icon: Download,
+        action: "reports.view",
+        keywords: "tally excel download",
+      },
+    ],
+  },
+  {
+    title: "Settings",
+    items: [
+      { to: "/settings/company", label: "Company", icon: Settings, action: "tenant.settings" },
+      { to: "/settings/members", label: "Members", icon: UserCog, action: "members.manage" },
+      {
+        to: "/settings/gst-registrations",
+        label: "GST registrations",
+        icon: Landmark,
+        action: "tenant.settings",
+      },
+      { to: "/settings/series", label: "Number series", icon: Hash, action: "tenant.settings" },
+      { to: "/settings/print", label: "Bill printing", icon: Printer, action: "tenant.settings" },
+      { to: "/settings/tally", label: "Tally export", icon: BookOpen, action: "tenant.settings" },
+    ],
+  },
+];
+
+/** "New ..." actions for the command palette (D.6), for the roles that may do them. */
+export const CREATE: NavEntry[] = [
+  {
+    to: "/documents/new",
+    label: "New bill",
+    icon: FilePlus,
+    action: "documents.draft",
+    keywords: "invoice create",
+  },
+  {
+    to: "/documents/new?type=QUOTATION",
+    label: "New quotation",
+    icon: ClipboardList,
+    action: "documents.draft",
+    keywords: "estimate quote create",
+  },
+  {
+    to: "/payments/new",
+    label: "Record a payment",
+    icon: IndianRupee,
+    action: "payments.record",
+    keywords: "receipt received money new",
+  },
+  {
+    to: "/expenses/new",
+    label: "Record an expense",
+    icon: Receipt,
+    action: "expenses.record",
+    keywords: "purchase cost new",
+  },
+  {
+    to: "/parties/new",
+    label: "New client or vendor",
+    icon: UserPlus,
+    action: "masters.edit",
+    keywords: "party customer supplier subcontractor create",
+  },
+  {
+    to: "/projects/new",
+    label: "New project",
+    icon: FolderPlus,
+    action: "masters.edit",
+    keywords: "site create",
+  },
+];

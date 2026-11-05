@@ -6234,6 +6234,43 @@
                 }
             }
         },
+        "/api/v1/search": {
+            "get": {
+                "operationId": "search_retrieve",
+                "description": "Permission by action name (docs/01-architecture.md §3): `read_action`\nfor GET/HEAD/OPTIONS, `write_action` for everything else. Generic, so list\nendpoints get pagination and filtering from the DRF defaults.",
+                "parameters": [
+                    {
+                        "in": "query",
+                        "name": "q",
+                        "schema": {
+                            "type": "string"
+                        },
+                        "description": "2 to 100 characters: a bill number, a name, a project code, an HSN",
+                        "required": true
+                    }
+                ],
+                "tags": [
+                    "search"
+                ],
+                "security": [
+                    {
+                        "bearerAuth": []
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/SearchResult"
+                                }
+                            }
+                        },
+                        "description": ""
+                    }
+                }
+            }
+        },
         "/api/v1/tds-certificates": {
             "get": {
                 "operationId": "tds_certificates_list",
@@ -14420,6 +14457,221 @@
                 },
                 "required": [
                     "name"
+                ]
+            },
+            "SearchCatalogItem": {
+                "type": "object",
+                "properties": {
+                    "id": {
+                        "type": "string",
+                        "format": "uuid",
+                        "readOnly": true
+                    },
+                    "name": {
+                        "type": "string",
+                        "readOnly": true
+                    },
+                    "unit": {
+                        "type": [
+                            "string",
+                            "null"
+                        ],
+                        "readOnly": true
+                    },
+                    "sac_hsn": {
+                        "type": [
+                            "string",
+                            "null"
+                        ],
+                        "readOnly": true
+                    },
+                    "default_rate": {
+                        "type": [
+                            "string",
+                            "null"
+                        ],
+                        "format": "decimal",
+                        "pattern": "^-?\\d{0,12}(?:\\.\\d{0,2})?$",
+                        "readOnly": true
+                    }
+                },
+                "required": [
+                    "default_rate",
+                    "id",
+                    "name",
+                    "sac_hsn",
+                    "unit"
+                ]
+            },
+            "SearchDocument": {
+                "type": "object",
+                "properties": {
+                    "id": {
+                        "type": "string",
+                        "format": "uuid",
+                        "readOnly": true
+                    },
+                    "doc_type": {
+                        "allOf": [
+                            {
+                                "$ref": "#/components/schemas/DocTypeEnum"
+                            }
+                        ],
+                        "readOnly": true
+                    },
+                    "status": {
+                        "allOf": [
+                            {
+                                "$ref": "#/components/schemas/DocumentStatusEnum"
+                            }
+                        ],
+                        "readOnly": true
+                    },
+                    "doc_number": {
+                        "type": [
+                            "string",
+                            "null"
+                        ],
+                        "readOnly": true
+                    },
+                    "doc_date": {
+                        "type": "string",
+                        "format": "date",
+                        "readOnly": true
+                    },
+                    "party_name": {
+                        "type": "string",
+                        "readOnly": true,
+                        "description": "As frozen at issue; the party's current name on drafts."
+                    },
+                    "grand_total": {
+                        "type": "string",
+                        "format": "decimal",
+                        "pattern": "^-?\\d{0,12}(?:\\.\\d{0,2})?$",
+                        "readOnly": true
+                    }
+                },
+                "required": [
+                    "doc_date",
+                    "doc_number",
+                    "doc_type",
+                    "grand_total",
+                    "id",
+                    "party_name",
+                    "status"
+                ]
+            },
+            "SearchParty": {
+                "type": "object",
+                "properties": {
+                    "id": {
+                        "type": "string",
+                        "format": "uuid",
+                        "readOnly": true
+                    },
+                    "display_name": {
+                        "type": "string",
+                        "readOnly": true
+                    },
+                    "gstin": {
+                        "type": [
+                            "string",
+                            "null"
+                        ],
+                        "readOnly": true
+                    },
+                    "is_customer": {
+                        "type": "boolean",
+                        "readOnly": true
+                    },
+                    "is_vendor": {
+                        "type": "boolean",
+                        "readOnly": true
+                    },
+                    "is_active": {
+                        "type": "boolean",
+                        "readOnly": true
+                    }
+                },
+                "required": [
+                    "display_name",
+                    "gstin",
+                    "id",
+                    "is_active",
+                    "is_customer",
+                    "is_vendor"
+                ]
+            },
+            "SearchProject": {
+                "type": "object",
+                "properties": {
+                    "id": {
+                        "type": "string",
+                        "format": "uuid",
+                        "readOnly": true
+                    },
+                    "code": {
+                        "type": "string",
+                        "readOnly": true
+                    },
+                    "name": {
+                        "type": "string",
+                        "readOnly": true
+                    },
+                    "client_name": {
+                        "type": "string",
+                        "readOnly": true
+                    },
+                    "status": {
+                        "allOf": [
+                            {
+                                "$ref": "#/components/schemas/ProjectStatusEnum"
+                            }
+                        ],
+                        "readOnly": true
+                    }
+                },
+                "required": [
+                    "client_name",
+                    "code",
+                    "id",
+                    "name",
+                    "status"
+                ]
+            },
+            "SearchResult": {
+                "type": "object",
+                "properties": {
+                    "documents": {
+                        "type": "array",
+                        "items": {
+                            "$ref": "#/components/schemas/SearchDocument"
+                        }
+                    },
+                    "parties": {
+                        "type": "array",
+                        "items": {
+                            "$ref": "#/components/schemas/SearchParty"
+                        }
+                    },
+                    "projects": {
+                        "type": "array",
+                        "items": {
+                            "$ref": "#/components/schemas/SearchProject"
+                        }
+                    },
+                    "catalog_items": {
+                        "type": "array",
+                        "items": {
+                            "$ref": "#/components/schemas/SearchCatalogItem"
+                        }
+                    }
+                },
+                "required": [
+                    "catalog_items",
+                    "documents",
+                    "parties",
+                    "projects"
                 ]
             },
             "Session": {

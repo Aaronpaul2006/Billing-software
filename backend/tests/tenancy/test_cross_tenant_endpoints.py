@@ -1180,3 +1180,6 @@ OBJECT_ROUTES["document-email"] = lambda w: None
 
 # --- B.16 Tally ledger names: tests/exports/test_tally.py::test_ledger_names_are_per_business
 COLLECTION_ROUTES["tenant-tally-settings"] = lambda w: None
+
+# --- D.6 command palette search: tests/search/test_search.py::test_another_business_sees_nothing
+COLLECTION_ROUTES["search"] = lambda w: None
