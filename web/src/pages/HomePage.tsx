@@ -1,9 +1,11 @@
 import {
   BarChart3,
-  Building2,
+  Calculator,
   ClipboardList,
+  Download,
   FileText,
   IndianRupee,
+  LockKeyhole,
   Mail,
   MessageCircle,
   Phone,
@@ -15,6 +17,7 @@ import type { ReactNode } from "react";
 import { Link } from "react-router";
 
 import { BRAND } from "@/brand";
+import { BrandMark } from "@/components/BrandMark";
 import { Button } from "@/components/ui/button";
 
 const FEATURES: { icon: LucideIcon; title: string; text: string }[] = [
@@ -117,15 +120,34 @@ const FAQ: { q: string; a: string }[] = [
   },
 ];
 
+/** What a careful owner wants to know (D.13); every point is true of the app today. */
+const TRUST: { icon: LucideIcon; title: string; text: string }[] = [
+  {
+    icon: LockKeyhole,
+    title: "Only your business sees your books",
+    text: "Each business's data is kept apart in the database itself, not just on the screen.",
+  },
+  {
+    icon: ShieldCheck,
+    title: "Two-step sign-in",
+    text: "Owners and admins confirm each sign-in with a code from an app; clients with a code by email.",
+  },
+  {
+    icon: Calculator,
+    title: "Exact to the paisa",
+    text: "Amounts are worked out exactly, never rounded along the way, and GST follows the place of supply.",
+  },
+  {
+    icon: Download,
+    title: "Your data, any time",
+    text: "Export to Tally, Excel or PDF whenever you like; nothing is locked in.",
+  },
+];
+
 function MockScreen({ title, children }: { title: string; children: ReactNode }) {
   return (
     <div className="bg-background rounded-lg border p-3 text-xs shadow-sm" aria-hidden>
-      <div className="mb-2 flex items-center gap-1">
-        <span className="size-2 rounded-full bg-red-300" />
-        <span className="size-2 rounded-full bg-amber-300" />
-        <span className="size-2 rounded-full bg-emerald-300" />
-        <span className="text-muted-foreground ml-2 truncate">{title}</span>
-      </div>
+      <div className="text-muted-foreground mb-2 truncate font-medium">{title}</div>
       <div className="grid gap-1">{children}</div>
     </div>
   );
@@ -167,9 +189,8 @@ export function HomePage() {
     <div className="bg-background min-h-svh">
       <header className="border-b">
         <div className="mx-auto flex max-w-6xl items-center justify-between gap-4 p-4">
-          <Link to="/" className="flex items-center gap-2 font-semibold">
-            <Building2 className="size-5" aria-hidden />
-            {BRAND.name}
+          <Link to="/" className="rounded-md">
+            <BrandMark />
           </Link>
           <nav aria-label="Home" className="flex items-center gap-1 text-sm">
             <a href="#features" className="hover:bg-accent hidden rounded-md px-3 py-1.5 sm:block">
@@ -249,12 +270,29 @@ export function HomePage() {
           </ol>
         </section>
 
+        <section id="trust" aria-labelledby="trust-title" className="mx-auto max-w-6xl px-4 py-16">
+          <h2 id="trust-title" className="mb-8 text-2xl font-semibold tracking-tight">
+            Your books, kept safe
+          </h2>
+          <ul className="grid gap-6 sm:grid-cols-2 lg:grid-cols-4">
+            {TRUST.map(({ icon: Icon, title, text }) => (
+              <li key={title} className="grid content-start gap-2">
+                <span className="bg-primary/10 text-primary flex size-9 items-center justify-center rounded-lg">
+                  <Icon className="size-5" aria-hidden />
+                </span>
+                <h3 className="font-medium">{title}</h3>
+                <p className="text-muted-foreground text-sm">{text}</p>
+              </li>
+            ))}
+          </ul>
+        </section>
+
         <section id="faq" aria-labelledby="faq-title" className="bg-muted/50 border-y">
-          <div className="mx-auto max-w-3xl px-4 py-16">
+          <div className="mx-auto max-w-6xl px-4 py-16">
             <h2 id="faq-title" className="mb-6 text-2xl font-semibold tracking-tight">
               Questions
             </h2>
-            <div className="grid gap-2">
+            <div className="grid items-start gap-2 md:grid-cols-2">
               {FAQ.map(({ q, a }) => (
                 <details key={q} className="bg-background group rounded-lg border p-4">
                   <summary className="cursor-pointer font-medium">{q}</summary>

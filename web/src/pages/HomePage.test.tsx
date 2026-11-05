@@ -39,4 +39,19 @@ describe("public home page", () => {
     expect(await screen.findByRole("heading", { name: "Sign in" })).toBeVisible();
     expect(router.state.location.pathname).toBe("/login");
   });
+
+  it("says how the books are kept safe, and every signed-out page leads home (D.13)", async () => {
+    const user = userEvent.setup();
+    const router = renderApp("/");
+    const trust = await screen.findByRole("region", { name: "Your books, kept safe" });
+    expect(within(trust).getAllByRole("heading", { level: 3 })).toHaveLength(4);
+    expect(within(trust).getByText("Two-step sign-in")).toBeVisible();
+    await user.click(screen.getAllByRole("link", { name: "Sign in" })[0] as HTMLElement);
+    expect(await screen.findByText("Welcome back.")).toBeInTheDocument();
+    // the brand on the sign-in page goes back to the home page
+    await user.click(
+      screen.getAllByRole("link", { name: `${BRAND.name}, home page` })[0] as HTMLElement,
+    );
+    expect(router.state.location.pathname).toBe("/");
+  });
 });

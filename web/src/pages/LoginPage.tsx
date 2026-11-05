@@ -7,13 +7,14 @@ import { z } from "zod";
 
 import { ApiError } from "@/api/problem";
 import { useAuth } from "@/auth/context";
-import { BRAND } from "@/brand";
 import type { MfaMethod } from "@/auth/context";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+
+import { AuthShell } from "./AuthCard";
 
 const credentials = z.object({
   email: z.string().trim().pipe(z.email("Enter your email address.")),
@@ -97,7 +98,7 @@ export function LoginPage() {
   });
 
   return (
-    <main className="bg-muted flex min-h-svh items-center justify-center p-4">
+    <AuthShell>
       <Card className="w-full max-w-sm">
         <CardHeader>
           <CardTitle>
@@ -105,7 +106,7 @@ export function LoginPage() {
           </CardTitle>
           <CardDescription>
             {!mfaToken
-              ? BRAND.name
+              ? "Welcome back."
               : method === "email"
                 ? "We emailed you a 6-digit code. Enter it to finish signing in (it works for 10 minutes)."
                 : "Enter the 6-digit code from your authenticator app, or a recovery code."}
@@ -201,6 +202,6 @@ export function LoginPage() {
           )}
         </CardContent>
       </Card>
-    </main>
+    </AuthShell>
   );
 }

@@ -1,6 +1,6 @@
 {
  "base": "http://localhost:5173",
- "at": "2026-11-05T14:48:39.292Z",
+ "at": "2026-11-05T14:55:31.115Z",
  "sizes": [
   {
    "name": "desktop",
@@ -20,232 +20,168 @@
  ],
  "pages": [
   {
-   "name": "Client portal: overview",
-   "path": "/portal",
+   "name": "Public home page",
+   "path": "/",
    "sizes": {
     "desktop": {
-     "screenshot": "portal-overview--desktop.jpg",
-     "url": "/portal",
+     "screenshot": "home--desktop.jpg",
+     "url": "/",
      "metrics": {
-      "pageHeight": 900,
+      "pageHeight": 2618,
       "sidewaysScroll": false,
       "overflowing": [],
       "tooWide": [],
-      "tapTargets": 11,
-      "smallTapTargets": 4,
+      "tapTargets": 13,
+      "smallTapTargets": 2,
       "smallTapExamples": [
-       "a \"statement\"",
-       "button \"Date\"",
-       "a \"INV/0002\"",
-       "a \"INV/0001\""
+       "a \"Sign in\"",
+       "a \"Create your account\""
       ],
       "tinyText": 0,
       "fontSizes": [
        "12px",
-       "13px",
        "14px",
        "16px",
-       "17px",
        "18px",
        "24px",
-       "30px"
+       "48px"
       ],
       "textColours": 4,
       "radii": [
        "6px",
-       "12px",
-       "4px"
-      ],
-      "buttonHeights": [
-       16,
-       32
-      ],
-      "tables": 1,
-      "widestTable": 974,
-      "h1": [
-       "Overview"
-      ]
-     },
-     "axe": [],
-     "consoleErrors": []
-    },
-    "tablet": {
-     "screenshot": "portal-overview--tablet.jpg",
-     "url": "/portal",
-     "metrics": {
-      "pageHeight": 1024,
-      "sidewaysScroll": false,
-      "overflowing": [],
-      "tooWide": [],
-      "tapTargets": 9,
-      "smallTapTargets": 1,
-      "smallTapExamples": [
-       "a \"statement\""
-      ],
-      "tinyText": 0,
-      "fontSizes": [
-       "12px",
-       "13px",
-       "14px",
        "16px",
-       "17px",
-       "18px",
-       "24px",
-       "30px"
+       "8px",
+       "4px",
+       "12px",
+       "3.35544e+07px"
       ],
-      "textColours": 4,
-      "radii": [
-       "6px",
-       "12px"
-      ],
-      "buttonHeights": [
-       32
-      ],
+      "buttonHeights": [],
       "tables": 0,
       "widestTable": 0,
       "h1": [
-       "Overview"
+       "Billing for builders and contractors"
+      ]
+     },
+     "axe": [],
+     "consoleErrors": [
+      "Failed to load resource: the server responded with a status of 401 (Unauthorized)"
+     ]
+    },
+    "tablet": {
+     "screenshot": "home--tablet.jpg",
+     "url": "/",
+     "metrics": {
+      "pageHeight": 3162,
+      "sidewaysScroll": false,
+      "overflowing": [],
+      "tooWide": [],
+      "tapTargets": 13,
+      "smallTapTargets": 2,
+      "smallTapExamples": [
+       "a \"Sign in\"",
+       "a \"Create your account\""
+      ],
+      "tinyText": 0,
+      "fontSizes": [
+       "12px",
+       "14px",
+       "16px",
+       "18px",
+       "24px",
+       "48px"
+      ],
+      "textColours": 4,
+      "radii": [
+       "6px",
+       "16px",
+       "8px",
+       "4px",
+       "12px",
+       "3.35544e+07px"
+      ],
+      "buttonHeights": [],
+      "tables": 0,
+      "widestTable": 0,
+      "h1": [
+       "Billing for builders and contractors"
       ]
      },
      "axe": null,
-     "consoleErrors": []
+     "consoleErrors": [
+      "Failed to load resource: the server responded with a status of 401 (Unauthorized)"
+     ]
     },
     "phone": {
-     "screenshot": "portal-overview--phone.jpg",
-     "url": "/portal",
+     "screenshot": "home--phone.jpg",
+     "url": "/",
      "metrics": {
-      "pageHeight": 1075,
+      "pageHeight": 4936,
       "sidewaysScroll": false,
       "overflowing": [],
       "tooWide": [],
-      "tapTargets": 9,
-      "smallTapTargets": 1,
+      "tapTargets": 10,
+      "smallTapTargets": 2,
       "smallTapExamples": [
-       "a \"statement\""
+       "a \"Sign in\"",
+       "a \"Create your account\""
       ],
       "tinyText": 0,
       "fontSizes": [
        "12px",
-       "13px",
        "14px",
        "16px",
-       "17px",
        "18px",
        "24px",
-       "30px"
+       "36px"
       ],
-      "textColours": 5,
+      "textColours": 4,
       "radii": [
        "6px",
-       "12px"
+       "16px",
+       "8px",
+       "4px",
+       "12px",
+       "3.35544e+07px"
       ],
-      "buttonHeights": [
-       32
-      ],
+      "buttonHeights": [],
       "tables": 0,
       "widestTable": 0,
       "h1": [
-       "Overview"
+       "Billing for builders and contractors"
       ]
      },
      "axe": [],
-     "consoleErrors": []
+     "consoleErrors": [
+      "Failed to load resource: the server responded with a status of 401 (Unauthorized)"
+     ]
     }
    }
   },
   {
-   "name": "Client portal: statement",
-   "path": "/portal/statement",
+   "name": "Sign in",
+   "path": "/login",
    "sizes": {
     "desktop": {
-     "screenshot": "portal-statement--desktop.jpg",
-     "url": "/portal/statement",
+     "screenshot": "login--desktop.jpg",
+     "url": "/login",
      "metrics": {
       "pageHeight": 900,
       "sidewaysScroll": false,
       "overflowing": [],
       "tooWide": [],
-      "tapTargets": 7,
-      "smallTapTargets": 0,
-      "smallTapExamples": [],
-      "tinyText": 0,
-      "fontSizes": [
-       "12px",
-       "14px",
-       "16px",
-       "24px"
-      ],
-      "textColours": 2,
-      "radii": [
-       "6px",
-       "12px"
-      ],
-      "buttonHeights": [
-       32
-      ],
-      "tables": 1,
-      "widestTable": 974,
-      "h1": [
-       "Statement of account"
-      ]
-     },
-     "axe": [],
-     "consoleErrors": []
-    },
-    "tablet": {
-     "screenshot": "portal-statement--tablet.jpg",
-     "url": "/portal/statement",
-     "metrics": {
-      "pageHeight": 1227,
-      "sidewaysScroll": false,
-      "overflowing": [],
-      "tooWide": [],
       "tapTargets": 6,
-      "smallTapTargets": 0,
-      "smallTapExamples": [],
+      "smallTapTargets": 2,
+      "smallTapExamples": [
+       "a \"Forgot password?\"",
+       "a \"Create an account\""
+      ],
       "tinyText": 0,
       "fontSizes": [
-       "12px",
-       "13px",
        "14px",
        "16px",
-       "24px"
-      ],
-      "textColours": 2,
-      "radii": [
-       "6px",
-       "12px"
-      ],
-      "buttonHeights": [
-       32
-      ],
-      "tables": 0,
-      "widestTable": 0,
-      "h1": [
-       "Statement of account"
-      ]
-     },
-     "axe": null,
-     "consoleErrors": []
-    },
-    "phone": {
-     "screenshot": "portal-statement--phone.jpg",
-     "url": "/portal/statement",
-     "metrics": {
-      "pageHeight": 1343,
-      "sidewaysScroll": false,
-      "overflowing": [],
-      "tooWide": [],
-      "tapTargets": 6,
-      "smallTapTargets": 0,
-      "smallTapExamples": [],
-      "tinyText": 0,
-      "fontSizes": [
-       "12px",
-       "13px",
-       "14px",
-       "16px",
-       "24px"
+       "18px",
+       "20px",
+       "30px"
       ],
       "textColours": 3,
       "radii": [
@@ -253,19 +189,101 @@
        "12px"
       ],
       "buttonHeights": [
-       32
+       36
       ],
       "tables": 0,
       "widestTable": 0,
       "h1": [
-       "Statement of account"
+       "Sign in"
       ]
      },
      "axe": [],
-     "consoleErrors": []
+     "consoleErrors": [
+      "Failed to load resource: the server responded with a status of 401 (Unauthorized)"
+     ]
+    },
+    "tablet": {
+     "screenshot": "login--tablet.jpg",
+     "url": "/login",
+     "metrics": {
+      "pageHeight": 1024,
+      "sidewaysScroll": false,
+      "overflowing": [],
+      "tooWide": [],
+      "tapTargets": 6,
+      "smallTapTargets": 2,
+      "smallTapExamples": [
+       "a \"Forgot password?\"",
+       "a \"Create an account\""
+      ],
+      "tinyText": 0,
+      "fontSizes": [
+       "14px",
+       "16px",
+       "18px",
+       "20px"
+      ],
+      "textColours": 3,
+      "radii": [
+       "6px",
+       "12px"
+      ],
+      "buttonHeights": [
+       36
+      ],
+      "tables": 0,
+      "widestTable": 0,
+      "h1": [
+       "Sign in"
+      ]
+     },
+     "axe": null,
+     "consoleErrors": [
+      "Failed to load resource: the server responded with a status of 401 (Unauthorized)"
+     ]
+    },
+    "phone": {
+     "screenshot": "login--phone.jpg",
+     "url": "/login",
+     "metrics": {
+      "pageHeight": 844,
+      "sidewaysScroll": false,
+      "overflowing": [],
+      "tooWide": [],
+      "tapTargets": 6,
+      "smallTapTargets": 2,
+      "smallTapExamples": [
+       "a \"Forgot password?\"",
+       "a \"Create an account\""
+      ],
+      "tinyText": 0,
+      "fontSizes": [
+       "14px",
+       "16px",
+       "18px",
+       "20px"
+      ],
+      "textColours": 3,
+      "radii": [
+       "6px",
+       "12px"
+      ],
+      "buttonHeights": [
+       36
+      ],
+      "tables": 0,
+      "widestTable": 0,
+      "h1": [
+       "Sign in"
+      ]
+     },
+     "axe": [],
+     "consoleErrors": [
+      "Failed to load resource: the server responded with a status of 401 (Unauthorized)"
+     ]
     }
    }
   }
  ],
- "step": "D.12 (client portal, dark)"
+ "step": "D.13 (public pages, dark)"
 }
