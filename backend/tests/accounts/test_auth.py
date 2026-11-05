@@ -11,6 +11,7 @@ from typing import Any
 import jwt
 import pytest
 from django.conf import settings
+from django.core import mail
 from django.utils import timezone
 from rest_framework.test import APIClient
 
@@ -507,3 +508,50 @@ def test_new_recovery_codes_need_a_current_app_code(
     )
     assert response.status_code == 422
     assert response.json()["errors"][0]["code"] == "invalid_mfa_code"
+
+
+EDGE = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 Chrome/131.0 Safari/537.36 Edg/131.0"
+ANDROID = (
+    "Mozilla/5.0 (Linux; Android 14; Pixel 8) AppleWebKit/537.36 Chrome/131.0 Mobile Safari/537.36"
+)
+
+
+def _alerts() -> list[Any]:
+    return [m for m in mail.outbox if m.subject == "New sign-in to your account"]
+
+
+def test_sign_in_alert_only_from_a_new_device(
+    api: APIClient, make_account: MakeAccount, django_capture_on_commit_callbacks: Any
+) -> None:
+    account = make_account()  # signs up (and in) without a browser name
+
+    def sign_in(agent: str, password: str = PASSWORD) -> int:
+        with django_capture_on_commit_callbacks(execute=True):
+            response = api.post(
+                "/api/v1/auth/login",
+                {"email": account.email, "password": password},
+                format="json",
+                HTTP_USER_AGENT=agent,
+            )
+            return int(response.status_code)
+
+    assert sign_in(EDGE) == 200
+    assert len(_alerts()) == 1  # a browser this account has not used
+    assert sign_in(EDGE) == 200
+    assert len(_alerts()) == 1  # the same browser again: no alert
+    assert sign_in(ANDROID) == 200
+    alerts = _alerts()
+    assert len(alerts) == 2
+    body = str(alerts[-1].body)
+    assert alerts[-1].to == [account.email]
+    assert "Chrome on Android" in body
+    assert "IP address: 127.0.0.1" in body
+    assert "/forgot-password" in body
+    assert sign_in("curl/8", "wrong password") == 401
+    assert len(_alerts()) == 2  # a failed sign-in is not a sign-in
+
+
+def test_no_alert_for_the_first_sign_in_ever(api: APIClient) -> None:
+    from apps.accounts.services import _is_new_device
+
+    assert _is_new_device(uuid.uuid4(), EDGE) is False

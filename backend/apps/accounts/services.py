@@ -12,6 +12,7 @@ import logging
 import secrets
 import time
 import uuid
+import zoneinfo
 from dataclasses import dataclass, field, replace
 from datetime import datetime, timedelta
 from typing import Any
@@ -32,6 +33,7 @@ from apps.tenants.models import Tenant, TenantStatus
 
 from . import emails
 from .crypto import decrypt_secret, encrypt_secret
+from .devices import describe_device
 from .emails import Kind
 from .models import AuthSession, Membership, MembershipStatus, Role, User, UserStatus
 from .tokens import (
@@ -573,6 +575,7 @@ def _complete_login(
                 code="no_active_membership",
             )
         membership, _ = chosen
+        new_device = _is_new_device(user.pk, client.user_agent)
         tokens = _start_session(
             user_id=user.pk,
             tenant_id=membership.tenant_id,
@@ -583,7 +586,35 @@ def _complete_login(
         )
         User.objects.filter(pk=user.pk).update(last_login_at=timezone.now())
     security_log.info("login_succeeded user=%s amr=%s", user.pk, ",".join(sorted(amr)))
+    if new_device:
+        _email_after_commit(
+            Kind.NEW_SIGN_IN,
+            user.pk,
+            {
+                "device": describe_device(client.user_agent, client.device_label),
+                "ip": client.ip or "not known",
+                "when": timezone.localtime(timezone.now(), SIGN_IN_ALERT_ZONE).strftime(
+                    "%d %b %Y, %I:%M %p (India time)"
+                ),
+            },
+        )
     return _with_tenants(tokens, [TenantSummary(t.id, t.legal_name, m.role) for m, t in available])
+
+
+SIGN_IN_ALERT_ZONE = zoneinfo.ZoneInfo("Asia/Kolkata")
+
+
+def _is_new_device(user_id: uuid.UUID, user_agent: str | None) -> bool:
+    """A sign-in alert is due (Part B): the account has signed in before, but never
+    from this browser. The very first sign-in is not news; nothing is stored beyond
+    the sessions themselves."""
+    seen = AuthSession.objects.filter(user_id=user_id)
+    if not seen.exists():
+        return False
+    agent = (user_agent or "")[:500] or None
+    if agent is None:
+        return not seen.filter(user_agent__isnull=True).exists()
+    return not seen.filter(user_agent=agent).exists()
 
 
 def _with_tenants(tokens: SessionTokens, tenants: list[TenantSummary]) -> SessionTokens:

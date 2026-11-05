@@ -135,7 +135,7 @@ lockout still guards passwords).
 | `POST /auth/signup` | Create user + first tenant (the user becomes OWNER). Email verification required before issuing documents. |
 | `POST /auth/verify-email` | `{token}` from the emailed link → `204`. No sign-in needed. |
 | `POST /auth/verify-email/resend` | Signed in: email a new link (no-op once verified) → `204` |
-| `POST /auth/login` | `{email, password}` → either `{mfa_required: true, mfa_token, mfa_method}` or `{tenants: [...], ...tokens}` |
+| `POST /auth/login` | `{email, password}` → either `{mfa_required: true, mfa_token, mfa_method}` or `{tenants: [...], ...tokens}`. A completed sign-in (after the second step, if any) from a browser the account has never used (its user agent in none of the account's sessions; not the first sign-in ever) emails a **sign-in alert**: the device ("Chrome on Android"), IP address and time, and what to do if it was not you |
 | `POST /auth/mfa/verify` | `{mfa_token, code}` → tokens (`code`: from the authenticator app, or the emailed one when `mfa_method` is `email`) |
 | `POST /auth/token/refresh` | Rotates the refresh token (cookie for web, body for mobile) → new access + refresh |
 | `POST /auth/switch-tenant` | `{tenant_id}` → new tokens scoped to that tenant (membership checked) |

@@ -38,6 +38,7 @@ class Kind(StrEnum):
     CONFIRM_EMAIL_CHANGE = "confirm_email_change"
     EMAIL_CHANGED = "email_changed"
     SIGN_IN_CODE = "sign_in_code"
+    NEW_SIGN_IN = "new_sign_in"
 
 
 class LinkInvalid(Invalid):
@@ -149,6 +150,11 @@ def send(kind: Kind, user_id: uuid.UUID, extra: dict[str, str] | None = None) ->
         context["code"] = extra["code"]
         context["minutes"] = int(settings.EMAIL_CODE_TTL.total_seconds()) // 60
         context["link"] = _link("forgot-password")
+    elif kind is Kind.NEW_SIGN_IN:
+        subject = "New sign-in to your account"
+        context.update({k: extra[k] for k in ("device", "ip", "when")})
+        context["link"] = _link("forgot-password")
+        context["account"] = _link("account")
     elif kind is Kind.EMAIL_CHANGED:
         to = extra["old_email"]
         subject = "Your sign-in email was changed"

@@ -1,0 +1,15 @@
+{% autoescape off %}Hello {{ name }},
+
+Someone just signed in to your account from a device it has not used before:
+
+  {{ device }}
+  IP address: {{ ip }}
+  {{ when }}
+
+If this was you, there is nothing to do.
+
+If it was not you, change your password now, then sign out the devices you do not know
+(Your account, then Your devices: {{ account }}):
+
+{{ link }}
+{% endautoescape %}
