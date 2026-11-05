@@ -120,7 +120,7 @@ describe("document editor", () => {
     expect(within(line).getByLabelText("Rate (₹)")).toHaveValue("6800.00");
     await user.type(within(line).getByLabelText("Quantity"), "42.5");
 
-    const totals = await screen.findByLabelText("Totals", {}, { timeout: 3000 });
+    const totals = await screen.findByLabelText("Totals");
     expect(within(totals).getByText("₹3,41,020.00")).toBeInTheDocument();
     expect(within(totals).getByText("₹3,23,680.00")).toBeInTheDocument(); // receivable now
     expect(within(line).getByText("₹3,41,020.00")).toBeInTheDocument();
@@ -181,9 +181,7 @@ describe("document editor", () => {
     const line = screen.getByRole("group", { name: "Line 1" });
     await user.type(within(line).getByLabelText("Description"), "Cleaning");
     await user.type(within(line).getByLabelText("Quantity"), "1");
-    expect(
-      await within(line).findByText("Rate: A rate is required.", {}, { timeout: 3000 }),
-    ).toBeInTheDocument();
+    expect(await within(line).findByText("Rate: A rate is required.")).toBeInTheDocument();
   });
 
   it("prices a catalog variant at the item rate plus its change", async () => {

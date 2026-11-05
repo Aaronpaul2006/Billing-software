@@ -11,6 +11,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { usePrintSettings } from "@/features/settings/printSettings";
 import { errorMessage } from "@/lib/errors";
+import { isBlob } from "@/lib/blob";
 import { can } from "@/lib/permissions";
 
 import { documentKey } from "./api";
@@ -136,7 +137,7 @@ export function SendBill({ doc, copy }: { doc: Document; copy: PrintCopy }) {
       params: { path: { document_id: doc.id }, query: { copy } },
       parseAs: "blob",
     });
-    if (!response.ok || !(data instanceof Blob)) throw new Error("The PDF could not be made.");
+    if (!response.ok || !isBlob(data)) throw new Error("The PDF could not be made.");
     return data;
   };
   const download = async () => {

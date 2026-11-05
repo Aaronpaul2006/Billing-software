@@ -34,6 +34,7 @@ import { ifMatch } from "@/lib/forms";
 import { placeName } from "@/lib/india";
 import { errorMessage } from "@/lib/errors";
 import { compareMoney, formatInr, formatQty } from "@/lib/money";
+import { isBlob } from "@/lib/blob";
 import { can } from "@/lib/permissions";
 import { DocumentSettlement } from "@/features/payments/DocumentSettlement";
 import { DocumentReminders } from "@/features/reminders/DocumentReminders";
@@ -409,7 +410,7 @@ function Actions({ doc }: { doc: Document }) {
           params: { path, query: copy ? { copy } : {} },
           parseAs: "blob",
         });
-        if (!response.ok || !(data instanceof Blob)) throw new Error("No PDF.");
+        if (!response.ok || !isBlob(data)) throw new Error("No PDF.");
         if (tab) tab.location.href = URL.createObjectURL(data);
         return;
       }

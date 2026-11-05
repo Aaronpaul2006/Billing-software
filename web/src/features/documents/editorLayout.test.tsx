@@ -39,7 +39,7 @@ describe("bill editor layout (D.9)", () => {
   it("the save bar shows the running total next to Save", async () => {
     useEditing();
     renderSignedIn(`/documents/${DOC}/edit`);
-    const total = await screen.findByText(/^Total ₹3,41,020\.00/, {}, { timeout: 3000 });
+    const total = await screen.findByText(/^Total ₹3,41,020\.00/);
     const bar = total.closest("[role=status]")?.parentElement as HTMLElement;
     expect(within(bar).getByRole("button", { name: "Save draft" })).toBeInTheDocument();
     expect(within(bar).getByRole("button", { name: "Save and keep working" })).toBeInTheDocument();

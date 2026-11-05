@@ -72,11 +72,9 @@ describe("exports", () => {
     await user.click(within(form).getByRole("button", { name: "Make the file" }));
 
     expect(await screen.findByText(/Making/)).toBeInTheDocument();
-    const button = await screen.findByRole(
-      "button",
-      { name: /Download payments_2026-10-01_2026-10-31.csv/ },
-      { timeout: 4000 },
-    );
+    const button = await screen.findByRole("button", {
+      name: /Download payments_2026-10-01_2026-10-31.csv/,
+    });
     expect(screen.getByText("12 rows · 2 KB")).toBeInTheDocument();
     await user.click(button);
     await waitFor(() => {
