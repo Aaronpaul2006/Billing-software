@@ -2,6 +2,7 @@ import { screen, waitFor, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 
 import { doc, DOC, useDoc } from "@/test/documents";
+import { chooseMore } from "@/test/menu";
 import { renderSignedIn } from "@/test/render";
 import { API, http, HttpResponse, server } from "@/test/server";
 
@@ -33,7 +34,7 @@ describe("duplicate and alter", () => {
     );
     const user = userEvent.setup();
     const router = renderSignedIn(`/documents/${DOC}`);
-    await user.click(await screen.findByRole("button", { name: "Duplicate" }));
+    await chooseMore(user, "Duplicate");
     await waitFor(() => {
       expect(router.state.location.pathname).toBe("/documents/copy/edit");
     });
@@ -104,9 +105,11 @@ describe("duplicate and alter", () => {
 
   it("an issued credit note has neither Duplicate nor Alter", async () => {
     useDoc(doc({ status: "ISSUED", doc_type: "CREDIT_NOTE", doc_number: "CN/0001" }));
+    const user = userEvent.setup();
     renderSignedIn(`/documents/${DOC}`);
-    expect(await screen.findByRole("button", { name: "Cancel document…" })).toBeInTheDocument();
-    expect(screen.queryByRole("button", { name: "Duplicate" })).toBeNull();
+    await user.click(await screen.findByRole("button", { name: "More" }));
+    expect(await screen.findByRole("menuitem", { name: "Cancel document…" })).toBeInTheDocument();
+    expect(screen.queryByRole("menuitem", { name: "Duplicate" })).toBeNull();
     expect(screen.queryByRole("button", { name: "Alter…" })).toBeNull();
   });
 });

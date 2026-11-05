@@ -2,6 +2,7 @@ import { screen, waitFor, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 
 import type { components } from "@/api/schema";
+import { chooseMore } from "@/test/menu";
 import { renderSignedIn } from "@/test/render";
 import { CLIENT, doc, DOC, PROJECT, TOTALS, useDoc } from "@/test/documents";
 import { API, http, HttpResponse, problem, server } from "@/test/server";
@@ -341,11 +342,11 @@ describe("document page", () => {
     vi.spyOn(window, "open").mockReturnValue(tab as unknown as Window);
     const user = userEvent.setup();
     renderSignedIn(`/documents/${DOC}`);
-    await user.click(await screen.findByRole("button", { name: "PDF" }));
+    await chooseMore(user, "Open the PDF");
     expect(await screen.findByText(/being prepared/)).toBeInTheDocument();
     expect(tab.close).toHaveBeenCalled();
     ready = true;
-    await user.click(screen.getByRole("button", { name: "PDF" }));
+    await chooseMore(user, "Open the PDF");
     await waitFor(() => {
       expect(tab.location.href).toBe("https://s3.example/inv.pdf?sig=1");
     });
@@ -369,7 +370,7 @@ describe("document page", () => {
       await screen.findByRole("combobox", { name: "Copy to print" }),
       "Original for recipient",
     );
-    await user.click(screen.getByRole("button", { name: "PDF" }));
+    await chooseMore(user, "Open the PDF");
     await waitFor(() => {
       expect(tab.location.href).toBe("blob:copy");
     });
@@ -392,7 +393,8 @@ describe("document page", () => {
     expect(within(form).getByRole("button", { name: "Cancel document" })).toBeDisabled();
     await user.type(within(form).getByLabelText("Reason"), "Wrong rate");
     await user.click(within(form).getByRole("button", { name: "Cancel document" }));
-    expect(await screen.findByText("Cancelled")).toBeInTheDocument();
+    // the badge, and the last step of the timeline
+    expect(await screen.findAllByText("Cancelled")).toHaveLength(2);
     expect(body).toEqual({ reason: "Wrong rate" });
   });
 

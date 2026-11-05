@@ -1,6 +1,6 @@
 {
  "base": "http://localhost:5173",
- "at": "2026-11-05T14:08:36.324Z",
+ "at": "2026-11-05T14:18:48.290Z",
  "sizes": [
   {
    "name": "desktop",
@@ -20,145 +20,108 @@
  ],
  "pages": [
   {
-   "name": "Invoices & quotes list",
-   "path": "/documents",
+   "name": "Issued bill (INV/0002)",
+   "path": "/documents/01a1a478-09fc-7450-97e3-a204d97028a6",
    "sizes": {
     "desktop": {
-     "screenshot": "documents--desktop.jpg",
-     "url": "/documents",
+     "screenshot": "document-issued--desktop.jpg",
+     "url": "/documents/01a1a478-09fc-7450-97e3-a204d97028a6",
      "metrics": {
-      "pageHeight": 992,
+      "pageHeight": 1439,
       "sidewaysScroll": false,
       "overflowing": [],
-      "tapTargets": 39,
-      "smallTapTargets": 9,
+      "tapTargets": 37,
+      "smallTapTargets": 1,
       "smallTapExamples": [
-       "button \"Number\"",
-       "button \"Date\"",
-       "a \"Draft\"",
-       "a \"Draft\"",
-       "a \"CN/0001\""
+       "a \"Payment\""
       ],
       "tinyText": 0,
       "fontSizes": [
        "12px",
        "13px",
        "14px",
+       "16px",
+       "17px",
        "24px"
       ],
-      "textColours": 8,
+      "textColours": 7,
       "radii": [
        "6px",
        "12px",
        "4px"
       ],
       "buttonHeights": [
-       16,
        32,
        36
       ],
-      "tables": 1,
+      "tables": 3,
       "widestTable": 1150,
       "h1": [
-       "Invoices & quotes"
+       "Tax invoice INV/0002"
       ]
      },
      "axe": [],
      "consoleErrors": []
     },
     "tablet": {
-     "screenshot": "documents--tablet.jpg",
-     "url": "/documents",
+     "screenshot": "document-issued--tablet.jpg",
+     "url": "/documents/01a1a478-09fc-7450-97e3-a204d97028a6",
      "metrics": {
-      "pageHeight": 1926,
+      "pageHeight": 1819,
       "sidewaysScroll": false,
       "overflowing": [],
       "tapTargets": 36,
-      "smallTapTargets": 0,
-      "smallTapExamples": [],
+      "smallTapTargets": 1,
+      "smallTapExamples": [
+       "a \"Payment\""
+      ],
       "tinyText": 0,
       "fontSizes": [
        "12px",
        "13px",
        "14px",
        "16px",
+       "17px",
        "24px"
       ],
-      "textColours": 8,
+      "textColours": 7,
       "radii": [
        "6px",
-       "12px"
+       "12px",
+       "4px"
       ],
       "buttonHeights": [
+       32,
        36
       ],
-      "tables": 0,
-      "widestTable": 0,
+      "tables": 2,
+      "widestTable": 430,
       "h1": [
-       "Invoices & quotes"
+       "Tax invoice INV/0002"
       ]
      },
      "axe": null,
      "consoleErrors": []
     },
     "phone": {
-     "screenshot": "documents--phone.jpg",
-     "url": "/documents",
+     "screenshot": "document-issued--phone.jpg",
+     "url": "/documents/01a1a478-09fc-7450-97e3-a204d97028a6",
      "metrics": {
-      "pageHeight": 2099,
+      "pageHeight": 2138,
       "sidewaysScroll": false,
       "overflowing": [],
       "tapTargets": 17,
-      "smallTapTargets": 0,
-      "smallTapExamples": [],
-      "tinyText": 0,
-      "fontSizes": [
-       "12px",
-       "13px",
-       "14px",
-       "16px",
-       "24px"
-      ],
-      "textColours": 6,
-      "radii": [
-       "6px",
-       "12px"
-      ],
-      "buttonHeights": [
-       36,
-       44
-      ],
-      "tables": 0,
-      "widestTable": 0,
-      "h1": [
-       "Invoices & quotes"
-      ]
-     },
-     "axe": [],
-     "consoleErrors": []
-    }
-   }
-  },
-  {
-   "name": "Catalog",
-   "path": "/catalog",
-   "sizes": {
-    "desktop": {
-     "screenshot": "catalog--desktop.jpg",
-     "url": "/catalog",
-     "metrics": {
-      "pageHeight": 992,
-      "sidewaysScroll": false,
-      "overflowing": [],
-      "tapTargets": 40,
       "smallTapTargets": 1,
       "smallTapExamples": [
-       "button \"Item\""
+       "a \"Payment\""
       ],
       "tinyText": 0,
       "fontSizes": [
        "12px",
+       "13px",
        "14px",
+       "16px",
+       "17px",
        "24px"
       ],
       "textColours": 5,
@@ -168,86 +131,14 @@
        "4px"
       ],
       "buttonHeights": [
-       16,
-       32,
-       36
-      ],
-      "tables": 1,
-      "widestTable": 1150,
-      "h1": [
-       "Catalog"
-      ]
-     },
-     "axe": [],
-     "consoleErrors": []
-    },
-    "tablet": {
-     "screenshot": "catalog--tablet.jpg",
-     "url": "/catalog",
-     "metrics": {
-      "pageHeight": 1738,
-      "sidewaysScroll": false,
-      "overflowing": [],
-      "tapTargets": 38,
-      "smallTapTargets": 0,
-      "smallTapExamples": [],
-      "tinyText": 0,
-      "fontSizes": [
-       "12px",
-       "13px",
-       "14px",
-       "16px",
-       "24px"
-      ],
-      "textColours": 5,
-      "radii": [
-       "6px",
-       "12px"
-      ],
-      "buttonHeights": [
-       32,
-       36
-      ],
-      "tables": 0,
-      "widestTable": 0,
-      "h1": [
-       "Catalog"
-      ]
-     },
-     "axe": null,
-     "consoleErrors": []
-    },
-    "phone": {
-     "screenshot": "catalog--phone.jpg",
-     "url": "/catalog",
-     "metrics": {
-      "pageHeight": 1843,
-      "sidewaysScroll": false,
-      "overflowing": [],
-      "tapTargets": 19,
-      "smallTapTargets": 0,
-      "smallTapExamples": [],
-      "tinyText": 0,
-      "fontSizes": [
-       "13px",
-       "14px",
-       "16px",
-       "24px"
-      ],
-      "textColours": 3,
-      "radii": [
-       "6px",
-       "12px"
-      ],
-      "buttonHeights": [
        32,
        36,
        44
       ],
-      "tables": 0,
-      "widestTable": 0,
+      "tables": 2,
+      "widestTable": 308,
       "h1": [
-       "Catalog"
+       "Tax invoice INV/0002"
       ]
      },
      "axe": [],
@@ -256,61 +147,23 @@
    }
   },
   {
-   "name": "Payments list",
-   "path": "/payments",
+   "name": "Draft bill with the final review open",
+   "path": "/documents/01a1a478-1039-72ea-96e0-19de89d02673?review=1",
    "sizes": {
     "desktop": {
-     "screenshot": "payments--desktop.jpg",
-     "url": "/payments",
+     "screenshot": "document-review--desktop.jpg",
+     "url": "/documents/01a1a478-1039-72ea-96e0-19de89d02673?review=1",
      "metrics": {
-      "pageHeight": 992,
+      "pageHeight": 1421,
       "sidewaysScroll": false,
       "overflowing": [],
-      "tapTargets": 30,
-      "smallTapTargets": 4,
+      "tapTargets": 36,
+      "smallTapTargets": 3,
       "smallTapExamples": [
-       "button \"Date\"",
-       "button \"Amount\"",
-       "a \"Skyline Developers\"",
-       "a \"Skyline Developers\""
+       "a \"Open the client\"",
+       "a \"Edit the bill\"",
+       "a \"Edit the bill\""
       ],
-      "tinyText": 0,
-      "fontSizes": [
-       "12px",
-       "13px",
-       "14px",
-       "24px"
-      ],
-      "textColours": 5,
-      "radii": [
-       "6px",
-       "12px",
-       "4px"
-      ],
-      "buttonHeights": [
-       16,
-       32,
-       36
-      ],
-      "tables": 1,
-      "widestTable": 1150,
-      "h1": [
-       "Payments"
-      ]
-     },
-     "axe": [],
-     "consoleErrors": []
-    },
-    "tablet": {
-     "screenshot": "payments--tablet.jpg",
-     "url": "/payments",
-     "metrics": {
-      "pageHeight": 1024,
-      "sidewaysScroll": false,
-      "overflowing": [],
-      "tapTargets": 27,
-      "smallTapTargets": 0,
-      "smallTapExamples": [],
       "tinyText": 0,
       "fontSizes": [
        "12px",
@@ -322,32 +175,78 @@
       "textColours": 5,
       "radii": [
        "6px",
+       "8px",
        "12px"
       ],
       "buttonHeights": [
+       32,
+       36
+      ],
+      "tables": 1,
+      "widestTable": 1150,
+      "h1": [
+       "Tax invoice (draft)"
+      ]
+     },
+     "axe": [],
+     "consoleErrors": []
+    },
+    "tablet": {
+     "screenshot": "document-review--tablet.jpg",
+     "url": "/documents/01a1a478-1039-72ea-96e0-19de89d02673?review=1",
+     "metrics": {
+      "pageHeight": 1729,
+      "sidewaysScroll": false,
+      "overflowing": [],
+      "tapTargets": 35,
+      "smallTapTargets": 2,
+      "smallTapExamples": [
+       "a \"Open the client\"",
+       "a \"Edit the bill\""
+      ],
+      "tinyText": 0,
+      "fontSizes": [
+       "12px",
+       "13px",
+       "14px",
+       "16px",
+       "24px"
+      ],
+      "textColours": 5,
+      "radii": [
+       "6px",
+       "8px",
+       "12px"
+      ],
+      "buttonHeights": [
+       32,
        36
       ],
       "tables": 0,
       "widestTable": 0,
       "h1": [
-       "Payments"
+       "Tax invoice (draft)"
       ]
      },
      "axe": null,
      "consoleErrors": []
     },
     "phone": {
-     "screenshot": "payments--phone.jpg",
-     "url": "/payments",
+     "screenshot": "document-review--phone.jpg",
+     "url": "/documents/01a1a478-1039-72ea-96e0-19de89d02673?review=1",
      "metrics": {
-      "pageHeight": 844,
+      "pageHeight": 2126,
       "sidewaysScroll": false,
       "overflowing": [],
-      "tapTargets": 8,
-      "smallTapTargets": 0,
-      "smallTapExamples": [],
+      "tapTargets": 16,
+      "smallTapTargets": 2,
+      "smallTapExamples": [
+       "a \"Open the client\"",
+       "a \"Edit the bill\""
+      ],
       "tinyText": 0,
       "fontSizes": [
+       "12px",
        "13px",
        "14px",
        "16px",
@@ -356,16 +255,18 @@
       "textColours": 3,
       "radii": [
        "6px",
+       "8px",
        "12px"
       ],
       "buttonHeights": [
+       32,
        36,
        44
       ],
       "tables": 0,
       "widestTable": 0,
       "h1": [
-       "Payments"
+       "Tax invoice (draft)"
       ]
      },
      "axe": [],
@@ -374,70 +275,24 @@
    }
   },
   {
-   "name": "Parties list",
-   "path": "/parties",
+   "name": "Accepted quotation",
+   "path": "/documents/01a1a478-0ed1-70f9-be9c-1b0644e3fe04",
    "sizes": {
     "desktop": {
-     "screenshot": "parties--desktop.jpg",
-     "url": "/parties",
+     "screenshot": "document-quotation--desktop.jpg",
+     "url": "/documents/01a1a478-0ed1-70f9-be9c-1b0644e3fe04",
      "metrics": {
-      "pageHeight": 992,
+      "pageHeight": 998,
       "sidewaysScroll": false,
       "overflowing": [],
       "tapTargets": 34,
-      "smallTapTargets": 7,
-      "smallTapExamples": [
-       "input",
-       "button \"Name\"",
-       "a \"Anil Kumar\"",
-       "a \"Green Valley Homes\"",
-       "a \"Kerala Steel Traders\""
-      ],
+      "smallTapTargets": 0,
+      "smallTapExamples": [],
       "tinyText": 0,
       "fontSizes": [
        "12px",
        "13px",
        "14px",
-       "24px"
-      ],
-      "textColours": 6,
-      "radii": [
-       "6px",
-       "12px",
-       "4px"
-      ],
-      "buttonHeights": [
-       16,
-       32,
-       36
-      ],
-      "tables": 1,
-      "widestTable": 1150,
-      "h1": [
-       "Clients & vendors"
-      ]
-     },
-     "axe": [],
-     "consoleErrors": []
-    },
-    "tablet": {
-     "screenshot": "parties--tablet.jpg",
-     "url": "/parties",
-     "metrics": {
-      "pageHeight": 1224,
-      "sidewaysScroll": false,
-      "overflowing": [],
-      "tapTargets": 32,
-      "smallTapTargets": 1,
-      "smallTapExamples": [
-       "input"
-      ],
-      "tinyText": 0,
-      "fontSizes": [
-       "12px",
-       "13px",
-       "14px",
-       "16px",
        "24px"
       ],
       "textColours": 6,
@@ -446,111 +301,26 @@
        "12px"
       ],
       "buttonHeights": [
-       36
-      ],
-      "tables": 0,
-      "widestTable": 0,
-      "h1": [
-       "Clients & vendors"
-      ]
-     },
-     "axe": null,
-     "consoleErrors": []
-    },
-    "phone": {
-     "screenshot": "parties--phone.jpg",
-     "url": "/parties",
-     "metrics": {
-      "pageHeight": 1373,
-      "sidewaysScroll": false,
-      "overflowing": [],
-      "tapTargets": 13,
-      "smallTapTargets": 1,
-      "smallTapExamples": [
-       "input"
-      ],
-      "tinyText": 0,
-      "fontSizes": [
-       "12px",
-       "13px",
-       "14px",
-       "16px",
-       "24px"
-      ],
-      "textColours": 4,
-      "radii": [
-       "6px",
-       "12px"
-      ],
-      "buttonHeights": [
-       36,
-       44
-      ],
-      "tables": 0,
-      "widestTable": 0,
-      "h1": [
-       "Clients & vendors"
-      ]
-     },
-     "axe": [],
-     "consoleErrors": []
-    }
-   }
-  },
-  {
-   "name": "Projects list",
-   "path": "/projects",
-   "sizes": {
-    "desktop": {
-     "screenshot": "projects--desktop.jpg",
-     "url": "/projects",
-     "metrics": {
-      "pageHeight": 992,
-      "sidewaysScroll": false,
-      "overflowing": [],
-      "tapTargets": 30,
-      "smallTapTargets": 4,
-      "smallTapExamples": [
-       "button \"Project\"",
-       "a \"Anil's house renovation\"",
-       "a \"Green Valley Villas, Bengaluru\"",
-       "a \"Skyline Towers, Kakkanad\""
-      ],
-      "tinyText": 0,
-      "fontSizes": [
-       "12px",
-       "13px",
-       "14px",
-       "24px"
-      ],
-      "textColours": 6,
-      "radii": [
-       "6px",
-       "12px",
-       "4px"
-      ],
-      "buttonHeights": [
-       16,
        32,
        36
       ],
       "tables": 1,
       "widestTable": 1150,
       "h1": [
-       "Projects"
+       "Quotation QT/0001"
       ]
      },
      "axe": [],
      "consoleErrors": []
     },
     "tablet": {
-     "screenshot": "projects--tablet.jpg",
-     "url": "/projects",
+     "screenshot": "document-quotation--tablet.jpg",
+     "url": "/documents/01a1a478-0ed1-70f9-be9c-1b0644e3fe04",
      "metrics": {
-      "pageHeight": 1024,
+      "pageHeight": 1469,
       "sidewaysScroll": false,
       "overflowing": [],
-      "tapTargets": 28,
+      "tapTargets": 33,
       "smallTapTargets": 0,
       "smallTapExamples": [],
       "tinyText": 0,
@@ -567,25 +337,26 @@
        "12px"
       ],
       "buttonHeights": [
+       32,
        36
       ],
       "tables": 0,
       "widestTable": 0,
       "h1": [
-       "Projects"
+       "Quotation QT/0001"
       ]
      },
      "axe": null,
      "consoleErrors": []
     },
     "phone": {
-     "screenshot": "projects--phone.jpg",
-     "url": "/projects",
+     "screenshot": "document-quotation--phone.jpg",
+     "url": "/documents/01a1a478-0ed1-70f9-be9c-1b0644e3fe04",
      "metrics": {
-      "pageHeight": 895,
+      "pageHeight": 1788,
       "sidewaysScroll": false,
       "overflowing": [],
-      "tapTargets": 9,
+      "tapTargets": 14,
       "smallTapTargets": 0,
       "smallTapExamples": [],
       "tinyText": 0,
@@ -602,13 +373,14 @@
        "12px"
       ],
       "buttonHeights": [
+       32,
        36,
        44
       ],
       "tables": 0,
       "widestTable": 0,
       "h1": [
-       "Projects"
+       "Quotation QT/0001"
       ]
      },
      "axe": [],
@@ -617,70 +389,23 @@
    }
   },
   {
-   "name": "Expenses list",
-   "path": "/expenses",
+   "name": "Record a payment",
+   "path": "/payments/new",
    "sizes": {
     "desktop": {
-     "screenshot": "expenses--desktop.jpg",
-     "url": "/expenses",
+     "screenshot": "payment-new--desktop.jpg",
+     "url": "/payments/new",
      "metrics": {
       "pageHeight": 992,
       "sidewaysScroll": false,
       "overflowing": [],
       "tapTargets": 31,
-      "smallTapTargets": 5,
-      "smallTapExamples": [
-       "input",
-       "button \"Date\"",
-       "button \"Total\"",
-       "a \"Masons and helpers, October\"",
-       "a \"TMT steel Fe500D, 3.5 MT\""
-      ],
+      "smallTapTargets": 0,
+      "smallTapExamples": [],
       "tinyText": 0,
       "fontSizes": [
        "12px",
-       "13px",
        "14px",
-       "24px"
-      ],
-      "textColours": 5,
-      "radii": [
-       "6px",
-       "12px",
-       "4px"
-      ],
-      "buttonHeights": [
-       16,
-       32,
-       36
-      ],
-      "tables": 1,
-      "widestTable": 1150,
-      "h1": [
-       "Expenses"
-      ]
-     },
-     "axe": [],
-     "consoleErrors": []
-    },
-    "tablet": {
-     "screenshot": "expenses--tablet.jpg",
-     "url": "/expenses",
-     "metrics": {
-      "pageHeight": 1024,
-      "sidewaysScroll": false,
-      "overflowing": [],
-      "tapTargets": 28,
-      "smallTapTargets": 1,
-      "smallTapExamples": [
-       "input"
-      ],
-      "tinyText": 0,
-      "fontSizes": [
-       "12px",
-       "13px",
-       "14px",
-       "16px",
        "24px"
       ],
       "textColours": 5,
@@ -694,30 +419,59 @@
       "tables": 0,
       "widestTable": 0,
       "h1": [
-       "Expenses"
+       "Record payment"
+      ]
+     },
+     "axe": [],
+     "consoleErrors": []
+    },
+    "tablet": {
+     "screenshot": "payment-new--tablet.jpg",
+     "url": "/payments/new",
+     "metrics": {
+      "pageHeight": 1024,
+      "sidewaysScroll": false,
+      "overflowing": [],
+      "tapTargets": 31,
+      "smallTapTargets": 0,
+      "smallTapExamples": [],
+      "tinyText": 0,
+      "fontSizes": [
+       "12px",
+       "14px",
+       "24px"
+      ],
+      "textColours": 5,
+      "radii": [
+       "6px",
+       "12px"
+      ],
+      "buttonHeights": [
+       36
+      ],
+      "tables": 0,
+      "widestTable": 0,
+      "h1": [
+       "Record payment"
       ]
      },
      "axe": null,
      "consoleErrors": []
     },
     "phone": {
-     "screenshot": "expenses--phone.jpg",
-     "url": "/expenses",
+     "screenshot": "payment-new--phone.jpg",
+     "url": "/payments/new",
      "metrics": {
-      "pageHeight": 847,
+      "pageHeight": 844,
       "sidewaysScroll": false,
       "overflowing": [],
-      "tapTargets": 9,
-      "smallTapTargets": 1,
-      "smallTapExamples": [
-       "input"
-      ],
+      "tapTargets": 12,
+      "smallTapTargets": 0,
+      "smallTapExamples": [],
       "tinyText": 0,
       "fontSizes": [
        "12px",
-       "13px",
        "14px",
-       "16px",
        "24px"
       ],
       "textColours": 3,
@@ -732,378 +486,7 @@
       "tables": 0,
       "widestTable": 0,
       "h1": [
-       "Expenses"
-      ]
-     },
-     "axe": [],
-     "consoleErrors": []
-    }
-   }
-  },
-  {
-   "name": "Client portal: overview",
-   "path": "/portal",
-   "sizes": {
-    "desktop": {
-     "screenshot": "portal-overview--desktop.jpg",
-     "url": "/portal",
-     "metrics": {
-      "pageHeight": 900,
-      "sidewaysScroll": false,
-      "overflowing": [],
-      "tapTargets": 11,
-      "smallTapTargets": 4,
-      "smallTapExamples": [
-       "a \"statement\"",
-       "button \"Date\"",
-       "a \"INV/0002\"",
-       "a \"INV/0001\""
-      ],
-      "tinyText": 0,
-      "fontSizes": [
-       "12px",
-       "13px",
-       "14px",
-       "16px",
-       "17px",
-       "18px",
-       "24px",
-       "30px"
-      ],
-      "textColours": 4,
-      "radii": [
-       "6px",
-       "12px",
-       "4px"
-      ],
-      "buttonHeights": [
-       16,
-       32
-      ],
-      "tables": 1,
-      "widestTable": 974,
-      "h1": [
-       "Overview"
-      ]
-     },
-     "axe": [],
-     "consoleErrors": []
-    },
-    "tablet": {
-     "screenshot": "portal-overview--tablet.jpg",
-     "url": "/portal",
-     "metrics": {
-      "pageHeight": 1024,
-      "sidewaysScroll": false,
-      "overflowing": [],
-      "tapTargets": 9,
-      "smallTapTargets": 1,
-      "smallTapExamples": [
-       "a \"statement\""
-      ],
-      "tinyText": 0,
-      "fontSizes": [
-       "12px",
-       "13px",
-       "14px",
-       "16px",
-       "17px",
-       "18px",
-       "24px",
-       "30px"
-      ],
-      "textColours": 4,
-      "radii": [
-       "6px",
-       "12px"
-      ],
-      "buttonHeights": [
-       32
-      ],
-      "tables": 0,
-      "widestTable": 0,
-      "h1": [
-       "Overview"
-      ]
-     },
-     "axe": null,
-     "consoleErrors": []
-    },
-    "phone": {
-     "screenshot": "portal-overview--phone.jpg",
-     "url": "/portal",
-     "metrics": {
-      "pageHeight": 1035,
-      "sidewaysScroll": false,
-      "overflowing": [
-       "a \"Statement\"",
-       "a \"Projects\""
-      ],
-      "tapTargets": 9,
-      "smallTapTargets": 1,
-      "smallTapExamples": [
-       "a \"statement\""
-      ],
-      "tinyText": 0,
-      "fontSizes": [
-       "12px",
-       "13px",
-       "14px",
-       "16px",
-       "17px",
-       "18px",
-       "24px",
-       "30px"
-      ],
-      "textColours": 4,
-      "radii": [
-       "6px",
-       "12px"
-      ],
-      "buttonHeights": [
-       32
-      ],
-      "tables": 0,
-      "widestTable": 0,
-      "h1": [
-       "Overview"
-      ]
-     },
-     "axe": [],
-     "consoleErrors": []
-    }
-   }
-  },
-  {
-   "name": "Client portal: bills & quotes",
-   "path": "/portal/bills",
-   "sizes": {
-    "desktop": {
-     "screenshot": "portal-bills--desktop.jpg",
-     "url": "/portal/bills",
-     "metrics": {
-      "pageHeight": 900,
-      "sidewaysScroll": false,
-      "overflowing": [],
-      "tapTargets": 14,
-      "smallTapTargets": 3,
-      "smallTapExamples": [
-       "button \"Date\"",
-       "a \"INV/0002\"",
-       "a \"INV/0001\""
-      ],
-      "tinyText": 0,
-      "fontSizes": [
-       "12px",
-       "13px",
-       "14px",
-       "16px",
-       "24px"
-      ],
-      "textColours": 5,
-      "radii": [
-       "6px",
-       "12px",
-       "4px"
-      ],
-      "buttonHeights": [
-       16,
-       32
-      ],
-      "tables": 1,
-      "widestTable": 974,
-      "h1": [
-       "Bills & quotes"
-      ]
-     },
-     "axe": [],
-     "consoleErrors": []
-    },
-    "tablet": {
-     "screenshot": "portal-bills--tablet.jpg",
-     "url": "/portal/bills",
-     "metrics": {
-      "pageHeight": 1024,
-      "sidewaysScroll": false,
-      "overflowing": [],
-      "tapTargets": 12,
-      "smallTapTargets": 0,
-      "smallTapExamples": [],
-      "tinyText": 0,
-      "fontSizes": [
-       "12px",
-       "13px",
-       "14px",
-       "16px",
-       "24px"
-      ],
-      "textColours": 5,
-      "radii": [
-       "6px",
-       "12px"
-      ],
-      "buttonHeights": [
-       32
-      ],
-      "tables": 0,
-      "widestTable": 0,
-      "h1": [
-       "Bills & quotes"
-      ]
-     },
-     "axe": null,
-     "consoleErrors": []
-    },
-    "phone": {
-     "screenshot": "portal-bills--phone.jpg",
-     "url": "/portal/bills",
-     "metrics": {
-      "pageHeight": 844,
-      "sidewaysScroll": false,
-      "overflowing": [
-       "a \"Statement\"",
-       "a \"Projects\""
-      ],
-      "tapTargets": 12,
-      "smallTapTargets": 0,
-      "smallTapExamples": [],
-      "tinyText": 0,
-      "fontSizes": [
-       "12px",
-       "13px",
-       "14px",
-       "16px",
-       "24px"
-      ],
-      "textColours": 5,
-      "radii": [
-       "6px",
-       "12px"
-      ],
-      "buttonHeights": [
-       32
-      ],
-      "tables": 0,
-      "widestTable": 0,
-      "h1": [
-       "Bills & quotes"
-      ]
-     },
-     "axe": [],
-     "consoleErrors": []
-    }
-   }
-  },
-  {
-   "name": "Client portal: payments",
-   "path": "/portal/payments",
-   "sizes": {
-    "desktop": {
-     "screenshot": "portal-payments--desktop.jpg",
-     "url": "/portal/payments",
-     "metrics": {
-      "pageHeight": 900,
-      "sidewaysScroll": false,
-      "overflowing": [],
-      "tapTargets": 8,
-      "smallTapTargets": 1,
-      "smallTapExamples": [
-       "button \"Date\""
-      ],
-      "tinyText": 0,
-      "fontSizes": [
-       "12px",
-       "14px",
-       "16px",
-       "24px"
-      ],
-      "textColours": 2,
-      "radii": [
-       "6px",
-       "12px",
-       "4px"
-      ],
-      "buttonHeights": [
-       16,
-       32
-      ],
-      "tables": 1,
-      "widestTable": 974,
-      "h1": [
-       "Payments"
-      ]
-     },
-     "axe": [],
-     "consoleErrors": []
-    },
-    "tablet": {
-     "screenshot": "portal-payments--tablet.jpg",
-     "url": "/portal/payments",
-     "metrics": {
-      "pageHeight": 1024,
-      "sidewaysScroll": false,
-      "overflowing": [],
-      "tapTargets": 6,
-      "smallTapTargets": 0,
-      "smallTapExamples": [],
-      "tinyText": 0,
-      "fontSizes": [
-       "12px",
-       "13px",
-       "14px",
-       "16px",
-       "24px"
-      ],
-      "textColours": 2,
-      "radii": [
-       "6px",
-       "12px"
-      ],
-      "buttonHeights": [
-       32
-      ],
-      "tables": 0,
-      "widestTable": 0,
-      "h1": [
-       "Payments"
-      ]
-     },
-     "axe": null,
-     "consoleErrors": []
-    },
-    "phone": {
-     "screenshot": "portal-payments--phone.jpg",
-     "url": "/portal/payments",
-     "metrics": {
-      "pageHeight": 844,
-      "sidewaysScroll": false,
-      "overflowing": [
-       "a \"Statement\"",
-       "a \"Projects\""
-      ],
-      "tapTargets": 6,
-      "smallTapTargets": 0,
-      "smallTapExamples": [],
-      "tinyText": 0,
-      "fontSizes": [
-       "12px",
-       "13px",
-       "14px",
-       "16px",
-       "24px"
-      ],
-      "textColours": 2,
-      "radii": [
-       "6px",
-       "12px"
-      ],
-      "buttonHeights": [
-       32
-      ],
-      "tables": 0,
-      "widestTable": 0,
-      "h1": [
-       "Payments"
+       "Record payment"
       ]
      },
      "axe": [],
@@ -1112,5 +495,5 @@
    }
   }
  ],
- "step": "D.7 (the lists)"
+ "step": "D.8 (bill page)"
 }

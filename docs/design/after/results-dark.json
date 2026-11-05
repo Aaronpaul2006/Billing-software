@@ -1,6 +1,6 @@
 {
  "base": "http://localhost:5173",
- "at": "2026-11-05T14:06:43.516Z",
+ "at": "2026-11-05T14:17:35.822Z",
  "sizes": [
   {
    "name": "desktop",
@@ -20,179 +20,65 @@
  ],
  "pages": [
   {
-   "name": "Catalog",
-   "path": "/catalog",
+   "name": "Issued bill (INV/0002)",
+   "path": "/documents/01a1a478-09fc-7450-97e3-a204d97028a6",
    "sizes": {
     "desktop": {
-     "screenshot": "catalog--desktop.jpg",
-     "url": "/catalog",
+     "screenshot": "document-issued--desktop.jpg",
+     "url": "/documents/01a1a478-09fc-7450-97e3-a204d97028a6",
      "metrics": {
-      "pageHeight": 992,
+      "pageHeight": 1431,
       "sidewaysScroll": false,
       "overflowing": [],
-      "tapTargets": 40,
-      "smallTapTargets": 1,
-      "smallTapExamples": [
-       "button \"Item\""
-      ],
-      "tinyText": 0,
-      "fontSizes": [
-       "12px",
-       "14px",
-       "24px"
-      ],
-      "textColours": 5,
-      "radii": [
-       "6px",
-       "12px",
-       "4px"
-      ],
-      "buttonHeights": [
-       16,
-       32,
-       36
-      ],
-      "tables": 1,
-      "widestTable": 1150,
-      "h1": [
-       "Catalog"
-      ]
-     },
-     "axe": [],
-     "consoleErrors": []
-    },
-    "tablet": {
-     "screenshot": "catalog--tablet.jpg",
-     "url": "/catalog",
-     "metrics": {
-      "pageHeight": 1738,
-      "sidewaysScroll": false,
-      "overflowing": [],
-      "tapTargets": 38,
-      "smallTapTargets": 0,
-      "smallTapExamples": [],
-      "tinyText": 0,
-      "fontSizes": [
-       "12px",
-       "13px",
-       "14px",
-       "16px",
-       "24px"
-      ],
-      "textColours": 5,
-      "radii": [
-       "6px",
-       "12px"
-      ],
-      "buttonHeights": [
-       32,
-       36
-      ],
-      "tables": 0,
-      "widestTable": 0,
-      "h1": [
-       "Catalog"
-      ]
-     },
-     "axe": null,
-     "consoleErrors": []
-    },
-    "phone": {
-     "screenshot": "catalog--phone.jpg",
-     "url": "/catalog",
-     "metrics": {
-      "pageHeight": 1843,
-      "sidewaysScroll": false,
-      "overflowing": [],
-      "tapTargets": 19,
-      "smallTapTargets": 0,
-      "smallTapExamples": [],
-      "tinyText": 0,
-      "fontSizes": [
-       "13px",
-       "14px",
-       "16px",
-       "24px"
-      ],
-      "textColours": 3,
-      "radii": [
-       "6px",
-       "12px"
-      ],
-      "buttonHeights": [
-       32,
-       36,
-       44
-      ],
-      "tables": 0,
-      "widestTable": 0,
-      "h1": [
-       "Catalog"
-      ]
-     },
-     "axe": [],
-     "consoleErrors": []
-    }
-   }
-  },
-  {
-   "name": "Payments list",
-   "path": "/payments",
-   "sizes": {
-    "desktop": {
-     "screenshot": "payments--desktop.jpg",
-     "url": "/payments",
-     "metrics": {
-      "pageHeight": 992,
-      "sidewaysScroll": false,
-      "overflowing": [],
-      "tapTargets": 30,
+      "tapTargets": 37,
       "smallTapTargets": 4,
       "smallTapExamples": [
-       "button \"Date\"",
-       "button \"Amount\"",
+       "a \"Bills\"",
        "a \"Skyline Developers\"",
-       "a \"Skyline Developers\""
+       "a \"Skyline Towers, Kakkanad\"",
+       "a \"Payment\""
       ],
       "tinyText": 0,
       "fontSizes": [
        "12px",
        "13px",
        "14px",
+       "16px",
+       "17px",
        "24px"
       ],
-      "textColours": 5,
+      "textColours": 7,
       "radii": [
        "6px",
        "12px",
        "4px"
       ],
       "buttonHeights": [
-       16,
        32,
        36
       ],
-      "tables": 1,
+      "tables": 3,
       "widestTable": 1150,
       "h1": [
-       "Payments"
+       "Tax invoice INV/0002"
       ]
      },
      "axe": [],
      "consoleErrors": []
     },
     "tablet": {
-     "screenshot": "payments--tablet.jpg",
-     "url": "/payments",
+     "screenshot": "document-issued--tablet.jpg",
+     "url": "/documents/01a1a478-09fc-7450-97e3-a204d97028a6",
      "metrics": {
-      "pageHeight": 1024,
+      "pageHeight": 1815,
       "sidewaysScroll": false,
       "overflowing": [],
-      "tapTargets": 27,
-      "smallTapTargets": 2,
+      "tapTargets": 36,
+      "smallTapTargets": 3,
       "smallTapExamples": [
+       "a \"Bills\"",
        "a \"Skyline Developers\"",
-       "a \"Skyline Developers\""
+       "a \"Payment\""
       ],
       "tinyText": 0,
       "fontSizes": [
@@ -200,82 +86,42 @@
        "13px",
        "14px",
        "16px",
+       "17px",
        "24px"
       ],
-      "textColours": 5,
+      "textColours": 7,
       "radii": [
        "6px",
-       "12px"
+       "12px",
+       "4px"
       ],
       "buttonHeights": [
+       32,
        36
       ],
-      "tables": 0,
-      "widestTable": 0,
+      "tables": 2,
+      "widestTable": 430,
       "h1": [
-       "Payments"
+       "Tax invoice INV/0002"
       ]
      },
      "axe": null,
      "consoleErrors": []
     },
     "phone": {
-     "screenshot": "payments--phone.jpg",
-     "url": "/payments",
+     "screenshot": "document-issued--phone.jpg",
+     "url": "/documents/01a1a478-09fc-7450-97e3-a204d97028a6",
      "metrics": {
-      "pageHeight": 844,
+      "pageHeight": 2128,
       "sidewaysScroll": false,
       "overflowing": [],
-      "tapTargets": 8,
-      "smallTapTargets": 2,
+      "tapTargets": 17,
+      "smallTapTargets": 4,
       "smallTapExamples": [
+       "a \"Bills\"",
        "a \"Skyline Developers\"",
-       "a \"Skyline Developers\""
-      ],
-      "tinyText": 0,
-      "fontSizes": [
-       "13px",
-       "14px",
-       "16px",
-       "24px"
-      ],
-      "textColours": 3,
-      "radii": [
-       "6px",
-       "12px"
-      ],
-      "buttonHeights": [
-       36,
-       44
-      ],
-      "tables": 0,
-      "widestTable": 0,
-      "h1": [
-       "Payments"
-      ]
-     },
-     "axe": [],
-     "consoleErrors": []
-    }
-   }
-  },
-  {
-   "name": "Client portal: bills & quotes",
-   "path": "/portal/bills",
-   "sizes": {
-    "desktop": {
-     "screenshot": "portal-bills--desktop.jpg",
-     "url": "/portal/bills",
-     "metrics": {
-      "pageHeight": 900,
-      "sidewaysScroll": false,
-      "overflowing": [],
-      "tapTargets": 14,
-      "smallTapTargets": 3,
-      "smallTapExamples": [
-       "button \"Date\"",
-       "a \"INV/0002\"",
-       "a \"INV/0001\""
+       "a \"Skyline Towers, Kakkanad\"",
+       "a \"Payment\""
       ],
       "tinyText": 0,
       "fontSizes": [
@@ -283,6 +129,7 @@
        "13px",
        "14px",
        "16px",
+       "17px",
        "24px"
       ],
       "textColours": 5,
@@ -292,92 +139,14 @@
        "4px"
       ],
       "buttonHeights": [
-       16,
-       32
+       32,
+       36,
+       44
       ],
-      "tables": 1,
-      "widestTable": 974,
+      "tables": 2,
+      "widestTable": 308,
       "h1": [
-       "Bills & quotes"
-      ]
-     },
-     "axe": [],
-     "consoleErrors": []
-    },
-    "tablet": {
-     "screenshot": "portal-bills--tablet.jpg",
-     "url": "/portal/bills",
-     "metrics": {
-      "pageHeight": 1024,
-      "sidewaysScroll": false,
-      "overflowing": [],
-      "tapTargets": 12,
-      "smallTapTargets": 2,
-      "smallTapExamples": [
-       "a \"INV/0002\"",
-       "a \"INV/0001\""
-      ],
-      "tinyText": 0,
-      "fontSizes": [
-       "12px",
-       "13px",
-       "14px",
-       "16px",
-       "24px"
-      ],
-      "textColours": 5,
-      "radii": [
-       "6px",
-       "12px"
-      ],
-      "buttonHeights": [
-       32
-      ],
-      "tables": 0,
-      "widestTable": 0,
-      "h1": [
-       "Bills & quotes"
-      ]
-     },
-     "axe": null,
-     "consoleErrors": []
-    },
-    "phone": {
-     "screenshot": "portal-bills--phone.jpg",
-     "url": "/portal/bills",
-     "metrics": {
-      "pageHeight": 844,
-      "sidewaysScroll": false,
-      "overflowing": [
-       "a \"Statement\"",
-       "a \"Projects\""
-      ],
-      "tapTargets": 12,
-      "smallTapTargets": 2,
-      "smallTapExamples": [
-       "a \"INV/0002\"",
-       "a \"INV/0001\""
-      ],
-      "tinyText": 0,
-      "fontSizes": [
-       "12px",
-       "13px",
-       "14px",
-       "16px",
-       "24px"
-      ],
-      "textColours": 5,
-      "radii": [
-       "6px",
-       "12px"
-      ],
-      "buttonHeights": [
-       32
-      ],
-      "tables": 0,
-      "widestTable": 0,
-      "h1": [
-       "Bills & quotes"
+       "Tax invoice INV/0002"
       ]
      },
      "axe": [],
@@ -386,5 +155,5 @@
    }
   }
  ],
- "step": "D.7 (lists, dark)"
+ "step": "D.8 (bill page, dark)"
 }

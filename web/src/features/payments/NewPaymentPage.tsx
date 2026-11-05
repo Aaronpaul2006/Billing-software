@@ -1,7 +1,7 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { AlertCircle } from "lucide-react";
 import { useState } from "react";
-import { Link, useNavigate } from "react-router";
+import { Link, useNavigate, useSearchParams } from "react-router";
 
 import { Breadcrumbs } from "@/components/Breadcrumbs";
 import { api, newIdempotencyKey, unwrap } from "@/api/client";
@@ -30,7 +30,12 @@ type Mode = components["schemas"]["PaymentModeEnum"];
 export function NewPaymentPage() {
   const navigate = useNavigate();
   const queryClient = useQueryClient();
-  const [party, setParty] = useState<PickedParty | null>(null);
+  // "Record payment" on a bill opens this with its client chosen (?party=&name=)
+  const [params] = useSearchParams();
+  const [party, setParty] = useState<PickedParty | null>(() => {
+    const id = params.get("party");
+    return id ? { id, name: params.get("name") ?? "" } : null;
+  });
   const [projectId, setProjectId] = useState("");
   const [date, setDate] = useState(() => isoDate(new Date()));
   const [amount, setAmount] = useState("");

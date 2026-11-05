@@ -1,14 +1,25 @@
 import { useMutation, useQueryClient } from "@tanstack/react-query";
-import { AlertCircle, Copy, FileDown, Pencil } from "lucide-react";
+import { AlertCircle, FileDown, IndianRupee, MoreHorizontal, Pencil } from "lucide-react";
 import { useState } from "react";
 import type { ReactNode } from "react";
 import { Link, useNavigate, useParams, useSearchParams } from "react-router";
 
+import { useSession } from "@/auth/context";
 import { Breadcrumbs } from "@/components/Breadcrumbs";
 import { useConfirm } from "@/components/confirm-context";
 import { api, newIdempotencyKey, unwrap } from "@/api/client";
 import { ApiError } from "@/api/problem";
+import { DataTable } from "@/components/DataTable";
+import type { Column } from "@/components/DataTable";
 import { ErrorState } from "@/components/ErrorState";
+import { Money } from "@/components/Money";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 import { PageHeader } from "@/components/PageHeader";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Badge } from "@/components/ui/badge";
@@ -18,19 +29,12 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { NativeSelect } from "@/components/ui/native-select";
 import { Skeleton } from "@/components/ui/skeleton";
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from "@/components/ui/table";
 import { isoDate } from "@/features/dashboard/periods";
 import { ifMatch } from "@/lib/forms";
 import { placeName } from "@/lib/india";
 import { errorMessage } from "@/lib/errors";
-import { formatInr, formatQty } from "@/lib/money";
+import { compareMoney, formatInr, formatQty } from "@/lib/money";
+import { can } from "@/lib/permissions";
 import { DocumentSettlement } from "@/features/payments/DocumentSettlement";
 import { DocumentReminders } from "@/features/reminders/DocumentReminders";
 import { SaveAsTemplate } from "@/features/templates/SaveAsTemplate";
@@ -47,6 +51,7 @@ import {
   useDocument,
 } from "./api";
 import type { DocType, Document } from "./api";
+import { BillTimeline } from "./BillTimeline";
 import { DocumentHistory } from "./DocumentHistory";
 import { IssueReview } from "./IssueReview";
 import { SendBill } from "./SendBill";
@@ -94,61 +99,132 @@ function Info({ label, children }: { label: string; children: ReactNode }) {
   );
 }
 
-function Lines({ doc }: { doc: Document }) {
+type Line = Document["lines"][number];
+
+/** A line's measurement sheet (B.9), folded under its description. */
+function Measurements({ line }: { line: Line }) {
+  if (line.measurements.length === 0) return null;
+  const n = line.measurements.length;
+  return (
+    <details className="mt-1 text-sm">
+      <summary className="text-primary cursor-pointer">
+        Measurements ({n} {n === 1 ? "row" : "rows"})
+      </summary>
+      <table className="mt-1 w-full text-xs">
+        <caption className="sr-only">Measurements for line {line.line_no}</caption>
+        <thead className="text-muted-foreground">
+          <tr>
+            <th className="py-1 pr-2 text-left font-medium">Where</th>
+            <th className="py-1 pr-2 text-right font-medium">Nos × L × B × H</th>
+            <th className="py-1 text-right font-medium">Quantity</th>
+          </tr>
+        </thead>
+        <tbody>
+          {line.measurements.map((m) => (
+            <tr key={m.row_no} className="border-t">
+              <td className="py-1 pr-2">
+                {m.description ?? `Row ${String(m.row_no)}`}
+                {m.deduct && <span className="text-muted-foreground"> (less)</span>}
+              </td>
+              <td className="py-1 pr-2 text-right tabular-nums">
+                {[m.nos, m.length, m.breadth, m.height]
+                  .filter((v): v is string => v !== null)
+                  .map(formatQty)
+                  .join(" × ")}
+              </td>
+              <td className="py-1 text-right tabular-nums">
+                {m.deduct ? "−" : ""}
+                {formatQty(m.quantity)}
+              </td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
+    </details>
+  );
+}
+
+function lineColumns(doc: Document): Column<Line>[] {
   const ra = doc.is_ra_bill;
   const discount = doc.lines.some((l) => l.discount_amount !== "0.00");
+  const cols: (Column<Line> | false)[] = [
+    { id: "no", header: "#", card: "hidden", cell: (l) => l.line_no },
+    {
+      id: "description",
+      header: "Description",
+      card: "title",
+      className: "max-w-[24rem] whitespace-normal",
+      cell: (l) => (
+        <>
+          <span className="font-normal">{l.description}</span>
+          {l.sac_hsn && <div className="text-help text-muted-foreground">HSN/SAC {l.sac_hsn}</div>}
+          <Measurements line={l} />
+        </>
+      ),
+    },
+    ra && {
+      id: "previous",
+      header: "Previous",
+      align: "right",
+      cell: (l) => formatQty(l.prev_cumulative_qty),
+    },
+    {
+      id: "quantity",
+      header: ra ? "This bill" : "Quantity",
+      align: "right",
+      card: "subtitle",
+      cell: (l) => (
+        <span className="tabular-nums">
+          {formatQty(l.quantity)} {l.unit}
+          <span className="lg:hidden"> × {formatInr(l.rate)}</span>
+        </span>
+      ),
+    },
+    ra && {
+      id: "uptodate",
+      header: "Up to date",
+      align: "right",
+      cell: (l) => formatQty(l.up_to_date_qty),
+    },
+    {
+      id: "rate",
+      header: "Rate",
+      align: "right",
+      card: "hidden",
+      cell: (l) => <Money value={l.rate} />,
+    },
+    discount && {
+      id: "discount",
+      header: "Discount",
+      align: "right",
+      cell: (l) => <Money value={l.discount_amount} />,
+    },
+    {
+      id: "taxable",
+      header: "Taxable",
+      align: "right",
+      cell: (l) => <Money value={l.taxable_value} />,
+    },
+    { id: "gst", header: "GST %", align: "right", cell: (l) => formatQty(l.gst_rate) },
+    {
+      id: "amount",
+      header: "Amount",
+      align: "right",
+      card: "amount",
+      cell: (l) => <Money value={l.line_total} />,
+    },
+  ];
+  return cols.filter((c): c is Column<Line> => c !== false);
+}
+
+function Lines({ doc }: { doc: Document }) {
   return (
-    <Table>
-      <TableHeader>
-        <TableRow>
-          <TableHead>#</TableHead>
-          <TableHead>Description</TableHead>
-          {ra && <TableHead className="text-right">Previous</TableHead>}
-          <TableHead className="text-right">{ra ? "This bill" : "Quantity"}</TableHead>
-          {ra && <TableHead className="text-right">Up to date</TableHead>}
-          <TableHead className="text-right">Rate</TableHead>
-          {discount && <TableHead className="text-right">Discount</TableHead>}
-          <TableHead className="text-right">Taxable</TableHead>
-          <TableHead className="text-right">GST %</TableHead>
-          <TableHead className="text-right">Amount</TableHead>
-        </TableRow>
-      </TableHeader>
-      <TableBody>
-        {doc.lines.map((l) => (
-          <TableRow key={l.line_no}>
-            <TableCell>{l.line_no}</TableCell>
-            <TableCell className="max-w-[24rem] whitespace-normal">
-              {l.description}
-              {l.sac_hsn && (
-                <div className="text-muted-foreground text-xs">HSN/SAC {l.sac_hsn}</div>
-              )}
-            </TableCell>
-            {ra && (
-              <TableCell className="text-right tabular-nums">
-                {formatQty(l.prev_cumulative_qty)}
-              </TableCell>
-            )}
-            <TableCell className="text-right tabular-nums">
-              {formatQty(l.quantity)} {l.unit}
-            </TableCell>
-            {ra && (
-              <TableCell className="text-right tabular-nums">
-                {formatQty(l.up_to_date_qty)}
-              </TableCell>
-            )}
-            <TableCell className="text-right tabular-nums">{formatInr(l.rate)}</TableCell>
-            {discount && (
-              <TableCell className="text-right tabular-nums">
-                {formatInr(l.discount_amount)}
-              </TableCell>
-            )}
-            <TableCell className="text-right tabular-nums">{formatInr(l.taxable_value)}</TableCell>
-            <TableCell className="text-right">{formatQty(l.gst_rate)}</TableCell>
-            <TableCell className="text-right tabular-nums">{formatInr(l.line_total)}</TableCell>
-          </TableRow>
-        ))}
-      </TableBody>
-    </Table>
+    <DataTable
+      label="Lines"
+      rows={doc.lines}
+      columns={lineColumns(doc)}
+      rowKey={(l) => String(l.line_no)}
+    />
   );
 }
 
@@ -166,6 +242,7 @@ const ALTERABLE: ReadonlySet<DocType> = new Set(["TAX_INVOICE", "BILL_OF_SUPPLY"
 
 function Actions({ doc }: { doc: Document }) {
   const confirm = useConfirm();
+  const { role } = useSession();
   const queryClient = useQueryClient();
   const navigate = useNavigate();
   const [params] = useSearchParams();
@@ -362,31 +439,191 @@ function Actions({ doc }: { doc: Document }) {
   const issued = doc.status === "ISSUED";
   const convertible = CONVERT_TO[doc.doc_type] && (issued || doc.status === "ACCEPTED");
 
+  const mayDraft = can(role, "documents.draft");
+  const mayIssue = can(role, "documents.issue");
+  const owed =
+    issued && RECEIVABLE_TYPES.has(doc.doc_type) && compareMoney(doc.totals.outstanding, "0") === 1;
+  const firstConversion = CONVERT_TO[doc.doc_type]?.[0] ?? "TAX_INVOICE";
+
+  // One main action for where the document is, a few others beside it, the rest under "More" (D.8).
+  let primary: ReactNode = null;
+  const others: ReactNode[] = [];
+  const more: { label: string; onSelect: () => void; danger?: boolean }[] = [];
+  const pdfButton = (
+    <Button key="pdf" variant="outline" disabled={busy} onClick={() => void openPdf()}>
+      <FileDown aria-hidden /> Preview PDF
+    </Button>
+  );
+
+  if (doc.status === "DRAFT") {
+    if (mayIssue) {
+      primary = (
+        <Button
+          disabled={busy}
+          aria-expanded={panel === "review"}
+          onClick={() => {
+            setPanel("review"); // the final review first; issuing is one more click
+          }}
+        >
+          Issue…
+        </Button>
+      );
+    }
+    if (mayDraft) {
+      others.push(
+        <Button key="edit" variant={primary ? "outline" : "default"} asChild>
+          <Link to={`/documents/${doc.id}/edit`}>
+            <Pencil aria-hidden /> Edit
+          </Link>
+        </Button>,
+      );
+    }
+    others.push(pdfButton);
+  } else {
+    if (doc.doc_type === "QUOTATION" && issued && mayIssue) {
+      primary = (
+        <Button
+          disabled={busy}
+          onClick={() => {
+            respond.mutate(true);
+          }}
+        >
+          Accepted by client
+        </Button>
+      );
+      others.push(
+        <Button
+          key="declined"
+          variant="outline"
+          disabled={busy}
+          onClick={() => {
+            respond.mutate(false);
+          }}
+        >
+          Declined
+        </Button>,
+      );
+    } else if (convertible && mayDraft) {
+      primary = (
+        <Button
+          disabled={busy}
+          onClick={() => {
+            derive.mutate("convert"); // the first choice, dated today
+          }}
+        >
+          Make {DOC_TYPE_LABELS[firstConversion].toLowerCase()}
+        </Button>
+      );
+    } else if (owed && can(role, "payments.record")) {
+      primary = (
+        <Button asChild>
+          <Link
+            to={`/payments/new?party=${doc.party_id}&name=${encodeURIComponent(doc.party_name)}`}
+          >
+            <IndianRupee aria-hidden /> Record payment
+          </Link>
+        </Button>
+      );
+    }
+    if (issued && ALTERABLE.has(doc.doc_type) && mayIssue) {
+      others.push(
+        <Button
+          key="alter"
+          variant="outline"
+          disabled={busy}
+          aria-expanded={panel === "alter"}
+          onClick={() => {
+            setPanel(panel === "alter" ? "none" : "alter");
+          }}
+        >
+          Alter…
+        </Button>,
+      );
+    }
+    more.push({
+      label: "Open the PDF",
+      onSelect: () => void openPdf(),
+    });
+    if (convertible && mayDraft && (CONVERT_TO[doc.doc_type]?.length ?? 0) > 1) {
+      more.push({
+        label: "Other conversion…",
+        onSelect: () => {
+          setPanel("convert");
+        },
+      });
+    }
+  }
+  if (DUPLICABLE.has(doc.doc_type) && mayDraft) {
+    more.push({
+      label: "Duplicate",
+      onSelect: () => {
+        derive.mutate("duplicate");
+      },
+    });
+  }
+  if (issued && !ALTERABLE.has(doc.doc_type) && mayIssue) {
+    more.push({
+      label: "Cancel document…",
+      danger: true,
+      onSelect: () => {
+        setPanel("cancel");
+      },
+    });
+  }
+  if (doc.status === "DRAFT" && mayDraft) {
+    more.push({
+      label: "Delete draft",
+      danger: true,
+      onSelect: () => {
+        void confirm({
+          title: "Delete this draft?",
+          description: "The draft is removed for good. Issued bills are never deleted.",
+          confirmLabel: "Delete draft",
+          tone: "danger",
+        }).then((yes) => {
+          if (yes) remove.mutate();
+        });
+      },
+    });
+  }
+  const safe = more.filter((m) => !m.danger);
+  const risky = more.filter((m) => m.danger);
+
   return (
     <div className="grid gap-3">
-      <div className="flex flex-wrap gap-2">
-        {doc.status === "DRAFT" && (
-          <>
-            <Button
-              disabled={busy}
-              aria-expanded={panel === "review"}
-              onClick={() => {
-                setPanel("review"); // the final review first; issuing is one more click
-              }}
-            >
-              Issue…
-            </Button>
-            <Button variant="outline" asChild>
-              <Link to={`/documents/${doc.id}/edit`}>
-                <Pencil aria-hidden /> Edit
-              </Link>
-            </Button>
-          </>
+      <div role="group" aria-label="Actions" className="flex flex-wrap items-center gap-2">
+        {primary}
+        {others}
+        {more.length > 0 && (
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button variant="ghost" disabled={busy}>
+                <MoreHorizontal aria-hidden /> More
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="start">
+              {safe.map((m) => (
+                <DropdownMenuItem key={m.label} onSelect={m.onSelect}>
+                  {m.label}
+                </DropdownMenuItem>
+              ))}
+              {safe.length > 0 && risky.length > 0 && <DropdownMenuSeparator />}
+              {risky.map((m) => (
+                <DropdownMenuItem
+                  key={m.label}
+                  className="text-destructive focus:text-destructive"
+                  onSelect={m.onSelect}
+                >
+                  {m.label}
+                </DropdownMenuItem>
+              ))}
+            </DropdownMenuContent>
+          </DropdownMenu>
         )}
-        <Button variant="outline" disabled={busy} onClick={() => void openPdf()}>
-          <FileDown aria-hidden /> {doc.status === "DRAFT" ? "Preview PDF" : "PDF"}
-        </Button>
-        {doc.status !== "DRAFT" && (
+      </div>
+
+      {doc.status !== "DRAFT" && (
+        <div className="flex flex-wrap items-start gap-2">
           <NativeSelect
             aria-label="Copy to print"
             className="w-auto"
@@ -400,107 +637,9 @@ function Actions({ doc }: { doc: Document }) {
             <option value="duplicate">Duplicate</option>
             <option value="triplicate">Triplicate for supplier</option>
           </NativeSelect>
-        )}
-        {doc.doc_type === "QUOTATION" && issued && (
-          <>
-            <Button
-              variant="outline"
-              disabled={busy}
-              onClick={() => {
-                respond.mutate(true);
-              }}
-            >
-              Accepted by client
-            </Button>
-            <Button
-              variant="outline"
-              disabled={busy}
-              onClick={() => {
-                respond.mutate(false);
-              }}
-            >
-              Declined
-            </Button>
-          </>
-        )}
-        {convertible && (
-          <>
-            <Button
-              disabled={busy}
-              onClick={() => {
-                derive.mutate("convert"); // the first choice, dated today
-              }}
-            >
-              Make {DOC_TYPE_LABELS[CONVERT_TO[doc.doc_type]?.[0] ?? "TAX_INVOICE"].toLowerCase()}
-            </Button>
-            {(CONVERT_TO[doc.doc_type]?.length ?? 0) > 1 && (
-              <Button
-                variant="outline"
-                disabled={busy}
-                onClick={() => {
-                  setPanel("convert");
-                }}
-              >
-                Other conversion…
-              </Button>
-            )}
-          </>
-        )}
-        {DUPLICABLE.has(doc.doc_type) && (
-          <Button
-            variant="outline"
-            disabled={busy}
-            onClick={() => {
-              derive.mutate("duplicate");
-            }}
-          >
-            <Copy aria-hidden /> Duplicate
-          </Button>
-        )}
-        {issued && ALTERABLE.has(doc.doc_type) && (
-          <Button
-            variant="outline"
-            disabled={busy}
-            aria-expanded={panel === "alter"}
-            onClick={() => {
-              setPanel(panel === "alter" ? "none" : "alter");
-            }}
-          >
-            Alter…
-          </Button>
-        )}
-        {issued && !ALTERABLE.has(doc.doc_type) && (
-          <Button
-            variant="ghost"
-            disabled={busy}
-            onClick={() => {
-              setPanel("cancel");
-            }}
-          >
-            Cancel document…
-          </Button>
-        )}
-        {doc.status === "DRAFT" && (
-          <Button
-            variant="ghost"
-            disabled={busy}
-            onClick={() => {
-              void confirm({
-                title: "Delete this draft?",
-                description: "The draft is removed for good. Issued bills are never deleted.",
-                confirmLabel: "Delete draft",
-                tone: "danger",
-              }).then((yes) => {
-                if (yes) remove.mutate();
-              });
-            }}
-          >
-            Delete draft
-          </Button>
-        )}
-      </div>
-
-      {doc.status !== "DRAFT" && <SendBill doc={doc} copy={copy || "original"} />}
+          <SendBill doc={doc} copy={copy || "original"} />
+        </div>
+      )}
       {notice && (
         <Alert variant="destructive">
           <AlertCircle aria-hidden />
@@ -736,19 +875,26 @@ export function DocumentPage() {
         }
       />
       <div className="grid gap-6">
+        <BillTimeline doc={doc} />
         <Actions doc={doc} />
         <SaveAsTemplate documentId={doc.id} docType={doc.doc_type} />
         <Card>
           <CardContent>
             <dl className="grid gap-4 sm:grid-cols-3">
               <Info label="Party">
-                <Link to={`/parties/${doc.party_id}`} className="hover:underline">
+                <Link
+                  to={`/parties/${doc.party_id}`}
+                  className="inline-flex min-h-6 items-center hover:underline"
+                >
                   {doc.party_name}
                 </Link>
               </Info>
               <Info label="Project">
                 {doc.project_id ? (
-                  <Link to={`/projects/${doc.project_id}`} className="hover:underline">
+                  <Link
+                    to={`/projects/${doc.project_id}`}
+                    className="inline-flex min-h-6 items-center hover:underline"
+                  >
                     {doc.project_name}
                   </Link>
                 ) : (

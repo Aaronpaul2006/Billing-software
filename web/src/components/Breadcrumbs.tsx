@@ -21,7 +21,7 @@ export function Breadcrumbs({ items }: { items: Crumb[] }) {
       <nav aria-label="Breadcrumb" className="mb-2">
         <Link
           to={parent.to}
-          className="text-muted-foreground hover:text-foreground inline-flex items-center gap-1 text-sm"
+          className="text-muted-foreground hover:text-foreground inline-flex min-h-6 items-center gap-1 text-sm"
         >
           <ArrowLeft className="size-4" aria-hidden /> {parent.label}
         </Link>
@@ -35,7 +35,10 @@ export function Breadcrumbs({ items }: { items: Crumb[] }) {
           <li key={`${c.label}-${String(i)}`} className="flex items-center gap-1">
             {i > 0 && <ChevronRight className="size-3.5 opacity-60" aria-hidden />}
             {c.to ? (
-              <Link to={c.to} className="hover:text-foreground hover:underline">
+              <Link
+                to={c.to}
+                className="hover:text-foreground inline-flex min-h-6 items-center hover:underline"
+              >
                 {c.label}
               </Link>
             ) : (
