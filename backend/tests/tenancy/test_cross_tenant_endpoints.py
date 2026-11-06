@@ -1210,3 +1210,8 @@ COLLECTION_ROUTES["report-cash-flow"] = lambda w: None
 
 # --- Tally masters import: tests/parties/test_tally_import.py::test_another_business_is_not_affected
 COLLECTION_ROUTES["tally-import"] = lambda w: None
+
+# --- Payables part 2: tests/payables/test_work_orders_api.py::test_another_business_reaches_none_of_it
+for _name in ("work-order-detail", "work-order-close", "work-order-reopen", "work-order-ra-bills"):
+    OBJECT_ROUTES[_name] = lambda w: None
+COLLECTION_ROUTES["work-orders"] = lambda w: None

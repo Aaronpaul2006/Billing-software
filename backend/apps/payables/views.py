@@ -24,16 +24,22 @@ from apps.core.queries import get_or_404, get_or_invalid
 from apps.parties.models import Party
 from apps.payments.serializers import VoidSerializer
 
-from . import services, tds
-from .models import VendorAllocation, VendorBill, VendorPayment
+from . import services, tds, work_orders
+from .models import VendorAllocation, VendorBill, VendorPayment, WorkOrder
 from .serializers import (
     PayablesSerializer,
+    RaBillWriteSerializer,
     TdsQuerySerializer,
     TdsSuggestionSerializer,
+    VendorBillDetailSerializer,
     VendorBillSerializer,
     VendorBillWriteSerializer,
     VendorPaymentCreateSerializer,
     VendorPaymentSerializer,
+    WorkOrderDetailSerializer,
+    WorkOrderSerializer,
+    WorkOrderUpdateSerializer,
+    WorkOrderWriteSerializer,
 )
 
 RECORD = "payments.record"
@@ -98,9 +104,9 @@ class VendorBillListView(ActionAPIView):
 class VendorBillDetailView(ActionAPIView):
     write_action = RECORD
 
-    @extend_schema(responses={200: VendorBillSerializer}, tags=["payables"])
+    @extend_schema(responses={200: VendorBillDetailSerializer}, tags=["payables"])
     def get(self, request: Request, bill_id: uuid.UUID) -> Response:
-        return detail_response(get_or_404(VendorBill, bill_id), VendorBillSerializer)
+        return detail_response(get_or_404(VendorBill, bill_id), VendorBillDetailSerializer)
 
     @extend_schema(
         request=VendorBillWriteSerializer, responses={200: VendorBillSerializer}, tags=["payables"]
@@ -294,3 +300,126 @@ class PayablesReportView(ActionAPIView):
         return Response(
             PayablesSerializer({"as_of": today, "results": results, "totals": all_row}).data
         )
+
+
+# --- subcontract work orders and RA bills (payables part 2) -------------------
+
+
+class WorkOrderFilter(django_filters.FilterSet):
+    project_id = django_filters.UUIDFilter(field_name="project_id")
+    vendor_party_id = django_filters.UUIDFilter(field_name="vendor_party_id")
+    q = django_filters.CharFilter(method="filter_q")
+
+    class Meta:
+        model = WorkOrder
+        fields = ("status",)
+
+    def filter_q(self, qs: QuerySet[WorkOrder], name: str, value: str) -> QuerySet[WorkOrder]:
+        return (
+            qs.filter(wo_number__icontains=value)
+            | qs.filter(title__icontains=value)
+            | qs.filter(vendor_party__display_name__icontains=value)
+        )
+
+
+def _with_totals(wo: WorkOrder) -> WorkOrder:
+    wo.totals = work_orders.totals(wo)  # type: ignore[attr-defined]
+    return wo
+
+
+def _work_order(wo_id: uuid.UUID) -> WorkOrder:
+    return _with_totals(get_or_404(WorkOrder, wo_id))
+
+
+class WorkOrderListView(ActionAPIView):
+    write_action = RECORD
+    serializer_class = WorkOrderSerializer
+    filterset_class = WorkOrderFilter
+    ordering_fields = ("wo_date", "wo_number")
+
+    def get_queryset(self) -> Any:
+        return WorkOrder.objects.select_related("project", "vendor_party")
+
+    @extend_schema(responses={200: WorkOrderSerializer(many=True)}, tags=["payables"])
+    def get(self, request: Request) -> Response:
+        page = self.paginate_queryset(self.filter_queryset(self.get_queryset()))
+        rows = [_with_totals(wo) for wo in page or []]
+        return self.get_paginated_response(WorkOrderSerializer(rows, many=True).data)
+
+    @extend_schema(
+        request=WorkOrderWriteSerializer,
+        responses={201: WorkOrderDetailSerializer},
+        tags=["payables"],
+    )
+    @idempotent
+    def post(self, request: Request) -> Response:
+        data = WorkOrderWriteSerializer(data=request.data)
+        data.is_valid(raise_exception=True)
+        wo = work_orders.create(self.principal, dict(data.validated_data))
+        return detail_response(_work_order(wo.pk), WorkOrderDetailSerializer, status=201)
+
+
+class WorkOrderDetailView(ActionAPIView):
+    write_action = RECORD
+
+    @extend_schema(responses={200: WorkOrderDetailSerializer}, tags=["payables"])
+    def get(self, request: Request, wo_id: uuid.UUID) -> Response:
+        return detail_response(_work_order(wo_id), WorkOrderDetailSerializer)
+
+    @extend_schema(
+        request=WorkOrderUpdateSerializer,
+        responses={200: WorkOrderDetailSerializer},
+        tags=["payables"],
+    )
+    def patch(self, request: Request, wo_id: uuid.UUID) -> Response:
+        return versioned_patch(
+            request,
+            load=lambda: _work_order(wo_id),
+            input_serializer=WorkOrderUpdateSerializer,
+            update=lambda v, changes: _with_totals(
+                work_orders.update(self.principal, wo_id, v, changes)
+            ),
+            output_serializer=WorkOrderDetailSerializer,
+        )
+
+
+class WorkOrderCloseView(ActionAPIView):
+    """Close a work order (no more RA bills), or reopen it."""
+
+    read_action = RECORD
+    write_action = RECORD
+    status = "CLOSED"
+
+    @extend_schema(request=None, responses={200: WorkOrderDetailSerializer}, tags=["payables"])
+    def post(self, request: Request, wo_id: uuid.UUID) -> Response:
+        return versioned_action(
+            request,
+            load=lambda: _work_order(wo_id),
+            run=lambda v: _with_totals(
+                work_orders.set_status(self.principal, wo_id, v, self.status)
+            ),
+            output_serializer=WorkOrderDetailSerializer,
+        )
+
+
+class WorkOrderReopenView(WorkOrderCloseView):
+    status = "OPEN"
+
+
+class RaBillCreateView(ActionAPIView):
+    """Record the subcontractor's RA bill against the work order."""
+
+    read_action = RECORD
+    write_action = RECORD
+
+    @extend_schema(
+        request=RaBillWriteSerializer,
+        responses={201: VendorBillDetailSerializer},
+        tags=["payables"],
+    )
+    @idempotent
+    def post(self, request: Request, wo_id: uuid.UUID) -> Response:
+        data = RaBillWriteSerializer(data=request.data)
+        data.is_valid(raise_exception=True)
+        bill = work_orders.record_ra_bill(self.principal, wo_id, dict(data.validated_data))
+        return detail_response(bill, VendorBillDetailSerializer, status=201)

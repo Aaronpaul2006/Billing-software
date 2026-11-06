@@ -2826,6 +2826,109 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/work-orders": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * @description Permission by action name (docs/01-architecture.md §3): `read_action`
+         *     for GET/HEAD/OPTIONS, `write_action` for everything else. Generic, so list
+         *     endpoints get pagination and filtering from the DRF defaults.
+         */
+        get: operations["work_orders_list"];
+        put?: never;
+        /**
+         * @description Permission by action name (docs/01-architecture.md §3): `read_action`
+         *     for GET/HEAD/OPTIONS, `write_action` for everything else. Generic, so list
+         *     endpoints get pagination and filtering from the DRF defaults.
+         */
+        post: operations["work_orders_create"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/work-orders/{wo_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * @description Permission by action name (docs/01-architecture.md §3): `read_action`
+         *     for GET/HEAD/OPTIONS, `write_action` for everything else. Generic, so list
+         *     endpoints get pagination and filtering from the DRF defaults.
+         */
+        get: operations["work_orders_retrieve"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        /**
+         * @description Permission by action name (docs/01-architecture.md §3): `read_action`
+         *     for GET/HEAD/OPTIONS, `write_action` for everything else. Generic, so list
+         *     endpoints get pagination and filtering from the DRF defaults.
+         */
+        patch: operations["work_orders_partial_update"];
+        trace?: never;
+    };
+    "/api/v1/work-orders/{wo_id}/close": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** @description Close a work order (no more RA bills), or reopen it. */
+        post: operations["work_orders_close_create"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/work-orders/{wo_id}/ra-bills": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** @description Record the subcontractor's RA bill against the work order. */
+        post: operations["work_orders_ra_bills_create"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/work-orders/{wo_id}/reopen": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** @description Close a work order (no more RA bills), or reopen it. */
+        post: operations["work_orders_reopen_create"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
 }
 export type webhooks = Record<string, never>;
 export interface components {
@@ -4417,6 +4520,11 @@ export interface components {
             /** @description Pass as ?cursor= */
             next_cursor: string | null;
         };
+        PaginatedWorkOrderList: {
+            results: components["schemas"]["WorkOrder"][];
+            /** @description Pass as ?cursor= */
+            next_cursor: string | null;
+        };
         /** @description Money received with the bill (cash, UPI at the counter), recorded as the bill is issued. */
         PaidNow: {
             /** Format: decimal */
@@ -4900,6 +5008,21 @@ export interface components {
             /** Format: uuid */
             attachment_id?: string | null;
             notes?: string | null;
+        };
+        /** @description Edit: the terms and the items (not the project or the subcontractor). */
+        PatchedWorkOrderUpdate: {
+            wo_number?: string;
+            /** Format: date */
+            wo_date?: string;
+            title?: string;
+            terms?: string | null;
+            /** Format: decimal */
+            retention_pct?: string;
+            tds_section?: string | null;
+            /** Format: decimal */
+            tds_rate?: string | null;
+            /** @description The whole list: items left out are removed */
+            items?: components["schemas"]["WorkOrderItemWrite"][];
         };
         Payable: {
             /** Format: uuid */
@@ -5411,6 +5534,60 @@ export interface components {
          * @enum {string}
          */
         ProjectWriteStatusEnum: "PLANNED" | "ACTIVE" | "ON_HOLD" | "COMPLETED" | "CANCELLED";
+        RaBillLineIn: {
+            /** Format: uuid */
+            work_order_item_id: string;
+            /**
+             * Format: decimal
+             * @description This bill's quantity (not the total to date)
+             */
+            qty: string;
+        };
+        RaBillSummary: {
+            /** Format: uuid */
+            readonly id: string;
+            readonly ra_number: number | null;
+            readonly bill_number: string;
+            /** Format: date */
+            readonly bill_date: string;
+            /** Format: decimal */
+            taxable_value: string;
+            /** Format: decimal */
+            retention_amount: string;
+            /** Format: decimal */
+            net_payable: string;
+            /** Format: decimal */
+            amount_paid: string;
+            readonly status: components["schemas"]["RecordStatusEnum"];
+        };
+        RaBillWrite: {
+            /** @description The subcontractor's own number */
+            bill_number: string;
+            /** Format: date */
+            bill_date: string;
+            /** Format: date */
+            due_date?: string | null;
+            /** @description Default: the next after the last recorded */
+            ra_number?: number;
+            /**
+             * @description Default SUBCONTRACT
+             *
+             *     * `MATERIAL` - Material
+             *     * `LABOUR` - Labour
+             *     * `SUBCONTRACT` - Subcontract
+             *     * `EQUIPMENT` - Equipment
+             *     * `TRANSPORT` - Transport
+             *     * `SITE_OVERHEAD` - Site Overhead
+             *     * `OFFICE` - Office
+             *     * `OTHER` - Other
+             */
+            category?: components["schemas"]["ExpenseCategoryEnum"];
+            itc_eligible?: boolean;
+            /** Format: uuid */
+            attachment_id?: string | null;
+            notes?: string | null;
+            lines: components["schemas"]["RaBillLineIn"][];
+        };
         Receivable: {
             /** Format: uuid */
             party_id: string;
@@ -6949,9 +7126,18 @@ export interface components {
             tds_amount: string;
             /**
              * Format: decimal
-             * @description Total less the TDS we deduct: what we pay the vendor
+             * @description Total less the TDS we deduct and the retention we hold: what we pay
              */
             net_payable: string;
+            /** Format: uuid */
+            work_order_id: string | null;
+            readonly wo_number: string | null;
+            readonly ra_number: number | null;
+            /**
+             * Format: decimal
+             * @description Held back on an RA bill (work order retention)
+             */
+            retention_amount: string;
             /** Format: decimal */
             amount_paid: string;
             readonly outstanding: string;
@@ -6966,6 +7152,83 @@ export interface components {
             readonly created_at: string;
             /** Format: date-time */
             readonly updated_at: string;
+        };
+        VendorBillDetail: {
+            /** Format: uuid */
+            readonly id: string;
+            readonly version: number;
+            /** Format: uuid */
+            vendor_party_id: string;
+            readonly vendor_name: string;
+            /** Format: uuid */
+            project_id: string | null;
+            readonly project_name: string | null;
+            readonly bill_number: string;
+            /** Format: date */
+            readonly bill_date: string;
+            /** Format: date */
+            readonly due_date: string | null;
+            readonly category: components["schemas"]["ExpenseCategoryEnum"];
+            readonly description: string;
+            /** Format: decimal */
+            taxable_value: string;
+            /** Format: decimal */
+            gst_amount: string;
+            /** Format: decimal */
+            total_amount: string;
+            readonly itc_eligible: boolean;
+            readonly tds_section: string | null;
+            /** Format: decimal */
+            tds_rate: string;
+            /** Format: decimal */
+            tds_amount: string;
+            /**
+             * Format: decimal
+             * @description Total less the TDS we deduct and the retention we hold: what we pay
+             */
+            net_payable: string;
+            /** Format: uuid */
+            work_order_id: string | null;
+            readonly wo_number: string | null;
+            readonly ra_number: number | null;
+            /**
+             * Format: decimal
+             * @description Held back on an RA bill (work order retention)
+             */
+            retention_amount: string;
+            /** Format: decimal */
+            amount_paid: string;
+            readonly outstanding: string;
+            /** Format: uuid */
+            attachment_id: string | null;
+            readonly notes: string | null;
+            readonly status: components["schemas"]["RecordStatusEnum"];
+            /** Format: date-time */
+            readonly voided_at: string | null;
+            readonly void_reason: string | null;
+            /** Format: date-time */
+            readonly created_at: string;
+            /** Format: date-time */
+            readonly updated_at: string;
+            /** @description An RA bill's quantities; empty for other bills */
+            readonly lines: components["schemas"]["VendorBillLine"][];
+        };
+        VendorBillLine: {
+            /** Format: uuid */
+            readonly id: string;
+            /** Format: uuid */
+            work_order_item_id: string;
+            readonly item_code: string;
+            readonly description: string;
+            readonly unit: string;
+            /** Format: decimal */
+            qty: string;
+            /** Format: decimal */
+            rate: string;
+            /** Format: decimal */
+            amount: string;
+            /** Format: decimal */
+            gst_rate: string;
         };
         VendorBillWrite: {
             /** Format: uuid */
@@ -7047,6 +7310,181 @@ export interface components {
         };
         Void: {
             reason: string;
+        };
+        WorkOrder: {
+            /** Format: uuid */
+            readonly id: string;
+            readonly version: number;
+            /** Format: uuid */
+            project_id: string;
+            readonly project_code: string;
+            readonly project_name: string;
+            /** Format: uuid */
+            vendor_party_id: string;
+            readonly vendor_name: string;
+            readonly wo_number: string;
+            /** Format: date */
+            readonly wo_date: string;
+            readonly title: string;
+            readonly terms: string | null;
+            /** Format: decimal */
+            retention_pct: string;
+            readonly tds_section: string | null;
+            /** Format: decimal */
+            tds_rate: string;
+            readonly status: components["schemas"]["WorkOrderStatusEnum"];
+            /**
+             * Format: decimal
+             * @description qty x rate of every item
+             */
+            value: string;
+            /**
+             * Format: decimal
+             * @description Recorded RA bills, before GST
+             */
+            billed: string;
+            /** Format: decimal */
+            retention_held: string;
+            /**
+             * Format: decimal
+             * @description Paid on its RA bills
+             */
+            paid: string;
+            ra_count: number;
+            /** Format: date-time */
+            readonly created_at: string;
+            /** Format: date-time */
+            readonly updated_at: string;
+        };
+        WorkOrderDetail: {
+            /** Format: uuid */
+            readonly id: string;
+            readonly version: number;
+            /** Format: uuid */
+            project_id: string;
+            readonly project_code: string;
+            readonly project_name: string;
+            /** Format: uuid */
+            vendor_party_id: string;
+            readonly vendor_name: string;
+            readonly wo_number: string;
+            /** Format: date */
+            readonly wo_date: string;
+            readonly title: string;
+            readonly terms: string | null;
+            /** Format: decimal */
+            retention_pct: string;
+            readonly tds_section: string | null;
+            /** Format: decimal */
+            tds_rate: string;
+            readonly status: components["schemas"]["WorkOrderStatusEnum"];
+            /**
+             * Format: decimal
+             * @description qty x rate of every item
+             */
+            value: string;
+            /**
+             * Format: decimal
+             * @description Recorded RA bills, before GST
+             */
+            billed: string;
+            /** Format: decimal */
+            retention_held: string;
+            /**
+             * Format: decimal
+             * @description Paid on its RA bills
+             */
+            paid: string;
+            ra_count: number;
+            /** Format: date-time */
+            readonly created_at: string;
+            /** Format: date-time */
+            readonly updated_at: string;
+            readonly items: components["schemas"]["WorkOrderItem"][];
+            readonly ra_bills: components["schemas"]["RaBillSummary"][];
+        };
+        WorkOrderItem: {
+            /** Format: uuid */
+            readonly id: string;
+            /** Format: uuid */
+            boq_item_id: string | null;
+            readonly boq_item_code: string | null;
+            readonly item_code: string;
+            readonly description: string;
+            readonly unit: string;
+            readonly sac_hsn: string | null;
+            /** Format: decimal */
+            qty: string;
+            /** Format: decimal */
+            rate: string;
+            /** Format: decimal */
+            gst_rate: string;
+            /** @description qty x rate */
+            readonly amount: string;
+            /** @description On recorded RA bills so far */
+            readonly billed_qty: string;
+            /** @description Still to be billed */
+            readonly balance_qty: string;
+        };
+        WorkOrderItemWrite: {
+            /**
+             * Format: uuid
+             * @description Edit: an existing item; omit for new
+             */
+            id?: string;
+            /**
+             * Format: uuid
+             * @description The client's BOQ item this work is part of
+             */
+            boq_item_id?: string | null;
+            item_code: string;
+            description: string;
+            unit: string;
+            sac_hsn?: string | null;
+            /**
+             * Format: decimal
+             * @description Agreed
+             */
+            qty: string;
+            /** Format: decimal */
+            rate: string;
+            /**
+             * Format: decimal
+             * @default 18.00
+             */
+            gst_rate?: string;
+        };
+        /**
+         * @description * `OPEN` - Open
+         *     * `CLOSED` - Closed
+         * @enum {string}
+         */
+        WorkOrderStatusEnum: "OPEN" | "CLOSED";
+        /** @description Edit: the terms and the items (not the project or the subcontractor). */
+        WorkOrderWrite: {
+            /** @description Ours; empty: WO/<project>/NN */
+            wo_number?: string;
+            /** Format: date */
+            wo_date: string;
+            /** @description The scope in a line */
+            title: string;
+            terms?: string | null;
+            /**
+             * Format: decimal
+             * @default 0.00
+             */
+            retention_pct?: string;
+            tds_section?: string | null;
+            /** Format: decimal */
+            tds_rate?: string | null;
+            items: components["schemas"]["WorkOrderItemWrite"][];
+            /** Format: uuid */
+            project_id: string;
+            /**
+             * Format: uuid
+             * @description The subcontractor
+             */
+            vendor_party_id: string;
         };
     };
     responses: never;
@@ -11289,7 +11727,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["VendorBill"];
+                    "application/json": components["schemas"]["VendorBillDetail"];
                 };
             };
         };
@@ -11489,6 +11927,176 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["VendorPayment"];
+                };
+            };
+        };
+    };
+    work_orders_list: {
+        parameters: {
+            query?: {
+                /** @description The pagination cursor value. */
+                cursor?: string;
+                /** @description Number of results to return per page. */
+                limit?: number;
+                /** @description Which field to use when ordering the results. */
+                ordering?: string;
+                project_id?: string;
+                q?: string;
+                /**
+                 * @description * `OPEN` - Open
+                 *     * `CLOSED` - Closed
+                 */
+                status?: "CLOSED" | "OPEN";
+                vendor_party_id?: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PaginatedWorkOrderList"];
+                };
+            };
+        };
+    };
+    work_orders_create: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["WorkOrderWrite"];
+            };
+        };
+        responses: {
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["WorkOrderDetail"];
+                };
+            };
+        };
+    };
+    work_orders_retrieve: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                wo_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["WorkOrderDetail"];
+                };
+            };
+        };
+    };
+    work_orders_partial_update: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                wo_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: {
+            content: {
+                "application/json": components["schemas"]["PatchedWorkOrderUpdate"];
+            };
+        };
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["WorkOrderDetail"];
+                };
+            };
+        };
+    };
+    work_orders_close_create: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                wo_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["WorkOrderDetail"];
+                };
+            };
+        };
+    };
+    work_orders_ra_bills_create: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                wo_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["RaBillWrite"];
+            };
+        };
+        responses: {
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["VendorBillDetail"];
+                };
+            };
+        };
+    };
+    work_orders_reopen_create: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                wo_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["WorkOrderDetail"];
                 };
             };
         };

@@ -285,6 +285,7 @@ SPECTACULAR_SETTINGS = {
         "ProjectStatusEnum": "apps.projects.models.ProjectStatus",
         "ExpenseCategoryEnum": "apps.expenses.models.ExpenseCategory",  # expenses and vendor bills
         "TallyMasterKindEnum": "apps.parties.serializers.KINDS",
+        "WorkOrderStatusEnum": "apps.payables.models.WorkOrderStatus",
         "TenantStatusEnum": "apps.tenants.models.TenantStatus",
         "MembershipStatusEnum": "apps.accounts.models.MembershipStatus",
         # payments and expenses share RECORDED / VOIDED

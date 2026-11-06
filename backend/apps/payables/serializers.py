@@ -1,4 +1,4 @@
-from decimal import Decimal
+from decimal import ROUND_HALF_UP, Decimal
 from typing import Any
 
 from drf_spectacular.utils import extend_schema_field
@@ -8,7 +8,14 @@ from apps.core.fields import MoneyField
 from apps.expenses.models import ExpenseCategory
 from apps.payments.models import PaymentMode
 
-from .models import VendorAllocation, VendorBill, VendorPayment
+from .models import (
+    VendorAllocation,
+    VendorBill,
+    VendorBillLine,
+    VendorPayment,
+    WorkOrder,
+    WorkOrderItem,
+)
 
 PAISA = Decimal("0.01")
 SECTION = r"^19[0-9]{1,2}[A-Z]{0,3}$"
@@ -52,14 +59,21 @@ class VendorBillSerializer(serializers.ModelSerializer[VendorBill]):
     total_amount = MoneyField()
     tds_rate = serializers.DecimalField(max_digits=5, decimal_places=2, coerce_to_string=True)
     tds_amount = MoneyField()
-    net_payable = MoneyField(help_text="Total less the TDS we deduct: what we pay the vendor")
+    net_payable = MoneyField(
+        help_text="Total less the TDS we deduct and the retention we hold: what we pay"
+    )
+    work_order_id = serializers.UUIDField(allow_null=True)
+    wo_number = serializers.CharField(
+        source="work_order.wo_number", allow_null=True, read_only=True, default=None
+    )
+    retention_amount = MoneyField(help_text="Held back on an RA bill (work order retention)")
     amount_paid = MoneyField()
     outstanding = serializers.SerializerMethodField()
     attachment_id = serializers.UUIDField(allow_null=True)
 
     class Meta:
         model = VendorBill
-        fields = (
+        fields: tuple[str, ...] = (
             "id",
             "version",
             "vendor_party_id",
@@ -79,6 +93,10 @@ class VendorBillSerializer(serializers.ModelSerializer[VendorBill]):
             "tds_rate",
             "tds_amount",
             "net_payable",
+            "work_order_id",
+            "wo_number",
+            "ra_number",
+            "retention_amount",
             "amount_paid",
             "outstanding",
             "attachment_id",
@@ -89,7 +107,7 @@ class VendorBillSerializer(serializers.ModelSerializer[VendorBill]):
             "created_at",
             "updated_at",
         )
-        read_only_fields = fields
+        read_only_fields: tuple[str, ...] = fields
 
     def get_outstanding(self, obj: VendorBill) -> str:
         if obj.status != "RECORDED":
@@ -207,3 +225,251 @@ class PayablesSerializer(serializers.Serializer[Any]):
     as_of = serializers.DateField()
     results = PayableSerializer(many=True)
     totals = PayableSerializer()
+
+
+# --- subcontract work orders and RA bills (payables part 2) -------------------
+
+QTY: dict[str, Any] = {"max_digits": 14, "decimal_places": 3, "coerce_to_string": True}
+PERCENT: dict[str, Any] = {"max_digits": 5, "decimal_places": 2, "coerce_to_string": True}
+
+
+class WorkOrderItemWriteSerializer(serializers.Serializer[Any]):
+    id = serializers.UUIDField(required=False, help_text="Edit: an existing item; omit for new")
+    boq_item_id = serializers.UUIDField(
+        required=False, allow_null=True, help_text="The client's BOQ item this work is part of"
+    )
+    item_code = serializers.CharField(max_length=30)
+    description = serializers.CharField(max_length=2000)
+    unit = serializers.CharField(max_length=20)
+    sac_hsn = serializers.RegexField(r"^[0-9]{4,8}$", required=False, allow_null=True)
+    qty = serializers.DecimalField(**QTY, min_value=Decimal("0.001"), help_text="Agreed")
+    rate = MoneyField(min_value=Decimal("0.00"))
+    gst_rate = serializers.DecimalField(
+        **PERCENT, min_value=Decimal("0"), max_value=Decimal("50"), default=Decimal("18")
+    )
+
+
+class WorkOrderUpdateSerializer(serializers.Serializer[Any]):
+    """Edit: the terms and the items (not the project or the subcontractor)."""
+
+    wo_number = serializers.CharField(max_length=30, required=False, allow_blank=True)
+    wo_date = serializers.DateField(required=False)
+    title = serializers.CharField(max_length=200, required=False)
+    terms = serializers.CharField(max_length=4000, required=False, allow_null=True)
+    retention_pct = serializers.DecimalField(
+        **PERCENT, min_value=Decimal("0"), max_value=Decimal("20"), required=False
+    )
+    tds_section = serializers.RegexField(SECTION, required=False, allow_null=True)
+    tds_rate = serializers.DecimalField(
+        **PERCENT, min_value=Decimal("0"), max_value=Decimal("30"), required=False, allow_null=True
+    )
+    items = WorkOrderItemWriteSerializer(
+        many=True, required=False, help_text="The whole list: items left out are removed"
+    )
+
+
+class WorkOrderWriteSerializer(WorkOrderUpdateSerializer):
+    project_id = serializers.UUIDField()
+    vendor_party_id = serializers.UUIDField(help_text="The subcontractor")
+    wo_number = serializers.CharField(
+        max_length=30, required=False, allow_blank=True, help_text="Ours; empty: WO/<project>/NN"
+    )
+    wo_date = serializers.DateField()
+    title = serializers.CharField(max_length=200, help_text="The scope in a line")
+    retention_pct = serializers.DecimalField(
+        **PERCENT, min_value=Decimal("0"), max_value=Decimal("20"), default=Decimal("0")
+    )
+    items = WorkOrderItemWriteSerializer(many=True)
+
+
+class WorkOrderItemSerializer(serializers.ModelSerializer[WorkOrderItem]):
+    boq_item_id = serializers.UUIDField(allow_null=True)
+    boq_item_code = serializers.CharField(
+        source="boq_item.item_code", allow_null=True, read_only=True, default=None
+    )
+    qty = serializers.DecimalField(**QTY)
+    rate = MoneyField()
+    gst_rate = serializers.DecimalField(**PERCENT)
+    amount = serializers.SerializerMethodField(help_text="qty x rate")
+    billed_qty = serializers.SerializerMethodField(help_text="On recorded RA bills so far")
+    balance_qty = serializers.SerializerMethodField(help_text="Still to be billed")
+
+    class Meta:
+        model = WorkOrderItem
+        fields = (
+            "id",
+            "boq_item_id",
+            "boq_item_code",
+            "item_code",
+            "description",
+            "unit",
+            "sac_hsn",
+            "qty",
+            "rate",
+            "gst_rate",
+            "amount",
+            "billed_qty",
+            "balance_qty",
+        )
+        read_only_fields = fields
+
+    def _billed(self, obj: WorkOrderItem) -> Decimal:
+        billed: dict[Any, Decimal] = self.context.get("billed", {})
+        return billed.get(obj.pk, Decimal("0"))
+
+    def get_amount(self, obj: WorkOrderItem) -> str:
+        return f"{(obj.qty * obj.rate).quantize(PAISA, rounding=ROUND_HALF_UP):.2f}"
+
+    def get_billed_qty(self, obj: WorkOrderItem) -> str:
+        return f"{self._billed(obj):.3f}"
+
+    def get_balance_qty(self, obj: WorkOrderItem) -> str:
+        return f"{obj.qty - self._billed(obj):.3f}"
+
+
+class RaBillSummarySerializer(serializers.ModelSerializer[VendorBill]):
+    taxable_value = MoneyField()
+    retention_amount = MoneyField()
+    net_payable = MoneyField()
+    amount_paid = MoneyField()
+
+    class Meta:
+        model = VendorBill
+        fields = (
+            "id",
+            "ra_number",
+            "bill_number",
+            "bill_date",
+            "taxable_value",
+            "retention_amount",
+            "net_payable",
+            "amount_paid",
+            "status",
+        )
+        read_only_fields = fields
+
+
+class WorkOrderSerializer(serializers.ModelSerializer[WorkOrder]):
+    project_id = serializers.UUIDField()
+    project_code = serializers.CharField(source="project.code", read_only=True)
+    project_name = serializers.CharField(source="project.name", read_only=True)
+    vendor_party_id = serializers.UUIDField()
+    vendor_name = serializers.CharField(source="vendor_party.display_name", read_only=True)
+    retention_pct = serializers.DecimalField(**PERCENT)
+    tds_rate = serializers.DecimalField(**PERCENT)
+    value = MoneyField(source="totals.value", help_text="qty x rate of every item")
+    billed = MoneyField(source="totals.billed", help_text="Recorded RA bills, before GST")
+    retention_held = MoneyField(source="totals.retention_held")
+    paid = MoneyField(source="totals.paid", help_text="Paid on its RA bills")
+    ra_count = serializers.IntegerField(source="totals.ra_count")
+
+    class Meta:
+        model = WorkOrder
+        fields: tuple[str, ...] = (
+            "id",
+            "version",
+            "project_id",
+            "project_code",
+            "project_name",
+            "vendor_party_id",
+            "vendor_name",
+            "wo_number",
+            "wo_date",
+            "title",
+            "terms",
+            "retention_pct",
+            "tds_section",
+            "tds_rate",
+            "status",
+            "value",
+            "billed",
+            "retention_held",
+            "paid",
+            "ra_count",
+            "created_at",
+            "updated_at",
+        )
+        read_only_fields: tuple[str, ...] = fields
+
+
+class WorkOrderDetailSerializer(WorkOrderSerializer):
+    items = serializers.SerializerMethodField()
+    ra_bills = serializers.SerializerMethodField()
+
+    class Meta(WorkOrderSerializer.Meta):
+        fields = (*WorkOrderSerializer.Meta.fields, "items", "ra_bills")
+        read_only_fields = fields
+
+    @extend_schema_field(WorkOrderItemSerializer(many=True))
+    def get_items(self, obj: WorkOrder) -> Any:
+        from . import work_orders
+
+        context = {"billed": work_orders.billed_qty(obj)}
+        items = WorkOrderItem.objects.filter(work_order=obj).select_related("boq_item")
+        return WorkOrderItemSerializer(
+            items.order_by("sort_order", "item_code"), many=True, context=context
+        ).data
+
+    @extend_schema_field(RaBillSummarySerializer(many=True))
+    def get_ra_bills(self, obj: WorkOrder) -> Any:
+        bills = VendorBill.objects.filter(work_order=obj).order_by("ra_number", "created_at")
+        return RaBillSummarySerializer(bills, many=True).data
+
+
+class RaBillLineInSerializer(serializers.Serializer[Any]):
+    work_order_item_id = serializers.UUIDField()
+    qty = serializers.DecimalField(
+        **QTY, min_value=Decimal("0.001"), help_text="This bill's quantity (not the total to date)"
+    )
+
+
+class RaBillWriteSerializer(serializers.Serializer[Any]):
+    bill_number = serializers.CharField(max_length=50, help_text="The subcontractor's own number")
+    bill_date = serializers.DateField()
+    due_date = serializers.DateField(required=False, allow_null=True)
+    ra_number = serializers.IntegerField(
+        min_value=1, required=False, help_text="Default: the next after the last recorded"
+    )
+    category = serializers.ChoiceField(
+        choices=ExpenseCategory.choices, required=False, help_text="Default SUBCONTRACT"
+    )
+    itc_eligible = serializers.BooleanField(required=False)
+    attachment_id = serializers.UUIDField(required=False, allow_null=True)
+    notes = serializers.CharField(max_length=2000, required=False, allow_null=True)
+    lines = RaBillLineInSerializer(many=True)
+
+
+class VendorBillLineSerializer(serializers.ModelSerializer[VendorBillLine]):
+    work_order_item_id = serializers.UUIDField()
+    item_code = serializers.CharField(source="work_order_item.item_code", read_only=True)
+    description = serializers.CharField(source="work_order_item.description", read_only=True)
+    unit = serializers.CharField(source="work_order_item.unit", read_only=True)
+    qty = serializers.DecimalField(**QTY)
+    rate = MoneyField()
+    amount = MoneyField()
+    gst_rate = serializers.DecimalField(**PERCENT)
+
+    class Meta:
+        model = VendorBillLine
+        fields = (
+            "id",
+            "work_order_item_id",
+            "item_code",
+            "description",
+            "unit",
+            "qty",
+            "rate",
+            "amount",
+            "gst_rate",
+        )
+        read_only_fields = fields
+
+
+class VendorBillDetailSerializer(VendorBillSerializer):
+    lines = VendorBillLineSerializer(
+        many=True, read_only=True, help_text="An RA bill's quantities; empty for other bills"
+    )
+
+    class Meta(VendorBillSerializer.Meta):
+        fields = (*VendorBillSerializer.Meta.fields, "lines")
+        read_only_fields = fields

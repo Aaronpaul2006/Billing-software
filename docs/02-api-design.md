@@ -883,6 +883,24 @@ member; recorded, edited, paid and voided with `payments.record`.
 | `GET /reports/cash-flow?weeks=` | The coming weeks' money in and out and the expected balance, as a range (Part B, below); `reports.view` |
 | `POST /exports` `{kind: "TDS_DEDUCTED", format: "CSV" \| "XLSX", params: {from, to}}` | The register of TDS we deducted, for paying it and the 26Q return: one row per recorded vendor bill with TDS, by bill date (month, date, vendor, PAN, section, bill number, value before GST, rate, TDS), then a total; voided bills and bills without TDS left out |
 
+### Subcontract work orders and RA bills received (Part B, payables part 2)
+
+Work let to a subcontractor on one project, item by item at agreed rates, and
+the RA (running account) bills they send against it. Reading needs nothing
+beyond membership; writing `payments.record`.
+
+| Method & path | Notes |
+|---|---|
+| `GET/POST /work-orders` · `GET/PATCH /work-orders/{id}` | `{project_id, vendor_party_id (a vendor), wo_number? (empty: WO/<project code>/NN; once per business), wo_date, title, terms?, retention_pct (0–20), tds_section? + tds_rate?, items: [{boq_item_id? (the client's BOQ item on the same project), item_code (once per work order), description, unit, sac_hsn?, qty (agreed), rate, gst_rate}]}`. Responses: `value` (qty × rate of every item), `billed` (recorded RA bills before GST), `retention_held`, `paid`, `ra_count`; the detail adds `items` with `billed_qty` / `balance_qty` and `ra_bills`. PATCH (If-Match) changes terms and the whole item list: items keep their `id`, a quantity can be raised (an amendment) but not cut below what is billed (`below_billed`), an item left out is removed unless billed (`item_billed`); project and subcontractor stay. Filters `project_id`, `vendor_party_id`, `status`, `q` |
+| `POST /work-orders/{id}/close` · `/reopen` | If-Match. A closed work order takes no RA bills (`409 work_order_closed`) |
+| `POST /work-orders/{id}/ra-bills` | `{bill_number (theirs), bill_date, due_date?, ra_number? (default: next), category? (SUBCONTRACT), itc_eligible?, attachment_id?, notes?, lines: [{work_order_item_id, qty (this bill's)}]}` → `201` vendor bill. The server works out each line (qty × the item's rate), GST per line at the item's rate, TDS at the work order's rate (to the rupee), retention at its percentage, and `net_payable` = total − TDS − retention. More than is left on an item: `422 exceeds_work_order` (amend the work order first); the database refuses it too (7e). An RA bill is not edited (`409 ra_bill_edit`): void it and enter it again; voiding frees its quantities and its number |
+
+Vendor bills now carry `work_order_id`, `wo_number`, `ra_number` and
+`retention_amount`; `GET /vendor-bills/{id}` adds `lines` (item code,
+description, unit, qty, rate, amount, GST %). Retention held is not owed until
+released (payables part 2, step 4); the payables report and cash-flow forecast
+count `net_payable`, after retention.
+
 ### Bank statements (Part B)
 
 Import the bank's statement file, then match each line by hand: nothing is

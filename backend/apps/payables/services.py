@@ -103,6 +103,11 @@ def update_bill(
                 "Payments are set against this bill; undo them first to change it.",
                 code="vendor_bill_paid",
             )
+        if bill.work_order_id:
+            raise Conflict(
+                "An RA bill is not edited: void it and enter it again from its work order.",
+                code="ra_bill_edit",
+            )
         merged = {
             f: getattr(bill, f)
             for f in (

@@ -31,4 +31,21 @@ urlpatterns = [
         name="vendor-payment-void",
     ),
     path("reports/payables", views.PayablesReportView.as_view(), name="report-payables"),
+    path("work-orders", views.WorkOrderListView.as_view(), name="work-orders"),
+    path("work-orders/<uuid:wo_id>", views.WorkOrderDetailView.as_view(), name="work-order-detail"),
+    path(
+        "work-orders/<uuid:wo_id>/close",
+        views.WorkOrderCloseView.as_view(),
+        name="work-order-close",
+    ),
+    path(
+        "work-orders/<uuid:wo_id>/reopen",
+        views.WorkOrderReopenView.as_view(),
+        name="work-order-reopen",
+    ),
+    path(
+        "work-orders/<uuid:wo_id>/ra-bills",
+        views.RaBillCreateView.as_view(),
+        name="work-order-ra-bills",
+    ),
 ]

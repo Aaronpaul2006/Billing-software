@@ -7550,7 +7550,7 @@
                         "content": {
                             "application/json": {
                                 "schema": {
-                                    "$ref": "#/components/schemas/VendorBill"
+                                    "$ref": "#/components/schemas/VendorBillDetail"
                                 }
                             }
                         },
@@ -7960,6 +7960,332 @@
                             "application/json": {
                                 "schema": {
                                     "$ref": "#/components/schemas/VendorPayment"
+                                }
+                            }
+                        },
+                        "description": ""
+                    }
+                }
+            }
+        },
+        "/api/v1/work-orders": {
+            "get": {
+                "operationId": "work_orders_list",
+                "description": "Permission by action name (docs/01-architecture.md §3): `read_action`\nfor GET/HEAD/OPTIONS, `write_action` for everything else. Generic, so list\nendpoints get pagination and filtering from the DRF defaults.",
+                "parameters": [
+                    {
+                        "name": "cursor",
+                        "required": false,
+                        "in": "query",
+                        "description": "The pagination cursor value.",
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    {
+                        "name": "limit",
+                        "required": false,
+                        "in": "query",
+                        "description": "Number of results to return per page.",
+                        "schema": {
+                            "type": "integer"
+                        }
+                    },
+                    {
+                        "name": "ordering",
+                        "required": false,
+                        "in": "query",
+                        "description": "Which field to use when ordering the results.",
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    {
+                        "in": "query",
+                        "name": "project_id",
+                        "schema": {
+                            "type": "string",
+                            "format": "uuid"
+                        }
+                    },
+                    {
+                        "in": "query",
+                        "name": "q",
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    {
+                        "in": "query",
+                        "name": "status",
+                        "schema": {
+                            "type": "string",
+                            "enum": [
+                                "CLOSED",
+                                "OPEN"
+                            ]
+                        },
+                        "description": "* `OPEN` - Open\n* `CLOSED` - Closed"
+                    },
+                    {
+                        "in": "query",
+                        "name": "vendor_party_id",
+                        "schema": {
+                            "type": "string",
+                            "format": "uuid"
+                        }
+                    }
+                ],
+                "tags": [
+                    "payables"
+                ],
+                "security": [
+                    {
+                        "bearerAuth": []
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/PaginatedWorkOrderList"
+                                }
+                            }
+                        },
+                        "description": ""
+                    }
+                }
+            },
+            "post": {
+                "operationId": "work_orders_create",
+                "description": "Permission by action name (docs/01-architecture.md §3): `read_action`\nfor GET/HEAD/OPTIONS, `write_action` for everything else. Generic, so list\nendpoints get pagination and filtering from the DRF defaults.",
+                "tags": [
+                    "payables"
+                ],
+                "requestBody": {
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/WorkOrderWrite"
+                            }
+                        }
+                    },
+                    "required": true
+                },
+                "security": [
+                    {
+                        "bearerAuth": []
+                    }
+                ],
+                "responses": {
+                    "201": {
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/WorkOrderDetail"
+                                }
+                            }
+                        },
+                        "description": ""
+                    }
+                }
+            }
+        },
+        "/api/v1/work-orders/{wo_id}": {
+            "get": {
+                "operationId": "work_orders_retrieve",
+                "description": "Permission by action name (docs/01-architecture.md §3): `read_action`\nfor GET/HEAD/OPTIONS, `write_action` for everything else. Generic, so list\nendpoints get pagination and filtering from the DRF defaults.",
+                "parameters": [
+                    {
+                        "in": "path",
+                        "name": "wo_id",
+                        "schema": {
+                            "type": "string",
+                            "format": "uuid"
+                        },
+                        "required": true
+                    }
+                ],
+                "tags": [
+                    "payables"
+                ],
+                "security": [
+                    {
+                        "bearerAuth": []
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/WorkOrderDetail"
+                                }
+                            }
+                        },
+                        "description": ""
+                    }
+                }
+            },
+            "patch": {
+                "operationId": "work_orders_partial_update",
+                "description": "Permission by action name (docs/01-architecture.md §3): `read_action`\nfor GET/HEAD/OPTIONS, `write_action` for everything else. Generic, so list\nendpoints get pagination and filtering from the DRF defaults.",
+                "parameters": [
+                    {
+                        "in": "path",
+                        "name": "wo_id",
+                        "schema": {
+                            "type": "string",
+                            "format": "uuid"
+                        },
+                        "required": true
+                    }
+                ],
+                "tags": [
+                    "payables"
+                ],
+                "requestBody": {
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/PatchedWorkOrderUpdate"
+                            }
+                        }
+                    }
+                },
+                "security": [
+                    {
+                        "bearerAuth": []
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/WorkOrderDetail"
+                                }
+                            }
+                        },
+                        "description": ""
+                    }
+                }
+            }
+        },
+        "/api/v1/work-orders/{wo_id}/close": {
+            "post": {
+                "operationId": "work_orders_close_create",
+                "description": "Close a work order (no more RA bills), or reopen it.",
+                "parameters": [
+                    {
+                        "in": "path",
+                        "name": "wo_id",
+                        "schema": {
+                            "type": "string",
+                            "format": "uuid"
+                        },
+                        "required": true
+                    }
+                ],
+                "tags": [
+                    "payables"
+                ],
+                "security": [
+                    {
+                        "bearerAuth": []
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/WorkOrderDetail"
+                                }
+                            }
+                        },
+                        "description": ""
+                    }
+                }
+            }
+        },
+        "/api/v1/work-orders/{wo_id}/ra-bills": {
+            "post": {
+                "operationId": "work_orders_ra_bills_create",
+                "description": "Record the subcontractor's RA bill against the work order.",
+                "parameters": [
+                    {
+                        "in": "path",
+                        "name": "wo_id",
+                        "schema": {
+                            "type": "string",
+                            "format": "uuid"
+                        },
+                        "required": true
+                    }
+                ],
+                "tags": [
+                    "payables"
+                ],
+                "requestBody": {
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/RaBillWrite"
+                            }
+                        }
+                    },
+                    "required": true
+                },
+                "security": [
+                    {
+                        "bearerAuth": []
+                    }
+                ],
+                "responses": {
+                    "201": {
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/VendorBillDetail"
+                                }
+                            }
+                        },
+                        "description": ""
+                    }
+                }
+            }
+        },
+        "/api/v1/work-orders/{wo_id}/reopen": {
+            "post": {
+                "operationId": "work_orders_reopen_create",
+                "description": "Close a work order (no more RA bills), or reopen it.",
+                "parameters": [
+                    {
+                        "in": "path",
+                        "name": "wo_id",
+                        "schema": {
+                            "type": "string",
+                            "format": "uuid"
+                        },
+                        "required": true
+                    }
+                ],
+                "tags": [
+                    "payables"
+                ],
+                "security": [
+                    {
+                        "bearerAuth": []
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/WorkOrderDetail"
                                 }
                             }
                         },
@@ -12757,6 +13083,28 @@
                     }
                 }
             },
+            "PaginatedWorkOrderList": {
+                "type": "object",
+                "required": [
+                    "results",
+                    "next_cursor"
+                ],
+                "properties": {
+                    "results": {
+                        "type": "array",
+                        "items": {
+                            "$ref": "#/components/schemas/WorkOrder"
+                        }
+                    },
+                    "next_cursor": {
+                        "type": [
+                            "string",
+                            "null"
+                        ],
+                        "description": "Pass as ?cursor="
+                    }
+                }
+            },
             "PaidNow": {
                 "type": "object",
                 "description": "Money received with the bill (cash, UPI at the counter), recorded as the bill is issued.",
@@ -14223,6 +14571,58 @@
                             "null"
                         ],
                         "maxLength": 2000
+                    }
+                }
+            },
+            "PatchedWorkOrderUpdate": {
+                "type": "object",
+                "description": "Edit: the terms and the items (not the project or the subcontractor).",
+                "properties": {
+                    "wo_number": {
+                        "type": "string",
+                        "maxLength": 30
+                    },
+                    "wo_date": {
+                        "type": "string",
+                        "format": "date"
+                    },
+                    "title": {
+                        "type": "string",
+                        "maxLength": 200
+                    },
+                    "terms": {
+                        "type": [
+                            "string",
+                            "null"
+                        ],
+                        "maxLength": 4000
+                    },
+                    "retention_pct": {
+                        "type": "string",
+                        "format": "decimal",
+                        "pattern": "^-?\\d{0,3}(?:\\.\\d{0,2})?$"
+                    },
+                    "tds_section": {
+                        "type": [
+                            "string",
+                            "null"
+                        ],
+                        "pattern": "^19[0-9]{1,2}[A-Z]{0,3}$"
+                    },
+                    "tds_rate": {
+                        "type": [
+                            "string",
+                            "null"
+                        ],
+                        "format": "decimal",
+                        "pattern": "^-?\\d{0,3}(?:\\.\\d{0,2})?$"
+                    },
+                    "items": {
+                        "type": "array",
+                        "items": {
+                            "$ref": "#/components/schemas/WorkOrderItemWrite"
+                        },
+                        "description": "The whole list: items left out are removed"
                     }
                 }
             },
@@ -15861,6 +16261,152 @@
                 ],
                 "type": "string",
                 "description": "* `PLANNED` - PLANNED\n* `ACTIVE` - ACTIVE\n* `ON_HOLD` - ON_HOLD\n* `COMPLETED` - COMPLETED\n* `CANCELLED` - CANCELLED"
+            },
+            "RaBillLineIn": {
+                "type": "object",
+                "properties": {
+                    "work_order_item_id": {
+                        "type": "string",
+                        "format": "uuid"
+                    },
+                    "qty": {
+                        "type": "string",
+                        "format": "decimal",
+                        "pattern": "^-?\\d{0,11}(?:\\.\\d{0,3})?$",
+                        "description": "This bill's quantity (not the total to date)"
+                    }
+                },
+                "required": [
+                    "qty",
+                    "work_order_item_id"
+                ]
+            },
+            "RaBillSummary": {
+                "type": "object",
+                "properties": {
+                    "id": {
+                        "type": "string",
+                        "format": "uuid",
+                        "readOnly": true
+                    },
+                    "ra_number": {
+                        "type": [
+                            "integer",
+                            "null"
+                        ],
+                        "readOnly": true
+                    },
+                    "bill_number": {
+                        "type": "string",
+                        "readOnly": true
+                    },
+                    "bill_date": {
+                        "type": "string",
+                        "format": "date",
+                        "readOnly": true
+                    },
+                    "taxable_value": {
+                        "type": "string",
+                        "format": "decimal",
+                        "pattern": "^-?\\d{0,12}(?:\\.\\d{0,2})?$"
+                    },
+                    "retention_amount": {
+                        "type": "string",
+                        "format": "decimal",
+                        "pattern": "^-?\\d{0,12}(?:\\.\\d{0,2})?$"
+                    },
+                    "net_payable": {
+                        "type": "string",
+                        "format": "decimal",
+                        "pattern": "^-?\\d{0,12}(?:\\.\\d{0,2})?$"
+                    },
+                    "amount_paid": {
+                        "type": "string",
+                        "format": "decimal",
+                        "pattern": "^-?\\d{0,12}(?:\\.\\d{0,2})?$"
+                    },
+                    "status": {
+                        "allOf": [
+                            {
+                                "$ref": "#/components/schemas/RecordStatusEnum"
+                            }
+                        ],
+                        "readOnly": true
+                    }
+                },
+                "required": [
+                    "amount_paid",
+                    "bill_date",
+                    "bill_number",
+                    "id",
+                    "net_payable",
+                    "ra_number",
+                    "retention_amount",
+                    "status",
+                    "taxable_value"
+                ]
+            },
+            "RaBillWrite": {
+                "type": "object",
+                "properties": {
+                    "bill_number": {
+                        "type": "string",
+                        "description": "The subcontractor's own number",
+                        "maxLength": 50
+                    },
+                    "bill_date": {
+                        "type": "string",
+                        "format": "date"
+                    },
+                    "due_date": {
+                        "type": [
+                            "string",
+                            "null"
+                        ],
+                        "format": "date"
+                    },
+                    "ra_number": {
+                        "type": "integer",
+                        "minimum": 1,
+                        "description": "Default: the next after the last recorded"
+                    },
+                    "category": {
+                        "allOf": [
+                            {
+                                "$ref": "#/components/schemas/ExpenseCategoryEnum"
+                            }
+                        ],
+                        "description": "Default SUBCONTRACT\n\n* `MATERIAL` - Material\n* `LABOUR` - Labour\n* `SUBCONTRACT` - Subcontract\n* `EQUIPMENT` - Equipment\n* `TRANSPORT` - Transport\n* `SITE_OVERHEAD` - Site Overhead\n* `OFFICE` - Office\n* `OTHER` - Other"
+                    },
+                    "itc_eligible": {
+                        "type": "boolean"
+                    },
+                    "attachment_id": {
+                        "type": [
+                            "string",
+                            "null"
+                        ],
+                        "format": "uuid"
+                    },
+                    "notes": {
+                        "type": [
+                            "string",
+                            "null"
+                        ],
+                        "maxLength": 2000
+                    },
+                    "lines": {
+                        "type": "array",
+                        "items": {
+                            "$ref": "#/components/schemas/RaBillLineIn"
+                        }
+                    }
+                },
+                "required": [
+                    "bill_date",
+                    "bill_number",
+                    "lines"
+                ]
             },
             "Receivable": {
                 "type": "object",
@@ -19208,7 +19754,34 @@
                         "type": "string",
                         "format": "decimal",
                         "pattern": "^-?\\d{0,12}(?:\\.\\d{0,2})?$",
-                        "description": "Total less the TDS we deduct: what we pay the vendor"
+                        "description": "Total less the TDS we deduct and the retention we hold: what we pay"
+                    },
+                    "work_order_id": {
+                        "type": [
+                            "string",
+                            "null"
+                        ],
+                        "format": "uuid"
+                    },
+                    "wo_number": {
+                        "type": [
+                            "string",
+                            "null"
+                        ],
+                        "readOnly": true
+                    },
+                    "ra_number": {
+                        "type": [
+                            "integer",
+                            "null"
+                        ],
+                        "readOnly": true
+                    },
+                    "retention_amount": {
+                        "type": "string",
+                        "format": "decimal",
+                        "pattern": "^-?\\d{0,12}(?:\\.\\d{0,2})?$",
+                        "description": "Held back on an RA bill (work order retention)"
                     },
                     "amount_paid": {
                         "type": "string",
@@ -19284,6 +19857,8 @@
                     "outstanding",
                     "project_id",
                     "project_name",
+                    "ra_number",
+                    "retention_amount",
                     "status",
                     "taxable_value",
                     "tds_amount",
@@ -19295,7 +19870,299 @@
                     "vendor_party_id",
                     "version",
                     "void_reason",
-                    "voided_at"
+                    "voided_at",
+                    "wo_number",
+                    "work_order_id"
+                ]
+            },
+            "VendorBillDetail": {
+                "type": "object",
+                "properties": {
+                    "id": {
+                        "type": "string",
+                        "format": "uuid",
+                        "readOnly": true
+                    },
+                    "version": {
+                        "type": "integer",
+                        "readOnly": true
+                    },
+                    "vendor_party_id": {
+                        "type": "string",
+                        "format": "uuid"
+                    },
+                    "vendor_name": {
+                        "type": "string",
+                        "readOnly": true
+                    },
+                    "project_id": {
+                        "type": [
+                            "string",
+                            "null"
+                        ],
+                        "format": "uuid"
+                    },
+                    "project_name": {
+                        "type": [
+                            "string",
+                            "null"
+                        ],
+                        "readOnly": true
+                    },
+                    "bill_number": {
+                        "type": "string",
+                        "readOnly": true
+                    },
+                    "bill_date": {
+                        "type": "string",
+                        "format": "date",
+                        "readOnly": true
+                    },
+                    "due_date": {
+                        "type": [
+                            "string",
+                            "null"
+                        ],
+                        "format": "date",
+                        "readOnly": true
+                    },
+                    "category": {
+                        "allOf": [
+                            {
+                                "$ref": "#/components/schemas/ExpenseCategoryEnum"
+                            }
+                        ],
+                        "readOnly": true
+                    },
+                    "description": {
+                        "type": "string",
+                        "readOnly": true
+                    },
+                    "taxable_value": {
+                        "type": "string",
+                        "format": "decimal",
+                        "pattern": "^-?\\d{0,12}(?:\\.\\d{0,2})?$"
+                    },
+                    "gst_amount": {
+                        "type": "string",
+                        "format": "decimal",
+                        "pattern": "^-?\\d{0,12}(?:\\.\\d{0,2})?$"
+                    },
+                    "total_amount": {
+                        "type": "string",
+                        "format": "decimal",
+                        "pattern": "^-?\\d{0,12}(?:\\.\\d{0,2})?$"
+                    },
+                    "itc_eligible": {
+                        "type": "boolean",
+                        "readOnly": true
+                    },
+                    "tds_section": {
+                        "type": [
+                            "string",
+                            "null"
+                        ],
+                        "readOnly": true
+                    },
+                    "tds_rate": {
+                        "type": "string",
+                        "format": "decimal",
+                        "pattern": "^-?\\d{0,3}(?:\\.\\d{0,2})?$"
+                    },
+                    "tds_amount": {
+                        "type": "string",
+                        "format": "decimal",
+                        "pattern": "^-?\\d{0,12}(?:\\.\\d{0,2})?$"
+                    },
+                    "net_payable": {
+                        "type": "string",
+                        "format": "decimal",
+                        "pattern": "^-?\\d{0,12}(?:\\.\\d{0,2})?$",
+                        "description": "Total less the TDS we deduct and the retention we hold: what we pay"
+                    },
+                    "work_order_id": {
+                        "type": [
+                            "string",
+                            "null"
+                        ],
+                        "format": "uuid"
+                    },
+                    "wo_number": {
+                        "type": [
+                            "string",
+                            "null"
+                        ],
+                        "readOnly": true
+                    },
+                    "ra_number": {
+                        "type": [
+                            "integer",
+                            "null"
+                        ],
+                        "readOnly": true
+                    },
+                    "retention_amount": {
+                        "type": "string",
+                        "format": "decimal",
+                        "pattern": "^-?\\d{0,12}(?:\\.\\d{0,2})?$",
+                        "description": "Held back on an RA bill (work order retention)"
+                    },
+                    "amount_paid": {
+                        "type": "string",
+                        "format": "decimal",
+                        "pattern": "^-?\\d{0,12}(?:\\.\\d{0,2})?$"
+                    },
+                    "outstanding": {
+                        "type": "string",
+                        "readOnly": true
+                    },
+                    "attachment_id": {
+                        "type": [
+                            "string",
+                            "null"
+                        ],
+                        "format": "uuid"
+                    },
+                    "notes": {
+                        "type": [
+                            "string",
+                            "null"
+                        ],
+                        "readOnly": true
+                    },
+                    "status": {
+                        "allOf": [
+                            {
+                                "$ref": "#/components/schemas/RecordStatusEnum"
+                            }
+                        ],
+                        "readOnly": true
+                    },
+                    "voided_at": {
+                        "type": [
+                            "string",
+                            "null"
+                        ],
+                        "format": "date-time",
+                        "readOnly": true
+                    },
+                    "void_reason": {
+                        "type": [
+                            "string",
+                            "null"
+                        ],
+                        "readOnly": true
+                    },
+                    "created_at": {
+                        "type": "string",
+                        "format": "date-time",
+                        "readOnly": true
+                    },
+                    "updated_at": {
+                        "type": "string",
+                        "format": "date-time",
+                        "readOnly": true
+                    },
+                    "lines": {
+                        "type": "array",
+                        "items": {
+                            "$ref": "#/components/schemas/VendorBillLine"
+                        },
+                        "readOnly": true,
+                        "description": "An RA bill's quantities; empty for other bills"
+                    }
+                },
+                "required": [
+                    "amount_paid",
+                    "attachment_id",
+                    "bill_date",
+                    "bill_number",
+                    "category",
+                    "created_at",
+                    "description",
+                    "due_date",
+                    "gst_amount",
+                    "id",
+                    "itc_eligible",
+                    "lines",
+                    "net_payable",
+                    "notes",
+                    "outstanding",
+                    "project_id",
+                    "project_name",
+                    "ra_number",
+                    "retention_amount",
+                    "status",
+                    "taxable_value",
+                    "tds_amount",
+                    "tds_rate",
+                    "tds_section",
+                    "total_amount",
+                    "updated_at",
+                    "vendor_name",
+                    "vendor_party_id",
+                    "version",
+                    "void_reason",
+                    "voided_at",
+                    "wo_number",
+                    "work_order_id"
+                ]
+            },
+            "VendorBillLine": {
+                "type": "object",
+                "properties": {
+                    "id": {
+                        "type": "string",
+                        "format": "uuid",
+                        "readOnly": true
+                    },
+                    "work_order_item_id": {
+                        "type": "string",
+                        "format": "uuid"
+                    },
+                    "item_code": {
+                        "type": "string",
+                        "readOnly": true
+                    },
+                    "description": {
+                        "type": "string",
+                        "readOnly": true
+                    },
+                    "unit": {
+                        "type": "string",
+                        "readOnly": true
+                    },
+                    "qty": {
+                        "type": "string",
+                        "format": "decimal",
+                        "pattern": "^-?\\d{0,11}(?:\\.\\d{0,3})?$"
+                    },
+                    "rate": {
+                        "type": "string",
+                        "format": "decimal",
+                        "pattern": "^-?\\d{0,12}(?:\\.\\d{0,2})?$"
+                    },
+                    "amount": {
+                        "type": "string",
+                        "format": "decimal",
+                        "pattern": "^-?\\d{0,12}(?:\\.\\d{0,2})?$"
+                    },
+                    "gst_rate": {
+                        "type": "string",
+                        "format": "decimal",
+                        "pattern": "^-?\\d{0,3}(?:\\.\\d{0,2})?$"
+                    }
+                },
+                "required": [
+                    "amount",
+                    "description",
+                    "gst_rate",
+                    "id",
+                    "item_code",
+                    "qty",
+                    "rate",
+                    "unit",
+                    "work_order_item_id"
                 ]
             },
             "VendorBillWrite": {
@@ -19600,6 +20467,527 @@
                 },
                 "required": [
                     "reason"
+                ]
+            },
+            "WorkOrder": {
+                "type": "object",
+                "properties": {
+                    "id": {
+                        "type": "string",
+                        "format": "uuid",
+                        "readOnly": true
+                    },
+                    "version": {
+                        "type": "integer",
+                        "readOnly": true
+                    },
+                    "project_id": {
+                        "type": "string",
+                        "format": "uuid"
+                    },
+                    "project_code": {
+                        "type": "string",
+                        "readOnly": true
+                    },
+                    "project_name": {
+                        "type": "string",
+                        "readOnly": true
+                    },
+                    "vendor_party_id": {
+                        "type": "string",
+                        "format": "uuid"
+                    },
+                    "vendor_name": {
+                        "type": "string",
+                        "readOnly": true
+                    },
+                    "wo_number": {
+                        "type": "string",
+                        "readOnly": true
+                    },
+                    "wo_date": {
+                        "type": "string",
+                        "format": "date",
+                        "readOnly": true
+                    },
+                    "title": {
+                        "type": "string",
+                        "readOnly": true
+                    },
+                    "terms": {
+                        "type": [
+                            "string",
+                            "null"
+                        ],
+                        "readOnly": true
+                    },
+                    "retention_pct": {
+                        "type": "string",
+                        "format": "decimal",
+                        "pattern": "^-?\\d{0,3}(?:\\.\\d{0,2})?$"
+                    },
+                    "tds_section": {
+                        "type": [
+                            "string",
+                            "null"
+                        ],
+                        "readOnly": true
+                    },
+                    "tds_rate": {
+                        "type": "string",
+                        "format": "decimal",
+                        "pattern": "^-?\\d{0,3}(?:\\.\\d{0,2})?$"
+                    },
+                    "status": {
+                        "allOf": [
+                            {
+                                "$ref": "#/components/schemas/WorkOrderStatusEnum"
+                            }
+                        ],
+                        "readOnly": true
+                    },
+                    "value": {
+                        "type": "string",
+                        "format": "decimal",
+                        "pattern": "^-?\\d{0,12}(?:\\.\\d{0,2})?$",
+                        "description": "qty x rate of every item"
+                    },
+                    "billed": {
+                        "type": "string",
+                        "format": "decimal",
+                        "pattern": "^-?\\d{0,12}(?:\\.\\d{0,2})?$",
+                        "description": "Recorded RA bills, before GST"
+                    },
+                    "retention_held": {
+                        "type": "string",
+                        "format": "decimal",
+                        "pattern": "^-?\\d{0,12}(?:\\.\\d{0,2})?$"
+                    },
+                    "paid": {
+                        "type": "string",
+                        "format": "decimal",
+                        "pattern": "^-?\\d{0,12}(?:\\.\\d{0,2})?$",
+                        "description": "Paid on its RA bills"
+                    },
+                    "ra_count": {
+                        "type": "integer"
+                    },
+                    "created_at": {
+                        "type": "string",
+                        "format": "date-time",
+                        "readOnly": true
+                    },
+                    "updated_at": {
+                        "type": "string",
+                        "format": "date-time",
+                        "readOnly": true
+                    }
+                },
+                "required": [
+                    "billed",
+                    "created_at",
+                    "id",
+                    "paid",
+                    "project_code",
+                    "project_id",
+                    "project_name",
+                    "ra_count",
+                    "retention_held",
+                    "retention_pct",
+                    "status",
+                    "tds_rate",
+                    "tds_section",
+                    "terms",
+                    "title",
+                    "updated_at",
+                    "value",
+                    "vendor_name",
+                    "vendor_party_id",
+                    "version",
+                    "wo_date",
+                    "wo_number"
+                ]
+            },
+            "WorkOrderDetail": {
+                "type": "object",
+                "properties": {
+                    "id": {
+                        "type": "string",
+                        "format": "uuid",
+                        "readOnly": true
+                    },
+                    "version": {
+                        "type": "integer",
+                        "readOnly": true
+                    },
+                    "project_id": {
+                        "type": "string",
+                        "format": "uuid"
+                    },
+                    "project_code": {
+                        "type": "string",
+                        "readOnly": true
+                    },
+                    "project_name": {
+                        "type": "string",
+                        "readOnly": true
+                    },
+                    "vendor_party_id": {
+                        "type": "string",
+                        "format": "uuid"
+                    },
+                    "vendor_name": {
+                        "type": "string",
+                        "readOnly": true
+                    },
+                    "wo_number": {
+                        "type": "string",
+                        "readOnly": true
+                    },
+                    "wo_date": {
+                        "type": "string",
+                        "format": "date",
+                        "readOnly": true
+                    },
+                    "title": {
+                        "type": "string",
+                        "readOnly": true
+                    },
+                    "terms": {
+                        "type": [
+                            "string",
+                            "null"
+                        ],
+                        "readOnly": true
+                    },
+                    "retention_pct": {
+                        "type": "string",
+                        "format": "decimal",
+                        "pattern": "^-?\\d{0,3}(?:\\.\\d{0,2})?$"
+                    },
+                    "tds_section": {
+                        "type": [
+                            "string",
+                            "null"
+                        ],
+                        "readOnly": true
+                    },
+                    "tds_rate": {
+                        "type": "string",
+                        "format": "decimal",
+                        "pattern": "^-?\\d{0,3}(?:\\.\\d{0,2})?$"
+                    },
+                    "status": {
+                        "allOf": [
+                            {
+                                "$ref": "#/components/schemas/WorkOrderStatusEnum"
+                            }
+                        ],
+                        "readOnly": true
+                    },
+                    "value": {
+                        "type": "string",
+                        "format": "decimal",
+                        "pattern": "^-?\\d{0,12}(?:\\.\\d{0,2})?$",
+                        "description": "qty x rate of every item"
+                    },
+                    "billed": {
+                        "type": "string",
+                        "format": "decimal",
+                        "pattern": "^-?\\d{0,12}(?:\\.\\d{0,2})?$",
+                        "description": "Recorded RA bills, before GST"
+                    },
+                    "retention_held": {
+                        "type": "string",
+                        "format": "decimal",
+                        "pattern": "^-?\\d{0,12}(?:\\.\\d{0,2})?$"
+                    },
+                    "paid": {
+                        "type": "string",
+                        "format": "decimal",
+                        "pattern": "^-?\\d{0,12}(?:\\.\\d{0,2})?$",
+                        "description": "Paid on its RA bills"
+                    },
+                    "ra_count": {
+                        "type": "integer"
+                    },
+                    "created_at": {
+                        "type": "string",
+                        "format": "date-time",
+                        "readOnly": true
+                    },
+                    "updated_at": {
+                        "type": "string",
+                        "format": "date-time",
+                        "readOnly": true
+                    },
+                    "items": {
+                        "type": "array",
+                        "items": {
+                            "$ref": "#/components/schemas/WorkOrderItem"
+                        },
+                        "readOnly": true
+                    },
+                    "ra_bills": {
+                        "type": "array",
+                        "items": {
+                            "$ref": "#/components/schemas/RaBillSummary"
+                        },
+                        "readOnly": true
+                    }
+                },
+                "required": [
+                    "billed",
+                    "created_at",
+                    "id",
+                    "items",
+                    "paid",
+                    "project_code",
+                    "project_id",
+                    "project_name",
+                    "ra_bills",
+                    "ra_count",
+                    "retention_held",
+                    "retention_pct",
+                    "status",
+                    "tds_rate",
+                    "tds_section",
+                    "terms",
+                    "title",
+                    "updated_at",
+                    "value",
+                    "vendor_name",
+                    "vendor_party_id",
+                    "version",
+                    "wo_date",
+                    "wo_number"
+                ]
+            },
+            "WorkOrderItem": {
+                "type": "object",
+                "properties": {
+                    "id": {
+                        "type": "string",
+                        "format": "uuid",
+                        "readOnly": true
+                    },
+                    "boq_item_id": {
+                        "type": [
+                            "string",
+                            "null"
+                        ],
+                        "format": "uuid"
+                    },
+                    "boq_item_code": {
+                        "type": [
+                            "string",
+                            "null"
+                        ],
+                        "readOnly": true
+                    },
+                    "item_code": {
+                        "type": "string",
+                        "readOnly": true
+                    },
+                    "description": {
+                        "type": "string",
+                        "readOnly": true
+                    },
+                    "unit": {
+                        "type": "string",
+                        "readOnly": true
+                    },
+                    "sac_hsn": {
+                        "type": [
+                            "string",
+                            "null"
+                        ],
+                        "readOnly": true
+                    },
+                    "qty": {
+                        "type": "string",
+                        "format": "decimal",
+                        "pattern": "^-?\\d{0,11}(?:\\.\\d{0,3})?$"
+                    },
+                    "rate": {
+                        "type": "string",
+                        "format": "decimal",
+                        "pattern": "^-?\\d{0,12}(?:\\.\\d{0,2})?$"
+                    },
+                    "gst_rate": {
+                        "type": "string",
+                        "format": "decimal",
+                        "pattern": "^-?\\d{0,3}(?:\\.\\d{0,2})?$"
+                    },
+                    "amount": {
+                        "type": "string",
+                        "readOnly": true,
+                        "description": "qty x rate"
+                    },
+                    "billed_qty": {
+                        "type": "string",
+                        "readOnly": true,
+                        "description": "On recorded RA bills so far"
+                    },
+                    "balance_qty": {
+                        "type": "string",
+                        "readOnly": true,
+                        "description": "Still to be billed"
+                    }
+                },
+                "required": [
+                    "amount",
+                    "balance_qty",
+                    "billed_qty",
+                    "boq_item_code",
+                    "boq_item_id",
+                    "description",
+                    "gst_rate",
+                    "id",
+                    "item_code",
+                    "qty",
+                    "rate",
+                    "sac_hsn",
+                    "unit"
+                ]
+            },
+            "WorkOrderItemWrite": {
+                "type": "object",
+                "properties": {
+                    "id": {
+                        "type": "string",
+                        "format": "uuid",
+                        "description": "Edit: an existing item; omit for new"
+                    },
+                    "boq_item_id": {
+                        "type": [
+                            "string",
+                            "null"
+                        ],
+                        "format": "uuid",
+                        "description": "The client's BOQ item this work is part of"
+                    },
+                    "item_code": {
+                        "type": "string",
+                        "maxLength": 30
+                    },
+                    "description": {
+                        "type": "string",
+                        "maxLength": 2000
+                    },
+                    "unit": {
+                        "type": "string",
+                        "maxLength": 20
+                    },
+                    "sac_hsn": {
+                        "type": [
+                            "string",
+                            "null"
+                        ],
+                        "pattern": "^[0-9]{4,8}$"
+                    },
+                    "qty": {
+                        "type": "string",
+                        "format": "decimal",
+                        "pattern": "^-?\\d{0,11}(?:\\.\\d{0,3})?$",
+                        "description": "Agreed"
+                    },
+                    "rate": {
+                        "type": "string",
+                        "format": "decimal",
+                        "pattern": "^-?\\d{0,12}(?:\\.\\d{0,2})?$"
+                    },
+                    "gst_rate": {
+                        "type": "string",
+                        "format": "decimal",
+                        "pattern": "^-?\\d{0,3}(?:\\.\\d{0,2})?$",
+                        "default": "18.00"
+                    }
+                },
+                "required": [
+                    "description",
+                    "item_code",
+                    "qty",
+                    "rate",
+                    "unit"
+                ]
+            },
+            "WorkOrderStatusEnum": {
+                "enum": [
+                    "OPEN",
+                    "CLOSED"
+                ],
+                "type": "string",
+                "description": "* `OPEN` - Open\n* `CLOSED` - Closed"
+            },
+            "WorkOrderWrite": {
+                "type": "object",
+                "description": "Edit: the terms and the items (not the project or the subcontractor).",
+                "properties": {
+                    "wo_number": {
+                        "type": "string",
+                        "description": "Ours; empty: WO/<project>/NN",
+                        "maxLength": 30
+                    },
+                    "wo_date": {
+                        "type": "string",
+                        "format": "date"
+                    },
+                    "title": {
+                        "type": "string",
+                        "description": "The scope in a line",
+                        "maxLength": 200
+                    },
+                    "terms": {
+                        "type": [
+                            "string",
+                            "null"
+                        ],
+                        "maxLength": 4000
+                    },
+                    "retention_pct": {
+                        "type": "string",
+                        "format": "decimal",
+                        "pattern": "^-?\\d{0,3}(?:\\.\\d{0,2})?$",
+                        "default": "0.00"
+                    },
+                    "tds_section": {
+                        "type": [
+                            "string",
+                            "null"
+                        ],
+                        "pattern": "^19[0-9]{1,2}[A-Z]{0,3}$"
+                    },
+                    "tds_rate": {
+                        "type": [
+                            "string",
+                            "null"
+                        ],
+                        "format": "decimal",
+                        "pattern": "^-?\\d{0,3}(?:\\.\\d{0,2})?$"
+                    },
+                    "items": {
+                        "type": "array",
+                        "items": {
+                            "$ref": "#/components/schemas/WorkOrderItemWrite"
+                        }
+                    },
+                    "project_id": {
+                        "type": "string",
+                        "format": "uuid"
+                    },
+                    "vendor_party_id": {
+                        "type": "string",
+                        "format": "uuid",
+                        "description": "The subcontractor"
+                    }
+                },
+                "required": [
+                    "items",
+                    "project_id",
+                    "title",
+                    "vendor_party_id",
+                    "wo_date"
                 ]
             }
         },
