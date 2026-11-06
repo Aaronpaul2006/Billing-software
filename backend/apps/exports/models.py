@@ -24,6 +24,7 @@ class ExportKind(models.TextChoices):
     PROJECTS = "PROJECTS"  # the project margins report
     STATEMENT = "STATEMENT"  # one client's statement of account
     TALLY = "TALLY"  # vouchers to import into Tally (B.16)
+    TDS_DEDUCTED = "TDS_DEDUCTED"  # TDS we deducted on vendor bills (payables; for 26Q)
 
 
 class ExportFormat(models.TextChoices):

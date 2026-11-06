@@ -26,7 +26,7 @@ import type { Export } from "./exports";
 type Kind = components["schemas"]["ExportRequest"]["kind"];
 type Format = components["schemas"]["ExportRequest"]["format"];
 
-const DATED: Kind[] = ["DOCUMENTS", "PAYMENTS", "EXPENSES", "TALLY"];
+const DATED: Kind[] = ["DOCUMENTS", "PAYMENTS", "EXPENSES", "TALLY", "TDS_DEDUCTED"];
 const KINDS: Kind[] = FORM_KINDS;
 const WITH_BOOK: Kind[] = ["DOCUMENTS", "RECEIVABLES"];
 

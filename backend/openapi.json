@@ -10055,10 +10055,11 @@
                     "BOQ",
                     "PROJECTS",
                     "STATEMENT",
-                    "TALLY"
+                    "TALLY",
+                    "TDS_DEDUCTED"
                 ],
                 "type": "string",
-                "description": "* `DOCUMENTS` - Documents\n* `PAYMENTS` - Payments\n* `EXPENSES` - Expenses\n* `RECEIVABLES` - Receivables\n* `GSTR1` - Gstr1\n* `BOQ` - Boq\n* `PROJECTS` - Projects\n* `STATEMENT` - Statement\n* `TALLY` - Tally"
+                "description": "* `DOCUMENTS` - Documents\n* `PAYMENTS` - Payments\n* `EXPENSES` - Expenses\n* `RECEIVABLES` - Receivables\n* `GSTR1` - Gstr1\n* `BOQ` - Boq\n* `PROJECTS` - Projects\n* `STATEMENT` - Statement\n* `TALLY` - Tally\n* `TDS_DEDUCTED` - Tds Deducted"
             },
             "ExportList": {
                 "type": "object",
@@ -10167,10 +10168,11 @@
                     "BOQ",
                     "PROJECTS",
                     "STATEMENT",
-                    "TALLY"
+                    "TALLY",
+                    "TDS_DEDUCTED"
                 ],
                 "type": "string",
-                "description": "* `DOCUMENTS` - DOCUMENTS\n* `PAYMENTS` - PAYMENTS\n* `EXPENSES` - EXPENSES\n* `RECEIVABLES` - RECEIVABLES\n* `GSTR1` - GSTR1\n* `BOQ` - BOQ\n* `PROJECTS` - PROJECTS\n* `STATEMENT` - STATEMENT\n* `TALLY` - TALLY"
+                "description": "* `DOCUMENTS` - DOCUMENTS\n* `PAYMENTS` - PAYMENTS\n* `EXPENSES` - EXPENSES\n* `RECEIVABLES` - RECEIVABLES\n* `GSTR1` - GSTR1\n* `BOQ` - BOQ\n* `PROJECTS` - PROJECTS\n* `STATEMENT` - STATEMENT\n* `TALLY` - TALLY\n* `TDS_DEDUCTED` - TDS_DEDUCTED"
             },
             "ExportStatusEnum": {
                 "enum": [

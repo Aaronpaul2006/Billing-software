@@ -13,7 +13,7 @@ from apps.tenants.models import GstRegistration
 from . import services
 from .models import Export, ExportFormat, ExportKind, ExportStatus
 
-DATED_KINDS = {"DOCUMENTS", "PAYMENTS", "EXPENSES", "TALLY"}
+DATED_KINDS = {"DOCUMENTS", "PAYMENTS", "EXPENSES", "TALLY", "TDS_DEDUCTED"}
 FIRST_GSTR1_PERIOD = "2025-05"  # the HSN summary split into B2B / B2C from May 2025
 
 

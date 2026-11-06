@@ -15,6 +15,7 @@ export const KIND_LABELS: Record<Export["kind"], string> = {
   PROJECTS: "Project margins",
   STATEMENT: "Statement of account",
   TALLY: "Tally (vouchers, XML)",
+  TDS_DEDUCTED: "TDS we deducted (vendor bills, for 26Q)",
 };
 
 /** Made from a client's page, not from the Exports form (it needs the client). */

@@ -948,7 +948,7 @@ CREATE TABLE exports (
   id            uuid PRIMARY KEY DEFAULT gen_random_uuid(),
   tenant_id     uuid NOT NULL REFERENCES tenants (id),
   kind          text NOT NULL CHECK (kind IN ('DOCUMENTS', 'PAYMENTS', 'EXPENSES', 'RECEIVABLES', 'GSTR1',
-                                              'BOQ', 'PROJECTS', 'STATEMENT', 'TALLY')),
+                                              'BOQ', 'PROJECTS', 'STATEMENT', 'TALLY', 'TDS_DEDUCTED')),
   format        text NOT NULL CHECK (format IN ('CSV', 'XLSX', 'JSON', 'PDF', 'XML')),
   params        jsonb NOT NULL DEFAULT '{}',
   status        text NOT NULL DEFAULT 'PENDING' CHECK (status IN ('PENDING', 'READY', 'FAILED')),

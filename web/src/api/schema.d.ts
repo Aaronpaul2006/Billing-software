@@ -3470,9 +3470,10 @@ export interface components {
          *     * `PROJECTS` - Projects
          *     * `STATEMENT` - Statement
          *     * `TALLY` - Tally
+         *     * `TDS_DEDUCTED` - Tds Deducted
          * @enum {string}
          */
-        ExportKindEnum: "DOCUMENTS" | "PAYMENTS" | "EXPENSES" | "RECEIVABLES" | "GSTR1" | "BOQ" | "PROJECTS" | "STATEMENT" | "TALLY";
+        ExportKindEnum: "DOCUMENTS" | "PAYMENTS" | "EXPENSES" | "RECEIVABLES" | "GSTR1" | "BOQ" | "PROJECTS" | "STATEMENT" | "TALLY" | "TDS_DEDUCTED";
         ExportList: {
             results: components["schemas"]["Export"][];
         };
@@ -3542,9 +3543,10 @@ export interface components {
          *     * `PROJECTS` - PROJECTS
          *     * `STATEMENT` - STATEMENT
          *     * `TALLY` - TALLY
+         *     * `TDS_DEDUCTED` - TDS_DEDUCTED
          * @enum {string}
          */
-        ExportRequestKindEnum: "DOCUMENTS" | "PAYMENTS" | "EXPENSES" | "RECEIVABLES" | "GSTR1" | "BOQ" | "PROJECTS" | "STATEMENT" | "TALLY";
+        ExportRequestKindEnum: "DOCUMENTS" | "PAYMENTS" | "EXPENSES" | "RECEIVABLES" | "GSTR1" | "BOQ" | "PROJECTS" | "STATEMENT" | "TALLY" | "TDS_DEDUCTED";
         /**
          * @description * `PENDING` - Pending
          *     * `READY` - Ready

@@ -393,6 +393,63 @@ def statement(tenant_id: uuid.UUID, params: dict[str, Any]) -> Built:
     return Built(Table("Statement", columns, rows), statement_stem(party, params))
 
 
+def tds_deducted(tenant_id: uuid.UUID, params: dict[str, Any]) -> Built:
+    """TDS we deducted on vendor bills (payables, Part B): one row per bill, by
+    the month it was credited (the bill date), for paying it by the 7th and the
+    26Q return. Voided bills are left out."""
+    from apps.payables.models import VendorBill  # payables come after exports
+
+    start, end = _date_range(params)
+    queryset = (
+        VendorBill.objects.filter(
+            bill_date__range=(start, end), status="RECORDED", tds_amount__gt=0
+        )
+        .select_related("vendor_party")
+        .order_by("bill_date", "created_at")
+    )
+    _check_size(queryset.count())
+    columns = [
+        Column("Month", width=10),
+        Column("Bill date", "date", 12),
+        Column("Vendor", width=28),
+        Column("Vendor PAN", width=12),
+        Column("Section", width=8),
+        Column("Vendor bill number", width=18),
+        Column("Amount before GST", "money"),
+        Column("Rate %", "money", 8),
+        Column("TDS deducted", "money"),
+    ]
+    rows: list[list[Any]] = [
+        [
+            f"{b.bill_date:%b %Y}",
+            b.bill_date,
+            b.vendor_party.display_name,
+            b.vendor_party.pan,
+            b.tds_section,
+            b.bill_number,
+            b.taxable_value,
+            b.tds_rate,
+            b.tds_amount,
+        ]
+        for b in queryset
+    ]
+    if rows:
+        rows.append(
+            [
+                "",
+                None,
+                "Total",
+                None,
+                None,
+                None,
+                sum(r[6] for r in rows),
+                None,
+                sum(r[8] for r in rows),
+            ]
+        )
+    return Built(Table("TDS deducted", columns, rows), f"tds_deducted_{start}_{end}")
+
+
 BUILDERS: dict[str, Callable[[uuid.UUID, dict[str, Any]], Built]] = {
     "DOCUMENTS": documents,
     "PAYMENTS": payments,
@@ -401,4 +458,5 @@ BUILDERS: dict[str, Callable[[uuid.UUID, dict[str, Any]], Built]] = {
     "BOQ": boq,
     "PROJECTS": projects,
     "STATEMENT": statement,
+    "TDS_DEDUCTED": tds_deducted,
 }
