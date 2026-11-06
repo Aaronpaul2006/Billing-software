@@ -162,10 +162,47 @@ class VendorAllocation(TenantScoped):
     id = uuid7_pk()
     tenant = tenant_ref()
     vendor_payment = ref("payables.VendorPayment", related_name="allocations")
-    vendor_bill = ref("payables.VendorBill", related_name="allocations")
+    vendor_bill = ref("payables.VendorBill", null=True, related_name="allocations")
+    vendor_retention_release = ref(
+        "payables.VendorRetentionRelease", null=True, related_name="allocations"
+    )
     amount = models.DecimalField(max_digits=14, decimal_places=2)
     created_by = ref("accounts.User", db_column="created_by")
     created_at = created_at()
 
     class Meta:
         db_table = "vendor_allocations"
+
+
+class ReleaseStatus(models.TextChoices):
+    RELEASED = "RELEASED"
+    CANCELLED = "CANCELLED"
+
+
+class VendorRetentionRelease(TenantScoped):
+    """Retention held from a subcontractor's RA bills, released to be paid."""
+
+    Status = ReleaseStatus
+    id = uuid7_pk()
+    tenant = tenant_ref()
+    work_order = ref("payables.WorkOrder", related_name="releases")
+    vendor_party = ref("parties.Party")
+    release_date = models.DateField()
+    due_date = models.DateField(null=True)
+    amount = models.DecimalField(max_digits=14, decimal_places=2)
+    amount_paid = models.DecimalField(max_digits=14, decimal_places=2, default=0, db_default=0)
+    reference = models.TextField(null=True)  # noqa: DJ001 - mirrors schema
+    notes = models.TextField(null=True)  # noqa: DJ001
+    status = models.TextField(
+        choices=ReleaseStatus, default=ReleaseStatus.RELEASED, db_default=ReleaseStatus.RELEASED
+    )
+    cancelled_at = models.DateTimeField(null=True)
+    cancelled_by = ref("accounts.User", null=True, db_column="cancelled_by")
+    cancel_reason = models.TextField(null=True)  # noqa: DJ001
+    version = models.IntegerField(default=1, db_default=1)
+    created_by = ref("accounts.User", db_column="created_by")
+    created_at = created_at()
+    updated_at = updated_at()
+
+    class Meta:
+        db_table = "vendor_retention_releases"

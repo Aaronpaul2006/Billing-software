@@ -13,6 +13,7 @@ from .models import (
     VendorBill,
     VendorBillLine,
     VendorPayment,
+    VendorRetentionRelease,
     WorkOrder,
     WorkOrderItem,
 )
@@ -116,8 +117,19 @@ class VendorBillSerializer(serializers.ModelSerializer[VendorBill]):
 
 
 class VendorAllocationInSerializer(serializers.Serializer[Any]):
-    vendor_bill_id = serializers.UUIDField()
+    vendor_bill_id = serializers.UUIDField(required=False, allow_null=True)
+    vendor_retention_release_id = serializers.UUIDField(
+        required=False, allow_null=True, help_text="Or retention released to a subcontractor"
+    )
     amount = MoneyField(min_value=PAISA)
+
+    def validate(self, attrs: dict[str, Any]) -> dict[str, Any]:
+        if bool(attrs.get("vendor_bill_id")) == bool(attrs.get("vendor_retention_release_id")):
+            raise serializers.ValidationError(
+                {"vendor_bill_id": "Give a vendor bill or a retention release (one of them)."},
+                code="required",
+            )
+        return attrs
 
 
 class VendorPaymentCreateSerializer(serializers.Serializer[Any]):
@@ -134,14 +146,30 @@ class VendorPaymentCreateSerializer(serializers.Serializer[Any]):
 
 
 class VendorAllocationOutSerializer(serializers.ModelSerializer[VendorAllocation]):
-    vendor_bill_id = serializers.UUIDField()
-    bill_number = serializers.CharField(source="vendor_bill.bill_number", read_only=True)
+    vendor_bill_id = serializers.UUIDField(allow_null=True)
+    vendor_retention_release_id = serializers.UUIDField(allow_null=True)
+    bill_number = serializers.SerializerMethodField(
+        help_text="The bill's number, or 'Retention, WO/...' for a release"
+    )
     amount = MoneyField()
 
     class Meta:
         model = VendorAllocation
-        fields = ("id", "vendor_bill_id", "bill_number", "amount", "created_at")
+        fields = (
+            "id",
+            "vendor_bill_id",
+            "vendor_retention_release_id",
+            "bill_number",
+            "amount",
+            "created_at",
+        )
         read_only_fields = fields
+
+    def get_bill_number(self, obj: VendorAllocation) -> str:
+        if obj.vendor_bill is not None:
+            return str(obj.vendor_bill.bill_number)
+        release = obj.vendor_retention_release
+        return f"Retention, {release.work_order.wo_number}" if release else ""
 
 
 class VendorPaymentSerializer(serializers.ModelSerializer[VendorPayment]):
@@ -359,7 +387,13 @@ class WorkOrderSerializer(serializers.ModelSerializer[WorkOrder]):
     tds_rate = serializers.DecimalField(**PERCENT)
     value = MoneyField(source="totals.value", help_text="qty x rate of every item")
     billed = MoneyField(source="totals.billed", help_text="Recorded RA bills, before GST")
-    retention_held = MoneyField(source="totals.retention_held")
+    retention_held = MoneyField(
+        source="totals.retention_held", help_text="On recorded RA bills, all told"
+    )
+    retention_released = MoneyField(source="totals.retention_released")
+    retention_to_release = MoneyField(
+        source="totals.retention_to_release", help_text="Held and not yet released"
+    )
     paid = MoneyField(source="totals.paid", help_text="Paid on its RA bills")
     ra_count = serializers.IntegerField(source="totals.ra_count")
 
@@ -384,6 +418,8 @@ class WorkOrderSerializer(serializers.ModelSerializer[WorkOrder]):
             "value",
             "billed",
             "retention_held",
+            "retention_released",
+            "retention_to_release",
             "paid",
             "ra_count",
             "created_at",
@@ -392,12 +428,59 @@ class WorkOrderSerializer(serializers.ModelSerializer[WorkOrder]):
         read_only_fields: tuple[str, ...] = fields
 
 
+class VendorRetentionReleaseSerializer(serializers.ModelSerializer[VendorRetentionRelease]):
+    work_order_id = serializers.UUIDField()
+    wo_number = serializers.CharField(source="work_order.wo_number", read_only=True)
+    vendor_party_id = serializers.UUIDField()
+    vendor_name = serializers.CharField(source="vendor_party.display_name", read_only=True)
+    amount = MoneyField()
+    amount_paid = MoneyField()
+    outstanding = serializers.SerializerMethodField()
+
+    class Meta:
+        model = VendorRetentionRelease
+        fields = (
+            "id",
+            "version",
+            "work_order_id",
+            "wo_number",
+            "vendor_party_id",
+            "vendor_name",
+            "release_date",
+            "due_date",
+            "amount",
+            "amount_paid",
+            "outstanding",
+            "reference",
+            "notes",
+            "status",
+            "cancelled_at",
+            "cancel_reason",
+            "created_at",
+        )
+        read_only_fields = fields
+
+    def get_outstanding(self, obj: VendorRetentionRelease) -> str:
+        if obj.status != "RELEASED":
+            return "0.00"
+        return f"{obj.amount - obj.amount_paid:.2f}"
+
+
+class RetentionReleaseWriteSerializer(serializers.Serializer[Any]):
+    release_date = serializers.DateField()
+    due_date = serializers.DateField(required=False, allow_null=True)
+    amount = MoneyField(min_value=PAISA, help_text="At most the retention still held")
+    reference = serializers.CharField(max_length=50, required=False, allow_null=True)
+    notes = serializers.CharField(max_length=2000, required=False, allow_null=True)
+
+
 class WorkOrderDetailSerializer(WorkOrderSerializer):
     items = serializers.SerializerMethodField()
     ra_bills = serializers.SerializerMethodField()
+    releases = serializers.SerializerMethodField()
 
     class Meta(WorkOrderSerializer.Meta):
-        fields = (*WorkOrderSerializer.Meta.fields, "items", "ra_bills")
+        fields = (*WorkOrderSerializer.Meta.fields, "items", "ra_bills", "releases")
         read_only_fields = fields
 
     @extend_schema_field(WorkOrderItemSerializer(many=True))
@@ -414,6 +497,15 @@ class WorkOrderDetailSerializer(WorkOrderSerializer):
     def get_ra_bills(self, obj: WorkOrder) -> Any:
         bills = VendorBill.objects.filter(work_order=obj).order_by("ra_number", "created_at")
         return RaBillSummarySerializer(bills, many=True).data
+
+    @extend_schema_field(VendorRetentionReleaseSerializer(many=True))
+    def get_releases(self, obj: WorkOrder) -> Any:
+        releases = VendorRetentionRelease.objects.filter(work_order=obj).select_related(
+            "work_order", "vendor_party"
+        )
+        return VendorRetentionReleaseSerializer(
+            releases.order_by("release_date", "created_at"), many=True
+        ).data
 
 
 class RaBillLineInSerializer(serializers.Serializer[Any]):

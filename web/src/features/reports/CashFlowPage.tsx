@@ -48,6 +48,7 @@ function Range({ low, high }: { low: string; high: string }) {
 function BillLink({ item }: { item: Item }) {
   if (item.kind === "RETENTION_RELEASE")
     return <span className="font-medium">Retention release {item.number}</span>;
+  if (item.kind === "RETENTION_OUT") return <span className="font-medium">{item.number}</span>;
   const to = item.kind === "VENDOR_BILL" ? `/vendor-bills/${item.id}` : `/documents/${item.id}`;
   return (
     <Link to={to} className="font-medium hover:underline">

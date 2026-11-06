@@ -25,10 +25,17 @@ from apps.parties.models import Party
 from apps.payments.serializers import VoidSerializer
 
 from . import services, tds, work_orders
-from .models import VendorAllocation, VendorBill, VendorPayment, WorkOrder
+from .models import (
+    VendorAllocation,
+    VendorBill,
+    VendorPayment,
+    VendorRetentionRelease,
+    WorkOrder,
+)
 from .serializers import (
     PayablesSerializer,
     RaBillWriteSerializer,
+    RetentionReleaseWriteSerializer,
     TdsQuerySerializer,
     TdsSuggestionSerializer,
     VendorBillDetailSerializer,
@@ -36,6 +43,7 @@ from .serializers import (
     VendorBillWriteSerializer,
     VendorPaymentCreateSerializer,
     VendorPaymentSerializer,
+    VendorRetentionReleaseSerializer,
     WorkOrderDetailSerializer,
     WorkOrderSerializer,
     WorkOrderUpdateSerializer,
@@ -175,7 +183,12 @@ class VendorPaymentFilter(django_filters.FilterSet):
 
 def _payments() -> Any:
     return VendorPayment.objects.select_related("vendor_party", "project").prefetch_related(
-        Prefetch("allocations", queryset=VendorAllocation.objects.select_related("vendor_bill"))
+        Prefetch(
+            "allocations",
+            queryset=VendorAllocation.objects.select_related(
+                "vendor_bill", "vendor_retention_release__work_order"
+            ),
+        )
     )
 
 
@@ -283,6 +296,28 @@ class PayablesReportView(ActionAPIView):
             )
             owed = b.net_payable - b.amount_paid
             key = _bucket((today - (b.due_date or b.bill_date)).days)
+            row["bill_count"] += 1
+            row[key] += owed
+            row["total"] += owed
+            totals[key] += owed
+            totals["total"] += owed
+            totals["bill_count"] += 1
+        releases = VendorRetentionRelease.objects.filter(
+            status="RELEASED", amount_paid__lt=F("amount")
+        ).select_related("vendor_party")
+        for rel in releases:
+            row = rows.setdefault(
+                rel.vendor_party_id,
+                {
+                    "party_id": rel.vendor_party_id,
+                    "display_name": rel.vendor_party.display_name,
+                    "bill_count": 0,
+                    **dict.fromkeys(BUCKETS, zero),
+                    "total": zero,
+                },
+            )
+            owed = rel.amount - rel.amount_paid
+            key = _bucket((today - (rel.due_date or rel.release_date)).days)
             row["bill_count"] += 1
             row[key] += owed
             row["total"] += owed
@@ -423,3 +458,71 @@ class RaBillCreateView(ActionAPIView):
         data.is_valid(raise_exception=True)
         bill = work_orders.record_ra_bill(self.principal, wo_id, dict(data.validated_data))
         return detail_response(bill, VendorBillDetailSerializer, status=201)
+
+
+class RetentionReleaseCreateView(ActionAPIView):
+    """Release retention held on the work order's RA bills, to be paid."""
+
+    read_action = RECORD
+    write_action = RECORD
+
+    @extend_schema(
+        request=RetentionReleaseWriteSerializer,
+        responses={201: VendorRetentionReleaseSerializer},
+        tags=["payables"],
+    )
+    @idempotent
+    def post(self, request: Request, wo_id: uuid.UUID) -> Response:
+        data = RetentionReleaseWriteSerializer(data=request.data)
+        data.is_valid(raise_exception=True)
+        release = work_orders.release_retention(self.principal, wo_id, dict(data.validated_data))
+        return detail_response(release, VendorRetentionReleaseSerializer, status=201)
+
+
+class RetentionReleaseFilter(django_filters.FilterSet):
+    vendor_party_id = django_filters.UUIDFilter(field_name="vendor_party_id")
+    work_order_id = django_filters.UUIDFilter(field_name="work_order_id")
+    open = django_filters.BooleanFilter(method="filter_open", label="Still to pay")
+
+    class Meta:
+        model = VendorRetentionRelease
+        fields = ("status",)
+
+    def filter_open(
+        self, qs: QuerySet[VendorRetentionRelease], name: str, value: bool
+    ) -> QuerySet[VendorRetentionRelease]:
+        still = qs.filter(status="RELEASED", amount_paid__lt=F("amount"))
+        return still if value else qs.exclude(pk__in=still.values("pk"))
+
+
+class RetentionReleaseListView(ActionAPIView):
+    serializer_class = VendorRetentionReleaseSerializer
+    filterset_class = RetentionReleaseFilter
+    ordering_fields = ("release_date",)
+
+    def get_queryset(self) -> Any:
+        return VendorRetentionRelease.objects.select_related("work_order", "vendor_party")
+
+    @extend_schema(responses={200: VendorRetentionReleaseSerializer(many=True)}, tags=["payables"])
+    def get(self, request: Request) -> Response:
+        return list_response(self, self.get_queryset(), VendorRetentionReleaseSerializer)
+
+
+class RetentionReleaseCancelView(ActionAPIView):
+    read_action = RECORD
+    write_action = RECORD
+
+    @extend_schema(
+        request=VoidSerializer, responses={200: VendorRetentionReleaseSerializer}, tags=["payables"]
+    )
+    def post(self, request: Request, release_id: uuid.UUID) -> Response:
+        data = VoidSerializer(data=request.data)
+        data.is_valid(raise_exception=True)
+        return versioned_action(
+            request,
+            load=lambda: get_or_404(VendorRetentionRelease, release_id),
+            run=lambda v: work_orders.cancel_release(
+                self.principal, release_id, v, data.validated_data["reason"]
+            ),
+            output_serializer=VendorRetentionReleaseSerializer,
+        )

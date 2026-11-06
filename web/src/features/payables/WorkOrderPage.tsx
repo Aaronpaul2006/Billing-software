@@ -21,6 +21,7 @@ import { formatQty } from "@/lib/money";
 import { can } from "@/lib/permissions";
 
 import { useWorkOrder, workOrderKey } from "./api";
+import { RetentionPanel } from "./RetentionPanel";
 import type { WorkOrderDetail, WorkOrderItem } from "./api";
 import { billedPercent } from "./status";
 import { WorkOrderBadge } from "./WorkOrdersPage";
@@ -244,6 +245,7 @@ export function WorkOrderPage() {
             : undefined,
         }}
       />
+      <RetentionPanel wo={wo} mayRecord={mayRecord} />
       <p className="text-help text-muted-foreground mt-3">
         {wo.tds_section
           ? `TDS ${wo.tds_section} at ${String(Number(wo.tds_rate))} % is deducted from each bill.`

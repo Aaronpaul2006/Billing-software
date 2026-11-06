@@ -31,9 +31,17 @@ import {
   sumMoney,
 } from "@/lib/money";
 
-import { useOpenVendorBills } from "./api";
+import { useOpenReleases, useOpenVendorBills } from "./api";
 
 type Mode = components["schemas"]["PaymentModeEnum"];
+
+interface Owed {
+  id: string;
+  kind: "bill" | "release";
+  label: string;
+  date: string;
+  outstanding: string;
+}
 
 /**
  * Pay a vendor (Part B): the amount is set against their bills, oldest first;
@@ -56,7 +64,25 @@ export function NewVendorPaymentPage() {
   const [key, setKey] = useState(newIdempotencyKey);
   const [message, setMessage] = useState<string | null>(null);
   const bills = useOpenVendorBills(vendor?.id ?? "");
-  const open = bills.data ?? [];
+  const releases = useOpenReleases(vendor?.id ?? "");
+  // their bills, then retention released to them, each still to pay
+  const open: Owed[] = [
+    ...(bills.data ?? []).map((b) => ({
+      id: b.id,
+      kind: "bill" as const,
+      label: b.bill_number,
+      date: b.bill_date,
+      outstanding: b.outstanding,
+    })),
+    ...(releases.data ?? []).map((r) => ({
+      id: r.id,
+      kind: "release" as const,
+      label: `Retention, ${r.wo_number}`,
+      date: r.release_date,
+      outstanding: r.outstanding,
+    })),
+  ];
+  const kindOf = Object.fromEntries(open.map((o) => [o.id, o.kind]));
 
   const clean = cleanMoneyInput(amount);
   const amountOk = MONEY_INPUT.test(clean) && compareMoney(clean, "0") === 1;
@@ -90,7 +116,11 @@ export function NewVendorPaymentPage() {
             reference: reference.trim() || null,
             allocations: Object.entries(lines)
               .filter(([, v]) => v !== "" && compareMoney(cleanMoneyInput(v), "0") === 1)
-              .map(([id, v]) => ({ vendor_bill_id: id, amount: cleanMoneyInput(v) })),
+              .map(([id, v]) =>
+                kindOf[id] === "release"
+                  ? { vendor_retention_release_id: id, amount: cleanMoneyInput(v) }
+                  : { vendor_bill_id: id, amount: cleanMoneyInput(v) },
+              ),
           },
           headers: { "Idempotency-Key": key },
         }),
@@ -98,6 +128,7 @@ export function NewVendorPaymentPage() {
     onSuccess: (saved) => {
       setKey(newIdempotencyKey());
       void queryClient.invalidateQueries({ queryKey: ["vendor-bills"] });
+      void queryClient.invalidateQueries({ queryKey: ["vendor-retention-releases"] });
       void queryClient.invalidateQueries({ queryKey: ["vendor-payments"] });
       void queryClient.invalidateQueries({ queryKey: ["reports", "payables"] });
       void navigate(`/vendor-payments/${saved.id}`);
@@ -210,7 +241,9 @@ export function NewVendorPaymentPage() {
             <CardContent>
               {open.length === 0 ? (
                 <p className="text-muted-foreground text-sm">
-                  {bills.isPending ? "Looking…" : "Nothing owed: the payment stays as an advance."}
+                  {bills.isPending || releases.isPending
+                    ? "Looking…"
+                    : "Nothing owed: the payment stays as an advance."}
                 </p>
               ) : (
                 <ul aria-label="Bills to pay" className="grid gap-2">
@@ -220,14 +253,14 @@ export function NewVendorPaymentPage() {
                       className="flex flex-wrap items-center gap-3 rounded-md border p-2"
                     >
                       <span className="min-w-40 flex-1 text-sm">
-                        <span className="font-medium">{b.bill_number}</span>
+                        <span className="font-medium">{b.label}</span>
                         <span className="text-muted-foreground">
                           {" "}
-                          · {formatDate(b.bill_date)} · owed <Money value={b.outstanding} />
+                          · {formatDate(b.date)} · owed <Money value={b.outstanding} />
                         </span>
                       </span>
                       <Input
-                        aria-label={`Pay against ${b.bill_number}`}
+                        aria-label={`Pay against ${b.label}`}
                         inputMode="decimal"
                         className="w-36"
                         value={lines[b.id] ?? ""}

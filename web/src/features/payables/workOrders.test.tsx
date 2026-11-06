@@ -46,6 +46,8 @@ function order(over: Record<string, unknown> = {}) {
     value: "550000.00",
     billed: "160000.00",
     retention_held: "8000.00",
+    retention_released: "0.00",
+    retention_to_release: "8000.00",
     paid: "0.00",
     ra_count: 1,
     created_at: "",
@@ -77,6 +79,7 @@ function order(over: Record<string, unknown> = {}) {
         status: "RECORDED",
       },
     ],
+    releases: [],
     ...over,
   };
 }
@@ -276,5 +279,78 @@ describe("work orders and RA bills (payables part 2)", () => {
     expect(screen.getByText("Less retention held")).toBeInTheDocument();
     expect(screen.queryByRole("link", { name: "Edit" })).not.toBeInTheDocument();
     expect(screen.getByRole("button", { name: "Void…" })).toBeEnabled();
+  });
+
+  it("releases retention held on the work order", async () => {
+    let sent: Record<string, unknown> | null = null;
+    server.use(
+      http.get(`${API}/work-orders/w1`, () => HttpResponse.json(order())),
+      http.post(`${API}/work-orders/w1/retention-releases`, async ({ request }) => {
+        sent = (await request.json()) as Record<string, unknown>;
+        return HttpResponse.json({ id: "r1" }, { status: 201 });
+      }),
+    );
+    const user = userEvent.setup();
+    renderSignedIn("/work-orders/w1");
+    await user.click(await screen.findByRole("button", { name: "Release retention…" }));
+    const form = screen.getByRole("form", { name: "Release retention" });
+    const amount = within(form).getByLabelText("Amount to release (₹)");
+    expect(amount).toHaveValue("8000.00");
+    await user.clear(amount);
+    await user.type(amount, "8000.01");
+    expect(within(form).getByRole("button", { name: "Release" })).toBeDisabled();
+    await user.clear(amount);
+    await user.type(amount, "5000");
+    await user.type(within(form).getByLabelText("Reference (optional)"), "defects period over");
+    await user.click(within(form).getByRole("button", { name: "Release" }));
+    await waitFor(() => {
+      expect(sent).toMatchObject({ amount: "5000", reference: "defects period over" });
+    });
+  });
+
+  it("a payment to the subcontractor can pay released retention too", async () => {
+    let sent: Record<string, unknown> | null = null;
+    server.use(
+      http.get(`${API}/vendor-bills`, () => page([])),
+      http.get(`${API}/vendor-retention-releases`, () =>
+        page([
+          {
+            id: "r1",
+            version: 1,
+            work_order_id: "w1",
+            wo_number: "WO/VILLA-1/01",
+            vendor_party_id: VENDOR,
+            vendor_name: "Ravi Kumar",
+            release_date: "2026-11-05",
+            due_date: null,
+            amount: "5000.00",
+            amount_paid: "0.00",
+            outstanding: "5000.00",
+            reference: null,
+            notes: null,
+            status: "RELEASED",
+            cancelled_at: null,
+            cancel_reason: null,
+            created_at: "",
+          },
+        ]),
+      ),
+      http.post(`${API}/vendor-payments`, async ({ request }) => {
+        sent = (await request.json()) as Record<string, unknown>;
+        return HttpResponse.json({ id: "p1" }, { status: 201 });
+      }),
+      http.get(`${API}/vendor-payments/p1`, () => HttpResponse.json({})),
+    );
+    const user = userEvent.setup();
+    renderSignedIn(`/vendor-payments/new?vendor=${VENDOR}&name=Ravi%20Kumar`);
+    const line = await screen.findByLabelText("Pay against Retention, WO/VILLA-1/01");
+    await user.type(screen.getByLabelText("Amount paid (₹)"), "5000");
+    expect(line).toHaveValue("5000.00");
+    await user.click(screen.getByRole("button", { name: "Record payment" }));
+    await waitFor(() => {
+      expect(sent).toMatchObject({
+        allocations: [{ vendor_retention_release_id: "r1", amount: "5000.00" }],
+      });
+    });
   });
 });

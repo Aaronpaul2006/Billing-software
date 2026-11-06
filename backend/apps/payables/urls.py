@@ -44,6 +44,21 @@ urlpatterns = [
         name="work-order-reopen",
     ),
     path(
+        "work-orders/<uuid:wo_id>/retention-releases",
+        views.RetentionReleaseCreateView.as_view(),
+        name="work-order-retention-releases",
+    ),
+    path(
+        "vendor-retention-releases",
+        views.RetentionReleaseListView.as_view(),
+        name="vendor-retention-releases",
+    ),
+    path(
+        "vendor-retention-releases/<uuid:release_id>/cancel",
+        views.RetentionReleaseCancelView.as_view(),
+        name="vendor-retention-release-cancel",
+    ),
+    path(
         "work-orders/<uuid:wo_id>/ra-bills",
         views.RaBillCreateView.as_view(),
         name="work-order-ra-bills",

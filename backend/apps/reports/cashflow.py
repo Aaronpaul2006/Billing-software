@@ -2,11 +2,12 @@
 
 Money in: client bills and retention releases still owed (v_receivables), in
 the week they fall due (the due date, or the bill's date when it has none).
-Money out: vendor bills still to pay, the same way. Bills already past due
-have no honest week, so they make the range: the low balance assumes overdue
-client bills do not come in within the forecast but overdue vendor bills are
-paid now; the high balance assumes both are settled in the first week. Cash
-today is the last balance on each imported bank statement, when there is one.
+Money out: vendor bills and released subcontractor retention still to pay,
+the same way. Bills already past due have no honest week, so they make the
+range: the low balance assumes overdue client bills do not come in within the
+forecast but overdue vendor bills are paid now; the high balance assumes both
+are settled in the first week. Cash today is the last balance on each
+imported bank statement, when there is one.
 """
 
 import uuid
@@ -18,7 +19,7 @@ from typing import Any
 from django.db.models import F
 
 from apps.banking.models import BankLine
-from apps.payables.models import VendorBill
+from apps.payables.models import VendorBill, VendorRetentionRelease
 
 from .queries import _rows
 
@@ -103,6 +104,20 @@ def forecast(tenant: uuid.UUID, today: date, weeks: int) -> dict[str, Any]:
             w.bills_out.append(
                 Item(b.pk, "VENDOR_BILL", b.bill_number, b.vendor_party.display_name, due, owed)
             )
+
+    for rel in VendorRetentionRelease.objects.filter(
+        status="RELEASED", amount_paid__lt=F("amount")
+    ).select_related("vendor_party", "work_order"):
+        due = rel.due_date or rel.release_date
+        owed = rel.amount - rel.amount_paid
+        if due < today:
+            overdue_out += owed
+        elif due <= last_day:
+            w = span[(due - monday).days // 7]
+            w.money_out += owed
+            number = f"Retention, {rel.work_order.wo_number}"
+            name = rel.vendor_party.display_name
+            w.bills_out.append(Item(rel.pk, "RETENTION_OUT", number, name, due, owed))
 
     cash, sources = _cash_today()
     start = cash if cash is not None else ZERO

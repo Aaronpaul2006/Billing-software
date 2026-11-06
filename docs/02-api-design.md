@@ -898,8 +898,15 @@ beyond membership; writing `payments.record`.
 Vendor bills now carry `work_order_id`, `wo_number`, `ra_number` and
 `retention_amount`; `GET /vendor-bills/{id}` adds `lines` (item code,
 description, unit, qty, rate, amount, GST %). Retention held is not owed until
-released (payables part 2, step 4); the payables report and cash-flow forecast
-count `net_payable`, after retention.
+released; the payables report and cash-flow forecast count `net_payable`,
+after retention, plus released retention still to pay.
+
+| Method & path | Notes |
+|---|---|
+| `POST /work-orders/{id}/retention-releases` | `{release_date, due_date?, amount, reference?, notes?}` → `201`: part or all of the retention still held on the work order's recorded RA bills becomes owed to the subcontractor. More than is held: `422 exceeds_retention_held` (the database refuses it too, 7e). Work orders show `retention_held`, `retention_released`, `retention_to_release`; the detail lists `releases` |
+| `GET /vendor-retention-releases` | Filters `vendor_party_id`, `work_order_id`, `status`, `open` (still to pay); each with `wo_number`, `amount`, `amount_paid`, `outstanding` |
+| `POST /vendor-retention-releases/{id}/cancel` | `{reason}`, If-Match. Not once something is paid on it (`409 release_paid`) |
+| Paying a release | A payment to a vendor's allocation names `vendor_retention_release_id` instead of `vendor_bill_id` (one of the two); the allocation's `bill_number` reads "Retention, WO/…". An RA bill whose retention is released cannot be voided until the release is cancelled (`409 retention_released`) |
 
 ### Bank statements (Part B)
 

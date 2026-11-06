@@ -1215,3 +1215,8 @@ COLLECTION_ROUTES["tally-import"] = lambda w: None
 for _name in ("work-order-detail", "work-order-close", "work-order-reopen", "work-order-ra-bills"):
     OBJECT_ROUTES[_name] = lambda w: None
 COLLECTION_ROUTES["work-orders"] = lambda w: None
+
+# --- Payables part 2, retention released: tests/payables/test_retention_release_api.py::test_another_business_reaches_none_of_it
+for _name in ("work-order-retention-releases", "vendor-retention-release-cancel"):
+    OBJECT_ROUTES[_name] = lambda w: None
+COLLECTION_ROUTES["vendor-retention-releases"] = lambda w: None

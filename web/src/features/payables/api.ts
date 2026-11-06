@@ -10,6 +10,7 @@ export type VendorBillDetail = components["schemas"]["VendorBillDetail"];
 export type WorkOrder = components["schemas"]["WorkOrder"];
 export type WorkOrderDetail = components["schemas"]["WorkOrderDetail"];
 export type WorkOrderItem = components["schemas"]["WorkOrderItem"];
+export type RetentionRelease = components["schemas"]["VendorRetentionRelease"];
 
 export function vendorBillKey(id: string) {
   return ["vendor-bill", id];
@@ -64,5 +65,21 @@ export function useWorkOrder(id: string | undefined) {
           params: { path: { wo_id: id ?? "" } },
         }),
       ),
+  });
+}
+
+/** A subcontractor's released retention still to pay, oldest first. */
+export function useOpenReleases(vendorId: string) {
+  return useQuery({
+    queryKey: ["vendor-retention-releases", "open", vendorId],
+    enabled: vendorId !== "",
+    queryFn: async () =>
+      unwrap(
+        await api.GET("/api/v1/vendor-retention-releases", {
+          params: {
+            query: { vendor_party_id: vendorId, open: true, ordering: "release_date", limit: 100 },
+          },
+        }),
+      ).results,
   });
 }

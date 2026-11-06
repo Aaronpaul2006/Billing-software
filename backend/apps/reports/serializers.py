@@ -328,8 +328,9 @@ class DashboardSerializer(serializers.Serializer[Any]):
 class CashFlowItemSerializer(serializers.Serializer[Any]):
     id = serializers.UUIDField()
     kind = serializers.ChoiceField(
-        choices=["BILL", "RETENTION_RELEASE", "VENDOR_BILL"],
-        help_text="What the id is: a document, a retention release or a vendor bill",
+        choices=["BILL", "RETENTION_RELEASE", "VENDOR_BILL", "RETENTION_OUT"],
+        help_text="What the id is: a document, a retention release (ours), a vendor bill, "
+        "or retention released to a subcontractor",
     )
     number = serializers.CharField(help_text="The bill's number (ours, or the vendor's)")
     party_name = serializers.CharField()

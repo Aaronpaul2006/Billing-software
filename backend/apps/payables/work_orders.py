@@ -16,6 +16,7 @@ from typing import Any
 
 from django.db import DatabaseError, IntegrityError, transaction
 from django.db.models import Max, Sum
+from django.utils import timezone
 
 from apps.core.errors import Conflict, Invalid
 from apps.core.permissions import require
@@ -24,7 +25,13 @@ from apps.core.tenancy import Principal
 from apps.core.versioning import update_versioned
 from apps.projects.models import BoqItem, Project
 
-from .models import VendorBill, VendorBillLine, WorkOrder, WorkOrderItem
+from .models import (
+    VendorBill,
+    VendorBillLine,
+    VendorRetentionRelease,
+    WorkOrder,
+    WorkOrderItem,
+)
 from .services import RECORD, _vendor
 from .tds import tds_amount
 
@@ -199,9 +206,14 @@ def billed_qty(wo: WorkOrder) -> dict[uuid.UUID, Decimal]:
 class Totals:
     value: Decimal  # the work order: qty x rate of every item
     billed: Decimal  # value of recorded RA bills
-    retention_held: Decimal
+    retention_held: Decimal  # on recorded RA bills, all told
+    retention_released: Decimal  # of it, released to be paid (not cancelled)
     paid: Decimal
     ra_count: int
+
+    @property
+    def retention_to_release(self) -> Decimal:
+        return self.retention_held - self.retention_released
 
 
 def totals(wo: WorkOrder) -> Totals:
@@ -212,10 +224,14 @@ def totals(wo: WorkOrder) -> Totals:
     bills = VendorBill.objects.filter(work_order=wo, status="RECORDED").aggregate(
         billed=Sum("taxable_value"), held=Sum("retention_amount"), paid=Sum("amount_paid")
     )
+    released = VendorRetentionRelease.objects.filter(work_order=wo, status="RELEASED").aggregate(
+        s=Sum("amount")
+    )["s"]
     return Totals(
         value=value,
         billed=bills["billed"] or Decimal("0.00"),
         retention_held=bills["held"] or Decimal("0.00"),
+        retention_released=released or Decimal("0.00"),
         paid=bills["paid"] or Decimal("0.00"),
         ra_count=VendorBill.objects.filter(work_order=wo, status="RECORDED").count(),
     )
@@ -346,3 +362,57 @@ def record_ra_bill(principal: Principal, wo_id: uuid.UUID, data: dict[str, Any])
                 code="conflict",
             ) from exc
     return get_or_404(VendorBill, bill.pk)
+
+
+# --- retention released to the subcontractor ---------------------------------
+
+
+def release_retention(
+    principal: Principal, wo_id: uuid.UUID, data: dict[str, Any]
+) -> VendorRetentionRelease:
+    """Release part (or all) of what is held, to be paid like a bill."""
+    require(principal, RECORD)
+    with transaction.atomic():
+        wo = get_or_404(WorkOrder, wo_id, for_update=True)
+        if data.get("due_date") and data["due_date"] < data["release_date"]:
+            raise Invalid("due_date", "The due date is before the release date.", code="invalid")
+        left = totals(wo).retention_to_release
+        if data["amount"] > left:
+            raise Invalid(
+                "amount",
+                f"Only {left} of retention is still held on this work order.",
+                code="exceeds_retention_held",
+            )
+        release = VendorRetentionRelease(
+            **data,
+            work_order=wo,
+            vendor_party_id=wo.vendor_party_id,
+            created_by_id=principal.user_id,
+        )
+        release.save()
+    return get_or_404(VendorRetentionRelease, release.pk)
+
+
+def cancel_release(
+    principal: Principal, release_id: uuid.UUID, expected: int, reason: str
+) -> VendorRetentionRelease:
+    require(principal, RECORD)
+    with transaction.atomic():
+        release = get_or_404(VendorRetentionRelease, release_id, for_update=True)
+        if release.status == "CANCELLED":
+            raise Conflict("This release is already cancelled.", code="release_cancelled")
+        if release.amount_paid > 0:
+            raise Conflict(
+                "Payments are set against this release; void those payments first.",
+                code="release_paid",
+            )
+        update_versioned(
+            VendorRetentionRelease.objects,
+            release.pk,
+            expected,
+            status="CANCELLED",
+            cancelled_at=timezone.now(),
+            cancelled_by_id=principal.user_id,
+            cancel_reason=reason,
+        )
+    return get_or_404(VendorRetentionRelease, release_id)

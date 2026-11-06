@@ -2826,6 +2826,48 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/vendor-retention-releases": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * @description Permission by action name (docs/01-architecture.md §3): `read_action`
+         *     for GET/HEAD/OPTIONS, `write_action` for everything else. Generic, so list
+         *     endpoints get pagination and filtering from the DRF defaults.
+         */
+        get: operations["vendor_retention_releases_list"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/vendor-retention-releases/{release_id}/cancel": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * @description Permission by action name (docs/01-architecture.md §3): `read_action`
+         *     for GET/HEAD/OPTIONS, `write_action` for everything else. Generic, so list
+         *     endpoints get pagination and filtering from the DRF defaults.
+         */
+        post: operations["vendor_retention_releases_cancel_create"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/work-orders": {
         parameters: {
             query?: never;
@@ -2923,6 +2965,23 @@ export interface paths {
         put?: never;
         /** @description Close a work order (no more RA bills), or reopen it. */
         post: operations["work_orders_reopen_create"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/work-orders/{wo_id}/retention-releases": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** @description Release retention held on the work order's RA bills, to be paid. */
+        post: operations["work_orders_retention_releases_create"];
         delete?: never;
         options?: never;
         head?: never;
@@ -3206,11 +3265,12 @@ export interface components {
             /** Format: uuid */
             id: string;
             /**
-             * @description What the id is: a document, a retention release or a vendor bill
+             * @description What the id is: a document, a retention release (ours), a vendor bill, or retention released to a subcontractor
              *
              *     * `BILL` - BILL
              *     * `RETENTION_RELEASE` - RETENTION_RELEASE
              *     * `VENDOR_BILL` - VENDOR_BILL
+             *     * `RETENTION_OUT` - RETENTION_OUT
              */
             kind: components["schemas"]["CashFlowItemKindEnum"];
             /** @description The bill's number (ours, or the vendor's) */
@@ -3225,9 +3285,10 @@ export interface components {
          * @description * `BILL` - BILL
          *     * `RETENTION_RELEASE` - RETENTION_RELEASE
          *     * `VENDOR_BILL` - VENDOR_BILL
+         *     * `RETENTION_OUT` - RETENTION_OUT
          * @enum {string}
          */
-        CashFlowItemKindEnum: "BILL" | "RETENTION_RELEASE" | "VENDOR_BILL";
+        CashFlowItemKindEnum: "BILL" | "RETENTION_RELEASE" | "VENDOR_BILL" | "RETENTION_OUT";
         CashFlowWeek: {
             /**
              * Format: date
@@ -4520,6 +4581,11 @@ export interface components {
             /** @description Pass as ?cursor= */
             next_cursor: string | null;
         };
+        PaginatedVendorRetentionReleaseList: {
+            results: components["schemas"]["VendorRetentionRelease"][];
+            /** @description Pass as ?cursor= */
+            next_cursor: string | null;
+        };
         PaginatedWorkOrderList: {
             results: components["schemas"]["WorkOrder"][];
             /** @description Pass as ?cursor= */
@@ -5794,6 +5860,19 @@ export interface components {
          * @enum {string}
          */
         RetentionReleaseStatusEnum: "RELEASED" | "CANCELLED";
+        RetentionReleaseWrite: {
+            /** Format: date */
+            release_date: string;
+            /** Format: date */
+            due_date?: string | null;
+            /**
+             * Format: decimal
+             * @description At most the retention still held
+             */
+            amount: string;
+            reference?: string | null;
+            notes?: string | null;
+        };
         Review: {
             warnings: components["schemas"]["ReviewWarning"][];
         };
@@ -7080,7 +7159,12 @@ export interface components {
         };
         VendorAllocationIn: {
             /** Format: uuid */
-            vendor_bill_id: string;
+            vendor_bill_id?: string | null;
+            /**
+             * Format: uuid
+             * @description Or retention released to a subcontractor
+             */
+            vendor_retention_release_id?: string | null;
             /** Format: decimal */
             amount: string;
         };
@@ -7088,7 +7172,10 @@ export interface components {
             /** Format: uuid */
             readonly id: string;
             /** Format: uuid */
-            vendor_bill_id: string;
+            vendor_bill_id: string | null;
+            /** Format: uuid */
+            vendor_retention_release_id: string | null;
+            /** @description The bill's number, or 'Retention, WO/...' for a release */
             readonly bill_number: string;
             /** Format: decimal */
             amount: string;
@@ -7305,6 +7392,34 @@ export interface components {
             notes?: string | null;
             allocations?: components["schemas"]["VendorAllocationIn"][];
         };
+        VendorRetentionRelease: {
+            /** Format: uuid */
+            readonly id: string;
+            readonly version: number;
+            /** Format: uuid */
+            work_order_id: string;
+            readonly wo_number: string;
+            /** Format: uuid */
+            vendor_party_id: string;
+            readonly vendor_name: string;
+            /** Format: date */
+            readonly release_date: string;
+            /** Format: date */
+            readonly due_date: string | null;
+            /** Format: decimal */
+            amount: string;
+            /** Format: decimal */
+            amount_paid: string;
+            readonly outstanding: string;
+            readonly reference: string | null;
+            readonly notes: string | null;
+            readonly status: components["schemas"]["RetentionReleaseStatusEnum"];
+            /** Format: date-time */
+            readonly cancelled_at: string | null;
+            readonly cancel_reason: string | null;
+            /** Format: date-time */
+            readonly created_at: string;
+        };
         VerifyEmail: {
             token: string;
         };
@@ -7343,8 +7458,18 @@ export interface components {
              * @description Recorded RA bills, before GST
              */
             billed: string;
-            /** Format: decimal */
+            /**
+             * Format: decimal
+             * @description On recorded RA bills, all told
+             */
             retention_held: string;
+            /** Format: decimal */
+            retention_released: string;
+            /**
+             * Format: decimal
+             * @description Held and not yet released
+             */
+            retention_to_release: string;
             /**
              * Format: decimal
              * @description Paid on its RA bills
@@ -7388,8 +7513,18 @@ export interface components {
              * @description Recorded RA bills, before GST
              */
             billed: string;
-            /** Format: decimal */
+            /**
+             * Format: decimal
+             * @description On recorded RA bills, all told
+             */
             retention_held: string;
+            /** Format: decimal */
+            retention_released: string;
+            /**
+             * Format: decimal
+             * @description Held and not yet released
+             */
+            retention_to_release: string;
             /**
              * Format: decimal
              * @description Paid on its RA bills
@@ -7402,6 +7537,7 @@ export interface components {
             readonly updated_at: string;
             readonly items: components["schemas"]["WorkOrderItem"][];
             readonly ra_bills: components["schemas"]["RaBillSummary"][];
+            readonly releases: components["schemas"]["VendorRetentionRelease"][];
         };
         WorkOrderItem: {
             /** Format: uuid */
@@ -11931,6 +12067,66 @@ export interface operations {
             };
         };
     };
+    vendor_retention_releases_list: {
+        parameters: {
+            query?: {
+                /** @description The pagination cursor value. */
+                cursor?: string;
+                /** @description Number of results to return per page. */
+                limit?: number;
+                /** @description Still to pay */
+                open?: boolean;
+                /** @description Which field to use when ordering the results. */
+                ordering?: string;
+                /**
+                 * @description * `RELEASED` - Released
+                 *     * `CANCELLED` - Cancelled
+                 */
+                status?: "CANCELLED" | "RELEASED";
+                vendor_party_id?: string;
+                work_order_id?: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PaginatedVendorRetentionReleaseList"];
+                };
+            };
+        };
+    };
+    vendor_retention_releases_cancel_create: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                release_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["Void"];
+            };
+        };
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["VendorRetentionRelease"];
+                };
+            };
+        };
+    };
     work_orders_list: {
         parameters: {
             query?: {
@@ -12097,6 +12293,31 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["WorkOrderDetail"];
+                };
+            };
+        };
+    };
+    work_orders_retention_releases_create: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                wo_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["RetentionReleaseWrite"];
+            };
+        };
+        responses: {
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["VendorRetentionRelease"];
                 };
             };
         };

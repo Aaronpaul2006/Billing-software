@@ -883,6 +883,39 @@ CREATE INDEX vendor_bills_work_order_idx ON vendor_bills (tenant_id, work_order_
 CREATE UNIQUE INDEX vendor_bills_ra_uq ON vendor_bills (tenant_id, work_order_id, ra_number)
   WHERE status = 'RECORDED' AND work_order_id IS NOT NULL;
 
+-- Retention released to a subcontractor (payables part 2): part of what was
+-- held back on a work order's RA bills, now owed to them. Paid like a vendor
+-- bill (vendor_allocations); never more than is still held (7e).
+CREATE TABLE vendor_retention_releases (
+  id               uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+  tenant_id        uuid NOT NULL REFERENCES tenants (id),
+  work_order_id    uuid NOT NULL,
+  vendor_party_id  uuid NOT NULL,                     -- the work order's subcontractor
+  release_date     date NOT NULL,
+  due_date         date,
+  amount           numeric(14,2) NOT NULL CHECK (amount > 0),
+  -- Maintained only by the vendor allocations trigger, like vendor_bills.amount_paid.
+  amount_paid      numeric(14,2) NOT NULL DEFAULT 0,
+  reference        text CHECK (char_length(reference) <= 50),
+  notes            text CHECK (char_length(notes) <= 2000),
+  status           text NOT NULL DEFAULT 'RELEASED' CHECK (status IN ('RELEASED', 'CANCELLED')),
+  cancelled_at     timestamptz,
+  cancelled_by     uuid REFERENCES users (id),
+  cancel_reason    text,
+  version          integer NOT NULL DEFAULT 1,
+  created_by       uuid NOT NULL REFERENCES users (id),
+  created_at       timestamptz NOT NULL DEFAULT now(),
+  updated_at       timestamptz NOT NULL DEFAULT now(),
+  UNIQUE (tenant_id, id),
+  FOREIGN KEY (tenant_id, work_order_id)   REFERENCES work_orders (tenant_id, id),
+  FOREIGN KEY (tenant_id, vendor_party_id) REFERENCES parties (tenant_id, id),
+  CHECK (amount_paid >= 0 AND amount_paid <= amount),
+  CHECK (status <> 'CANCELLED' OR (cancelled_at IS NOT NULL AND cancel_reason IS NOT NULL AND amount_paid = 0)),
+  CHECK (due_date IS NULL OR due_date >= release_date)
+);
+CREATE INDEX vendor_retention_releases_wo_idx ON vendor_retention_releases (tenant_id, work_order_id);
+CREATE INDEX vendor_retention_releases_vendor_idx ON vendor_retention_releases (tenant_id, vendor_party_id, release_date DESC);
+
 CREATE TABLE vendor_payments (
   id               uuid PRIMARY KEY DEFAULT gen_random_uuid(),
   tenant_id        uuid NOT NULL REFERENCES tenants (id),
@@ -913,15 +946,20 @@ CREATE TABLE vendor_allocations (
   id                 uuid PRIMARY KEY DEFAULT gen_random_uuid(),
   tenant_id          uuid NOT NULL REFERENCES tenants (id),
   vendor_payment_id  uuid NOT NULL,
-  vendor_bill_id     uuid NOT NULL,
+  vendor_bill_id     uuid,                      -- the bill being paid
+  vendor_retention_release_id uuid,              -- or the retention released (payables part 2)
   amount             numeric(14,2) NOT NULL CHECK (amount > 0),
   created_by         uuid NOT NULL REFERENCES users (id),
   created_at         timestamptz NOT NULL DEFAULT now(),
   UNIQUE (tenant_id, id),
   UNIQUE (vendor_bill_id, vendor_payment_id),
   FOREIGN KEY (tenant_id, vendor_payment_id) REFERENCES vendor_payments (tenant_id, id),
-  FOREIGN KEY (tenant_id, vendor_bill_id)    REFERENCES vendor_bills (tenant_id, id)
+  FOREIGN KEY (tenant_id, vendor_bill_id)    REFERENCES vendor_bills (tenant_id, id),
+  FOREIGN KEY (tenant_id, vendor_retention_release_id) REFERENCES vendor_retention_releases (tenant_id, id),
+  CHECK (num_nonnulls(vendor_bill_id, vendor_retention_release_id) = 1)
 );
+CREATE UNIQUE INDEX vendor_allocations_release_uq ON vendor_allocations (vendor_retention_release_id, vendor_payment_id)
+  WHERE vendor_retention_release_id IS NOT NULL;
 CREATE INDEX vendor_allocations_payment_idx ON vendor_allocations (tenant_id, vendor_payment_id);
 
 -- An RA bill's lines: this bill's quantity of each work order item, at the
@@ -1315,18 +1353,24 @@ CREATE TRIGGER allocations_apply
   BEFORE INSERT OR UPDATE OR DELETE ON allocations
   FOR EACH ROW EXECUTE FUNCTION allocations_apply();
 
--- 7d. Vendor allocations keep vendor_bills.amount_paid in step, as 7c does for
---     bills out: the bill's row lock serializes concurrent payments and its
---     CHECK amount_paid <= net_payable rejects paying a bill twice over.
+-- 7d. Vendor allocations keep vendor_bills.amount_paid (and a released
+--     retention's amount_paid) in step, as 7c does for bills out: the row
+--     lock serializes concurrent payments and the CHECK amount_paid <= what
+--     is owed rejects paying twice over.
 CREATE FUNCTION vendor_allocations_apply() RETURNS trigger
 LANGUAGE plpgsql SECURITY DEFINER SET search_path = public, pg_temp AS $$
 DECLARE
-  bill       record;
+  target     record;
   src_total  numeric;
   src_used   numeric;
 BEGIN
   IF TG_OP = 'DELETE' THEN
-    UPDATE vendor_bills SET amount_paid = amount_paid - OLD.amount WHERE id = OLD.vendor_bill_id;
+    IF OLD.vendor_bill_id IS NOT NULL THEN
+      UPDATE vendor_bills SET amount_paid = amount_paid - OLD.amount WHERE id = OLD.vendor_bill_id;
+    ELSE
+      UPDATE vendor_retention_releases SET amount_paid = amount_paid - OLD.amount
+       WHERE id = OLD.vendor_retention_release_id;
+    END IF;
     RETURN OLD;
   END IF;
 
@@ -1334,13 +1378,20 @@ BEGIN
     RAISE EXCEPTION 'allocations are immutable; delete and re-create' USING ERRCODE = 'check_violation';
   END IF;
 
-  SELECT status, vendor_party_id INTO bill FROM vendor_bills WHERE id = NEW.vendor_bill_id;
-  IF bill.status IS DISTINCT FROM 'RECORDED' THEN
-    RAISE EXCEPTION 'only recorded vendor bills can be paid' USING ERRCODE = 'check_violation';
+  IF NEW.vendor_bill_id IS NOT NULL THEN
+    SELECT status = 'RECORDED' AS payable, vendor_party_id INTO target
+      FROM vendor_bills WHERE id = NEW.vendor_bill_id;
+  ELSE
+    SELECT status = 'RELEASED' AS payable, vendor_party_id INTO target
+      FROM vendor_retention_releases WHERE id = NEW.vendor_retention_release_id;
+  END IF;
+  IF target.payable IS NOT TRUE THEN
+    RAISE EXCEPTION 'only recorded vendor bills and released retention can be paid'
+      USING ERRCODE = 'check_violation';
   END IF;
 
   SELECT amount INTO src_total FROM vendor_payments
-   WHERE id = NEW.vendor_payment_id AND status = 'RECORDED' AND vendor_party_id = bill.vendor_party_id
+   WHERE id = NEW.vendor_payment_id AND status = 'RECORDED' AND vendor_party_id = target.vendor_party_id
      FOR UPDATE;
   IF src_total IS NULL THEN
     RAISE EXCEPTION 'a vendor bill is paid only by a recorded payment to the same vendor'
@@ -1353,7 +1404,12 @@ BEGIN
     RAISE EXCEPTION 'allocation exceeds the unallocated amount of its payment' USING ERRCODE = 'check_violation';
   END IF;
 
-  UPDATE vendor_bills SET amount_paid = amount_paid + NEW.amount WHERE id = NEW.vendor_bill_id;
+  IF NEW.vendor_bill_id IS NOT NULL THEN
+    UPDATE vendor_bills SET amount_paid = amount_paid + NEW.amount WHERE id = NEW.vendor_bill_id;
+  ELSE
+    UPDATE vendor_retention_releases SET amount_paid = amount_paid + NEW.amount
+     WHERE id = NEW.vendor_retention_release_id;
+  END IF;
   RETURN NEW;
 END $$;
 
@@ -1393,6 +1449,17 @@ BEGIN
   END IF;
   IF TG_OP = 'INSERT' AND wo.status <> 'OPEN' THEN
     RAISE EXCEPTION 'the work order is closed' USING ERRCODE = 'check_violation';
+  END IF;
+  -- Voiding an RA bill must leave enough retention held for what is released.
+  IF TG_OP = 'UPDATE' AND OLD.status = 'RECORDED' AND NEW.status = 'VOIDED' THEN
+    PERFORM 1 FROM work_orders WHERE id = NEW.work_order_id FOR UPDATE;
+    IF (SELECT coalesce(sum(amount), 0) FROM vendor_retention_releases
+         WHERE work_order_id = NEW.work_order_id AND status = 'RELEASED')
+       > (SELECT coalesce(sum(retention_amount), 0) FROM vendor_bills
+           WHERE work_order_id = NEW.work_order_id AND status = 'RECORDED' AND id <> NEW.id) THEN
+      RAISE EXCEPTION 'retention from this bill is released; cancel the release first'
+        USING ERRCODE = 'check_violation';
+    END IF;
   END IF;
   RETURN NEW;
 END $$;
@@ -1462,6 +1529,46 @@ CREATE TRIGGER work_order_items_guard
   BEFORE UPDATE ON work_order_items
   FOR EACH ROW EXECUTE FUNCTION work_order_items_guard();
 
+-- Retention released to a subcontractor is never more than is still held on
+-- the work order's recorded RA bills; the work order row is locked so two
+-- releases at once cannot both pass. A release keeps its work order and
+-- amount (cancel it and release again).
+CREATE FUNCTION vendor_retention_releases_check() RETURNS trigger
+LANGUAGE plpgsql SECURITY DEFINER SET search_path = public, pg_temp AS $$
+DECLARE
+  wo        record;
+  held      numeric;
+  released  numeric;
+BEGIN
+  IF TG_OP = 'UPDATE' THEN
+    IF NEW.work_order_id IS DISTINCT FROM OLD.work_order_id
+       OR NEW.vendor_party_id IS DISTINCT FROM OLD.vendor_party_id
+       OR NEW.amount IS DISTINCT FROM OLD.amount THEN
+      RAISE EXCEPTION 'a retention release keeps its work order and amount'
+        USING ERRCODE = 'check_violation';
+    END IF;
+    RETURN NEW;
+  END IF;
+  SELECT vendor_party_id INTO wo FROM work_orders WHERE id = NEW.work_order_id FOR UPDATE;
+  IF wo.vendor_party_id IS DISTINCT FROM NEW.vendor_party_id THEN
+    RAISE EXCEPTION 'retention is released to the work order''s subcontractor'
+      USING ERRCODE = 'check_violation';
+  END IF;
+  SELECT coalesce(sum(retention_amount), 0) INTO held FROM vendor_bills
+   WHERE work_order_id = NEW.work_order_id AND status = 'RECORDED';
+  SELECT coalesce(sum(amount), 0) INTO released FROM vendor_retention_releases
+   WHERE work_order_id = NEW.work_order_id AND status = 'RELEASED';
+  IF released + NEW.amount > held THEN
+    RAISE EXCEPTION 'more than the retention still held on the work order'
+      USING ERRCODE = 'check_violation';
+  END IF;
+  RETURN NEW;
+END $$;
+
+CREATE TRIGGER vendor_retention_releases_check
+  BEFORE INSERT OR UPDATE ON vendor_retention_releases
+  FOR EACH ROW EXECUTE FUNCTION vendor_retention_releases_check();
+
 -- 7d. Audit trail. SECURITY DEFINER so the app role needs no INSERT right on
 --     audit_log (it cannot forge or bulk-write audit rows directly).
 CREATE FUNCTION audit_row_change() RETURNS trigger
@@ -1506,7 +1613,7 @@ BEGIN
     'email_invitations', 'payment_reminders', 'document_templates', 'catalog_item_variants',
     'document_line_measurements', 'print_settings', 'document_emails', 'tally_settings',
     'vendor_bills', 'vendor_payments', 'vendor_allocations', 'bank_lines', 'work_orders',
-    'work_order_items', 'vendor_bill_lines']
+    'work_order_items', 'vendor_bill_lines', 'vendor_retention_releases']
   LOOP
     EXECUTE format(
       'CREATE TRIGGER audit AFTER INSERT OR UPDATE OR DELETE ON %I FOR EACH ROW EXECUTE FUNCTION audit_row_change()', t);
@@ -1528,7 +1635,8 @@ BEGIN
     'retention_releases', 'tds_certificates', 'idempotency_keys', 'exports', 'email_invitations',
     'payment_reminders', 'document_templates', 'catalog_item_variants', 'document_line_measurements',
     'print_settings', 'document_emails', 'tally_settings', 'vendor_bills', 'vendor_payments',
-    'vendor_allocations', 'bank_lines', 'work_orders', 'work_order_items', 'vendor_bill_lines']
+    'vendor_allocations', 'bank_lines', 'work_orders', 'work_order_items', 'vendor_bill_lines',
+    'vendor_retention_releases']
   LOOP
     EXECUTE format('ALTER TABLE %I ENABLE ROW LEVEL SECURITY', t);
     EXECUTE format('ALTER TABLE %I FORCE ROW LEVEL SECURITY', t);
@@ -1642,7 +1750,8 @@ BEGIN
     'gst_registrations', 'catalog_items', 'catalog_item_variants', 'document_series', 'expenses',
     'tds_certificates', 'email_invitations', 'payment_reminders', 'document_templates', 'audit_log',
     'print_settings', 'document_emails', 'tally_settings', 'vendor_bills', 'vendor_payments',
-    'vendor_allocations', 'bank_lines', 'work_orders', 'work_order_items', 'vendor_bill_lines']
+    'vendor_allocations', 'bank_lines', 'work_orders', 'work_order_items', 'vendor_bill_lines',
+    'vendor_retention_releases']
   LOOP
     EXECUTE format(
       'CREATE POLICY client_scope ON %I AS RESTRICTIVE USING (NOT app_portal_session())', t);
@@ -1915,6 +2024,10 @@ GRANT UPDATE (vendor_party_id, project_id, bill_number, bill_date, due_date, cat
   ON vendor_bills TO billing_app;
 -- RA bill lines are written once (deleted and re-written while the bill is unpaid).
 REVOKE UPDATE ON vendor_bill_lines FROM billing_app;
+-- Retention released to subcontractors: paid by the trigger, otherwise only cancelled.
+REVOKE UPDATE ON vendor_retention_releases FROM billing_app;
+GRANT UPDATE (status, cancelled_at, cancelled_by, cancel_reason, version, updated_at)
+  ON vendor_retention_releases TO billing_app;
 -- Payment reminders are a log: written once, never changed.
 REVOKE UPDATE ON payment_reminders FROM billing_app;
 -- Emailed bills: a log, written once (B.15).

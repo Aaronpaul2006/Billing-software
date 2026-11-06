@@ -7968,6 +7968,144 @@
                 }
             }
         },
+        "/api/v1/vendor-retention-releases": {
+            "get": {
+                "operationId": "vendor_retention_releases_list",
+                "description": "Permission by action name (docs/01-architecture.md §3): `read_action`\nfor GET/HEAD/OPTIONS, `write_action` for everything else. Generic, so list\nendpoints get pagination and filtering from the DRF defaults.",
+                "parameters": [
+                    {
+                        "name": "cursor",
+                        "required": false,
+                        "in": "query",
+                        "description": "The pagination cursor value.",
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    {
+                        "name": "limit",
+                        "required": false,
+                        "in": "query",
+                        "description": "Number of results to return per page.",
+                        "schema": {
+                            "type": "integer"
+                        }
+                    },
+                    {
+                        "in": "query",
+                        "name": "open",
+                        "schema": {
+                            "type": "boolean"
+                        },
+                        "description": "Still to pay"
+                    },
+                    {
+                        "name": "ordering",
+                        "required": false,
+                        "in": "query",
+                        "description": "Which field to use when ordering the results.",
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    {
+                        "in": "query",
+                        "name": "status",
+                        "schema": {
+                            "type": "string",
+                            "enum": [
+                                "CANCELLED",
+                                "RELEASED"
+                            ]
+                        },
+                        "description": "* `RELEASED` - Released\n* `CANCELLED` - Cancelled"
+                    },
+                    {
+                        "in": "query",
+                        "name": "vendor_party_id",
+                        "schema": {
+                            "type": "string",
+                            "format": "uuid"
+                        }
+                    },
+                    {
+                        "in": "query",
+                        "name": "work_order_id",
+                        "schema": {
+                            "type": "string",
+                            "format": "uuid"
+                        }
+                    }
+                ],
+                "tags": [
+                    "payables"
+                ],
+                "security": [
+                    {
+                        "bearerAuth": []
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/PaginatedVendorRetentionReleaseList"
+                                }
+                            }
+                        },
+                        "description": ""
+                    }
+                }
+            }
+        },
+        "/api/v1/vendor-retention-releases/{release_id}/cancel": {
+            "post": {
+                "operationId": "vendor_retention_releases_cancel_create",
+                "description": "Permission by action name (docs/01-architecture.md §3): `read_action`\nfor GET/HEAD/OPTIONS, `write_action` for everything else. Generic, so list\nendpoints get pagination and filtering from the DRF defaults.",
+                "parameters": [
+                    {
+                        "in": "path",
+                        "name": "release_id",
+                        "schema": {
+                            "type": "string",
+                            "format": "uuid"
+                        },
+                        "required": true
+                    }
+                ],
+                "tags": [
+                    "payables"
+                ],
+                "requestBody": {
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/Void"
+                            }
+                        }
+                    },
+                    "required": true
+                },
+                "security": [
+                    {
+                        "bearerAuth": []
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/VendorRetentionRelease"
+                                }
+                            }
+                        },
+                        "description": ""
+                    }
+                }
+            }
+        },
         "/api/v1/work-orders": {
             "get": {
                 "operationId": "work_orders_list",
@@ -8286,6 +8424,53 @@
                             "application/json": {
                                 "schema": {
                                     "$ref": "#/components/schemas/WorkOrderDetail"
+                                }
+                            }
+                        },
+                        "description": ""
+                    }
+                }
+            }
+        },
+        "/api/v1/work-orders/{wo_id}/retention-releases": {
+            "post": {
+                "operationId": "work_orders_retention_releases_create",
+                "description": "Release retention held on the work order's RA bills, to be paid.",
+                "parameters": [
+                    {
+                        "in": "path",
+                        "name": "wo_id",
+                        "schema": {
+                            "type": "string",
+                            "format": "uuid"
+                        },
+                        "required": true
+                    }
+                ],
+                "tags": [
+                    "payables"
+                ],
+                "requestBody": {
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/RetentionReleaseWrite"
+                            }
+                        }
+                    },
+                    "required": true
+                },
+                "security": [
+                    {
+                        "bearerAuth": []
+                    }
+                ],
+                "responses": {
+                    "201": {
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/VendorRetentionRelease"
                                 }
                             }
                         },
@@ -9139,7 +9324,7 @@
                                 "$ref": "#/components/schemas/CashFlowItemKindEnum"
                             }
                         ],
-                        "description": "What the id is: a document, a retention release or a vendor bill\n\n* `BILL` - BILL\n* `RETENTION_RELEASE` - RETENTION_RELEASE\n* `VENDOR_BILL` - VENDOR_BILL"
+                        "description": "What the id is: a document, a retention release (ours), a vendor bill, or retention released to a subcontractor\n\n* `BILL` - BILL\n* `RETENTION_RELEASE` - RETENTION_RELEASE\n* `VENDOR_BILL` - VENDOR_BILL\n* `RETENTION_OUT` - RETENTION_OUT"
                     },
                     "number": {
                         "type": "string",
@@ -9171,10 +9356,11 @@
                 "enum": [
                     "BILL",
                     "RETENTION_RELEASE",
-                    "VENDOR_BILL"
+                    "VENDOR_BILL",
+                    "RETENTION_OUT"
                 ],
                 "type": "string",
-                "description": "* `BILL` - BILL\n* `RETENTION_RELEASE` - RETENTION_RELEASE\n* `VENDOR_BILL` - VENDOR_BILL"
+                "description": "* `BILL` - BILL\n* `RETENTION_RELEASE` - RETENTION_RELEASE\n* `VENDOR_BILL` - VENDOR_BILL\n* `RETENTION_OUT` - RETENTION_OUT"
             },
             "CashFlowWeek": {
                 "type": "object",
@@ -13083,6 +13269,28 @@
                     }
                 }
             },
+            "PaginatedVendorRetentionReleaseList": {
+                "type": "object",
+                "required": [
+                    "results",
+                    "next_cursor"
+                ],
+                "properties": {
+                    "results": {
+                        "type": "array",
+                        "items": {
+                            "$ref": "#/components/schemas/VendorRetentionRelease"
+                        }
+                    },
+                    "next_cursor": {
+                        "type": [
+                            "string",
+                            "null"
+                        ],
+                        "description": "Pass as ?cursor="
+                    }
+                }
+            },
             "PaginatedWorkOrderList": {
                 "type": "object",
                 "required": [
@@ -16979,6 +17187,46 @@
                 "type": "string",
                 "description": "* `RELEASED` - Released\n* `CANCELLED` - Cancelled"
             },
+            "RetentionReleaseWrite": {
+                "type": "object",
+                "properties": {
+                    "release_date": {
+                        "type": "string",
+                        "format": "date"
+                    },
+                    "due_date": {
+                        "type": [
+                            "string",
+                            "null"
+                        ],
+                        "format": "date"
+                    },
+                    "amount": {
+                        "type": "string",
+                        "format": "decimal",
+                        "pattern": "^-?\\d{0,12}(?:\\.\\d{0,2})?$",
+                        "description": "At most the retention still held"
+                    },
+                    "reference": {
+                        "type": [
+                            "string",
+                            "null"
+                        ],
+                        "maxLength": 50
+                    },
+                    "notes": {
+                        "type": [
+                            "string",
+                            "null"
+                        ],
+                        "maxLength": 2000
+                    }
+                },
+                "required": [
+                    "amount",
+                    "release_date"
+                ]
+            },
             "Review": {
                 "type": "object",
                 "properties": {
@@ -19602,8 +19850,19 @@
                 "type": "object",
                 "properties": {
                     "vendor_bill_id": {
-                        "type": "string",
+                        "type": [
+                            "string",
+                            "null"
+                        ],
                         "format": "uuid"
+                    },
+                    "vendor_retention_release_id": {
+                        "type": [
+                            "string",
+                            "null"
+                        ],
+                        "format": "uuid",
+                        "description": "Or retention released to a subcontractor"
                     },
                     "amount": {
                         "type": "string",
@@ -19612,8 +19871,7 @@
                     }
                 },
                 "required": [
-                    "amount",
-                    "vendor_bill_id"
+                    "amount"
                 ]
             },
             "VendorAllocationOut": {
@@ -19625,12 +19883,23 @@
                         "readOnly": true
                     },
                     "vendor_bill_id": {
-                        "type": "string",
+                        "type": [
+                            "string",
+                            "null"
+                        ],
+                        "format": "uuid"
+                    },
+                    "vendor_retention_release_id": {
+                        "type": [
+                            "string",
+                            "null"
+                        ],
                         "format": "uuid"
                     },
                     "bill_number": {
                         "type": "string",
-                        "readOnly": true
+                        "readOnly": true,
+                        "description": "The bill's number, or 'Retention, WO/...' for a release"
                     },
                     "amount": {
                         "type": "string",
@@ -19648,7 +19917,8 @@
                     "bill_number",
                     "created_at",
                     "id",
-                    "vendor_bill_id"
+                    "vendor_bill_id",
+                    "vendor_retention_release_id"
                 ]
             },
             "VendorBill": {
@@ -20444,6 +20714,124 @@
                     "vendor_party_id"
                 ]
             },
+            "VendorRetentionRelease": {
+                "type": "object",
+                "properties": {
+                    "id": {
+                        "type": "string",
+                        "format": "uuid",
+                        "readOnly": true
+                    },
+                    "version": {
+                        "type": "integer",
+                        "readOnly": true
+                    },
+                    "work_order_id": {
+                        "type": "string",
+                        "format": "uuid"
+                    },
+                    "wo_number": {
+                        "type": "string",
+                        "readOnly": true
+                    },
+                    "vendor_party_id": {
+                        "type": "string",
+                        "format": "uuid"
+                    },
+                    "vendor_name": {
+                        "type": "string",
+                        "readOnly": true
+                    },
+                    "release_date": {
+                        "type": "string",
+                        "format": "date",
+                        "readOnly": true
+                    },
+                    "due_date": {
+                        "type": [
+                            "string",
+                            "null"
+                        ],
+                        "format": "date",
+                        "readOnly": true
+                    },
+                    "amount": {
+                        "type": "string",
+                        "format": "decimal",
+                        "pattern": "^-?\\d{0,12}(?:\\.\\d{0,2})?$"
+                    },
+                    "amount_paid": {
+                        "type": "string",
+                        "format": "decimal",
+                        "pattern": "^-?\\d{0,12}(?:\\.\\d{0,2})?$"
+                    },
+                    "outstanding": {
+                        "type": "string",
+                        "readOnly": true
+                    },
+                    "reference": {
+                        "type": [
+                            "string",
+                            "null"
+                        ],
+                        "readOnly": true
+                    },
+                    "notes": {
+                        "type": [
+                            "string",
+                            "null"
+                        ],
+                        "readOnly": true
+                    },
+                    "status": {
+                        "allOf": [
+                            {
+                                "$ref": "#/components/schemas/RetentionReleaseStatusEnum"
+                            }
+                        ],
+                        "readOnly": true
+                    },
+                    "cancelled_at": {
+                        "type": [
+                            "string",
+                            "null"
+                        ],
+                        "format": "date-time",
+                        "readOnly": true
+                    },
+                    "cancel_reason": {
+                        "type": [
+                            "string",
+                            "null"
+                        ],
+                        "readOnly": true
+                    },
+                    "created_at": {
+                        "type": "string",
+                        "format": "date-time",
+                        "readOnly": true
+                    }
+                },
+                "required": [
+                    "amount",
+                    "amount_paid",
+                    "cancel_reason",
+                    "cancelled_at",
+                    "created_at",
+                    "due_date",
+                    "id",
+                    "notes",
+                    "outstanding",
+                    "reference",
+                    "release_date",
+                    "status",
+                    "vendor_name",
+                    "vendor_party_id",
+                    "version",
+                    "wo_number",
+                    "work_order_id"
+                ]
+            },
             "VerifyEmail": {
                 "type": "object",
                 "properties": {
@@ -20561,7 +20949,19 @@
                     "retention_held": {
                         "type": "string",
                         "format": "decimal",
+                        "pattern": "^-?\\d{0,12}(?:\\.\\d{0,2})?$",
+                        "description": "On recorded RA bills, all told"
+                    },
+                    "retention_released": {
+                        "type": "string",
+                        "format": "decimal",
                         "pattern": "^-?\\d{0,12}(?:\\.\\d{0,2})?$"
+                    },
+                    "retention_to_release": {
+                        "type": "string",
+                        "format": "decimal",
+                        "pattern": "^-?\\d{0,12}(?:\\.\\d{0,2})?$",
+                        "description": "Held and not yet released"
                     },
                     "paid": {
                         "type": "string",
@@ -20594,6 +20994,8 @@
                     "ra_count",
                     "retention_held",
                     "retention_pct",
+                    "retention_released",
+                    "retention_to_release",
                     "status",
                     "tds_rate",
                     "tds_section",
@@ -20700,7 +21102,19 @@
                     "retention_held": {
                         "type": "string",
                         "format": "decimal",
+                        "pattern": "^-?\\d{0,12}(?:\\.\\d{0,2})?$",
+                        "description": "On recorded RA bills, all told"
+                    },
+                    "retention_released": {
+                        "type": "string",
+                        "format": "decimal",
                         "pattern": "^-?\\d{0,12}(?:\\.\\d{0,2})?$"
+                    },
+                    "retention_to_release": {
+                        "type": "string",
+                        "format": "decimal",
+                        "pattern": "^-?\\d{0,12}(?:\\.\\d{0,2})?$",
+                        "description": "Held and not yet released"
                     },
                     "paid": {
                         "type": "string",
@@ -20734,6 +21148,13 @@
                             "$ref": "#/components/schemas/RaBillSummary"
                         },
                         "readOnly": true
+                    },
+                    "releases": {
+                        "type": "array",
+                        "items": {
+                            "$ref": "#/components/schemas/VendorRetentionRelease"
+                        },
+                        "readOnly": true
                     }
                 },
                 "required": [
@@ -20747,8 +21168,11 @@
                     "project_name",
                     "ra_bills",
                     "ra_count",
+                    "releases",
                     "retention_held",
                     "retention_pct",
+                    "retention_released",
+                    "retention_to_release",
                     "status",
                     "tds_rate",
                     "tds_section",

@@ -17,7 +17,7 @@ from apps.core.versioning import update_versioned
 from apps.parties.models import Party
 from apps.projects.models import Project
 
-from .models import VendorAllocation, VendorBill, VendorPayment
+from .models import VendorAllocation, VendorBill, VendorPayment, VendorRetentionRelease
 from .tds import tds_amount
 
 RECORD = "payments.record"
@@ -143,6 +143,14 @@ def void_bill(principal: Principal, bill_id: uuid.UUID, expected: int, reason: s
                 "Payments are set against this bill; void those payments first.",
                 code="vendor_bill_paid",
             )
+        if bill.work_order_id and bill.retention_amount > 0:
+            from .work_orders import totals
+
+            if totals(bill.work_order).retention_to_release < bill.retention_amount:
+                raise Conflict(
+                    "Retention from this bill is released; cancel the release first.",
+                    code="retention_released",
+                )
         update_versioned(
             VendorBill.objects,
             bill.pk,
@@ -163,20 +171,25 @@ def _allocate(principal: Principal, payment: VendorPayment, items: list[dict[str
     seen: set[uuid.UUID] = set()
     for i, item in enumerate(items):
         field = f"allocations[{i}]"
-        bill = get_or_invalid(
-            VendorBill, item["vendor_bill_id"], f"{field}.vendor_bill_id", label="vendor bill"
-        )
-        if bill.pk in seen:
-            raise Invalid(f"{field}.vendor_bill_id", "Listed twice.", code="duplicate")
-        seen.add(bill.pk)
-        if bill.vendor_party_id != payment.vendor_party_id:
-            raise Invalid(
-                f"{field}.vendor_bill_id", "It is another vendor's bill.", code="party_mismatch"
+        target: VendorBill | VendorRetentionRelease
+        if item.get("vendor_retention_release_id"):
+            key = "vendor_retention_release_id"
+            target = get_or_invalid(
+                VendorRetentionRelease, item[key], f"{field}.{key}", label="retention release"
             )
-        if bill.status != "RECORDED":
-            raise Invalid(f"{field}.vendor_bill_id", "This bill is voided.", code="voided")
+            live, owed = target.status == "RELEASED", target.amount - target.amount_paid
+        else:
+            key = "vendor_bill_id"
+            target = get_or_invalid(VendorBill, item[key], f"{field}.{key}", label="vendor bill")
+            live, owed = target.status == "RECORDED", target.net_payable - target.amount_paid
+        if target.pk in seen:
+            raise Invalid(f"{field}.{key}", "Listed twice.", code="duplicate")
+        seen.add(target.pk)
+        if target.vendor_party_id != payment.vendor_party_id:
+            raise Invalid(f"{field}.{key}", "It is another vendor's.", code="party_mismatch")
+        if not live:
+            raise Invalid(f"{field}.{key}", "This is voided or cancelled.", code="voided")
         amount: Decimal = item["amount"]
-        owed = bill.net_payable - bill.amount_paid
         if amount > owed:
             raise Invalid(
                 f"{field}.amount", f"More than the {owed} still owed.", code="exceeds_outstanding"
@@ -192,7 +205,7 @@ def _allocate(principal: Principal, payment: VendorPayment, items: list[dict[str
             with transaction.atomic():
                 VendorAllocation(
                     vendor_payment=payment,
-                    vendor_bill=bill,
+                    **{key.removesuffix("_id"): target},
                     amount=amount,
                     created_by_id=principal.user_id,
                 ).save()
