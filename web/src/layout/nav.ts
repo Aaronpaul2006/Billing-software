@@ -20,6 +20,7 @@ import {
   Receipt,
   ReceiptText,
   Settings,
+  TrendingUp,
   UserCog,
   UserPlus,
   Users,
@@ -119,6 +120,13 @@ export const GROUPS: { title: string; items: NavEntry[] }[] = [
         icon: BarChart3,
         action: "reports.view",
         keywords: "gst gstr receivables outstanding",
+      },
+      {
+        to: "/cash-flow",
+        label: "Cash flow",
+        icon: TrendingUp,
+        action: "reports.view",
+        keywords: "forecast cashflow weeks balance due",
       },
       {
         to: "/exports",

@@ -338,6 +338,13 @@ export const routes: RouteObject[] = [
             ),
           },
           {
+            path: "cash-flow",
+            lazy: lazyPage(
+              () => import("@/features/reports/CashFlowPage"),
+              (m) => m.CashFlowPage,
+            ),
+          },
+          {
             path: "account",
             lazy: lazyPage(
               () => import("@/features/account/AccountPage"),
