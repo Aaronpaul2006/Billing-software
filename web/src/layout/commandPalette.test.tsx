@@ -130,12 +130,16 @@ describe("command palette (D.6)", () => {
     await screen.findByRole("navigation", { name: "Sell" });
     await user.keyboard("{Control>}k{/Control}");
     const dialog = await palette();
-    await user.keyboard("pay");
+    await user.keyboard("payments");
     const listbox = within(dialog).getByRole("listbox");
-    expect(options(listbox)).toEqual(["Record a payment", "Payments"]);
+    expect(options(listbox)).toEqual(["Payments", "Payments to vendors"]);
     await user.keyboard("{ArrowDown}");
+    expect(within(listbox).getByRole("option", { selected: true })).toHaveTextContent(
+      "Payments to vendors",
+    );
+    await user.keyboard("{ArrowUp}");
     const chosen = within(listbox).getByRole("option", { selected: true });
-    expect(chosen).toHaveTextContent("Payments");
+    expect(chosen).toHaveTextContent(/^Payments/);
     await user.keyboard("{Enter}");
     await waitFor(() => {
       expect(router.state.location.pathname).toBe("/payments");

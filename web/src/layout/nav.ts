@@ -1,5 +1,6 @@
 import {
   BadgePercent,
+  Banknote,
   BarChart3,
   BookOpen,
   ClipboardList,
@@ -17,6 +18,7 @@ import {
   Package,
   Printer,
   Receipt,
+  ReceiptText,
   Settings,
   UserCog,
   UserPlus,
@@ -65,6 +67,18 @@ export const GROUPS: { title: string; items: NavEntry[] }[] = [
     title: "Money",
     items: [
       { to: "/payments", label: "Payments", icon: IndianRupee, keywords: "receipts received" },
+      {
+        to: "/vendor-bills",
+        label: "Vendor bills",
+        icon: ReceiptText,
+        keywords: "payables purchases subcontractor supplier owe tds 194c",
+      },
+      {
+        to: "/vendor-payments",
+        label: "Payments to vendors",
+        icon: Banknote,
+        keywords: "payables paid out supplier subcontractor",
+      },
       { to: "/expenses", label: "Expenses", icon: Receipt, keywords: "purchases costs" },
       {
         to: "/tds-certificates",
@@ -197,6 +211,20 @@ export const CREATE: NavEntry[] = [
     icon: IndianRupee,
     action: "payments.record",
     keywords: "receipt received money new",
+  },
+  {
+    to: "/vendor-bills/new",
+    label: "Record a vendor bill",
+    icon: ReceiptText,
+    action: "payments.record",
+    keywords: "payables supplier subcontractor purchase new",
+  },
+  {
+    to: "/vendor-payments/new",
+    label: "Pay a vendor",
+    icon: Banknote,
+    action: "payments.record",
+    keywords: "payables supplier subcontractor paid out new",
   },
   {
     to: "/expenses/new",

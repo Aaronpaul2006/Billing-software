@@ -254,6 +254,55 @@ export const routes: RouteObject[] = [
             ],
           },
           {
+            path: "vendor-bills",
+            lazy: lazyPage(
+              () => import("@/features/payables/VendorBillsPage"),
+              (m) => m.VendorBillsPage,
+            ),
+          },
+          {
+            path: "vendor-bills/new",
+            lazy: lazyPage(
+              () => import("@/features/payables/VendorBillFormPage"),
+              (m) => m.VendorBillFormPage,
+            ),
+          },
+          {
+            path: "vendor-bills/:billId",
+            lazy: lazyPage(
+              () => import("@/features/payables/VendorBillPage"),
+              (m) => m.VendorBillPage,
+            ),
+          },
+          {
+            path: "vendor-bills/:billId/edit",
+            lazy: lazyPage(
+              () => import("@/features/payables/VendorBillFormPage"),
+              (m) => m.VendorBillFormPage,
+            ),
+          },
+          {
+            path: "vendor-payments",
+            lazy: lazyPage(
+              () => import("@/features/payables/VendorPaymentsPage"),
+              (m) => m.VendorPaymentsPage,
+            ),
+          },
+          {
+            path: "vendor-payments/new",
+            lazy: lazyPage(
+              () => import("@/features/payables/NewVendorPaymentPage"),
+              (m) => m.NewVendorPaymentPage,
+            ),
+          },
+          {
+            path: "vendor-payments/:paymentId",
+            lazy: lazyPage(
+              () => import("@/features/payables/VendorPaymentPage"),
+              (m) => m.VendorPaymentPage,
+            ),
+          },
+          {
             path: "expenses",
             lazy: lazyPage(
               () => import("@/features/expenses/ExpensesPage"),
