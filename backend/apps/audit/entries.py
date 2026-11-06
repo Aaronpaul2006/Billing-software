@@ -44,6 +44,7 @@ RECORD_TYPES: dict[str, tuple[str, tuple[str, ...]]] = {
     "document_series": ("Number series", ("prefix",)),
     "print_settings": ("Bill printing", ()),
     "tally_settings": ("Tally export", ()),
+    "gstr2b_returns": ("GSTR-2B upload", ("file_name",)),
 }
 
 # Bookkeeping, not changes anyone made on purpose.

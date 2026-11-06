@@ -1021,6 +1021,51 @@ CREATE UNIQUE INDEX bank_lines_payment_uq        ON bank_lines (payment_id)     
 CREATE UNIQUE INDEX bank_lines_vendor_payment_uq ON bank_lines (vendor_payment_id) WHERE vendor_payment_id IS NOT NULL;
 CREATE INDEX bank_lines_status_idx ON bank_lines (tenant_id, status, line_date DESC);
 
+-- GSTR-2B (Part B): the input tax credit statement the GST portal makes for a
+-- registration and month, as uploaded (apps/gstr2b/reader.py). It is matched
+-- against vendor bills and expenses when it is read, so the match follows the
+-- books (apps/gstr2b/reconcile.py). Uploading a month again replaces it.
+CREATE TABLE gstr2b_returns (
+  id                   uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+  tenant_id            uuid NOT NULL REFERENCES tenants (id),
+  gst_registration_id  uuid NOT NULL,
+  period               date NOT NULL CHECK (extract(day FROM period) = 1),   -- the month
+  generated_on         date,
+  file_name            text NOT NULL CHECK (char_length(file_name) BETWEEN 1 AND 255),
+  doc_count            integer NOT NULL CHECK (doc_count >= 0),
+  created_by           uuid NOT NULL REFERENCES users (id),
+  created_at           timestamptz NOT NULL DEFAULT now(),
+  UNIQUE (tenant_id, id),
+  UNIQUE (tenant_id, gst_registration_id, period),
+  FOREIGN KEY (tenant_id, gst_registration_id) REFERENCES gst_registrations (tenant_id, id)
+);
+
+CREATE TABLE gstr2b_lines (
+  id               uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+  tenant_id        uuid NOT NULL REFERENCES tenants (id),
+  return_id        uuid NOT NULL,
+  section          text NOT NULL CHECK (section IN ('B2B', 'B2BA', 'CDNR', 'CDNRA')),
+  doc_type         text NOT NULL CHECK (doc_type IN ('INVOICE', 'CREDIT_NOTE', 'DEBIT_NOTE')),
+  supplier_gstin   varchar(15) NOT NULL,
+  supplier_name    text NOT NULL DEFAULT '',
+  doc_number       text NOT NULL CHECK (char_length(doc_number) BETWEEN 1 AND 50),
+  original_number  text,                                -- amendments: the number amended
+  doc_date         date NOT NULL,
+  taxable_value    numeric(14,2) NOT NULL,
+  igst             numeric(14,2) NOT NULL DEFAULT 0,
+  cgst             numeric(14,2) NOT NULL DEFAULT 0,
+  sgst             numeric(14,2) NOT NULL DEFAULT 0,
+  cess             numeric(14,2) NOT NULL DEFAULT 0,
+  place_of_supply  char(2),
+  reverse_charge   boolean NOT NULL DEFAULT false,
+  itc_available    boolean NOT NULL DEFAULT true,
+  itc_reason       text,
+  UNIQUE (tenant_id, id),
+  FOREIGN KEY (tenant_id, return_id) REFERENCES gstr2b_returns (tenant_id, id) ON DELETE CASCADE
+);
+CREATE INDEX gstr2b_lines_return_idx   ON gstr2b_lines (tenant_id, return_id);
+CREATE INDEX gstr2b_lines_supplier_idx ON gstr2b_lines (tenant_id, supplier_gstin);
+
 -- Income-tax TDS certificates (Form 16A) received from clients, to reconcile
 -- with the TDS deducted on our bills. A record of the client's paper, not a
 -- posting of ours: it may be corrected or deleted (audited).
@@ -1613,7 +1658,7 @@ BEGIN
     'email_invitations', 'payment_reminders', 'document_templates', 'catalog_item_variants',
     'document_line_measurements', 'print_settings', 'document_emails', 'tally_settings',
     'vendor_bills', 'vendor_payments', 'vendor_allocations', 'bank_lines', 'work_orders',
-    'work_order_items', 'vendor_bill_lines', 'vendor_retention_releases']
+    'work_order_items', 'vendor_bill_lines', 'vendor_retention_releases', 'gstr2b_returns']
   LOOP
     EXECUTE format(
       'CREATE TRIGGER audit AFTER INSERT OR UPDATE OR DELETE ON %I FOR EACH ROW EXECUTE FUNCTION audit_row_change()', t);
@@ -1636,7 +1681,7 @@ BEGIN
     'payment_reminders', 'document_templates', 'catalog_item_variants', 'document_line_measurements',
     'print_settings', 'document_emails', 'tally_settings', 'vendor_bills', 'vendor_payments',
     'vendor_allocations', 'bank_lines', 'work_orders', 'work_order_items', 'vendor_bill_lines',
-    'vendor_retention_releases']
+    'vendor_retention_releases', 'gstr2b_returns', 'gstr2b_lines']
   LOOP
     EXECUTE format('ALTER TABLE %I ENABLE ROW LEVEL SECURITY', t);
     EXECUTE format('ALTER TABLE %I FORCE ROW LEVEL SECURITY', t);
@@ -1751,7 +1796,7 @@ BEGIN
     'tds_certificates', 'email_invitations', 'payment_reminders', 'document_templates', 'audit_log',
     'print_settings', 'document_emails', 'tally_settings', 'vendor_bills', 'vendor_payments',
     'vendor_allocations', 'bank_lines', 'work_orders', 'work_order_items', 'vendor_bill_lines',
-    'vendor_retention_releases']
+    'vendor_retention_releases', 'gstr2b_returns', 'gstr2b_lines']
   LOOP
     EXECUTE format(
       'CREATE POLICY client_scope ON %I AS RESTRICTIVE USING (NOT app_portal_session())', t);
@@ -1995,7 +2040,7 @@ GRANT SELECT, INSERT, UPDATE ON ALL TABLES IN SCHEMA public TO billing_app;
 GRANT DELETE ON documents, document_lines, allocations, boq_items, catalog_items, tds_certificates,
                 idempotency_keys, auth_sessions, document_templates, catalog_item_variants,
                 document_line_measurements, vendor_allocations, work_order_items,
-                vendor_bill_lines TO billing_app;
+                vendor_bill_lines, gstr2b_returns, gstr2b_lines TO billing_app;
 -- Audit rows are written only by the trigger.
 REVOKE INSERT, UPDATE, DELETE ON audit_log FROM billing_app;
 REVOKE INSERT, UPDATE ON v_billing_summary, v_receivables, v_project_billing FROM billing_app;
@@ -2026,6 +2071,8 @@ GRANT UPDATE (vendor_party_id, project_id, bill_number, bill_date, due_date, cat
 REVOKE UPDATE ON vendor_bill_lines FROM billing_app;
 -- Retention released to subcontractors: paid by the trigger, otherwise only cancelled.
 REVOKE UPDATE ON vendor_retention_releases FROM billing_app;
+-- GSTR-2B as uploaded: never edited, only replaced by the next upload of the month.
+REVOKE UPDATE ON gstr2b_returns, gstr2b_lines FROM billing_app;
 GRANT UPDATE (status, cancelled_at, cancelled_by, cancel_reason, version, updated_at)
   ON vendor_retention_releases TO billing_app;
 -- Payment reminders are a log: written once, never changed.

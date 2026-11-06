@@ -1,0 +1,71 @@
+{
+ "data": {
+  "gstin": "32AAKFD1234B1Z8",
+  "rtnprd": "102026",
+  "gendt": "14-11-2026",
+  "docdata": {
+   "b2b": [
+    {
+     "ctin": "32AAFFK7788M1ZO",
+     "trdnm": "Kerala Steel Traders",
+     "inv": [
+      {
+       "inum": "KST/101",
+       "dt": "10-10-2026",
+       "val": 59000,
+       "pos": "32",
+       "rev": "N",
+       "itcavl": "Y",
+       "txval": 50000,
+       "cgst": 4500,
+       "sgst": 4500
+      },
+      {
+       "inum": "KST/102",
+       "dt": "28-10-2026",
+       "val": 11800,
+       "pos": "32",
+       "rev": "N",
+       "itcavl": "Y",
+       "txval": 10000,
+       "cgst": 900,
+       "sgst": 900
+      }
+     ]
+    },
+    {
+     "ctin": "33AAACC5678P1Z6",
+     "trdnm": "Coastal Cement",
+     "inv": [
+      {
+       "inum": "CC/80",
+       "dt": "20-10-2026",
+       "val": 5900,
+       "pos": "32",
+       "rev": "N",
+       "itcavl": "Y",
+       "txval": 5000,
+       "igst": 900
+      }
+     ]
+    }
+   ],
+   "cdnr": [
+    {
+     "ctin": "33AAACC5678P1Z6",
+     "trdnm": "Coastal Cement",
+     "nt": [
+      {
+       "ntnum": "CN-7",
+       "typ": "C",
+       "dt": "25-10-2026",
+       "val": 1180,
+       "txval": 1000,
+       "igst": 180
+      }
+     ]
+    }
+   ]
+  }
+ }
+}

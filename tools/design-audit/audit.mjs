@@ -258,6 +258,14 @@ function staffPages(ids) {
     p("cash-flow", "Cash flow", "/cash-flow"),
     p("tally-import", "Import from Tally", "/tally-import"),
     {
+      ...p("gstr2b", "GSTR-2B check", "/gstr2b"),
+      action: async (page) => {
+        const sample = path.join(path.dirname(fileURLToPath(import.meta.url)), "samples", "gstr2b.json");
+        await page.getByLabel("Upload a GSTR-2B (JSON)").setInputFiles(sample);
+        await page.getByRole("heading", { name: "Oct 2026" }).waitFor();
+      },
+    },
+    {
       ...p("tally-import-preview", "Import from Tally: the preview", "/tally-import"),
       action: async (page) => {
         const sample = path.join(path.dirname(fileURLToPath(import.meta.url)), "samples", "tally-masters.xml");

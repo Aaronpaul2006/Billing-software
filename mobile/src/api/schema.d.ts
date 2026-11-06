@@ -1550,6 +1550,41 @@ export interface paths {
         patch: operations["gst_registrations_partial_update"];
         trace?: never;
     };
+    "/api/v1/gstr2b-returns": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** @description The months uploaded, newest first; upload a GSTR-2B JSON. */
+        get: operations["gstr2b_returns_list"];
+        put?: never;
+        /** @description The months uploaded, newest first; upload a GSTR-2B JSON. */
+        post: operations["gstr2b_returns_create"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/gstr2b-returns/{return_id}/reconciliation": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** @description The GSTR-2B against the books, worked out now (reconcile.py). */
+        get: operations["gstr2b_returns_reconciliation_retrieve"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/invitations": {
         parameters: {
             query?: never;
@@ -3116,6 +3151,26 @@ export interface components {
          * @enum {string}
          */
         BankLineStatusEnum: "OPEN" | "MATCHED" | "IGNORED";
+        /** @description A document in our books. */
+        BookDoc: {
+            kind: components["schemas"]["BookDocKindEnum"];
+            /** Format: uuid */
+            id: string;
+            number: string;
+            /** Format: date */
+            doc_date: string;
+            /** Format: decimal */
+            taxable_value: string;
+            /** Format: decimal */
+            tax: string;
+            itc_eligible: boolean;
+        };
+        /**
+         * @description * `VENDOR_BILL` - VENDOR_BILL
+         *     * `EXPENSE` - EXPENSE
+         * @enum {string}
+         */
+        BookDocKindEnum: "VENDOR_BILL" | "EXPENSE";
         BoqImportRequest: {
             /**
              * Format: uri
@@ -4115,6 +4170,22 @@ export interface components {
             /** Format: decimal */
             cess: string;
         };
+        Gstr2bReturn: {
+            /** Format: uuid */
+            readonly id: string;
+            /** Format: uuid */
+            gst_registration_id: string;
+            readonly gstin: string;
+            /** Format: date */
+            readonly period: string;
+            /** Format: date */
+            readonly generated_on: string | null;
+            readonly file_name: string;
+            readonly doc_count: number;
+            readonly uploaded_by: string;
+            /** Format: date-time */
+            readonly created_at: string;
+        };
         History: {
             results: components["schemas"]["HistoryEntry"][];
         };
@@ -4528,6 +4599,11 @@ export interface components {
         };
         PaginatedGstRegistrationList: {
             results: components["schemas"]["GstRegistration"][];
+            /** @description Pass as ?cursor= */
+            next_cursor: string | null;
+        };
+        PaginatedGstr2bReturnList: {
+            results: components["schemas"]["Gstr2bReturn"][];
             /** @description Pass as ?cursor= */
             next_cursor: string | null;
         };
@@ -5213,6 +5289,31 @@ export interface components {
             display_name: string;
             gstin: string | null;
         };
+        /** @description A document as the GSTR-2B shows it. */
+        PortalDoc: {
+            /** Format: uuid */
+            id: string;
+            section: string;
+            doc_type: components["schemas"]["PortalDocDocTypeEnum"];
+            doc_number: string;
+            original_number: string | null;
+            /** Format: date */
+            doc_date: string;
+            /** Format: decimal */
+            taxable_value: string;
+            /** Format: decimal */
+            tax: string;
+            itc_available: boolean;
+            itc_reason: string | null;
+            reverse_charge: boolean;
+        };
+        /**
+         * @description * `INVOICE` - INVOICE
+         *     * `CREDIT_NOTE` - CREDIT_NOTE
+         *     * `DEBIT_NOTE` - DEBIT_NOTE
+         * @enum {string}
+         */
+        PortalDocDocTypeEnum: "INVOICE" | "CREDIT_NOTE" | "DEBIT_NOTE";
         PortalDocument: {
             /** Format: uuid */
             readonly id: string;
@@ -5677,6 +5778,62 @@ export interface components {
             /** @description All parties together. */
             totals: components["schemas"]["Receivable"];
         };
+        ReconRow: {
+            status: components["schemas"]["ReconRowStatusEnum"];
+            supplier_gstin: string;
+            supplier_name: string;
+            /** @description As in the GSTR-2B */
+            portal: components["schemas"]["PortalDoc"] | null;
+            /** @description As in our books */
+            books: components["schemas"]["BookDoc"] | null;
+            /**
+             * Format: decimal
+             * @description 2B less books
+             */
+            taxable_difference: string;
+            /**
+             * Format: decimal
+             * @description 2B less books
+             */
+            tax_difference: string;
+            note: string;
+        };
+        /**
+         * @description * `MATCHED` - MATCHED
+         *     * `AMOUNTS_DIFFER` - AMOUNTS_DIFFER
+         *     * `NOT_IN_BOOKS` - NOT_IN_BOOKS
+         *     * `NOT_IN_2B` - NOT_IN_2B
+         * @enum {string}
+         */
+        ReconRowStatusEnum: "MATCHED" | "AMOUNTS_DIFFER" | "NOT_IN_BOOKS" | "NOT_IN_2B";
+        ReconSummary: {
+            matched: number;
+            amounts_differ: number;
+            not_in_books: number;
+            not_in_2b: number;
+            /**
+             * Format: decimal
+             * @description Available ITC the portal shows, credit notes taken off
+             */
+            itc_in_2b: string;
+            /** Format: decimal */
+            itc_matched: string;
+            /**
+             * Format: decimal
+             * @description In the 2B but not in our books: record the bills
+             */
+            itc_not_in_books: string;
+            /**
+             * Format: decimal
+             * @description Claimed in our books, not in the 2B: ask the supplier
+             */
+            itc_at_risk: string;
+        };
+        Reconciliation: {
+            gst_return: components["schemas"]["Gstr2bReturn"];
+            summary: components["schemas"]["ReconSummary"];
+            rows: components["schemas"]["ReconRow"][];
+        };
         RecordFromLine: {
             /**
              * Format: uuid
@@ -5711,6 +5868,7 @@ export interface components {
          *     * `expenses` - expenses
          *     * `exports` - exports
          *     * `gst_registrations` - gst_registrations
+         *     * `gstr2b_returns` - gstr2b_returns
          *     * `memberships` - memberships
          *     * `parties` - parties
          *     * `payment_reminders` - payment_reminders
@@ -5727,7 +5885,7 @@ export interface components {
          *     * `work_orders` - work_orders
          * @enum {string}
          */
-        RecordTypeEnum: "boq_items" | "catalog_item_variants" | "catalog_items" | "document_emails" | "document_series" | "document_templates" | "documents" | "email_invitations" | "expenses" | "exports" | "gst_registrations" | "memberships" | "parties" | "payment_reminders" | "payments" | "print_settings" | "projects" | "retention_releases" | "tally_settings" | "tds_certificates" | "tenants" | "vendor_bills" | "vendor_payments" | "work_order_items" | "work_orders";
+        RecordTypeEnum: "boq_items" | "catalog_item_variants" | "catalog_items" | "document_emails" | "document_series" | "document_templates" | "documents" | "email_invitations" | "expenses" | "exports" | "gst_registrations" | "gstr2b_returns" | "memberships" | "parties" | "payment_reminders" | "payments" | "print_settings" | "projects" | "retention_releases" | "tally_settings" | "tds_certificates" | "tenants" | "vendor_bills" | "vendor_payments" | "work_order_items" | "work_orders";
         RecoveryCodes: {
             /** @description Shown once. Each works one time. */
             recovery_codes: string[];
@@ -7128,6 +7286,13 @@ export interface components {
             amount_settled?: string;
             readonly outstanding: string;
         };
+        Upload: {
+            /**
+             * Format: uri
+             * @description GSTR-2B as downloaded from the GST portal (JSON), at most 20 MB
+             */
+            file: string;
+        };
         UploadStart: {
             filename: string;
             content_type: components["schemas"]["ContentTypeEnum"];
@@ -7743,6 +7908,7 @@ export interface operations {
                  *     * `expenses` - expenses
                  *     * `exports` - exports
                  *     * `gst_registrations` - gst_registrations
+                 *     * `gstr2b_returns` - gstr2b_returns
                  *     * `memberships` - memberships
                  *     * `parties` - parties
                  *     * `payment_reminders` - payment_reminders
@@ -7758,7 +7924,7 @@ export interface operations {
                  *     * `work_order_items` - work_order_items
                  *     * `work_orders` - work_orders
                  */
-                record_type?: "boq_items" | "catalog_item_variants" | "catalog_items" | "document_emails" | "document_series" | "document_templates" | "documents" | "email_invitations" | "expenses" | "exports" | "gst_registrations" | "memberships" | "parties" | "payment_reminders" | "payments" | "print_settings" | "projects" | "retention_releases" | "tally_settings" | "tds_certificates" | "tenants" | "vendor_bills" | "vendor_payments" | "work_order_items" | "work_orders";
+                record_type?: "boq_items" | "catalog_item_variants" | "catalog_items" | "document_emails" | "document_series" | "document_templates" | "documents" | "email_invitations" | "expenses" | "exports" | "gst_registrations" | "gstr2b_returns" | "memberships" | "parties" | "payment_reminders" | "payments" | "print_settings" | "projects" | "retention_releases" | "tally_settings" | "tds_certificates" | "tenants" | "vendor_bills" | "vendor_payments" | "work_order_items" | "work_orders";
             };
             header?: never;
             path?: never;
@@ -10013,6 +10179,84 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["GstRegistration"];
+                };
+            };
+        };
+    };
+    gstr2b_returns_list: {
+        parameters: {
+            query?: {
+                /** @description The pagination cursor value. */
+                cursor?: string;
+                /** @description Number of results to return per page. */
+                limit?: number;
+                /** @description Which field to use when ordering the results. */
+                ordering?: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PaginatedGstr2bReturnList"];
+                };
+            };
+        };
+    };
+    gstr2b_returns_create: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "multipart/form-data": components["schemas"]["Upload"];
+            };
+        };
+        responses: {
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Gstr2bReturn"];
+                };
+            };
+        };
+    };
+    gstr2b_returns_reconciliation_retrieve: {
+        parameters: {
+            query?: {
+                /**
+                 * @description * `MATCHED` - MATCHED
+                 *     * `AMOUNTS_DIFFER` - AMOUNTS_DIFFER
+                 *     * `NOT_IN_BOOKS` - NOT_IN_BOOKS
+                 *     * `NOT_IN_2B` - NOT_IN_2B
+                 */
+                status?: "MATCHED" | "AMOUNTS_DIFFER" | "NOT_IN_BOOKS" | "NOT_IN_2B";
+            };
+            header?: never;
+            path: {
+                return_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Reconciliation"];
                 };
             };
         };

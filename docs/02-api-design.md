@@ -908,6 +908,17 @@ after retention, plus released retention still to pay.
 | `POST /vendor-retention-releases/{id}/cancel` | `{reason}`, If-Match. Not once something is paid on it (`409 release_paid`) |
 | Paying a release | A payment to a vendor's allocation names `vendor_retention_release_id` instead of `vendor_bill_id` (one of the two); the allocation's `bill_number` reads "Retention, WO/…". An RA bill whose retention is released cannot be voided until the release is cancelled (`409 retention_released`) |
 
+### GSTR-2B reconciliation (Part B)
+
+Upload the GSTR-2B JSON downloaded from the GST portal (Returns → GSTR-2B →
+Download → JSON) and compare it with the books. Upload: `payments.record`;
+reading: `reports.view` (so a CA with the Viewer role can check it).
+
+| Method & path | Notes |
+|---|---|
+| `GET/POST /gstr2b-returns` | POST `multipart/form-data` `file` (at most 20 MB) → `201`. Read: B2B and CDNR (and amendments), per document supplier GSTIN and name, number, date, value before GST, IGST / CGST / SGST / cess, ITC available (and why not), reverse charge; other sections are left out. The file must be for one of our GSTINs (`422 other_gstin`); not a 2B: `422 not_gstr2b`. The same registration and month uploaded again replaces the old one. GET lists the months uploaded, newest first |
+| `GET /gstr2b-returns/{id}/reconciliation?status=` | Worked out now against recorded vendor bills and expenses with GST from a supplier whose GSTIN we have: same supplier and number (read loosely: case, spaces, "/ - .", leading zeros do not count), else the same value and tax to the rupee within 3 days (`note` says the numbers differ). `rows`: `MATCHED`, `AMOUNTS_DIFFER` (`taxable_difference` / `tax_difference`, 2B less books), `NOT_IN_BOOKS` (record the bill; credit notes always), `NOT_IN_2B` (in the books, dated in the 2B's month, not reported by the supplier); each with `portal` and / or `books`. `summary`: the four counts, `itc_in_2b` (available ITC, credit notes taken off), `itc_matched`, `itc_not_in_books`, `itc_at_risk` (claimed in the books, not in the 2B) |
+
 ### Bank statements (Part B)
 
 Import the bank's statement file, then match each line by hand: nothing is

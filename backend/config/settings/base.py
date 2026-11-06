@@ -51,6 +51,7 @@ INSTALLED_APPS = [
     "apps.search",
     "apps.payables",
     "apps.banking",
+    "apps.gstr2b",
 ]
 
 MIDDLEWARE = [

@@ -220,6 +220,7 @@
                                 "expenses",
                                 "exports",
                                 "gst_registrations",
+                                "gstr2b_returns",
                                 "memberships",
                                 "parties",
                                 "payment_reminders",
@@ -238,7 +239,7 @@
                             "type": "string",
                             "minLength": 1
                         },
-                        "description": "* `boq_items` - boq_items\n* `catalog_item_variants` - catalog_item_variants\n* `catalog_items` - catalog_items\n* `document_emails` - document_emails\n* `document_series` - document_series\n* `document_templates` - document_templates\n* `documents` - documents\n* `email_invitations` - email_invitations\n* `expenses` - expenses\n* `exports` - exports\n* `gst_registrations` - gst_registrations\n* `memberships` - memberships\n* `parties` - parties\n* `payment_reminders` - payment_reminders\n* `payments` - payments\n* `print_settings` - print_settings\n* `projects` - projects\n* `retention_releases` - retention_releases\n* `tally_settings` - tally_settings\n* `tds_certificates` - tds_certificates\n* `tenants` - tenants\n* `vendor_bills` - vendor_bills\n* `vendor_payments` - vendor_payments\n* `work_order_items` - work_order_items\n* `work_orders` - work_orders"
+                        "description": "* `boq_items` - boq_items\n* `catalog_item_variants` - catalog_item_variants\n* `catalog_items` - catalog_items\n* `document_emails` - document_emails\n* `document_series` - document_series\n* `document_templates` - document_templates\n* `documents` - documents\n* `email_invitations` - email_invitations\n* `expenses` - expenses\n* `exports` - exports\n* `gst_registrations` - gst_registrations\n* `gstr2b_returns` - gstr2b_returns\n* `memberships` - memberships\n* `parties` - parties\n* `payment_reminders` - payment_reminders\n* `payments` - payments\n* `print_settings` - print_settings\n* `projects` - projects\n* `retention_releases` - retention_releases\n* `tally_settings` - tally_settings\n* `tds_certificates` - tds_certificates\n* `tenants` - tenants\n* `vendor_bills` - vendor_bills\n* `vendor_payments` - vendor_payments\n* `work_order_items` - work_order_items\n* `work_orders` - work_orders"
                     }
                 ],
                 "tags": [
@@ -4184,6 +4185,147 @@
                             "application/json": {
                                 "schema": {
                                     "$ref": "#/components/schemas/GstRegistration"
+                                }
+                            }
+                        },
+                        "description": ""
+                    }
+                }
+            }
+        },
+        "/api/v1/gstr2b-returns": {
+            "get": {
+                "operationId": "gstr2b_returns_list",
+                "description": "The months uploaded, newest first; upload a GSTR-2B JSON.",
+                "parameters": [
+                    {
+                        "name": "cursor",
+                        "required": false,
+                        "in": "query",
+                        "description": "The pagination cursor value.",
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    {
+                        "name": "limit",
+                        "required": false,
+                        "in": "query",
+                        "description": "Number of results to return per page.",
+                        "schema": {
+                            "type": "integer"
+                        }
+                    },
+                    {
+                        "name": "ordering",
+                        "required": false,
+                        "in": "query",
+                        "description": "Which field to use when ordering the results.",
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                ],
+                "tags": [
+                    "gst"
+                ],
+                "security": [
+                    {
+                        "bearerAuth": []
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/PaginatedGstr2bReturnList"
+                                }
+                            }
+                        },
+                        "description": ""
+                    }
+                }
+            },
+            "post": {
+                "operationId": "gstr2b_returns_create",
+                "description": "The months uploaded, newest first; upload a GSTR-2B JSON.",
+                "tags": [
+                    "gst"
+                ],
+                "requestBody": {
+                    "content": {
+                        "multipart/form-data": {
+                            "schema": {
+                                "$ref": "#/components/schemas/Upload"
+                            }
+                        }
+                    },
+                    "required": true
+                },
+                "security": [
+                    {
+                        "bearerAuth": []
+                    }
+                ],
+                "responses": {
+                    "201": {
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/Gstr2bReturn"
+                                }
+                            }
+                        },
+                        "description": ""
+                    }
+                }
+            }
+        },
+        "/api/v1/gstr2b-returns/{return_id}/reconciliation": {
+            "get": {
+                "operationId": "gstr2b_returns_reconciliation_retrieve",
+                "description": "The GSTR-2B against the books, worked out now (reconcile.py).",
+                "parameters": [
+                    {
+                        "in": "path",
+                        "name": "return_id",
+                        "schema": {
+                            "type": "string",
+                            "format": "uuid"
+                        },
+                        "required": true
+                    },
+                    {
+                        "in": "query",
+                        "name": "status",
+                        "schema": {
+                            "enum": [
+                                "MATCHED",
+                                "AMOUNTS_DIFFER",
+                                "NOT_IN_BOOKS",
+                                "NOT_IN_2B"
+                            ],
+                            "type": "string",
+                            "minLength": 1
+                        },
+                        "description": "* `MATCHED` - MATCHED\n* `AMOUNTS_DIFFER` - AMOUNTS_DIFFER\n* `NOT_IN_BOOKS` - NOT_IN_BOOKS\n* `NOT_IN_2B` - NOT_IN_2B"
+                    }
+                ],
+                "tags": [
+                    "gst"
+                ],
+                "security": [
+                    {
+                        "bearerAuth": []
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/Reconciliation"
                                 }
                             }
                         },
@@ -8898,6 +9040,56 @@
                 "type": "string",
                 "description": "* `OPEN` - Open\n* `MATCHED` - Matched\n* `IGNORED` - Ignored"
             },
+            "BookDoc": {
+                "type": "object",
+                "description": "A document in our books.",
+                "properties": {
+                    "kind": {
+                        "$ref": "#/components/schemas/BookDocKindEnum"
+                    },
+                    "id": {
+                        "type": "string",
+                        "format": "uuid"
+                    },
+                    "number": {
+                        "type": "string"
+                    },
+                    "doc_date": {
+                        "type": "string",
+                        "format": "date"
+                    },
+                    "taxable_value": {
+                        "type": "string",
+                        "format": "decimal",
+                        "pattern": "^-?\\d{0,12}(?:\\.\\d{0,2})?$"
+                    },
+                    "tax": {
+                        "type": "string",
+                        "format": "decimal",
+                        "pattern": "^-?\\d{0,12}(?:\\.\\d{0,2})?$"
+                    },
+                    "itc_eligible": {
+                        "type": "boolean"
+                    }
+                },
+                "required": [
+                    "doc_date",
+                    "id",
+                    "itc_eligible",
+                    "kind",
+                    "number",
+                    "tax",
+                    "taxable_value"
+                ]
+            },
+            "BookDocKindEnum": {
+                "enum": [
+                    "VENDOR_BILL",
+                    "EXPENSE"
+                ],
+                "type": "string",
+                "description": "* `VENDOR_BILL` - VENDOR_BILL\n* `EXPENSE` - EXPENSE"
+            },
             "BoqImportRequest": {
                 "type": "object",
                 "properties": {
@@ -11738,6 +11930,65 @@
                     "taxable_value"
                 ]
             },
+            "Gstr2bReturn": {
+                "type": "object",
+                "properties": {
+                    "id": {
+                        "type": "string",
+                        "format": "uuid",
+                        "readOnly": true
+                    },
+                    "gst_registration_id": {
+                        "type": "string",
+                        "format": "uuid"
+                    },
+                    "gstin": {
+                        "type": "string",
+                        "readOnly": true
+                    },
+                    "period": {
+                        "type": "string",
+                        "format": "date",
+                        "readOnly": true
+                    },
+                    "generated_on": {
+                        "type": [
+                            "string",
+                            "null"
+                        ],
+                        "format": "date",
+                        "readOnly": true
+                    },
+                    "file_name": {
+                        "type": "string",
+                        "readOnly": true
+                    },
+                    "doc_count": {
+                        "type": "integer",
+                        "readOnly": true
+                    },
+                    "uploaded_by": {
+                        "type": "string",
+                        "readOnly": true
+                    },
+                    "created_at": {
+                        "type": "string",
+                        "format": "date-time",
+                        "readOnly": true
+                    }
+                },
+                "required": [
+                    "created_at",
+                    "doc_count",
+                    "file_name",
+                    "generated_on",
+                    "gst_registration_id",
+                    "gstin",
+                    "id",
+                    "period",
+                    "uploaded_by"
+                ]
+            },
             "History": {
                 "type": "object",
                 "properties": {
@@ -13038,6 +13289,28 @@
                         "type": "array",
                         "items": {
                             "$ref": "#/components/schemas/GstRegistration"
+                        }
+                    },
+                    "next_cursor": {
+                        "type": [
+                            "string",
+                            "null"
+                        ],
+                        "description": "Pass as ?cursor="
+                    }
+                }
+            },
+            "PaginatedGstr2bReturnList": {
+                "type": "object",
+                "required": [
+                    "results",
+                    "next_cursor"
+                ],
+                "properties": {
+                    "results": {
+                        "type": "array",
+                        "items": {
+                            "$ref": "#/components/schemas/Gstr2bReturn"
                         }
                     },
                     "next_cursor": {
@@ -15275,6 +15548,79 @@
                     "id"
                 ]
             },
+            "PortalDoc": {
+                "type": "object",
+                "description": "A document as the GSTR-2B shows it.",
+                "properties": {
+                    "id": {
+                        "type": "string",
+                        "format": "uuid"
+                    },
+                    "section": {
+                        "type": "string"
+                    },
+                    "doc_type": {
+                        "$ref": "#/components/schemas/PortalDocDocTypeEnum"
+                    },
+                    "doc_number": {
+                        "type": "string"
+                    },
+                    "original_number": {
+                        "type": [
+                            "string",
+                            "null"
+                        ]
+                    },
+                    "doc_date": {
+                        "type": "string",
+                        "format": "date"
+                    },
+                    "taxable_value": {
+                        "type": "string",
+                        "format": "decimal",
+                        "pattern": "^-?\\d{0,12}(?:\\.\\d{0,2})?$"
+                    },
+                    "tax": {
+                        "type": "string",
+                        "format": "decimal",
+                        "pattern": "^-?\\d{0,12}(?:\\.\\d{0,2})?$"
+                    },
+                    "itc_available": {
+                        "type": "boolean"
+                    },
+                    "itc_reason": {
+                        "type": [
+                            "string",
+                            "null"
+                        ]
+                    },
+                    "reverse_charge": {
+                        "type": "boolean"
+                    }
+                },
+                "required": [
+                    "doc_date",
+                    "doc_number",
+                    "doc_type",
+                    "id",
+                    "itc_available",
+                    "itc_reason",
+                    "original_number",
+                    "reverse_charge",
+                    "section",
+                    "tax",
+                    "taxable_value"
+                ]
+            },
+            "PortalDocDocTypeEnum": {
+                "enum": [
+                    "INVOICE",
+                    "CREDIT_NOTE",
+                    "DEBIT_NOTE"
+                ],
+                "type": "string",
+                "description": "* `INVOICE` - INVOICE\n* `CREDIT_NOTE` - CREDIT_NOTE\n* `DEBIT_NOTE` - DEBIT_NOTE"
+            },
             "PortalDocument": {
                 "type": "object",
                 "properties": {
@@ -16695,6 +17041,149 @@
                     "totals"
                 ]
             },
+            "ReconRow": {
+                "type": "object",
+                "properties": {
+                    "status": {
+                        "$ref": "#/components/schemas/ReconRowStatusEnum"
+                    },
+                    "supplier_gstin": {
+                        "type": "string"
+                    },
+                    "supplier_name": {
+                        "type": "string"
+                    },
+                    "portal": {
+                        "oneOf": [
+                            {
+                                "$ref": "#/components/schemas/PortalDoc"
+                            },
+                            {
+                                "type": "null"
+                            }
+                        ],
+                        "description": "As in the GSTR-2B"
+                    },
+                    "books": {
+                        "oneOf": [
+                            {
+                                "$ref": "#/components/schemas/BookDoc"
+                            },
+                            {
+                                "type": "null"
+                            }
+                        ],
+                        "description": "As in our books"
+                    },
+                    "taxable_difference": {
+                        "type": "string",
+                        "format": "decimal",
+                        "pattern": "^-?\\d{0,12}(?:\\.\\d{0,2})?$",
+                        "description": "2B less books"
+                    },
+                    "tax_difference": {
+                        "type": "string",
+                        "format": "decimal",
+                        "pattern": "^-?\\d{0,12}(?:\\.\\d{0,2})?$",
+                        "description": "2B less books"
+                    },
+                    "note": {
+                        "type": "string"
+                    }
+                },
+                "required": [
+                    "books",
+                    "note",
+                    "portal",
+                    "status",
+                    "supplier_gstin",
+                    "supplier_name",
+                    "tax_difference",
+                    "taxable_difference"
+                ]
+            },
+            "ReconRowStatusEnum": {
+                "enum": [
+                    "MATCHED",
+                    "AMOUNTS_DIFFER",
+                    "NOT_IN_BOOKS",
+                    "NOT_IN_2B"
+                ],
+                "type": "string",
+                "description": "* `MATCHED` - MATCHED\n* `AMOUNTS_DIFFER` - AMOUNTS_DIFFER\n* `NOT_IN_BOOKS` - NOT_IN_BOOKS\n* `NOT_IN_2B` - NOT_IN_2B"
+            },
+            "ReconSummary": {
+                "type": "object",
+                "properties": {
+                    "matched": {
+                        "type": "integer"
+                    },
+                    "amounts_differ": {
+                        "type": "integer"
+                    },
+                    "not_in_books": {
+                        "type": "integer"
+                    },
+                    "not_in_2b": {
+                        "type": "integer"
+                    },
+                    "itc_in_2b": {
+                        "type": "string",
+                        "format": "decimal",
+                        "pattern": "^-?\\d{0,12}(?:\\.\\d{0,2})?$",
+                        "description": "Available ITC the portal shows, credit notes taken off"
+                    },
+                    "itc_matched": {
+                        "type": "string",
+                        "format": "decimal",
+                        "pattern": "^-?\\d{0,12}(?:\\.\\d{0,2})?$"
+                    },
+                    "itc_not_in_books": {
+                        "type": "string",
+                        "format": "decimal",
+                        "pattern": "^-?\\d{0,12}(?:\\.\\d{0,2})?$",
+                        "description": "In the 2B but not in our books: record the bills"
+                    },
+                    "itc_at_risk": {
+                        "type": "string",
+                        "format": "decimal",
+                        "pattern": "^-?\\d{0,12}(?:\\.\\d{0,2})?$",
+                        "description": "Claimed in our books, not in the 2B: ask the supplier"
+                    }
+                },
+                "required": [
+                    "amounts_differ",
+                    "itc_at_risk",
+                    "itc_in_2b",
+                    "itc_matched",
+                    "itc_not_in_books",
+                    "matched",
+                    "not_in_2b",
+                    "not_in_books"
+                ]
+            },
+            "Reconciliation": {
+                "type": "object",
+                "properties": {
+                    "gst_return": {
+                        "$ref": "#/components/schemas/Gstr2bReturn"
+                    },
+                    "summary": {
+                        "$ref": "#/components/schemas/ReconSummary"
+                    },
+                    "rows": {
+                        "type": "array",
+                        "items": {
+                            "$ref": "#/components/schemas/ReconRow"
+                        }
+                    }
+                },
+                "required": [
+                    "gst_return",
+                    "rows",
+                    "summary"
+                ]
+            },
             "RecordFromLine": {
                 "type": "object",
                 "properties": {
@@ -16750,6 +17239,7 @@
                     "expenses",
                     "exports",
                     "gst_registrations",
+                    "gstr2b_returns",
                     "memberships",
                     "parties",
                     "payment_reminders",
@@ -16766,7 +17256,7 @@
                     "work_orders"
                 ],
                 "type": "string",
-                "description": "* `boq_items` - boq_items\n* `catalog_item_variants` - catalog_item_variants\n* `catalog_items` - catalog_items\n* `document_emails` - document_emails\n* `document_series` - document_series\n* `document_templates` - document_templates\n* `documents` - documents\n* `email_invitations` - email_invitations\n* `expenses` - expenses\n* `exports` - exports\n* `gst_registrations` - gst_registrations\n* `memberships` - memberships\n* `parties` - parties\n* `payment_reminders` - payment_reminders\n* `payments` - payments\n* `print_settings` - print_settings\n* `projects` - projects\n* `retention_releases` - retention_releases\n* `tally_settings` - tally_settings\n* `tds_certificates` - tds_certificates\n* `tenants` - tenants\n* `vendor_bills` - vendor_bills\n* `vendor_payments` - vendor_payments\n* `work_order_items` - work_order_items\n* `work_orders` - work_orders"
+                "description": "* `boq_items` - boq_items\n* `catalog_item_variants` - catalog_item_variants\n* `catalog_items` - catalog_items\n* `document_emails` - document_emails\n* `document_series` - document_series\n* `document_templates` - document_templates\n* `documents` - documents\n* `email_invitations` - email_invitations\n* `expenses` - expenses\n* `exports` - exports\n* `gst_registrations` - gst_registrations\n* `gstr2b_returns` - gstr2b_returns\n* `memberships` - memberships\n* `parties` - parties\n* `payment_reminders` - payment_reminders\n* `payments` - payments\n* `print_settings` - print_settings\n* `projects` - projects\n* `retention_releases` - retention_releases\n* `tally_settings` - tally_settings\n* `tds_certificates` - tds_certificates\n* `tenants` - tenants\n* `vendor_bills` - vendor_bills\n* `vendor_payments` - vendor_payments\n* `work_order_items` - work_order_items\n* `work_orders` - work_orders"
             },
             "RecoveryCodes": {
                 "type": "object",
@@ -19769,6 +20259,19 @@
                     "round_off",
                     "sgst",
                     "subtotal"
+                ]
+            },
+            "Upload": {
+                "type": "object",
+                "properties": {
+                    "file": {
+                        "type": "string",
+                        "format": "uri",
+                        "description": "GSTR-2B as downloaded from the GST portal (JSON), at most 20 MB"
+                    }
+                },
+                "required": [
+                    "file"
                 ]
             },
             "UploadStart": {

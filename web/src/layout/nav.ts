@@ -17,6 +17,7 @@ import {
   Landmark,
   LayoutDashboard,
   LayoutTemplate,
+  ListChecks,
   Package,
   Printer,
   Receipt,
@@ -128,6 +129,13 @@ export const GROUPS: { title: string; items: NavEntry[] }[] = [
         icon: BarChart3,
         action: "reports.view",
         keywords: "gst gstr receivables outstanding",
+      },
+      {
+        to: "/gstr2b",
+        label: "GSTR-2B check",
+        icon: ListChecks,
+        action: "reports.view",
+        keywords: "gst itc input tax credit 2b reconcile reconciliation purchase",
       },
       {
         to: "/cash-flow",
