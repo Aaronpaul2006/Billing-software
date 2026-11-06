@@ -261,7 +261,7 @@ function staffPages(ids) {
       ...p("gstr2b", "GSTR-2B check", "/gstr2b"),
       action: async (page) => {
         const sample = path.join(path.dirname(fileURLToPath(import.meta.url)), "samples", "gstr2b.json");
-        await page.getByLabel("Upload a GSTR-2B (JSON)").setInputFiles(sample);
+        await page.getByLabel("Upload a GSTR-2B (JSON or Excel)").setInputFiles(sample);
         await page.getByRole("heading", { name: "Oct 2026" }).waitFor();
       },
     },

@@ -910,13 +910,13 @@ after retention, plus released retention still to pay.
 
 ### GSTR-2B reconciliation (Part B)
 
-Upload the GSTR-2B JSON downloaded from the GST portal (Returns → GSTR-2B →
-Download → JSON) and compare it with the books. Upload: `payments.record`;
+Upload the GSTR-2B downloaded from the GST portal (Returns → GSTR-2B →
+Download, JSON or Excel) and compare it with the books. Upload: `payments.record`;
 reading: `reports.view` (so a CA with the Viewer role can check it).
 
 | Method & path | Notes |
 |---|---|
-| `GET/POST /gstr2b-returns` | POST `multipart/form-data` `file` (at most 20 MB) → `201`. Read: B2B and CDNR (and amendments), per document supplier GSTIN and name, number, date, value before GST, IGST / CGST / SGST / cess, ITC available (and why not), reverse charge; other sections are left out. The file must be for one of our GSTINs (`422 other_gstin`); not a 2B: `422 not_gstr2b`. The same registration and month uploaded again replaces the old one. GET lists the months uploaded, newest first |
+| `GET/POST /gstr2b-returns` | POST `multipart/form-data` `file` (JSON, or the Excel download: its Read me sheet gives the GSTIN and tax period, the B2B, B2BA, B2B-CDNR and B2B-CDNRA sheets the documents, columns found by name; at most 20 MB) → `201`. Read: B2B and CDNR (and amendments), per document supplier GSTIN and name, number, date, value before GST, IGST / CGST / SGST / cess, ITC available (and why not), reverse charge; other sections are left out. The file must be for one of our GSTINs (`422 other_gstin`); not a 2B: `422 not_gstr2b`. The same registration and month uploaded again replaces the old one. GET lists the months uploaded, newest first |
 | `GET /gstr2b-returns/{id}/reconciliation?status=` | Worked out now against recorded vendor bills and expenses with GST from a supplier whose GSTIN we have: same supplier and number (read loosely: case, spaces, "/ - .", leading zeros do not count), else the same value and tax to the rupee within 3 days (`note` says the numbers differ). `rows`: `MATCHED`, `AMOUNTS_DIFFER` (`taxable_difference` / `tax_difference`, 2B less books), `NOT_IN_BOOKS` (record the bill; credit notes always), `NOT_IN_2B` (in the books, dated in the 2B's month, not reported by the supplier); each with `portal` and / or `books`. `summary`: the four counts, `itc_in_2b` (available ITC, credit notes taken off), `itc_matched`, `itc_not_in_books`, `itc_at_risk` (claimed in the books, not in the 2B) |
 
 ### Notifications (Part B)

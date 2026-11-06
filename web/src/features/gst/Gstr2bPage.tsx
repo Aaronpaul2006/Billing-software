@@ -202,11 +202,11 @@ export function Gstr2bPage() {
         <CardContent className="grid gap-4 @2xl:grid-cols-2">
           {can(role, "payments.record") && (
             <div>
-              <Label htmlFor="gstr2b-file">Upload a GSTR-2B (JSON)</Label>
+              <Label htmlFor="gstr2b-file">Upload a GSTR-2B (JSON or Excel)</Label>
               <Input
                 id="gstr2b-file"
                 type="file"
-                accept=".json,application/json"
+                accept=".json,.xlsx,application/json,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
                 className="mt-1"
                 onChange={(e) => {
                   const f = e.target.files?.[0];
@@ -215,8 +215,8 @@ export function Gstr2bPage() {
                 }}
               />
               <p className="text-help text-muted-foreground mt-1">
-                On the GST portal: Returns → GSTR-2B → choose the month → Download → JSON. A month
-                uploaded again replaces the old one.
+                On the GST portal: Returns → GSTR-2B → choose the month → Download (JSON or Excel).
+                A month uploaded again replaces the old one.
               </p>
               {upload.isPending && <p className="mt-2 text-sm">Reading the file…</p>}
               {upload.error && (

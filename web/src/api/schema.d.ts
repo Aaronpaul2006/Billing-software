@@ -7650,7 +7650,7 @@ export interface components {
         Upload: {
             /**
              * Format: uri
-             * @description GSTR-2B as downloaded from the GST portal (JSON), at most 20 MB
+             * @description GSTR-2B as downloaded from the GST portal (JSON or Excel), at most 20 MB
              */
             file: string;
         };

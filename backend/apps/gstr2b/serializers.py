@@ -11,7 +11,7 @@ STATUSES = ["MATCHED", "AMOUNTS_DIFFER", "NOT_IN_BOOKS", "NOT_IN_2B"]
 
 class UploadSerializer(serializers.Serializer[Any]):
     file = serializers.FileField(
-        help_text="GSTR-2B as downloaded from the GST portal (JSON), at most 20 MB"
+        help_text="GSTR-2B as downloaded from the GST portal (JSON or Excel), at most 20 MB"
     )
 
 

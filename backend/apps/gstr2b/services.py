@@ -9,7 +9,7 @@ from apps.core.queries import get_or_404
 from apps.core.tenancy import Principal
 from apps.tenants.models import GstRegistration
 
-from . import reader
+from . import reader, reader_xlsx
 from .models import Gstr2bLine, Gstr2bReturn
 
 UPLOAD = "payments.record"
@@ -17,7 +17,8 @@ UPLOAD = "payments.record"
 
 def upload(principal: Principal, data: bytes, file_name: str) -> Gstr2bReturn:
     require(principal, UPLOAD)
-    parsed = reader.read(data)
+    # the portal's Excel download is a zip (PK...); its JSON starts with {
+    parsed = reader_xlsx.read(data) if data[:2] == b"PK" else reader.read(data)
     registration = GstRegistration.objects.filter(gstin=parsed.gstin).first()
     if registration is None:
         raise Invalid(

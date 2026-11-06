@@ -136,7 +136,7 @@ describe("GSTR-2B check (Part B)", () => {
     renderSignedIn("/gstr2b");
     expect(await screen.findByText(/No GSTR-2B uploaded yet/)).toBeInTheDocument();
     await user.upload(
-      screen.getByLabelText("Upload a GSTR-2B (JSON)"),
+      screen.getByLabelText("Upload a GSTR-2B (JSON or Excel)"),
       new File(["{}"], "2b.json", { type: "application/json" }),
     );
     expect(await screen.findByText(/which is not one of yours/)).toBeInTheDocument();
