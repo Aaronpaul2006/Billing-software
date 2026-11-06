@@ -1,0 +1,12 @@
+{
+  "_about": "TDS we deduct on vendor bills (Part B). Data, not code: change the rates and limits here when the law changes. Rates are percent of the bill's value before GST.",
+  "194C": {
+    "title": "Payments to contractors and subcontractors",
+    "categories": ["SUBCONTRACT", "LABOUR", "TRANSPORT"],
+    "rate_individual_or_huf": "1.00",
+    "rate_other": "2.00",
+    "rate_without_pan": "20.00",
+    "single_bill_limit": "30000.00",
+    "year_limit": "100000.00"
+  }
+}

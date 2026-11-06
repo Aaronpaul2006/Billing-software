@@ -5961,6 +5961,32 @@
                 }
             }
         },
+        "/api/v1/reports/payables": {
+            "get": {
+                "operationId": "reports_payables_retrieve",
+                "description": "What we owe each vendor today, by how long it is past due (Part B).",
+                "tags": [
+                    "reports"
+                ],
+                "security": [
+                    {
+                        "bearerAuth": []
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/Payables"
+                                }
+                            }
+                        },
+                        "description": ""
+                    }
+                }
+            }
+        },
         "/api/v1/reports/projects": {
             "get": {
                 "operationId": "reports_projects_list",
@@ -6854,6 +6880,624 @@
                             "application/json": {
                                 "schema": {
                                     "$ref": "#/components/schemas/TallySettings"
+                                }
+                            }
+                        },
+                        "description": ""
+                    }
+                }
+            }
+        },
+        "/api/v1/vendor-bills": {
+            "get": {
+                "operationId": "vendor_bills_list",
+                "description": "Permission by action name (docs/01-architecture.md §3): `read_action`\nfor GET/HEAD/OPTIONS, `write_action` for everything else. Generic, so list\nendpoints get pagination and filtering from the DRF defaults.",
+                "parameters": [
+                    {
+                        "in": "query",
+                        "name": "bill_date_from",
+                        "schema": {
+                            "type": "string",
+                            "format": "date"
+                        }
+                    },
+                    {
+                        "in": "query",
+                        "name": "bill_date_to",
+                        "schema": {
+                            "type": "string",
+                            "format": "date"
+                        }
+                    },
+                    {
+                        "in": "query",
+                        "name": "category",
+                        "schema": {
+                            "type": "string",
+                            "enum": [
+                                "EQUIPMENT",
+                                "LABOUR",
+                                "MATERIAL",
+                                "OFFICE",
+                                "OTHER",
+                                "SITE_OVERHEAD",
+                                "SUBCONTRACT",
+                                "TRANSPORT"
+                            ]
+                        },
+                        "description": "* `MATERIAL` - Material\n* `LABOUR` - Labour\n* `SUBCONTRACT` - Subcontract\n* `EQUIPMENT` - Equipment\n* `TRANSPORT` - Transport\n* `SITE_OVERHEAD` - Site Overhead\n* `OFFICE` - Office\n* `OTHER` - Other"
+                    },
+                    {
+                        "name": "cursor",
+                        "required": false,
+                        "in": "query",
+                        "description": "The pagination cursor value.",
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    {
+                        "name": "limit",
+                        "required": false,
+                        "in": "query",
+                        "description": "Number of results to return per page.",
+                        "schema": {
+                            "type": "integer"
+                        }
+                    },
+                    {
+                        "name": "ordering",
+                        "required": false,
+                        "in": "query",
+                        "description": "Which field to use when ordering the results.",
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    {
+                        "in": "query",
+                        "name": "payment_state",
+                        "schema": {
+                            "type": "string",
+                            "enum": [
+                                "OPEN",
+                                "PAID",
+                                "PARTIAL",
+                                "UNPAID"
+                            ]
+                        },
+                        "description": "* `UNPAID` - UNPAID\n* `PARTIAL` - PARTIAL\n* `PAID` - PAID\n* `OPEN` - OPEN"
+                    },
+                    {
+                        "in": "query",
+                        "name": "project_id",
+                        "schema": {
+                            "type": "string",
+                            "format": "uuid"
+                        }
+                    },
+                    {
+                        "in": "query",
+                        "name": "q",
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    {
+                        "in": "query",
+                        "name": "status",
+                        "schema": {
+                            "type": "string",
+                            "enum": [
+                                "RECORDED",
+                                "VOIDED"
+                            ]
+                        },
+                        "description": "* `RECORDED` - Recorded\n* `VOIDED` - Voided"
+                    },
+                    {
+                        "in": "query",
+                        "name": "vendor_party_id",
+                        "schema": {
+                            "type": "string",
+                            "format": "uuid"
+                        }
+                    }
+                ],
+                "tags": [
+                    "payables"
+                ],
+                "security": [
+                    {
+                        "bearerAuth": []
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/PaginatedVendorBillList"
+                                }
+                            }
+                        },
+                        "description": ""
+                    }
+                }
+            },
+            "post": {
+                "operationId": "vendor_bills_create",
+                "description": "Permission by action name (docs/01-architecture.md §3): `read_action`\nfor GET/HEAD/OPTIONS, `write_action` for everything else. Generic, so list\nendpoints get pagination and filtering from the DRF defaults.",
+                "tags": [
+                    "payables"
+                ],
+                "requestBody": {
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/VendorBillWrite"
+                            }
+                        }
+                    },
+                    "required": true
+                },
+                "security": [
+                    {
+                        "bearerAuth": []
+                    }
+                ],
+                "responses": {
+                    "201": {
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/VendorBill"
+                                }
+                            }
+                        },
+                        "description": ""
+                    }
+                }
+            }
+        },
+        "/api/v1/vendor-bills/{bill_id}": {
+            "get": {
+                "operationId": "vendor_bills_retrieve",
+                "description": "Permission by action name (docs/01-architecture.md §3): `read_action`\nfor GET/HEAD/OPTIONS, `write_action` for everything else. Generic, so list\nendpoints get pagination and filtering from the DRF defaults.",
+                "parameters": [
+                    {
+                        "in": "path",
+                        "name": "bill_id",
+                        "schema": {
+                            "type": "string",
+                            "format": "uuid"
+                        },
+                        "required": true
+                    }
+                ],
+                "tags": [
+                    "payables"
+                ],
+                "security": [
+                    {
+                        "bearerAuth": []
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/VendorBill"
+                                }
+                            }
+                        },
+                        "description": ""
+                    }
+                }
+            },
+            "patch": {
+                "operationId": "vendor_bills_partial_update",
+                "description": "Permission by action name (docs/01-architecture.md §3): `read_action`\nfor GET/HEAD/OPTIONS, `write_action` for everything else. Generic, so list\nendpoints get pagination and filtering from the DRF defaults.",
+                "parameters": [
+                    {
+                        "in": "path",
+                        "name": "bill_id",
+                        "schema": {
+                            "type": "string",
+                            "format": "uuid"
+                        },
+                        "required": true
+                    }
+                ],
+                "tags": [
+                    "payables"
+                ],
+                "requestBody": {
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/PatchedVendorBillWrite"
+                            }
+                        }
+                    }
+                },
+                "security": [
+                    {
+                        "bearerAuth": []
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/VendorBill"
+                                }
+                            }
+                        },
+                        "description": ""
+                    }
+                }
+            }
+        },
+        "/api/v1/vendor-bills/{bill_id}/void": {
+            "post": {
+                "operationId": "vendor_bills_void_create",
+                "description": "Permission by action name (docs/01-architecture.md §3): `read_action`\nfor GET/HEAD/OPTIONS, `write_action` for everything else. Generic, so list\nendpoints get pagination and filtering from the DRF defaults.",
+                "parameters": [
+                    {
+                        "in": "path",
+                        "name": "bill_id",
+                        "schema": {
+                            "type": "string",
+                            "format": "uuid"
+                        },
+                        "required": true
+                    }
+                ],
+                "tags": [
+                    "payables"
+                ],
+                "requestBody": {
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/Void"
+                            }
+                        }
+                    },
+                    "required": true
+                },
+                "security": [
+                    {
+                        "bearerAuth": []
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/VendorBill"
+                                }
+                            }
+                        },
+                        "description": ""
+                    }
+                }
+            }
+        },
+        "/api/v1/vendor-bills/tds-suggestion": {
+            "get": {
+                "operationId": "vendor_bills_tds_suggestion_retrieve",
+                "description": "What TDS to deduct on a new vendor bill, and why (rates: tds_rates.json).",
+                "parameters": [
+                    {
+                        "in": "query",
+                        "name": "bill_date",
+                        "schema": {
+                            "type": "string",
+                            "format": "date"
+                        },
+                        "required": true
+                    },
+                    {
+                        "in": "query",
+                        "name": "category",
+                        "schema": {
+                            "enum": [
+                                "MATERIAL",
+                                "LABOUR",
+                                "SUBCONTRACT",
+                                "EQUIPMENT",
+                                "TRANSPORT",
+                                "SITE_OVERHEAD",
+                                "OFFICE",
+                                "OTHER"
+                            ],
+                            "type": "string",
+                            "minLength": 1
+                        },
+                        "description": "* `MATERIAL` - Material\n* `LABOUR` - Labour\n* `SUBCONTRACT` - Subcontract\n* `EQUIPMENT` - Equipment\n* `TRANSPORT` - Transport\n* `SITE_OVERHEAD` - Site Overhead\n* `OFFICE` - Office\n* `OTHER` - Other",
+                        "required": true
+                    },
+                    {
+                        "in": "query",
+                        "name": "taxable_value",
+                        "schema": {
+                            "type": "string",
+                            "format": "decimal",
+                            "pattern": "^-?\\d{0,12}(?:\\.\\d{0,2})?$"
+                        },
+                        "required": true
+                    },
+                    {
+                        "in": "query",
+                        "name": "vendor_bill_id",
+                        "schema": {
+                            "type": "string",
+                            "format": "uuid"
+                        },
+                        "description": "When editing: leave this bill out of the year's total"
+                    },
+                    {
+                        "in": "query",
+                        "name": "vendor_party_id",
+                        "schema": {
+                            "type": "string",
+                            "format": "uuid"
+                        },
+                        "required": true
+                    }
+                ],
+                "tags": [
+                    "payables"
+                ],
+                "security": [
+                    {
+                        "bearerAuth": []
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/TdsSuggestion"
+                                }
+                            }
+                        },
+                        "description": ""
+                    }
+                }
+            }
+        },
+        "/api/v1/vendor-payments": {
+            "get": {
+                "operationId": "vendor_payments_list",
+                "description": "Permission by action name (docs/01-architecture.md §3): `read_action`\nfor GET/HEAD/OPTIONS, `write_action` for everything else. Generic, so list\nendpoints get pagination and filtering from the DRF defaults.",
+                "parameters": [
+                    {
+                        "name": "cursor",
+                        "required": false,
+                        "in": "query",
+                        "description": "The pagination cursor value.",
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    {
+                        "name": "limit",
+                        "required": false,
+                        "in": "query",
+                        "description": "Number of results to return per page.",
+                        "schema": {
+                            "type": "integer"
+                        }
+                    },
+                    {
+                        "in": "query",
+                        "name": "mode",
+                        "schema": {
+                            "type": "string",
+                            "enum": [
+                                "BANK_TRANSFER",
+                                "CARD",
+                                "CASH",
+                                "CHEQUE",
+                                "OTHER",
+                                "UPI"
+                            ]
+                        },
+                        "description": "* `BANK_TRANSFER` - Bank Transfer\n* `UPI` - Upi\n* `CHEQUE` - Cheque\n* `CASH` - Cash\n* `CARD` - Card\n* `OTHER` - Other"
+                    },
+                    {
+                        "name": "ordering",
+                        "required": false,
+                        "in": "query",
+                        "description": "Which field to use when ordering the results.",
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    {
+                        "in": "query",
+                        "name": "payment_date_from",
+                        "schema": {
+                            "type": "string",
+                            "format": "date"
+                        }
+                    },
+                    {
+                        "in": "query",
+                        "name": "payment_date_to",
+                        "schema": {
+                            "type": "string",
+                            "format": "date"
+                        }
+                    },
+                    {
+                        "in": "query",
+                        "name": "project_id",
+                        "schema": {
+                            "type": "string",
+                            "format": "uuid"
+                        }
+                    },
+                    {
+                        "in": "query",
+                        "name": "status",
+                        "schema": {
+                            "type": "string",
+                            "enum": [
+                                "RECORDED",
+                                "VOIDED"
+                            ]
+                        },
+                        "description": "* `RECORDED` - Recorded\n* `VOIDED` - Voided"
+                    },
+                    {
+                        "in": "query",
+                        "name": "vendor_party_id",
+                        "schema": {
+                            "type": "string",
+                            "format": "uuid"
+                        }
+                    }
+                ],
+                "tags": [
+                    "payables"
+                ],
+                "security": [
+                    {
+                        "bearerAuth": []
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/PaginatedVendorPaymentList"
+                                }
+                            }
+                        },
+                        "description": ""
+                    }
+                }
+            },
+            "post": {
+                "operationId": "vendor_payments_create",
+                "description": "Permission by action name (docs/01-architecture.md §3): `read_action`\nfor GET/HEAD/OPTIONS, `write_action` for everything else. Generic, so list\nendpoints get pagination and filtering from the DRF defaults.",
+                "tags": [
+                    "payables"
+                ],
+                "requestBody": {
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/VendorPaymentCreate"
+                            }
+                        }
+                    },
+                    "required": true
+                },
+                "security": [
+                    {
+                        "bearerAuth": []
+                    }
+                ],
+                "responses": {
+                    "201": {
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/VendorPayment"
+                                }
+                            }
+                        },
+                        "description": ""
+                    }
+                }
+            }
+        },
+        "/api/v1/vendor-payments/{payment_id}": {
+            "get": {
+                "operationId": "vendor_payments_retrieve",
+                "description": "Permission by action name (docs/01-architecture.md §3): `read_action`\nfor GET/HEAD/OPTIONS, `write_action` for everything else. Generic, so list\nendpoints get pagination and filtering from the DRF defaults.",
+                "parameters": [
+                    {
+                        "in": "path",
+                        "name": "payment_id",
+                        "schema": {
+                            "type": "string",
+                            "format": "uuid"
+                        },
+                        "required": true
+                    }
+                ],
+                "tags": [
+                    "payables"
+                ],
+                "security": [
+                    {
+                        "bearerAuth": []
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/VendorPayment"
+                                }
+                            }
+                        },
+                        "description": ""
+                    }
+                }
+            }
+        },
+        "/api/v1/vendor-payments/{payment_id}/void": {
+            "post": {
+                "operationId": "vendor_payments_void_create",
+                "description": "Permission by action name (docs/01-architecture.md §3): `read_action`\nfor GET/HEAD/OPTIONS, `write_action` for everything else. Generic, so list\nendpoints get pagination and filtering from the DRF defaults.",
+                "parameters": [
+                    {
+                        "in": "path",
+                        "name": "payment_id",
+                        "schema": {
+                            "type": "string",
+                            "format": "uuid"
+                        },
+                        "required": true
+                    }
+                ],
+                "tags": [
+                    "payables"
+                ],
+                "requestBody": {
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/Void"
+                            }
+                        }
+                    },
+                    "required": true
+                },
+                "security": [
+                    {
+                        "bearerAuth": []
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/VendorPayment"
                                 }
                             }
                         },
@@ -11250,6 +11894,50 @@
                     }
                 }
             },
+            "PaginatedVendorBillList": {
+                "type": "object",
+                "required": [
+                    "results",
+                    "next_cursor"
+                ],
+                "properties": {
+                    "results": {
+                        "type": "array",
+                        "items": {
+                            "$ref": "#/components/schemas/VendorBill"
+                        }
+                    },
+                    "next_cursor": {
+                        "type": [
+                            "string",
+                            "null"
+                        ],
+                        "description": "Pass as ?cursor="
+                    }
+                }
+            },
+            "PaginatedVendorPaymentList": {
+                "type": "object",
+                "required": [
+                    "results",
+                    "next_cursor"
+                ],
+                "properties": {
+                    "results": {
+                        "type": "array",
+                        "items": {
+                            "$ref": "#/components/schemas/VendorPayment"
+                        }
+                    },
+                    "next_cursor": {
+                        "type": [
+                            "string",
+                            "null"
+                        ],
+                        "description": "Pass as ?cursor="
+                    }
+                }
+            },
             "PaidNow": {
                 "type": "object",
                 "description": "Money received with the bill (cash, UPI at the counter), recorded as the bill is issued.",
@@ -12634,6 +13322,169 @@
                         "$ref": "#/components/schemas/TimezoneEnum"
                     }
                 }
+            },
+            "PatchedVendorBillWrite": {
+                "type": "object",
+                "properties": {
+                    "vendor_party_id": {
+                        "type": "string",
+                        "format": "uuid"
+                    },
+                    "project_id": {
+                        "type": [
+                            "string",
+                            "null"
+                        ],
+                        "format": "uuid"
+                    },
+                    "bill_number": {
+                        "type": "string",
+                        "description": "The vendor's own number",
+                        "maxLength": 50
+                    },
+                    "bill_date": {
+                        "type": "string",
+                        "format": "date"
+                    },
+                    "due_date": {
+                        "type": [
+                            "string",
+                            "null"
+                        ],
+                        "format": "date"
+                    },
+                    "category": {
+                        "$ref": "#/components/schemas/ExpenseCategoryEnum"
+                    },
+                    "description": {
+                        "type": "string",
+                        "maxLength": 1000
+                    },
+                    "taxable_value": {
+                        "type": "string",
+                        "format": "decimal",
+                        "pattern": "^-?\\d{0,12}(?:\\.\\d{0,2})?$",
+                        "description": "Before GST"
+                    },
+                    "gst_amount": {
+                        "type": "string",
+                        "format": "decimal",
+                        "pattern": "^-?\\d{0,12}(?:\\.\\d{0,2})?$"
+                    },
+                    "itc_eligible": {
+                        "type": "boolean"
+                    },
+                    "tds_section": {
+                        "type": [
+                            "string",
+                            "null"
+                        ],
+                        "description": "e.g. 194C; empty for no TDS",
+                        "pattern": "^19[0-9]{1,2}[A-Z]{0,3}$"
+                    },
+                    "tds_rate": {
+                        "type": [
+                            "string",
+                            "null"
+                        ],
+                        "format": "decimal",
+                        "pattern": "^-?\\d{0,3}(?:\\.\\d{0,2})?$",
+                        "description": "Percent of the value before GST; the TDS amount is worked out (to the rupee)"
+                    },
+                    "attachment_id": {
+                        "type": [
+                            "string",
+                            "null"
+                        ],
+                        "format": "uuid"
+                    },
+                    "notes": {
+                        "type": [
+                            "string",
+                            "null"
+                        ],
+                        "maxLength": 2000
+                    }
+                }
+            },
+            "Payable": {
+                "type": "object",
+                "properties": {
+                    "party_id": {
+                        "type": "string",
+                        "format": "uuid"
+                    },
+                    "display_name": {
+                        "type": "string"
+                    },
+                    "bill_count": {
+                        "type": "integer"
+                    },
+                    "not_due": {
+                        "type": "string",
+                        "format": "decimal",
+                        "pattern": "^-?\\d{0,12}(?:\\.\\d{0,2})?$"
+                    },
+                    "days_1_30": {
+                        "type": "string",
+                        "format": "decimal",
+                        "pattern": "^-?\\d{0,12}(?:\\.\\d{0,2})?$"
+                    },
+                    "days_31_60": {
+                        "type": "string",
+                        "format": "decimal",
+                        "pattern": "^-?\\d{0,12}(?:\\.\\d{0,2})?$"
+                    },
+                    "days_61_90": {
+                        "type": "string",
+                        "format": "decimal",
+                        "pattern": "^-?\\d{0,12}(?:\\.\\d{0,2})?$"
+                    },
+                    "days_90_plus": {
+                        "type": "string",
+                        "format": "decimal",
+                        "pattern": "^-?\\d{0,12}(?:\\.\\d{0,2})?$"
+                    },
+                    "total": {
+                        "type": "string",
+                        "format": "decimal",
+                        "pattern": "^-?\\d{0,12}(?:\\.\\d{0,2})?$"
+                    }
+                },
+                "required": [
+                    "bill_count",
+                    "days_1_30",
+                    "days_31_60",
+                    "days_61_90",
+                    "days_90_plus",
+                    "display_name",
+                    "not_due",
+                    "party_id",
+                    "total"
+                ]
+            },
+            "Payables": {
+                "type": "object",
+                "properties": {
+                    "as_of": {
+                        "type": "string",
+                        "format": "date"
+                    },
+                    "results": {
+                        "type": "array",
+                        "items": {
+                            "$ref": "#/components/schemas/Payable"
+                        }
+                    },
+                    "totals": {
+                        "$ref": "#/components/schemas/Payable"
+                    }
+                },
+                "required": [
+                    "as_of",
+                    "results",
+                    "totals"
+                ]
             },
             "Payment": {
                 "type": "object",
@@ -15814,6 +16665,45 @@
                 "type": "string",
                 "description": "* `MATCHED` - MATCHED\n* `SHORT` - SHORT\n* `EXCESS` - EXCESS\n* `NOT_RECEIVED` - NOT_RECEIVED"
             },
+            "TdsSuggestion": {
+                "type": "object",
+                "properties": {
+                    "section": {
+                        "type": [
+                            "string",
+                            "null"
+                        ],
+                        "description": "Null: no TDS suggested"
+                    },
+                    "rate": {
+                        "type": "string",
+                        "format": "decimal",
+                        "pattern": "^-?\\d{0,3}(?:\\.\\d{0,2})?$"
+                    },
+                    "amount": {
+                        "type": "string",
+                        "format": "decimal",
+                        "pattern": "^-?\\d{0,12}(?:\\.\\d{0,2})?$"
+                    },
+                    "reason": {
+                        "type": "string",
+                        "description": "Why, in words"
+                    },
+                    "year_total": {
+                        "type": "string",
+                        "format": "decimal",
+                        "pattern": "^-?\\d{0,12}(?:\\.\\d{0,2})?$",
+                        "description": "The vendor's bills this financial year, before this one"
+                    }
+                },
+                "required": [
+                    "amount",
+                    "rate",
+                    "reason",
+                    "section",
+                    "year_total"
+                ]
+            },
             "TdsTotals": {
                 "type": "object",
                 "properties": {
@@ -16955,6 +17845,531 @@
                 },
                 "required": [
                     "party_id"
+                ]
+            },
+            "VendorAllocationIn": {
+                "type": "object",
+                "properties": {
+                    "vendor_bill_id": {
+                        "type": "string",
+                        "format": "uuid"
+                    },
+                    "amount": {
+                        "type": "string",
+                        "format": "decimal",
+                        "pattern": "^-?\\d{0,12}(?:\\.\\d{0,2})?$"
+                    }
+                },
+                "required": [
+                    "amount",
+                    "vendor_bill_id"
+                ]
+            },
+            "VendorAllocationOut": {
+                "type": "object",
+                "properties": {
+                    "id": {
+                        "type": "string",
+                        "format": "uuid",
+                        "readOnly": true
+                    },
+                    "vendor_bill_id": {
+                        "type": "string",
+                        "format": "uuid"
+                    },
+                    "bill_number": {
+                        "type": "string",
+                        "readOnly": true
+                    },
+                    "amount": {
+                        "type": "string",
+                        "format": "decimal",
+                        "pattern": "^-?\\d{0,12}(?:\\.\\d{0,2})?$"
+                    },
+                    "created_at": {
+                        "type": "string",
+                        "format": "date-time",
+                        "readOnly": true
+                    }
+                },
+                "required": [
+                    "amount",
+                    "bill_number",
+                    "created_at",
+                    "id",
+                    "vendor_bill_id"
+                ]
+            },
+            "VendorBill": {
+                "type": "object",
+                "properties": {
+                    "id": {
+                        "type": "string",
+                        "format": "uuid",
+                        "readOnly": true
+                    },
+                    "version": {
+                        "type": "integer",
+                        "readOnly": true
+                    },
+                    "vendor_party_id": {
+                        "type": "string",
+                        "format": "uuid"
+                    },
+                    "vendor_name": {
+                        "type": "string",
+                        "readOnly": true
+                    },
+                    "project_id": {
+                        "type": [
+                            "string",
+                            "null"
+                        ],
+                        "format": "uuid"
+                    },
+                    "project_name": {
+                        "type": [
+                            "string",
+                            "null"
+                        ],
+                        "readOnly": true
+                    },
+                    "bill_number": {
+                        "type": "string",
+                        "readOnly": true
+                    },
+                    "bill_date": {
+                        "type": "string",
+                        "format": "date",
+                        "readOnly": true
+                    },
+                    "due_date": {
+                        "type": [
+                            "string",
+                            "null"
+                        ],
+                        "format": "date",
+                        "readOnly": true
+                    },
+                    "category": {
+                        "allOf": [
+                            {
+                                "$ref": "#/components/schemas/ExpenseCategoryEnum"
+                            }
+                        ],
+                        "readOnly": true
+                    },
+                    "description": {
+                        "type": "string",
+                        "readOnly": true
+                    },
+                    "taxable_value": {
+                        "type": "string",
+                        "format": "decimal",
+                        "pattern": "^-?\\d{0,12}(?:\\.\\d{0,2})?$"
+                    },
+                    "gst_amount": {
+                        "type": "string",
+                        "format": "decimal",
+                        "pattern": "^-?\\d{0,12}(?:\\.\\d{0,2})?$"
+                    },
+                    "total_amount": {
+                        "type": "string",
+                        "format": "decimal",
+                        "pattern": "^-?\\d{0,12}(?:\\.\\d{0,2})?$"
+                    },
+                    "itc_eligible": {
+                        "type": "boolean",
+                        "readOnly": true
+                    },
+                    "tds_section": {
+                        "type": [
+                            "string",
+                            "null"
+                        ],
+                        "readOnly": true
+                    },
+                    "tds_rate": {
+                        "type": "string",
+                        "format": "decimal",
+                        "pattern": "^-?\\d{0,3}(?:\\.\\d{0,2})?$"
+                    },
+                    "tds_amount": {
+                        "type": "string",
+                        "format": "decimal",
+                        "pattern": "^-?\\d{0,12}(?:\\.\\d{0,2})?$"
+                    },
+                    "net_payable": {
+                        "type": "string",
+                        "format": "decimal",
+                        "pattern": "^-?\\d{0,12}(?:\\.\\d{0,2})?$",
+                        "description": "Total less the TDS we deduct: what we pay the vendor"
+                    },
+                    "amount_paid": {
+                        "type": "string",
+                        "format": "decimal",
+                        "pattern": "^-?\\d{0,12}(?:\\.\\d{0,2})?$"
+                    },
+                    "outstanding": {
+                        "type": "string",
+                        "readOnly": true
+                    },
+                    "attachment_id": {
+                        "type": [
+                            "string",
+                            "null"
+                        ],
+                        "format": "uuid"
+                    },
+                    "notes": {
+                        "type": [
+                            "string",
+                            "null"
+                        ],
+                        "readOnly": true
+                    },
+                    "status": {
+                        "allOf": [
+                            {
+                                "$ref": "#/components/schemas/RecordStatusEnum"
+                            }
+                        ],
+                        "readOnly": true
+                    },
+                    "voided_at": {
+                        "type": [
+                            "string",
+                            "null"
+                        ],
+                        "format": "date-time",
+                        "readOnly": true
+                    },
+                    "void_reason": {
+                        "type": [
+                            "string",
+                            "null"
+                        ],
+                        "readOnly": true
+                    },
+                    "created_at": {
+                        "type": "string",
+                        "format": "date-time",
+                        "readOnly": true
+                    },
+                    "updated_at": {
+                        "type": "string",
+                        "format": "date-time",
+                        "readOnly": true
+                    }
+                },
+                "required": [
+                    "amount_paid",
+                    "attachment_id",
+                    "bill_date",
+                    "bill_number",
+                    "category",
+                    "created_at",
+                    "description",
+                    "due_date",
+                    "gst_amount",
+                    "id",
+                    "itc_eligible",
+                    "net_payable",
+                    "notes",
+                    "outstanding",
+                    "project_id",
+                    "project_name",
+                    "status",
+                    "taxable_value",
+                    "tds_amount",
+                    "tds_rate",
+                    "tds_section",
+                    "total_amount",
+                    "updated_at",
+                    "vendor_name",
+                    "vendor_party_id",
+                    "version",
+                    "void_reason",
+                    "voided_at"
+                ]
+            },
+            "VendorBillWrite": {
+                "type": "object",
+                "properties": {
+                    "vendor_party_id": {
+                        "type": "string",
+                        "format": "uuid"
+                    },
+                    "project_id": {
+                        "type": [
+                            "string",
+                            "null"
+                        ],
+                        "format": "uuid"
+                    },
+                    "bill_number": {
+                        "type": "string",
+                        "description": "The vendor's own number",
+                        "maxLength": 50
+                    },
+                    "bill_date": {
+                        "type": "string",
+                        "format": "date"
+                    },
+                    "due_date": {
+                        "type": [
+                            "string",
+                            "null"
+                        ],
+                        "format": "date"
+                    },
+                    "category": {
+                        "$ref": "#/components/schemas/ExpenseCategoryEnum"
+                    },
+                    "description": {
+                        "type": "string",
+                        "maxLength": 1000
+                    },
+                    "taxable_value": {
+                        "type": "string",
+                        "format": "decimal",
+                        "pattern": "^-?\\d{0,12}(?:\\.\\d{0,2})?$",
+                        "description": "Before GST"
+                    },
+                    "gst_amount": {
+                        "type": "string",
+                        "format": "decimal",
+                        "pattern": "^-?\\d{0,12}(?:\\.\\d{0,2})?$"
+                    },
+                    "itc_eligible": {
+                        "type": "boolean"
+                    },
+                    "tds_section": {
+                        "type": [
+                            "string",
+                            "null"
+                        ],
+                        "description": "e.g. 194C; empty for no TDS",
+                        "pattern": "^19[0-9]{1,2}[A-Z]{0,3}$"
+                    },
+                    "tds_rate": {
+                        "type": [
+                            "string",
+                            "null"
+                        ],
+                        "format": "decimal",
+                        "pattern": "^-?\\d{0,3}(?:\\.\\d{0,2})?$",
+                        "description": "Percent of the value before GST; the TDS amount is worked out (to the rupee)"
+                    },
+                    "attachment_id": {
+                        "type": [
+                            "string",
+                            "null"
+                        ],
+                        "format": "uuid"
+                    },
+                    "notes": {
+                        "type": [
+                            "string",
+                            "null"
+                        ],
+                        "maxLength": 2000
+                    }
+                },
+                "required": [
+                    "bill_date",
+                    "bill_number",
+                    "category",
+                    "description",
+                    "taxable_value",
+                    "vendor_party_id"
+                ]
+            },
+            "VendorPayment": {
+                "type": "object",
+                "properties": {
+                    "id": {
+                        "type": "string",
+                        "format": "uuid",
+                        "readOnly": true
+                    },
+                    "version": {
+                        "type": "integer",
+                        "readOnly": true
+                    },
+                    "vendor_party_id": {
+                        "type": "string",
+                        "format": "uuid"
+                    },
+                    "vendor_name": {
+                        "type": "string",
+                        "readOnly": true
+                    },
+                    "project_id": {
+                        "type": [
+                            "string",
+                            "null"
+                        ],
+                        "format": "uuid"
+                    },
+                    "project_name": {
+                        "type": [
+                            "string",
+                            "null"
+                        ],
+                        "readOnly": true
+                    },
+                    "payment_date": {
+                        "type": "string",
+                        "format": "date",
+                        "readOnly": true
+                    },
+                    "amount": {
+                        "type": "string",
+                        "format": "decimal",
+                        "pattern": "^-?\\d{0,12}(?:\\.\\d{0,2})?$"
+                    },
+                    "mode": {
+                        "allOf": [
+                            {
+                                "$ref": "#/components/schemas/PaymentModeEnum"
+                            }
+                        ],
+                        "readOnly": true
+                    },
+                    "reference": {
+                        "type": [
+                            "string",
+                            "null"
+                        ],
+                        "readOnly": true
+                    },
+                    "notes": {
+                        "type": [
+                            "string",
+                            "null"
+                        ],
+                        "readOnly": true
+                    },
+                    "status": {
+                        "allOf": [
+                            {
+                                "$ref": "#/components/schemas/RecordStatusEnum"
+                            }
+                        ],
+                        "readOnly": true
+                    },
+                    "unallocated": {
+                        "type": "string",
+                        "readOnly": true
+                    },
+                    "allocations": {
+                        "type": "array",
+                        "items": {
+                            "$ref": "#/components/schemas/VendorAllocationOut"
+                        },
+                        "readOnly": true
+                    },
+                    "voided_at": {
+                        "type": [
+                            "string",
+                            "null"
+                        ],
+                        "format": "date-time",
+                        "readOnly": true
+                    },
+                    "void_reason": {
+                        "type": [
+                            "string",
+                            "null"
+                        ],
+                        "readOnly": true
+                    },
+                    "created_at": {
+                        "type": "string",
+                        "format": "date-time",
+                        "readOnly": true
+                    },
+                    "updated_at": {
+                        "type": "string",
+                        "format": "date-time",
+                        "readOnly": true
+                    }
+                },
+                "required": [
+                    "allocations",
+                    "amount",
+                    "created_at",
+                    "id",
+                    "mode",
+                    "notes",
+                    "payment_date",
+                    "project_id",
+                    "project_name",
+                    "reference",
+                    "status",
+                    "unallocated",
+                    "updated_at",
+                    "vendor_name",
+                    "vendor_party_id",
+                    "version",
+                    "void_reason",
+                    "voided_at"
+                ]
+            },
+            "VendorPaymentCreate": {
+                "type": "object",
+                "properties": {
+                    "vendor_party_id": {
+                        "type": "string",
+                        "format": "uuid"
+                    },
+                    "project_id": {
+                        "type": [
+                            "string",
+                            "null"
+                        ],
+                        "format": "uuid"
+                    },
+                    "payment_date": {
+                        "type": "string",
+                        "format": "date"
+                    },
+                    "amount": {
+                        "type": "string",
+                        "format": "decimal",
+                        "pattern": "^-?\\d{0,12}(?:\\.\\d{0,2})?$"
+                    },
+                    "mode": {
+                        "$ref": "#/components/schemas/PaymentModeEnum"
+                    },
+                    "reference": {
+                        "type": [
+                            "string",
+                            "null"
+                        ],
+                        "description": "UTR / cheque number",
+                        "maxLength": 100
+                    },
+                    "notes": {
+                        "type": [
+                            "string",
+                            "null"
+                        ],
+                        "maxLength": 2000
+                    },
+                    "allocations": {
+                        "type": "array",
+                        "items": {
+                            "$ref": "#/components/schemas/VendorAllocationIn"
+                        }
+                    }
+                },
+                "required": [
+                    "amount",
+                    "mode",
+                    "payment_date",
+                    "vendor_party_id"
                 ]
             },
             "VerifyEmail": {

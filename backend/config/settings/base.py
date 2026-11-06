@@ -282,6 +282,7 @@ SPECTACULAR_SETTINGS = {
         "DraftableDocTypeEnum": "apps.documents.services.drafts.DRAFTABLE_TYPES",
         "DocumentStatusEnum": "apps.documents.models.DocumentStatus",
         "ProjectStatusEnum": "apps.projects.models.ProjectStatus",
+        "ExpenseCategoryEnum": "apps.expenses.models.ExpenseCategory",  # expenses and vendor bills
         "TenantStatusEnum": "apps.tenants.models.TenantStatus",
         "MembershipStatusEnum": "apps.accounts.models.MembershipStatus",
         # payments and expenses share RECORDED / VOIDED

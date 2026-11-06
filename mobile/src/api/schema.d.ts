@@ -2119,6 +2119,23 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/reports/payables": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** @description What we owe each vendor today, by how long it is past due (Part B). */
+        get: operations["reports_payables_retrieve"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/reports/projects": {
         parameters: {
             query?: never;
@@ -2459,6 +2476,164 @@ export interface paths {
          *     owners and admins change them.
          */
         patch: operations["tenant_tally_settings_partial_update"];
+        trace?: never;
+    };
+    "/api/v1/vendor-bills": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * @description Permission by action name (docs/01-architecture.md §3): `read_action`
+         *     for GET/HEAD/OPTIONS, `write_action` for everything else. Generic, so list
+         *     endpoints get pagination and filtering from the DRF defaults.
+         */
+        get: operations["vendor_bills_list"];
+        put?: never;
+        /**
+         * @description Permission by action name (docs/01-architecture.md §3): `read_action`
+         *     for GET/HEAD/OPTIONS, `write_action` for everything else. Generic, so list
+         *     endpoints get pagination and filtering from the DRF defaults.
+         */
+        post: operations["vendor_bills_create"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/vendor-bills/{bill_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * @description Permission by action name (docs/01-architecture.md §3): `read_action`
+         *     for GET/HEAD/OPTIONS, `write_action` for everything else. Generic, so list
+         *     endpoints get pagination and filtering from the DRF defaults.
+         */
+        get: operations["vendor_bills_retrieve"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        /**
+         * @description Permission by action name (docs/01-architecture.md §3): `read_action`
+         *     for GET/HEAD/OPTIONS, `write_action` for everything else. Generic, so list
+         *     endpoints get pagination and filtering from the DRF defaults.
+         */
+        patch: operations["vendor_bills_partial_update"];
+        trace?: never;
+    };
+    "/api/v1/vendor-bills/{bill_id}/void": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * @description Permission by action name (docs/01-architecture.md §3): `read_action`
+         *     for GET/HEAD/OPTIONS, `write_action` for everything else. Generic, so list
+         *     endpoints get pagination and filtering from the DRF defaults.
+         */
+        post: operations["vendor_bills_void_create"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/vendor-bills/tds-suggestion": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** @description What TDS to deduct on a new vendor bill, and why (rates: tds_rates.json). */
+        get: operations["vendor_bills_tds_suggestion_retrieve"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/vendor-payments": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * @description Permission by action name (docs/01-architecture.md §3): `read_action`
+         *     for GET/HEAD/OPTIONS, `write_action` for everything else. Generic, so list
+         *     endpoints get pagination and filtering from the DRF defaults.
+         */
+        get: operations["vendor_payments_list"];
+        put?: never;
+        /**
+         * @description Permission by action name (docs/01-architecture.md §3): `read_action`
+         *     for GET/HEAD/OPTIONS, `write_action` for everything else. Generic, so list
+         *     endpoints get pagination and filtering from the DRF defaults.
+         */
+        post: operations["vendor_payments_create"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/vendor-payments/{payment_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * @description Permission by action name (docs/01-architecture.md §3): `read_action`
+         *     for GET/HEAD/OPTIONS, `write_action` for everything else. Generic, so list
+         *     endpoints get pagination and filtering from the DRF defaults.
+         */
+        get: operations["vendor_payments_retrieve"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/vendor-payments/{payment_id}/void": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * @description Permission by action name (docs/01-architecture.md §3): `read_action`
+         *     for GET/HEAD/OPTIONS, `write_action` for everything else. Generic, so list
+         *     endpoints get pagination and filtering from the DRF defaults.
+         */
+        post: operations["vendor_payments_void_create"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
         trace?: never;
     };
 }
@@ -3899,6 +4074,16 @@ export interface components {
             /** @description Pass as ?cursor= */
             next_cursor: string | null;
         };
+        PaginatedVendorBillList: {
+            results: components["schemas"]["VendorBill"][];
+            /** @description Pass as ?cursor= */
+            next_cursor: string | null;
+        };
+        PaginatedVendorPaymentList: {
+            results: components["schemas"]["VendorPayment"][];
+            /** @description Pass as ?cursor= */
+            next_cursor: string | null;
+        };
         /** @description Money received with the bill (cash, UPI at the counter), recorded as the bill is issued. */
         PaidNow: {
             /** Format: decimal */
@@ -4350,6 +4535,62 @@ export interface components {
             trade_name?: string | null;
             pan?: string | null;
             timezone?: components["schemas"]["TimezoneEnum"];
+        };
+        PatchedVendorBillWrite: {
+            /** Format: uuid */
+            vendor_party_id?: string;
+            /** Format: uuid */
+            project_id?: string | null;
+            /** @description The vendor's own number */
+            bill_number?: string;
+            /** Format: date */
+            bill_date?: string;
+            /** Format: date */
+            due_date?: string | null;
+            category?: components["schemas"]["ExpenseCategoryEnum"];
+            description?: string;
+            /**
+             * Format: decimal
+             * @description Before GST
+             */
+            taxable_value?: string;
+            /** Format: decimal */
+            gst_amount?: string;
+            itc_eligible?: boolean;
+            /** @description e.g. 194C; empty for no TDS */
+            tds_section?: string | null;
+            /**
+             * Format: decimal
+             * @description Percent of the value before GST; the TDS amount is worked out (to the rupee)
+             */
+            tds_rate?: string | null;
+            /** Format: uuid */
+            attachment_id?: string | null;
+            notes?: string | null;
+        };
+        Payable: {
+            /** Format: uuid */
+            party_id: string;
+            display_name: string;
+            bill_count: number;
+            /** Format: decimal */
+            not_due: string;
+            /** Format: decimal */
+            days_1_30: string;
+            /** Format: decimal */
+            days_31_60: string;
+            /** Format: decimal */
+            days_61_90: string;
+            /** Format: decimal */
+            days_90_plus: string;
+            /** Format: decimal */
+            total: string;
+        };
+        Payables: {
+            /** Format: date */
+            as_of: string;
+            results: components["schemas"]["Payable"][];
+            totals: components["schemas"]["Payable"];
         };
         Payment: {
             /** Format: uuid */
@@ -5397,6 +5638,21 @@ export interface components {
          * @enum {string}
          */
         TdsRowStatusEnum: "MATCHED" | "SHORT" | "EXCESS" | "NOT_RECEIVED";
+        TdsSuggestion: {
+            /** @description Null: no TDS suggested */
+            section: string | null;
+            /** Format: decimal */
+            rate: string;
+            /** Format: decimal */
+            amount: string;
+            /** @description Why, in words */
+            reason: string;
+            /**
+             * Format: decimal
+             * @description The vendor's bills this financial year, before this one
+             */
+            year_total: string;
+        };
         TdsTotals: {
             /** Format: decimal */
             expected: string;
@@ -6164,6 +6420,147 @@ export interface components {
              * @description Default: today.
              */
             doc_date?: string;
+        };
+        VendorAllocationIn: {
+            /** Format: uuid */
+            vendor_bill_id: string;
+            /** Format: decimal */
+            amount: string;
+        };
+        VendorAllocationOut: {
+            /** Format: uuid */
+            readonly id: string;
+            /** Format: uuid */
+            vendor_bill_id: string;
+            readonly bill_number: string;
+            /** Format: decimal */
+            amount: string;
+            /** Format: date-time */
+            readonly created_at: string;
+        };
+        VendorBill: {
+            /** Format: uuid */
+            readonly id: string;
+            readonly version: number;
+            /** Format: uuid */
+            vendor_party_id: string;
+            readonly vendor_name: string;
+            /** Format: uuid */
+            project_id: string | null;
+            readonly project_name: string | null;
+            readonly bill_number: string;
+            /** Format: date */
+            readonly bill_date: string;
+            /** Format: date */
+            readonly due_date: string | null;
+            readonly category: components["schemas"]["ExpenseCategoryEnum"];
+            readonly description: string;
+            /** Format: decimal */
+            taxable_value: string;
+            /** Format: decimal */
+            gst_amount: string;
+            /** Format: decimal */
+            total_amount: string;
+            readonly itc_eligible: boolean;
+            readonly tds_section: string | null;
+            /** Format: decimal */
+            tds_rate: string;
+            /** Format: decimal */
+            tds_amount: string;
+            /**
+             * Format: decimal
+             * @description Total less the TDS we deduct: what we pay the vendor
+             */
+            net_payable: string;
+            /** Format: decimal */
+            amount_paid: string;
+            readonly outstanding: string;
+            /** Format: uuid */
+            attachment_id: string | null;
+            readonly notes: string | null;
+            readonly status: components["schemas"]["RecordStatusEnum"];
+            /** Format: date-time */
+            readonly voided_at: string | null;
+            readonly void_reason: string | null;
+            /** Format: date-time */
+            readonly created_at: string;
+            /** Format: date-time */
+            readonly updated_at: string;
+        };
+        VendorBillWrite: {
+            /** Format: uuid */
+            vendor_party_id: string;
+            /** Format: uuid */
+            project_id?: string | null;
+            /** @description The vendor's own number */
+            bill_number: string;
+            /** Format: date */
+            bill_date: string;
+            /** Format: date */
+            due_date?: string | null;
+            category: components["schemas"]["ExpenseCategoryEnum"];
+            description: string;
+            /**
+             * Format: decimal
+             * @description Before GST
+             */
+            taxable_value: string;
+            /** Format: decimal */
+            gst_amount?: string;
+            itc_eligible?: boolean;
+            /** @description e.g. 194C; empty for no TDS */
+            tds_section?: string | null;
+            /**
+             * Format: decimal
+             * @description Percent of the value before GST; the TDS amount is worked out (to the rupee)
+             */
+            tds_rate?: string | null;
+            /** Format: uuid */
+            attachment_id?: string | null;
+            notes?: string | null;
+        };
+        VendorPayment: {
+            /** Format: uuid */
+            readonly id: string;
+            readonly version: number;
+            /** Format: uuid */
+            vendor_party_id: string;
+            readonly vendor_name: string;
+            /** Format: uuid */
+            project_id: string | null;
+            readonly project_name: string | null;
+            /** Format: date */
+            readonly payment_date: string;
+            /** Format: decimal */
+            amount: string;
+            readonly mode: components["schemas"]["PaymentModeEnum"];
+            readonly reference: string | null;
+            readonly notes: string | null;
+            readonly status: components["schemas"]["RecordStatusEnum"];
+            readonly unallocated: string;
+            readonly allocations: components["schemas"]["VendorAllocationOut"][];
+            /** Format: date-time */
+            readonly voided_at: string | null;
+            readonly void_reason: string | null;
+            /** Format: date-time */
+            readonly created_at: string;
+            /** Format: date-time */
+            readonly updated_at: string;
+        };
+        VendorPaymentCreate: {
+            /** Format: uuid */
+            vendor_party_id: string;
+            /** Format: uuid */
+            project_id?: string | null;
+            /** Format: date */
+            payment_date: string;
+            /** Format: decimal */
+            amount: string;
+            mode: components["schemas"]["PaymentModeEnum"];
+            /** @description UTR / cheque number */
+            reference?: string | null;
+            notes?: string | null;
+            allocations?: components["schemas"]["VendorAllocationIn"][];
         };
         VerifyEmail: {
             token: string;
@@ -9541,6 +9938,25 @@ export interface operations {
             };
         };
     };
+    reports_payables_retrieve: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Payables"];
+                };
+            };
+        };
+    };
     reports_projects_list: {
         parameters: {
             query?: never;
@@ -10041,6 +10457,303 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["TallySettings"];
+                };
+            };
+        };
+    };
+    vendor_bills_list: {
+        parameters: {
+            query?: {
+                bill_date_from?: string;
+                bill_date_to?: string;
+                /**
+                 * @description * `MATERIAL` - Material
+                 *     * `LABOUR` - Labour
+                 *     * `SUBCONTRACT` - Subcontract
+                 *     * `EQUIPMENT` - Equipment
+                 *     * `TRANSPORT` - Transport
+                 *     * `SITE_OVERHEAD` - Site Overhead
+                 *     * `OFFICE` - Office
+                 *     * `OTHER` - Other
+                 */
+                category?: "EQUIPMENT" | "LABOUR" | "MATERIAL" | "OFFICE" | "OTHER" | "SITE_OVERHEAD" | "SUBCONTRACT" | "TRANSPORT";
+                /** @description The pagination cursor value. */
+                cursor?: string;
+                /** @description Number of results to return per page. */
+                limit?: number;
+                /** @description Which field to use when ordering the results. */
+                ordering?: string;
+                /**
+                 * @description * `UNPAID` - UNPAID
+                 *     * `PARTIAL` - PARTIAL
+                 *     * `PAID` - PAID
+                 *     * `OPEN` - OPEN
+                 */
+                payment_state?: "OPEN" | "PAID" | "PARTIAL" | "UNPAID";
+                project_id?: string;
+                q?: string;
+                /**
+                 * @description * `RECORDED` - Recorded
+                 *     * `VOIDED` - Voided
+                 */
+                status?: "RECORDED" | "VOIDED";
+                vendor_party_id?: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PaginatedVendorBillList"];
+                };
+            };
+        };
+    };
+    vendor_bills_create: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["VendorBillWrite"];
+            };
+        };
+        responses: {
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["VendorBill"];
+                };
+            };
+        };
+    };
+    vendor_bills_retrieve: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                bill_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["VendorBill"];
+                };
+            };
+        };
+    };
+    vendor_bills_partial_update: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                bill_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: {
+            content: {
+                "application/json": components["schemas"]["PatchedVendorBillWrite"];
+            };
+        };
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["VendorBill"];
+                };
+            };
+        };
+    };
+    vendor_bills_void_create: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                bill_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["Void"];
+            };
+        };
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["VendorBill"];
+                };
+            };
+        };
+    };
+    vendor_bills_tds_suggestion_retrieve: {
+        parameters: {
+            query: {
+                bill_date: string;
+                /**
+                 * @description * `MATERIAL` - Material
+                 *     * `LABOUR` - Labour
+                 *     * `SUBCONTRACT` - Subcontract
+                 *     * `EQUIPMENT` - Equipment
+                 *     * `TRANSPORT` - Transport
+                 *     * `SITE_OVERHEAD` - Site Overhead
+                 *     * `OFFICE` - Office
+                 *     * `OTHER` - Other
+                 */
+                category: "MATERIAL" | "LABOUR" | "SUBCONTRACT" | "EQUIPMENT" | "TRANSPORT" | "SITE_OVERHEAD" | "OFFICE" | "OTHER";
+                taxable_value: string;
+                /** @description When editing: leave this bill out of the year's total */
+                vendor_bill_id?: string;
+                vendor_party_id: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["TdsSuggestion"];
+                };
+            };
+        };
+    };
+    vendor_payments_list: {
+        parameters: {
+            query?: {
+                /** @description The pagination cursor value. */
+                cursor?: string;
+                /** @description Number of results to return per page. */
+                limit?: number;
+                /**
+                 * @description * `BANK_TRANSFER` - Bank Transfer
+                 *     * `UPI` - Upi
+                 *     * `CHEQUE` - Cheque
+                 *     * `CASH` - Cash
+                 *     * `CARD` - Card
+                 *     * `OTHER` - Other
+                 */
+                mode?: "BANK_TRANSFER" | "CARD" | "CASH" | "CHEQUE" | "OTHER" | "UPI";
+                /** @description Which field to use when ordering the results. */
+                ordering?: string;
+                payment_date_from?: string;
+                payment_date_to?: string;
+                project_id?: string;
+                /**
+                 * @description * `RECORDED` - Recorded
+                 *     * `VOIDED` - Voided
+                 */
+                status?: "RECORDED" | "VOIDED";
+                vendor_party_id?: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PaginatedVendorPaymentList"];
+                };
+            };
+        };
+    };
+    vendor_payments_create: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["VendorPaymentCreate"];
+            };
+        };
+        responses: {
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["VendorPayment"];
+                };
+            };
+        };
+    };
+    vendor_payments_retrieve: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                payment_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["VendorPayment"];
+                };
+            };
+        };
+    };
+    vendor_payments_void_create: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                payment_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["Void"];
+            };
+        };
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["VendorPayment"];
                 };
             };
         };

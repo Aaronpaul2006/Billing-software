@@ -851,6 +851,18 @@ Filters: `actor_id`, `record_type` (documents, payments, expenses, parties, proj
 `record_id`, `date_from` / `date_to` (India time). A bill's lines, allocations and
 measurement rows are left out: they are rewritten with every save.
 
+### Payables: vendor bills and payments to vendors (Part B)
+
+Money out, mirroring bills, payments and allocations for money in. Read by every
+member; recorded, edited, paid and voided with `payments.record`.
+
+| Method & path | Notes |
+|---|---|
+| `GET/POST /vendor-bills` · `GET/PATCH /vendor-bills/{id}` · `POST /vendor-bills/{id}/void` | A bill as received: `vendor_party_id` (a party marked vendor, else `422 not_a_vendor`), `project_id?`, `bill_number` (the vendor's; once per vendor, `422 duplicate`), `bill_date`, `due_date?`, `category`, `description`, `taxable_value`, `gst_amount`, `itc_eligible`, `tds_section?` + `tds_rate?`. The server works out `total_amount`, `tds_amount` (rate × value before GST, to the rupee), `net_payable` (total − TDS) and `outstanding`. Editable until something is paid (`409 vendor_bill_paid`); void needs its payments voided first. Filters: `vendor_party_id`, `project_id`, `category`, `status`, `payment_state` (UNPAID / PARTIAL / PAID / OPEN), `bill_date_from/to`, `q` (number or vendor); ordering `bill_date`, `due_date`, `total_amount` |
+| `GET /vendor-bills/tds-suggestion?vendor_party_id&category&taxable_value&bill_date[&vendor_bill_id]` | `{section, rate, amount, reason, year_total}`. Rates and limits are data (`apps/payables/tds_rates.json`): s.194C for subcontract, labour and transport once a bill passes ₹30,000 or the vendor's year passes ₹1,00,000; 1 % for an individual / HUF PAN, 2 % otherwise, 20 % without a PAN. A suggestion: the person decides |
+| `GET/POST /vendor-payments` · `GET /vendor-payments/{id}` · `POST /vendor-payments/{id}/void` | `{vendor_party_id, project_id?, payment_date, amount, mode, reference?, notes?, allocations: [{vendor_bill_id, amount}]}`; responses carry `unallocated` and the allocations with each bill's number. An allocation over what is still owed (`exceeds_outstanding`), over the payment (`exceeds_payment`) or to another vendor's bill (`party_mismatch`) is refused; the database refuses them too (section 7d). Void undoes the allocations first |
+| `GET /reports/payables` | What we owe each vendor today, by days past the due date (or the bill date): `{as_of, results: [{party_id, display_name, bill_count, not_due, days_1_30, days_31_60, days_61_90, days_90_plus, total}], totals}`, biggest first; `reports.view` |
+
 ## 7. Files
 
 | Method & path | Purpose |

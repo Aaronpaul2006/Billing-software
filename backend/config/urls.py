@@ -25,6 +25,7 @@ urlpatterns: list[URLPattern | URLResolver] = [
     path("api/v1/", include("apps.portal.urls")),
     path("api/v1/", include("apps.search.urls")),
     path("api/v1/", include("apps.audit.urls")),
+    path("api/v1/", include("apps.payables.urls")),
 ]
 
 if settings.DEBUG:

@@ -1187,3 +1187,14 @@ COLLECTION_ROUTES["search"] = lambda w: None
 
 # --- Part B activity log: tests/audit/test_activity_log.py::test_another_business_sees_nothing_of_it
 COLLECTION_ROUTES["audit-log"] = lambda w: None
+
+# --- Payables part 1: tests/payables/test_api.py::test_another_business_reaches_none_of_it
+for _name in (
+    "vendor-bill-detail",
+    "vendor-bill-void",
+    "vendor-payment-detail",
+    "vendor-payment-void",
+):
+    OBJECT_ROUTES[_name] = lambda w: None
+for _name in ("vendor-bills", "vendor-bill-tds-suggestion", "vendor-payments", "report-payables"):
+    COLLECTION_ROUTES[_name] = lambda w: None
