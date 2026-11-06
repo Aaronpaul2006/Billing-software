@@ -57,6 +57,10 @@ export function doc(overrides: Partial<Document> = {}): Document {
     updated_at: "2026-10-19T10:00:00Z",
     notes: null,
     terms: null,
+    approval_requested_at: null,
+    approved_at: null,
+    approved_by_name: null,
+    approval_holds: false,
     lines: [
       {
         line_no: 1,

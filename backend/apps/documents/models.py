@@ -139,6 +139,12 @@ class Document(TenantScoped):
     cancelled_at = models.DateTimeField(null=True)
     cancelled_by = ref("accounts.User", null=True, db_column="cancelled_by")
     cancel_reason = models.TextField(null=True)  # noqa: DJ001
+    # Approval (Part B): the version of the draft an owner approved
+    approval_requested_at = models.DateTimeField(null=True)
+    approval_requested_by = ref("accounts.User", null=True, db_column="approval_requested_by")
+    approved_version = models.IntegerField(null=True)
+    approved_at = models.DateTimeField(null=True)
+    approved_by = ref("accounts.User", null=True, db_column="approved_by")
     version = models.IntegerField(default=1, db_default=1)
     created_by = ref("accounts.User", db_column="created_by")
     created_at = created_at()

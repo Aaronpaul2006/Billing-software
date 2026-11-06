@@ -31,7 +31,7 @@ from apps.tenants import printing
 from apps.tenants.models import DocumentSeries, GstRegistration, Tenant
 
 from ..models import Document, DocumentLine
-from . import drafts, ra_bills
+from . import approval, drafts, ra_bills
 from .pdfs import enqueue_pdf
 
 CONVERSIONS: dict[str, frozenset[str]] = {
@@ -115,6 +115,7 @@ def issue(principal: Principal, doc_id: uuid.UUID, expected: int) -> Document:
             raise Invalid("lines", "Add at least one line before issuing.", code="no_lines")
         if doc.original_document_id:
             _check_note_limits(doc, computed.out.grand_total)
+        approval.check(principal, doc, computed.out.grand_total)
 
         series = (
             DocumentSeries.objects.select_for_update()

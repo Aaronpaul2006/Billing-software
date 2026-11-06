@@ -1074,6 +1074,40 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/documents/{document_id}/approval-request": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** @description Ask the owners to approve this draft (it is above the approval limit). */
+        post: operations["documents_approval_request_create"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/documents/{document_id}/approve": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** @description An owner approves the draft as it is now. */
+        post: operations["documents_approve_create"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/documents/{document_id}/cancel": {
         parameters: {
             query?: never;
@@ -3858,6 +3892,13 @@ export interface components {
             readonly notes: string | null;
             readonly terms: string | null;
             readonly lines: components["schemas"]["LineOut"][];
+            /** Format: date-time */
+            readonly approval_requested_at: string | null;
+            /** Format: date-time */
+            readonly approved_at: string | null;
+            readonly approved_by_name: string | null;
+            /** @description An owner approved the draft as it is now (an edit since cancels it) */
+            readonly approval_holds: boolean;
         };
         DocumentAllocations: {
             /** Format: uuid */
@@ -4808,9 +4849,11 @@ export interface components {
          *     * `BILLS_OVERDUE` - Bills Overdue
          *     * `PAYABLES_DUE` - Payables Due
          *     * `MEMBER_JOINED` - Member Joined
+         *     * `APPROVAL_REQUESTED` - Approval Requested
+         *     * `BILL_APPROVED` - Bill Approved
          * @enum {string}
          */
-        NotificationKindEnum: "QUOTATION_ACCEPTED" | "QUOTATION_DECLINED" | "BILLS_OVERDUE" | "PAYABLES_DUE" | "MEMBER_JOINED";
+        NotificationKindEnum: "QUOTATION_ACCEPTED" | "QUOTATION_DECLINED" | "BILLS_OVERDUE" | "PAYABLES_DUE" | "MEMBER_JOINED" | "APPROVAL_REQUESTED" | "BILL_APPROVED";
         NullEnum: null;
         PaginatedAuditEntryList: {
             results: components["schemas"]["AuditEntry"][];
@@ -5384,6 +5427,11 @@ export interface components {
             trade_name?: string | null;
             pan?: string | null;
             timezone?: components["schemas"]["TimezoneEnum"];
+            /**
+             * Format: decimal
+             * @description Bills at or above it need an owner's approval before others issue them; null: no approvals
+             */
+            approval_limit?: string | null;
         };
         PatchedVendorBillWrite: {
             /** Format: uuid */
@@ -6916,6 +6964,8 @@ export interface components {
             readonly status: components["schemas"]["TenantStatusEnum"];
             readonly plan: string;
             readonly timezone: string;
+            /** Format: decimal */
+            readonly approval_limit: string | null;
             readonly version: number;
             /** Format: date-time */
             readonly created_at: string;
@@ -9788,6 +9838,48 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["DocumentAllocations"];
+                };
+            };
+        };
+    };
+    documents_approval_request_create: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                document_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Document"];
+                };
+            };
+        };
+    };
+    documents_approve_create: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                document_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Document"];
                 };
             };
         };

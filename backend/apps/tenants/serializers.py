@@ -1,9 +1,11 @@
 import re
+from decimal import Decimal
 from importlib.resources import files
 from typing import Any
 
 from rest_framework import serializers
 
+from apps.core.fields import MoneyField
 from apps.core.india import STATE_CODES, gstin_problem, is_valid_pan
 from apps.core.serializers import STATE_CHOICES, AddressOutSerializer, AddressSerializer
 
@@ -44,6 +46,7 @@ class TenantSerializer(serializers.ModelSerializer[Tenant]):
             "status",
             "plan",
             "timezone",
+            "approval_limit",
             "version",
             "created_at",
             "updated_at",
@@ -56,6 +59,13 @@ class TenantUpdateSerializer(serializers.Serializer[Any]):
     trade_name = serializers.CharField(max_length=200, allow_null=True, allow_blank=False)
     pan = serializers.CharField(max_length=10, allow_null=True)
     timezone = serializers.ChoiceField(choices=TIME_ZONES)
+    approval_limit = MoneyField(
+        min_value=Decimal("1.00"),
+        allow_null=True,
+        required=False,
+        help_text="Bills at or above it need an owner's approval before others issue them; "
+        "null: no approvals",
+    )
 
     def validate_pan(self, value: str | None) -> str | None:
         value = _upper(value)

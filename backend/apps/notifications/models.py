@@ -13,6 +13,8 @@ class Kind(models.TextChoices):
     BILLS_OVERDUE = "BILLS_OVERDUE"
     PAYABLES_DUE = "PAYABLES_DUE"
     MEMBER_JOINED = "MEMBER_JOINED"
+    APPROVAL_REQUESTED = "APPROVAL_REQUESTED"
+    BILL_APPROVED = "BILL_APPROVED"
 
 
 class Notification(TenantScoped):

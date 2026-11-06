@@ -16,6 +16,7 @@ import { NativeSelect } from "@/components/ui/native-select";
 import { Skeleton } from "@/components/ui/skeleton";
 import { errorMessage } from "@/lib/errors";
 import { blankToNull, ifMatch } from "@/lib/forms";
+import { cleanMoneyInput, MONEY_INPUT } from "@/lib/money";
 
 type Tenant = components["schemas"]["Tenant"];
 type TimeZone = components["schemas"]["TimezoneEnum"];
@@ -41,6 +42,7 @@ function CompanyForm({ tenant }: { tenant: Tenant }) {
   const [tradeName, setTradeName] = useState(tenant.trade_name ?? "");
   const [pan, setPan] = useState(tenant.pan ?? "");
   const [timeZone, setTimeZone] = useState<string>(tenant.timezone);
+  const [limit, setLimit] = useState(tenant.approval_limit ?? "");
   const [zones] = useState(() => timeZoneChoices(tenant.timezone));
   const [notice, setNotice] = useState<{ ok: boolean; text: string } | null>(null);
   const save = useMutation({
@@ -52,6 +54,7 @@ function CompanyForm({ tenant }: { tenant: Tenant }) {
             trade_name: blankToNull(tradeName),
             pan: blankToNull(pan.toUpperCase()),
             timezone: timeZone as TimeZone, // the server checks it is a real zone
+            approval_limit: cleanMoneyInput(limit) || null,
           },
           headers: { "If-Match": ifMatch(tenant.version) },
         }),
@@ -138,13 +141,35 @@ function CompanyForm({ tenant }: { tenant: Tenant }) {
               ))}
             </NativeSelect>
           </Field>
+          <Field
+            id="approval_limit"
+            label="Owner approval for bills from (₹)"
+            hint="Bills of this amount or more, made by anyone but an owner, wait for an owner's approval before they are issued. Leave empty for no approvals."
+          >
+            <Input
+              id="approval_limit"
+              inputMode="decimal"
+              placeholder="No approvals"
+              value={limit}
+              onChange={(e) => {
+                setLimit(e.target.value);
+              }}
+            />
+          </Field>
           <p className="text-muted-foreground text-sm">
             GSTINs and addresses are set per GST registration.
           </p>
         </CardContent>
       </Card>
       <div>
-        <Button type="submit" disabled={save.isPending || legalName.trim() === ""}>
+        <Button
+          type="submit"
+          disabled={
+            save.isPending ||
+            legalName.trim() === "" ||
+            (limit.trim() !== "" && !MONEY_INPUT.test(cleanMoneyInput(limit)))
+          }
+        >
           Save
         </Button>
       </div>

@@ -1237,3 +1237,7 @@ for _name in ("project-diary", "diary-entry", "diary-entry-photos", "diary-photo
 # --- Proof of work: tests/diary/test_proof.py::test_another_business_and_another_client_see_none
 for _name in ("document-photos", "portal-document-photos"):
     OBJECT_ROUTES[_name] = lambda w: None
+
+# --- Bill approval: tests/documents/test_approval.py::test_another_business_reaches_none_of_it
+for _name in ("document-approval-request", "document-approve"):
+    OBJECT_ROUTES[_name] = lambda w: None

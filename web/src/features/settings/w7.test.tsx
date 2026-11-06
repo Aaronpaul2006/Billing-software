@@ -78,6 +78,7 @@ describe("company", () => {
         trade_name: "Nair",
         pan: "AAACN1234A",
         timezone: "Asia/Dubai",
+        approval_limit: null, // left empty: no approvals
       },
     });
   });

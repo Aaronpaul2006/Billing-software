@@ -113,6 +113,8 @@ CREATE TABLE tenants (
   status      text NOT NULL DEFAULT 'ACTIVE' CHECK (status IN ('ACTIVE', 'SUSPENDED', 'CLOSED')),
   plan        text NOT NULL DEFAULT 'FREE',
   timezone    text NOT NULL DEFAULT 'Asia/Kolkata',
+  -- Bills at or above it need an owner's approval before others issue them (Part B).
+  approval_limit numeric(14,2) CHECK (approval_limit IS NULL OR approval_limit > 0),
   version     integer NOT NULL DEFAULT 1,
   created_at  timestamptz NOT NULL DEFAULT now(),
   updated_at  timestamptz NOT NULL DEFAULT now()
@@ -524,6 +526,13 @@ CREATE TABLE documents (
   cancelled_at             timestamptz,
   cancelled_by             uuid REFERENCES users (id),
   cancel_reason            text,
+  -- Approval (Part B): who asked, and the version of the draft an owner approved
+  -- (an edit after it bumps the version, so the approval no longer holds).
+  approval_requested_at    timestamptz,
+  approval_requested_by    uuid REFERENCES users (id),
+  approved_version         integer,
+  approved_at              timestamptz,
+  approved_by              uuid REFERENCES users (id),
   version                  integer NOT NULL DEFAULT 1,
   created_by               uuid NOT NULL REFERENCES users (id),
   created_at               timestamptz NOT NULL DEFAULT now(),
@@ -560,7 +569,8 @@ CREATE TABLE documents (
   CHECK (grand_total = subtotal + CASE WHEN reverse_charge THEN 0 ELSE cgst_amount + sgst_amount + igst_amount + cess_amount END + round_off),
   CHECK (net_receivable = grand_total - retention_amount - income_tax_tds_amount - gst_tds_amount - advance_recovery_amount),
   CHECK (amount_settled >= 0 AND amount_settled <= net_receivable),
-  CHECK (due_date IS NULL OR due_date >= doc_date)
+  CHECK (due_date IS NULL OR due_date >= doc_date),
+  CHECK ((approved_version IS NULL) = (approved_at IS NULL) AND (approved_at IS NULL) = (approved_by IS NULL))
 );
 
 -- GST: numbers unique per registration (GSTIN) per financial year.
@@ -1076,7 +1086,8 @@ CREATE TABLE notifications (
   tenant_id   uuid NOT NULL REFERENCES tenants (id),
   user_id     uuid NOT NULL REFERENCES users (id),
   kind        text NOT NULL CHECK (kind IN ('QUOTATION_ACCEPTED', 'QUOTATION_DECLINED', 'BILLS_OVERDUE',
-                                            'PAYABLES_DUE', 'MEMBER_JOINED')),
+                                            'PAYABLES_DUE', 'MEMBER_JOINED', 'APPROVAL_REQUESTED',
+                                            'BILL_APPROVED')),
   title       text NOT NULL CHECK (char_length(title) BETWEEN 1 AND 200),
   body        text CHECK (char_length(body) <= 1000),
   link        text CHECK (link ~ '^/([^/]|$)' AND char_length(link) <= 300),   -- a page of the app (not //)
@@ -2197,6 +2208,7 @@ GRANT UPDATE (status, doc_type, gst_registration_id, series_id, doc_number, doc_
               subtotal, cgst_amount, sgst_amount, igst_amount, cess_amount, round_off, round_to_rupee, grand_total,
               retention_amount, income_tax_tds_amount, gst_tds_amount, advance_recovery_amount, net_receivable,
               notes, terms, pdf_attachment_id, issued_at, issued_by, cancelled_at, cancelled_by, cancel_reason,
+              approval_requested_at, approval_requested_by, approved_version, approved_at, approved_by,
               version, updated_at)
   ON documents TO billing_app;
 -- Retention releases: settlement owned by the allocations trigger; otherwise

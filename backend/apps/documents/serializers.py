@@ -293,10 +293,30 @@ class DocumentListSerializer(serializers.ModelSerializer[Document]):
 
 class DocumentSerializer(DocumentListSerializer):
     lines = serializers.SerializerMethodField()
+    approval_requested_at = serializers.DateTimeField(allow_null=True, read_only=True)
+    approved_at = serializers.DateTimeField(allow_null=True, read_only=True)
+    approved_by_name = serializers.CharField(
+        source="approved_by.full_name", allow_null=True, read_only=True, default=None
+    )
+    approval_holds = serializers.SerializerMethodField(
+        help_text="An owner approved the draft as it is now (an edit since cancels it)"
+    )
 
     class Meta(DocumentListSerializer.Meta):
-        fields = (*DocumentListSerializer.Meta.fields, "notes", "terms", "lines")
+        fields = (
+            *DocumentListSerializer.Meta.fields,
+            "notes",
+            "terms",
+            "lines",
+            "approval_requested_at",
+            "approved_at",
+            "approved_by_name",
+            "approval_holds",
+        )
         read_only_fields = fields
+
+    def get_approval_holds(self, obj: Document) -> bool:
+        return obj.approved_version is not None and obj.approved_version == obj.version
 
     @extend_schema_field(LineOutSerializer(many=True))
     def get_lines(self, obj: Document) -> list[dict[str, Any]]:

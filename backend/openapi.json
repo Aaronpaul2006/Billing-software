@@ -2895,6 +2895,80 @@
                 }
             }
         },
+        "/api/v1/documents/{document_id}/approval-request": {
+            "post": {
+                "operationId": "documents_approval_request_create",
+                "description": "Ask the owners to approve this draft (it is above the approval limit).",
+                "parameters": [
+                    {
+                        "in": "path",
+                        "name": "document_id",
+                        "schema": {
+                            "type": "string",
+                            "format": "uuid"
+                        },
+                        "required": true
+                    }
+                ],
+                "tags": [
+                    "documents"
+                ],
+                "security": [
+                    {
+                        "bearerAuth": []
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/Document"
+                                }
+                            }
+                        },
+                        "description": ""
+                    }
+                }
+            }
+        },
+        "/api/v1/documents/{document_id}/approve": {
+            "post": {
+                "operationId": "documents_approve_create",
+                "description": "An owner approves the draft as it is now.",
+                "parameters": [
+                    {
+                        "in": "path",
+                        "name": "document_id",
+                        "schema": {
+                            "type": "string",
+                            "format": "uuid"
+                        },
+                        "required": true
+                    }
+                ],
+                "tags": [
+                    "documents"
+                ],
+                "security": [
+                    {
+                        "bearerAuth": []
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/Document"
+                                }
+                            }
+                        },
+                        "description": ""
+                    }
+                }
+            }
+        },
         "/api/v1/documents/{document_id}/cancel": {
             "post": {
                 "operationId": "documents_cancel_create",
@@ -11016,9 +11090,41 @@
                             "$ref": "#/components/schemas/LineOut"
                         },
                         "readOnly": true
+                    },
+                    "approval_requested_at": {
+                        "type": [
+                            "string",
+                            "null"
+                        ],
+                        "format": "date-time",
+                        "readOnly": true
+                    },
+                    "approved_at": {
+                        "type": [
+                            "string",
+                            "null"
+                        ],
+                        "format": "date-time",
+                        "readOnly": true
+                    },
+                    "approved_by_name": {
+                        "type": [
+                            "string",
+                            "null"
+                        ],
+                        "readOnly": true
+                    },
+                    "approval_holds": {
+                        "type": "boolean",
+                        "readOnly": true,
+                        "description": "An owner approved the draft as it is now (an edit since cancels it)"
                     }
                 },
                 "required": [
+                    "approval_holds",
+                    "approval_requested_at",
+                    "approved_at",
+                    "approved_by_name",
                     "created_at",
                     "doc_date",
                     "doc_number",
@@ -13892,10 +13998,12 @@
                     "QUOTATION_DECLINED",
                     "BILLS_OVERDUE",
                     "PAYABLES_DUE",
-                    "MEMBER_JOINED"
+                    "MEMBER_JOINED",
+                    "APPROVAL_REQUESTED",
+                    "BILL_APPROVED"
                 ],
                 "type": "string",
-                "description": "* `QUOTATION_ACCEPTED` - Quotation Accepted\n* `QUOTATION_DECLINED` - Quotation Declined\n* `BILLS_OVERDUE` - Bills Overdue\n* `PAYABLES_DUE` - Payables Due\n* `MEMBER_JOINED` - Member Joined"
+                "description": "* `QUOTATION_ACCEPTED` - Quotation Accepted\n* `QUOTATION_DECLINED` - Quotation Declined\n* `BILLS_OVERDUE` - Bills Overdue\n* `PAYABLES_DUE` - Payables Due\n* `MEMBER_JOINED` - Member Joined\n* `APPROVAL_REQUESTED` - Approval Requested\n* `BILL_APPROVED` - Bill Approved"
             },
             "NullEnum": {
                 "type": "null"
@@ -15822,6 +15930,15 @@
                     },
                     "timezone": {
                         "$ref": "#/components/schemas/TimezoneEnum"
+                    },
+                    "approval_limit": {
+                        "type": [
+                            "string",
+                            "null"
+                        ],
+                        "format": "decimal",
+                        "pattern": "^-?\\d{0,12}(?:\\.\\d{0,2})?$",
+                        "description": "Bills at or above it need an owner's approval before others issue them; null: no approvals"
                     }
                 }
             },
@@ -20412,6 +20529,15 @@
                         "type": "string",
                         "readOnly": true
                     },
+                    "approval_limit": {
+                        "type": [
+                            "string",
+                            "null"
+                        ],
+                        "format": "decimal",
+                        "pattern": "^-?\\d{0,12}(?:\\.\\d{0,2})?$",
+                        "readOnly": true
+                    },
                     "version": {
                         "type": "integer",
                         "readOnly": true
@@ -20428,6 +20554,7 @@
                     }
                 },
                 "required": [
+                    "approval_limit",
                     "created_at",
                     "id",
                     "legal_name",

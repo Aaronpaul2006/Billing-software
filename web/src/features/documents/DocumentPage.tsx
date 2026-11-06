@@ -56,6 +56,7 @@ import { BillTimeline } from "./BillTimeline";
 import { DocumentHistory } from "./DocumentHistory";
 import { IssueReview } from "./IssueReview";
 import type { PaidNow } from "./IssueReview";
+import { ApprovalPanel } from "./ApprovalPanel";
 import { SitePhotos } from "./SitePhotos";
 import { SendBill } from "./SendBill";
 import type { PrintCopy } from "./sending";
@@ -880,6 +881,7 @@ export function DocumentPage() {
       />
       <div className="grid gap-6">
         <BillTimeline doc={doc} />
+        <ApprovalPanel doc={doc} />
         <Actions doc={doc} />
         <SaveAsTemplate documentId={doc.id} docType={doc.doc_type} />
         <Card>

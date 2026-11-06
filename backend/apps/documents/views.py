@@ -50,7 +50,17 @@ from .serializers import (
     ReviewWarningSerializer,
     TotalsSerializer,
 )
-from .services import drafts, history, lifecycle, line_import, pdfs, rates, review, sending
+from .services import (
+    approval,
+    drafts,
+    history,
+    lifecycle,
+    line_import,
+    pdfs,
+    rates,
+    review,
+    sending,
+)
 
 DRAFT = "documents.draft"
 
@@ -504,3 +514,29 @@ class DocumentPdfView(ActionAPIView):
         if as_link:
             return Response({"url": url, "expires_in": storage.DOWNLOAD_URL_TTL})
         return HttpResponseRedirect(url)
+
+
+class ApprovalRequestView(_DocumentAction):
+    """Ask the owners to approve this draft (it is above the approval limit)."""
+
+    @extend_schema(request=None, responses={200: DocumentSerializer}, tags=["documents"])
+    def post(self, request: Request, document_id: uuid.UUID) -> Response:
+        return versioned_action(
+            request,
+            load=lambda: self._load(document_id),
+            run=lambda v: approval.ask(self.principal, document_id, v),
+            output_serializer=DocumentSerializer,
+        )
+
+
+class ApproveView(_DocumentAction):
+    """An owner approves the draft as it is now."""
+
+    @extend_schema(request=None, responses={200: DocumentSerializer}, tags=["documents"])
+    def post(self, request: Request, document_id: uuid.UUID) -> Response:
+        return versioned_action(
+            request,
+            load=lambda: self._load(document_id),
+            run=lambda v: approval.approve(self.principal, document_id, v),
+            output_serializer=DocumentSerializer,
+        )

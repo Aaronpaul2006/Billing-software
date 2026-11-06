@@ -23,6 +23,16 @@ urlpatterns = [
         name="document-issue",
     ),
     path(
+        "documents/<uuid:document_id>/approval-request",
+        views.ApprovalRequestView.as_view(),
+        name="document-approval-request",
+    ),
+    path(
+        "documents/<uuid:document_id>/approve",
+        views.ApproveView.as_view(),
+        name="document-approve",
+    ),
+    path(
         "documents/<uuid:document_id>/cancel",
         views.CancelView.as_view(),
         name="document-cancel",

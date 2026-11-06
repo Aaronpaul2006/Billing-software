@@ -953,6 +953,20 @@ client portal.
 | `GET/PUT /documents/{id}/photos` | Proof of work: the diary photos shown with a bill, in order (`{results: [{id, caption, entry_date, url}]}`). PUT `{diary_photo_ids}` replaces them (`documents.draft`; at most 40; only photos from the bill's project, the database insists too; not on a cancelled bill). Removing a photo from the diary, or deleting a draft, takes them off. The bill's PDF ends with a "Site photos" page; changing the photos makes the PDF again |
 | `GET /portal/documents/{id}/photos` | The client sees the photos chosen for their own bills, and nothing else of the diary (row-level policies on the diary, the chosen photos and their files) |
 
+### Bill approval (Part B)
+
+`PATCH /tenant {approval_limit}` (owners and admins; null switches it off).
+A tax invoice, bill of supply, debit or credit note whose grand total is at or
+above the limit, issued by anyone but an owner, needs an owner's approval of
+exactly the version being issued: otherwise issuing answers `409
+approval_required`. An edit after the approval bumps the version, so it no
+longer holds; owners need none; quotations are not covered.
+
+| Method & path | Notes |
+|---|---|
+| `POST /documents/{id}/approval-request` | If-Match; a draft. Sets `approval_requested_at` and tells the owners (notification `APPROVAL_REQUESTED`) |
+| `POST /documents/{id}/approve` | If-Match; owners only (`403 approver_only`); a draft. Approves the version as it is (no new version) and tells whoever asked (`BILL_APPROVED`). The document shows `approved_at`, `approved_by_name` and `approval_holds` |
+
 ### Bank statements (Part B)
 
 Import the bank's statement file, then match each line by hand: nothing is
