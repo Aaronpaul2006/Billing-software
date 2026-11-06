@@ -34,6 +34,12 @@
   .sign { flex: 1; text-align: right; }
   .sign img { max-height: 20mm; max-width: 50mm; display: block; margin: 2mm 0 1mm auto; }
   .sign .space { height: 16mm; }
+  .photos { page-break-before: always; }
+  .photos h2 { font-size: 12pt; margin: 0 0 1mm; }
+  .photo-grid { display: flex; flex-wrap: wrap; gap: 4mm; margin-top: 4mm; }
+  .photo { width: calc(50% - 2mm); page-break-inside: avoid; }
+  .photo img { width: 100%; height: 62mm; object-fit: cover; border: 1px solid #ccc; }
+  .photo div { font-size: 8pt; color: #333; margin-top: 1mm; }
   .watermark { position: fixed; top: 38%; left: 8%; font-size: 90pt; color: rgba(200, 0, 0, .12); transform: rotate(-30deg); font-weight: bold; }
 </style>
 </head>
@@ -181,5 +187,19 @@
     {% if signature %}<img src="{{ signature }}" alt="">{% else %}<div class="space"></div>{% endif %}
     Authorised signatory</div>
 </div>
+{% if site_photos %}
+<section class="photos">
+  <h2>Site photos</h2>
+  <div class="muted">Proof of work for {{ title|lower }} {{ doc.doc_number|default:"(draft)" }}{% if project %}, {{ project.name }}{% endif %}, from the site diary.</div>
+  <div class="photo-grid">
+    {% for p in site_photos %}
+    <div class="photo">
+      <img src="{{ p.src }}" alt="{{ p.caption }}">
+      <div><strong>{{ p.date }}</strong>{% if p.caption %} · {{ p.caption }}{% endif %}</div>
+    </div>
+    {% endfor %}
+  </div>
+</section>
+{% endif %}
 </body>
 </html>

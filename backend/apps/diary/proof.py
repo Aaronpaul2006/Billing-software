@@ -14,6 +14,7 @@ from apps.core.permissions import require
 from apps.core.queries import get_or_404
 from apps.core.tenancy import Principal
 from apps.documents.models import Document
+from apps.documents.services.pdfs import enqueue_pdf
 from apps.files import storage
 
 from .models import DiaryPhoto, DocumentPhoto
@@ -82,4 +83,8 @@ def choose(principal: Principal, document_id: uuid.UUID, photo_ids: list[uuid.UU
                 for i, pid in enumerate(photo_ids)
             ]
         )
+        # the stored PDF shows the old photos: make it again
+        if doc.pdf_attachment_id and doc.status != "DRAFT":
+            Document.objects.filter(pk=doc.pk).update(pdf_attachment_id=None)
+            enqueue_pdf(principal.tenant_id, principal.user_id, doc.pk)
     return doc

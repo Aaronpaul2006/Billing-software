@@ -131,6 +131,37 @@ def _image(attachment_id: str | None) -> str | None:
     return f"data:{a.content_type};base64,{base64.b64encode(data).decode()}"
 
 
+def _site_photos(doc: Document) -> list[dict[str, Any]]:
+    """Proof of work: the diary photos chosen for this bill, as data: URLs,
+    with their day and caption. A photo that cannot be read is left out."""
+    from apps.diary.models import DocumentPhoto  # the diary builds on documents
+
+    rows = (
+        DocumentPhoto.objects.filter(document_id=doc.pk)
+        .select_related("diary_photo__entry", "diary_photo__attachment")
+        .order_by("sort_order")
+    )
+    out = []
+    for row in rows:
+        photo = row.diary_photo
+        a = photo.attachment
+        if a.status != "AVAILABLE" or a.content_type not in printing.IMAGE_TYPES:
+            continue
+        try:
+            data = storage.get(a.storage_key)
+        except Exception:
+            log.warning("site photo %s could not be read", a.pk, exc_info=True)
+            continue
+        out.append(
+            {
+                "src": f"data:{a.content_type};base64,{base64.b64encode(data).decode()}",
+                "caption": photo.caption or "",
+                "date": f"{photo.entry.entry_date:%d %b %Y}".lstrip("0"),
+            }
+        )
+    return out
+
+
 def upi_link(upi_id: str, payee: str, amount: Decimal, note: str) -> str:
     """upi://pay with the exact amount: any UPI app fills in the payment."""
     query = urlencode(
@@ -206,6 +237,7 @@ def build_context(doc: Document, copy: str | None = None) -> dict[str, Any]:
         "copy_label": copy_label(copy, lines),
         "logo": _image(settings.get("logo_attachment_id")),
         "signature": _image(settings.get("signature_attachment_id")),
+        "site_photos": _site_photos(doc) if doc.project_id else [],
         **_payment(doc, supplier, settings),
         "ra_sequence": doc.ra_sequence if doc.is_ra_bill else None,
         "show_discount": any(ln.discount_amount for ln in lines),

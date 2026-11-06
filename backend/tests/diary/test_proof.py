@@ -118,3 +118,54 @@ def test_another_business_and_another_client_see_none(p: Portal) -> None:
     assert choose(other, p.inv1["id"], []).status_code == 404
     r = APIClient().get(f"/api/v1/portal/documents/{p.inv1['id']}/photos", **other.h(other.me))
     assert r.status_code == 404
+
+
+def test_the_bill_pdf_gets_a_page_of_site_photos(p: Portal, monkeypatch: Any) -> None:
+    from apps.documents.models import Document
+    from apps.documents.pdf.render import render_html
+
+    first = photo(p, p.project, 15, "Slab shuttering")
+    broken = photo(p, p.project, 16, "Unreadable")
+    with tenant_context(p.t.tenant_id, p.t.user_id):
+        bad_key = (
+            DiaryPhoto.objects.select_related("attachment").get(pk=broken).attachment.storage_key
+        )
+
+    def fake_get(key: str) -> bytes:
+        if key == bad_key:
+            raise OSError("gone")
+        return bytes([0xFF, 0xD8, 0xFF]) + b"-jpeg"
+
+    monkeypatch.setattr("apps.files.storage.get", fake_get)
+    assert choose(p, p.inv1["id"], [first, broken]).status_code == 200
+    with tenant_context(p.t.tenant_id, p.t.user_id):
+        html = render_html(Document.objects.get(pk=p.inv1["id"]))
+    assert '<section class="photos">' in html
+    assert "Slab shuttering" in html
+    assert "15 Oct 2026" in html
+    assert html.count("data:image/jpeg;base64,") == 1  # the unreadable one is left out
+    with tenant_context(p.t.tenant_id, p.t.user_id):
+        plain = render_html(Document.objects.get(pk=p.inv2["id"]))
+    assert '<section class="photos">' not in plain
+
+
+def test_changing_the_photos_makes_the_pdf_again(
+    p: Portal, django_capture_on_commit_callbacks: Any
+) -> None:
+    from apps.documents.models import Document
+
+    with tenant_context(p.t.tenant_id, p.t.user_id):
+        a = Attachment.objects.create(
+            storage_key=f"t/{uuid.uuid4()}",
+            original_filename="inv.pdf",
+            content_type="application/pdf",
+            size_bytes=1000,
+            status="AVAILABLE",
+            uploaded_by_id=p.t.user_id,
+        )
+        Document.objects.filter(pk=p.inv1["id"]).update(pdf_attachment_id=a.pk)
+    with django_capture_on_commit_callbacks(execute=False) as queued:
+        assert choose(p, p.inv1["id"], [photo(p, p.project, 15, "Slab")]).status_code == 200
+    assert len(queued) == 1  # the new PDF, once the choice is saved
+    with tenant_context(p.t.tenant_id, p.t.user_id):
+        assert Document.objects.get(pk=p.inv1["id"]).pdf_attachment_id is None
