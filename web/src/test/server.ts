@@ -59,6 +59,8 @@ export function problem(status: number, code: string, detail = code) {
 export const server = setupServer(
   http.post(`${API}/auth/token/refresh`, () => problem(401, "invalid_refresh_token")),
   http.get(`${API}/invitations`, () => HttpResponse.json({ results: [] })),
+  http.get(`${API}/notifications/unread-count`, () => HttpResponse.json({ count: 0 })),
+  http.get(`${API}/notifications`, () => HttpResponse.json({ results: [], next_cursor: null })),
   http.get(`${API}/email-invitations`, () => HttpResponse.json({ results: [] })),
   http.get(`${API}/documents/:id/reminders`, () => HttpResponse.json({ results: [] })),
   // The bill screen's lookups for a chosen client (B.4): no earlier bill, nothing owed.

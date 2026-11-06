@@ -27,6 +27,7 @@ from apps.core.errors import Conflict, Forbidden, Invalid
 from apps.core.permissions import ADMIN, OWNER, require
 from apps.core.queries import get_or_404
 from apps.core.tenancy import Principal, tenant_context
+from apps.notifications import tasks as notify
 from apps.tenants.models import Tenant, TenantStatus
 
 from . import emails
@@ -265,6 +266,8 @@ def join(token: str, *, full_name: str, password: str, client: ClientInfo) -> Se
                     accepted_by=user.pk,
                     updated_at=timezone.now(),
                 )
+                joined = str(user.pk)
+                transaction.on_commit(lambda: notify.member_joined.delay(str(tenant_id), joined))
             tokens = _start_session(
                 user_id=user.pk,
                 tenant_id=tenant_id,

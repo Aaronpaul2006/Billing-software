@@ -158,7 +158,7 @@ def test_the_app_role_sees_no_stale_uploads_of_other_tenants(s3: Any) -> None:
 
 
 def test_beat_schedule(settings: Any) -> None:
-    """Purges hourly; payment reminders daily at 04:00 UTC (09:30 IST)."""
+    """Purges hourly; payment reminders daily at 04:00 UTC (09:30 IST), notifications at 04:05."""
     schedule = {
         entry["task"]: entry["schedule"] for entry in settings.CELERY_BEAT_SCHEDULE.values()
     }
@@ -167,7 +167,10 @@ def test_beat_schedule(settings: Any) -> None:
         "apps.files.tasks.purge_stale_uploads",
         "apps.exports.tasks.purge_old_exports",
         "apps.reminders.tasks.send_due_reminders",
+        "apps.notifications.tasks.daily",
     }
     reminders = schedule.pop("apps.reminders.tasks.send_due_reminders")
     assert (reminders.hour, reminders.minute) == ({4}, {0})
+    daily = schedule.pop("apps.notifications.tasks.daily")
+    assert (daily.hour, daily.minute) == ({4}, {5})
     assert all(every == 3600.0 for every in schedule.values())

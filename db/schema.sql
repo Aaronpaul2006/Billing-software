@@ -1066,6 +1066,28 @@ CREATE TABLE gstr2b_lines (
 CREATE INDEX gstr2b_lines_return_idx   ON gstr2b_lines (tenant_id, return_id);
 CREATE INDEX gstr2b_lines_supplier_idx ON gstr2b_lines (tenant_id, supplier_gstin);
 
+-- Notifications (Part B): the few events worth a look, one row per person
+-- they are for (apps/notifications). Each person reads and marks only their
+-- own (the own_rows policies); anyone in the business may be sent one.
+-- dedupe_key makes an event land once per person (a daily job run twice adds
+-- nothing).
+CREATE TABLE notifications (
+  id          uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+  tenant_id   uuid NOT NULL REFERENCES tenants (id),
+  user_id     uuid NOT NULL REFERENCES users (id),
+  kind        text NOT NULL CHECK (kind IN ('QUOTATION_ACCEPTED', 'QUOTATION_DECLINED', 'BILLS_OVERDUE',
+                                            'PAYABLES_DUE', 'MEMBER_JOINED')),
+  title       text NOT NULL CHECK (char_length(title) BETWEEN 1 AND 200),
+  body        text CHECK (char_length(body) <= 1000),
+  link        text CHECK (link ~ '^/([^/]|$)' AND char_length(link) <= 300),   -- a page of the app (not //)
+  dedupe_key  text NOT NULL CHECK (char_length(dedupe_key) BETWEEN 1 AND 200),
+  read_at     timestamptz,
+  created_at  timestamptz NOT NULL DEFAULT now(),
+  UNIQUE (tenant_id, id),
+  UNIQUE (tenant_id, user_id, dedupe_key)
+);
+CREATE INDEX notifications_user_idx ON notifications (tenant_id, user_id, created_at DESC);
+
 -- Income-tax TDS certificates (Form 16A) received from clients, to reconcile
 -- with the TDS deducted on our bills. A record of the client's paper, not a
 -- posting of ours: it may be corrected or deleted (audited).
@@ -1681,7 +1703,7 @@ BEGIN
     'payment_reminders', 'document_templates', 'catalog_item_variants', 'document_line_measurements',
     'print_settings', 'document_emails', 'tally_settings', 'vendor_bills', 'vendor_payments',
     'vendor_allocations', 'bank_lines', 'work_orders', 'work_order_items', 'vendor_bill_lines',
-    'vendor_retention_releases', 'gstr2b_returns', 'gstr2b_lines']
+    'vendor_retention_releases', 'gstr2b_returns', 'gstr2b_lines', 'notifications']
   LOOP
     EXECUTE format('ALTER TABLE %I ENABLE ROW LEVEL SECURITY', t);
     EXECUTE format('ALTER TABLE %I FORCE ROW LEVEL SECURITY', t);
@@ -1796,12 +1818,19 @@ BEGIN
     'tds_certificates', 'email_invitations', 'payment_reminders', 'document_templates', 'audit_log',
     'print_settings', 'document_emails', 'tally_settings', 'vendor_bills', 'vendor_payments',
     'vendor_allocations', 'bank_lines', 'work_orders', 'work_order_items', 'vendor_bill_lines',
-    'vendor_retention_releases', 'gstr2b_returns', 'gstr2b_lines']
+    'vendor_retention_releases', 'gstr2b_returns', 'gstr2b_lines', 'notifications']
   LOOP
     EXECUTE format(
       'CREATE POLICY client_scope ON %I AS RESTRICTIVE USING (NOT app_portal_session())', t);
   END LOOP;
 END $$;
+
+-- notifications: each person reads and marks only their own (anyone in the
+-- business may be sent one).
+CREATE POLICY own_rows_read ON notifications AS RESTRICTIVE FOR SELECT
+  USING (user_id = app_current_user_id());
+CREATE POLICY own_rows_update ON notifications AS RESTRICTIVE FOR UPDATE
+  USING (user_id = app_current_user_id());
 CREATE POLICY client_scope ON parties AS RESTRICTIVE
   USING (NOT app_portal_session() OR id = app_current_party());
 CREATE POLICY client_scope ON projects AS RESTRICTIVE
@@ -2073,6 +2102,9 @@ REVOKE UPDATE ON vendor_bill_lines FROM billing_app;
 REVOKE UPDATE ON vendor_retention_releases FROM billing_app;
 -- GSTR-2B as uploaded: never edited, only replaced by the next upload of the month.
 REVOKE UPDATE ON gstr2b_returns, gstr2b_lines FROM billing_app;
+-- Notifications: only marked read.
+REVOKE UPDATE ON notifications FROM billing_app;
+GRANT UPDATE (read_at) ON notifications TO billing_app;
 GRANT UPDATE (status, cancelled_at, cancelled_by, cancel_reason, version, updated_at)
   ON vendor_retention_releases TO billing_app;
 -- Payment reminders are a log: written once, never changed.

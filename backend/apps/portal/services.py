@@ -18,6 +18,7 @@ from apps.core.queries import get_or_404
 from apps.core.tenancy import Principal
 from apps.documents.models import Document
 from apps.documents.services import lifecycle
+from apps.notifications import tasks as notify
 from apps.parties.models import Party
 from apps.payments.models import Allocation, Payment
 from apps.projects.models import Project
@@ -74,6 +75,10 @@ def respond_to_quotation(
                     "This quotation has expired. Ask for a new one.", code="quotation_expired"
                 )
         lifecycle.record_quotation_response(doc_id, expected, accept=accept)
+        tenant_id = principal.tenant_id
+        transaction.on_commit(
+            lambda: notify.quotation_response.delay(str(tenant_id), str(doc_id), accept)
+        )
     return document(principal, doc_id)
 
 

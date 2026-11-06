@@ -1702,6 +1702,86 @@ export interface paths {
         patch: operations["members_partial_update"];
         trace?: never;
     };
+    "/api/v1/notifications": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * @description Permission by action name (docs/01-architecture.md §3): `read_action`
+         *     for GET/HEAD/OPTIONS, `write_action` for everything else. Generic, so list
+         *     endpoints get pagination and filtering from the DRF defaults.
+         */
+        get: operations["notifications_list"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/notifications/{notification_id}/read": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * @description Permission by action name (docs/01-architecture.md §3): `read_action`
+         *     for GET/HEAD/OPTIONS, `write_action` for everything else. Generic, so list
+         *     endpoints get pagination and filtering from the DRF defaults.
+         */
+        post: operations["notifications_read_create"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/notifications/read-all": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * @description Permission by action name (docs/01-architecture.md §3): `read_action`
+         *     for GET/HEAD/OPTIONS, `write_action` for everything else. Generic, so list
+         *     endpoints get pagination and filtering from the DRF defaults.
+         */
+        post: operations["notifications_read_all_create"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/notifications/unread-count": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** @description For the bell: how many are not read yet. */
+        get: operations["notifications_unread_count_retrieve"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/parties": {
         parameters: {
             query?: never;
@@ -4561,6 +4641,27 @@ export interface components {
             /** @description Without lines, the invoice's lines are copied. */
             lines?: components["schemas"]["LineIn"][];
         };
+        Notification: {
+            /** Format: uuid */
+            readonly id: string;
+            readonly kind: components["schemas"]["NotificationKindEnum"];
+            readonly title: string;
+            readonly body: string | null;
+            readonly link: string | null;
+            /** Format: date-time */
+            readonly read_at: string | null;
+            /** Format: date-time */
+            readonly created_at: string;
+        };
+        /**
+         * @description * `QUOTATION_ACCEPTED` - Quotation Accepted
+         *     * `QUOTATION_DECLINED` - Quotation Declined
+         *     * `BILLS_OVERDUE` - Bills Overdue
+         *     * `PAYABLES_DUE` - Payables Due
+         *     * `MEMBER_JOINED` - Member Joined
+         * @enum {string}
+         */
+        NotificationKindEnum: "QUOTATION_ACCEPTED" | "QUOTATION_DECLINED" | "BILLS_OVERDUE" | "PAYABLES_DUE" | "MEMBER_JOINED";
         NullEnum: null;
         PaginatedAuditEntryList: {
             results: components["schemas"]["AuditEntry"][];
@@ -4604,6 +4705,11 @@ export interface components {
         };
         PaginatedGstr2bReturnList: {
             results: components["schemas"]["Gstr2bReturn"][];
+            /** @description Pass as ?cursor= */
+            next_cursor: string | null;
+        };
+        PaginatedNotificationList: {
+            results: components["schemas"]["Notification"][];
             /** @description Pass as ?cursor= */
             next_cursor: string | null;
         };
@@ -7285,6 +7391,9 @@ export interface components {
             /** Format: decimal */
             amount_settled?: string;
             readonly outstanding: string;
+        };
+        Unread: {
+            count: number;
         };
         Upload: {
             /**
@@ -10468,6 +10577,93 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["Member"];
+                };
+            };
+        };
+    };
+    notifications_list: {
+        parameters: {
+            query?: {
+                /** @description The pagination cursor value. */
+                cursor?: string;
+                /** @description Number of results to return per page. */
+                limit?: number;
+                /** @description Which field to use when ordering the results. */
+                ordering?: string;
+                /** @description Only those not read yet */
+                unread?: boolean;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PaginatedNotificationList"];
+                };
+            };
+        };
+    };
+    notifications_read_create: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                notification_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Notification"];
+                };
+            };
+        };
+    };
+    notifications_read_all_create: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Unread"];
+                };
+            };
+        };
+    };
+    notifications_unread_count_retrieve: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Unread"];
                 };
             };
         };

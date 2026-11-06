@@ -296,6 +296,13 @@ function staffPages(ids) {
       action: (page) => page.getByRole("button", { name: "Open the menu" }).click(),
     },
     {
+      ...p("notifications", "Notifications open", "/account"),
+      action: async (page) => {
+        await page.getByRole("button", { name: /^Notifications/ }).first().click();
+        await page.getByRole("menu").waitFor();
+      },
+    },
+    {
       ...p("palette", "Command palette (Ctrl+K)", "/"),
       action: async (page) => {
         await page.keyboard.press("Control+k");

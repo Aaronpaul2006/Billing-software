@@ -1224,3 +1224,8 @@ COLLECTION_ROUTES["vendor-retention-releases"] = lambda w: None
 # --- GSTR-2B: tests/gstr2b/test_api.py::test_another_business_reaches_none_of_it
 OBJECT_ROUTES["gstr2b-reconciliation"] = lambda w: None
 COLLECTION_ROUTES["gstr2b-returns"] = lambda w: None
+
+# --- Notifications: tests/notifications/test_notifications.py::test_only_ones_own
+OBJECT_ROUTES["notification-read"] = lambda w: None
+for _name in ("notifications", "notifications-unread-count", "notifications-read-all"):
+    COLLECTION_ROUTES[_name] = lambda w: None

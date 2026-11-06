@@ -28,6 +28,7 @@ import { cn } from "@/lib/utils";
 
 import { CommandPalette } from "./CommandPalette";
 import { InvitationsBanner } from "./InvitationsBanner";
+import { NotificationsBell } from "./NotificationsBell";
 import { MOD_KEY } from "./keys";
 import { GROUPS } from "./nav";
 import type { NavEntry } from "./nav";
@@ -204,26 +205,32 @@ function SidebarBody({
   onNavigate,
   onHelp,
   onSearch,
+  bell = false,
 }: {
   onNavigate?: () => void;
   onHelp: () => void;
   onSearch: () => void;
+  /** The bell beside Search (wide screens; phones have it in the top bar). */
+  bell?: boolean;
 }) {
   const session = useSession();
   return (
     <>
       <TenantSwitcher />
-      <Button
-        variant="outline"
-        className="text-muted-foreground mt-3 w-full justify-start px-2 font-normal"
-        aria-keyshortcuts={MOD_KEY === "⌘" ? "Meta+K" : "Control+K"}
-        onClick={onSearch}
-      >
-        <Search aria-hidden /> Search
-        <kbd className="ml-auto font-sans text-xs" aria-hidden>
-          {MOD_KEY} K
-        </kbd>
-      </Button>
+      <div className="mt-3 flex items-center gap-1">
+        <Button
+          variant="outline"
+          className="text-muted-foreground min-w-0 flex-1 justify-start px-2 font-normal"
+          aria-keyshortcuts={MOD_KEY === "⌘" ? "Meta+K" : "Control+K"}
+          onClick={onSearch}
+        >
+          <Search aria-hidden /> Search
+          <kbd className="ml-auto font-sans text-xs" aria-hidden>
+            {MOD_KEY} K
+          </kbd>
+        </Button>
+        {bell && <NotificationsBell />}
+      </div>
       <div className="mt-4 grid gap-5">
         {GROUPS.map((group) => {
           const items = group.items.filter((i) => !i.action || can(session.role, i.action));
@@ -281,10 +288,11 @@ function MobileMenu({ onHelp, onSearch }: { onHelp: () => void; onSearch: () => 
         </SheetContent>
       </Sheet>
       <span className="truncate text-sm font-semibold">{company}</span>
+      <NotificationsBell className="ml-auto size-11" />
       <Button
         variant="ghost"
         size="icon"
-        className="ml-auto size-11"
+        className="size-11"
         aria-label="Search"
         onClick={onSearch}
       >
@@ -306,7 +314,7 @@ export function AppShell() {
   return (
     <div className="flex min-h-svh">
       <aside className="bg-sidebar text-sidebar-foreground border-sidebar-border hidden w-60 shrink-0 flex-col border-r p-3 md:flex">
-        <SidebarBody onHelp={showHelp} onSearch={showSearch} />
+        <SidebarBody onHelp={showHelp} onSearch={showSearch} bell />
       </aside>
       <div className="flex min-w-0 flex-1 flex-col">
         <MobileMenu onHelp={showHelp} onSearch={showSearch} />

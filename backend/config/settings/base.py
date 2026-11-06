@@ -52,6 +52,7 @@ INSTALLED_APPS = [
     "apps.payables",
     "apps.banking",
     "apps.gstr2b",
+    "apps.notifications",
 ]
 
 MIDDLEWARE = [
@@ -159,6 +160,10 @@ CELERY_BEAT_SCHEDULE = {
     "payment-reminders": {
         "task": "apps.reminders.tasks.send_due_reminders",
         "schedule": crontab(hour=4, minute=0),
+    },
+    "daily-notifications": {
+        "task": "apps.notifications.tasks.daily",
+        "schedule": crontab(hour=4, minute=5),
     },
 }
 RENDER_PDF_ON_ISSUE = True

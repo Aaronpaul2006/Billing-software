@@ -919,6 +919,25 @@ reading: `reports.view` (so a CA with the Viewer role can check it).
 | `GET/POST /gstr2b-returns` | POST `multipart/form-data` `file` (at most 20 MB) → `201`. Read: B2B and CDNR (and amendments), per document supplier GSTIN and name, number, date, value before GST, IGST / CGST / SGST / cess, ITC available (and why not), reverse charge; other sections are left out. The file must be for one of our GSTINs (`422 other_gstin`); not a 2B: `422 not_gstr2b`. The same registration and month uploaded again replaces the old one. GET lists the months uploaded, newest first |
 | `GET /gstr2b-returns/{id}/reconciliation?status=` | Worked out now against recorded vendor bills and expenses with GST from a supplier whose GSTIN we have: same supplier and number (read loosely: case, spaces, "/ - .", leading zeros do not count), else the same value and tax to the rupee within 3 days (`note` says the numbers differ). `rows`: `MATCHED`, `AMOUNTS_DIFFER` (`taxable_difference` / `tax_difference`, 2B less books), `NOT_IN_BOOKS` (record the bill; credit notes always), `NOT_IN_2B` (in the books, dated in the 2B's month, not reported by the supplier); each with `portal` and / or `books`. `summary`: the four counts, `itc_in_2b` (available ITC, credit notes taken off), `itc_matched`, `itc_not_in_books`, `itc_at_risk` (claimed in the books, not in the 2B) |
 
+### Notifications (Part B)
+
+Few, each worth a look, each sent once (`dedupe_key`). Every member reads
+and marks only their own: the database shows nobody else's (policy
+`own_rows_read`). Sent to active members with these roles:
+
+| Kind | When | To |
+|---|---|---|
+| `QUOTATION_ACCEPTED` / `QUOTATION_DECLINED` | A client answers a quotation in the portal (after it is saved, by a background task) | Owner, admin, accountant |
+| `BILLS_OVERDUE` | Daily (Celery beat, 09:35 in India; each business on its own date): bills that became overdue yesterday, with what is still to collect | Owner, admin, accountant |
+| `PAYABLES_DUE` | Daily: vendor bills and released subcontractor retention due within 3 days and not paid | Owner, admin, accountant |
+| `MEMBER_JOINED` | Someone joins from an invitation (not a client's portal login) | Owner, admin (not the newcomer) |
+
+| Method & path | Notes |
+|---|---|
+| `GET /notifications?unread=` | One's own, newest first: `kind`, `title`, `body`, `link` (a page of the app), `read_at`, `created_at` |
+| `GET /notifications/unread-count` | `{count}`, for the bell |
+| `POST /notifications/{id}/read` · `POST /notifications/read-all` | Mark read; read-all answers how many it marked. Someone else's: `404` |
+
 ### Bank statements (Part B)
 
 Import the bank's statement file, then match each line by hand: nothing is

@@ -4641,6 +4641,158 @@
                 }
             }
         },
+        "/api/v1/notifications": {
+            "get": {
+                "operationId": "notifications_list",
+                "description": "Permission by action name (docs/01-architecture.md §3): `read_action`\nfor GET/HEAD/OPTIONS, `write_action` for everything else. Generic, so list\nendpoints get pagination and filtering from the DRF defaults.",
+                "parameters": [
+                    {
+                        "name": "cursor",
+                        "required": false,
+                        "in": "query",
+                        "description": "The pagination cursor value.",
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    {
+                        "name": "limit",
+                        "required": false,
+                        "in": "query",
+                        "description": "Number of results to return per page.",
+                        "schema": {
+                            "type": "integer"
+                        }
+                    },
+                    {
+                        "name": "ordering",
+                        "required": false,
+                        "in": "query",
+                        "description": "Which field to use when ordering the results.",
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    {
+                        "in": "query",
+                        "name": "unread",
+                        "schema": {
+                            "type": "boolean"
+                        },
+                        "description": "Only those not read yet"
+                    }
+                ],
+                "tags": [
+                    "notifications"
+                ],
+                "security": [
+                    {
+                        "bearerAuth": []
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/PaginatedNotificationList"
+                                }
+                            }
+                        },
+                        "description": ""
+                    }
+                }
+            }
+        },
+        "/api/v1/notifications/{notification_id}/read": {
+            "post": {
+                "operationId": "notifications_read_create",
+                "description": "Permission by action name (docs/01-architecture.md §3): `read_action`\nfor GET/HEAD/OPTIONS, `write_action` for everything else. Generic, so list\nendpoints get pagination and filtering from the DRF defaults.",
+                "parameters": [
+                    {
+                        "in": "path",
+                        "name": "notification_id",
+                        "schema": {
+                            "type": "string",
+                            "format": "uuid"
+                        },
+                        "required": true
+                    }
+                ],
+                "tags": [
+                    "notifications"
+                ],
+                "security": [
+                    {
+                        "bearerAuth": []
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/Notification"
+                                }
+                            }
+                        },
+                        "description": ""
+                    }
+                }
+            }
+        },
+        "/api/v1/notifications/read-all": {
+            "post": {
+                "operationId": "notifications_read_all_create",
+                "description": "Permission by action name (docs/01-architecture.md §3): `read_action`\nfor GET/HEAD/OPTIONS, `write_action` for everything else. Generic, so list\nendpoints get pagination and filtering from the DRF defaults.",
+                "tags": [
+                    "notifications"
+                ],
+                "security": [
+                    {
+                        "bearerAuth": []
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/Unread"
+                                }
+                            }
+                        },
+                        "description": ""
+                    }
+                }
+            }
+        },
+        "/api/v1/notifications/unread-count": {
+            "get": {
+                "operationId": "notifications_unread_count_retrieve",
+                "description": "For the bell: how many are not read yet.",
+                "tags": [
+                    "notifications"
+                ],
+                "security": [
+                    {
+                        "bearerAuth": []
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/Unread"
+                                }
+                            }
+                        },
+                        "description": ""
+                    }
+                }
+            }
+        },
         "/api/v1/parties": {
             "get": {
                 "operationId": "parties_list",
@@ -13121,6 +13273,75 @@
                     "doc_date"
                 ]
             },
+            "Notification": {
+                "type": "object",
+                "properties": {
+                    "id": {
+                        "type": "string",
+                        "format": "uuid",
+                        "readOnly": true
+                    },
+                    "kind": {
+                        "allOf": [
+                            {
+                                "$ref": "#/components/schemas/NotificationKindEnum"
+                            }
+                        ],
+                        "readOnly": true
+                    },
+                    "title": {
+                        "type": "string",
+                        "readOnly": true
+                    },
+                    "body": {
+                        "type": [
+                            "string",
+                            "null"
+                        ],
+                        "readOnly": true
+                    },
+                    "link": {
+                        "type": [
+                            "string",
+                            "null"
+                        ],
+                        "readOnly": true
+                    },
+                    "read_at": {
+                        "type": [
+                            "string",
+                            "null"
+                        ],
+                        "format": "date-time",
+                        "readOnly": true
+                    },
+                    "created_at": {
+                        "type": "string",
+                        "format": "date-time",
+                        "readOnly": true
+                    }
+                },
+                "required": [
+                    "body",
+                    "created_at",
+                    "id",
+                    "kind",
+                    "link",
+                    "read_at",
+                    "title"
+                ]
+            },
+            "NotificationKindEnum": {
+                "enum": [
+                    "QUOTATION_ACCEPTED",
+                    "QUOTATION_DECLINED",
+                    "BILLS_OVERDUE",
+                    "PAYABLES_DUE",
+                    "MEMBER_JOINED"
+                ],
+                "type": "string",
+                "description": "* `QUOTATION_ACCEPTED` - Quotation Accepted\n* `QUOTATION_DECLINED` - Quotation Declined\n* `BILLS_OVERDUE` - Bills Overdue\n* `PAYABLES_DUE` - Payables Due\n* `MEMBER_JOINED` - Member Joined"
+            },
             "NullEnum": {
                 "type": "null"
             },
@@ -13311,6 +13532,28 @@
                         "type": "array",
                         "items": {
                             "$ref": "#/components/schemas/Gstr2bReturn"
+                        }
+                    },
+                    "next_cursor": {
+                        "type": [
+                            "string",
+                            "null"
+                        ],
+                        "description": "Pass as ?cursor="
+                    }
+                }
+            },
+            "PaginatedNotificationList": {
+                "type": "object",
+                "required": [
+                    "results",
+                    "next_cursor"
+                ],
+                "properties": {
+                    "results": {
+                        "type": "array",
+                        "items": {
+                            "$ref": "#/components/schemas/Notification"
                         }
                     },
                     "next_cursor": {
@@ -20259,6 +20502,17 @@
                     "round_off",
                     "sgst",
                     "subtotal"
+                ]
+            },
+            "Unread": {
+                "type": "object",
+                "properties": {
+                    "count": {
+                        "type": "integer"
+                    }
+                },
+                "required": [
+                    "count"
                 ]
             },
             "Upload": {

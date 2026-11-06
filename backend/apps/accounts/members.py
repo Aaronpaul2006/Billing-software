@@ -20,6 +20,7 @@ from django.utils import timezone
 from apps.core.errors import Conflict, Forbidden, Invalid, NotFound
 from apps.core.permissions import ADMIN, OWNER, require
 from apps.core.tenancy import Principal, user_context
+from apps.notifications import tasks as notify
 from apps.tenants.models import Tenant
 
 from .models import AuthSession, Membership, MembershipStatus, User, UserStatus
@@ -243,6 +244,8 @@ def respond(principal: Principal, membership_id: uuid.UUID, *, accept: bool) -> 
         raise
     if row is None:  # respond_to_invitation() always returns the tenant id
         raise RuntimeError("respond_to_invitation returned no row")
+    if accept:
+        notify.member_joined.delay(str(row[0]), str(principal.user_id))
     security_log.info(
         "invitation_%s user=%s membership=%s",
         "accepted" if accept else "declined",
