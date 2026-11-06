@@ -57,6 +57,7 @@ import { DocumentHistory } from "./DocumentHistory";
 import { IssueReview } from "./IssueReview";
 import type { PaidNow } from "./IssueReview";
 import { ApprovalPanel } from "./ApprovalPanel";
+import { FirstBillGuide } from "./FirstBillGuide";
 import { SitePhotos } from "./SitePhotos";
 import { SendBill } from "./SendBill";
 import type { PrintCopy } from "./sending";
@@ -881,6 +882,9 @@ export function DocumentPage() {
       />
       <div className="grid gap-6">
         <BillTimeline doc={doc} />
+        {doc.status === "DRAFT" && (
+          <FirstBillGuide progress={{ client: true, line: true, saved: true }} />
+        )}
         <ApprovalPanel doc={doc} />
         <Actions doc={doc} />
         <SaveAsTemplate documentId={doc.id} docType={doc.doc_type} />

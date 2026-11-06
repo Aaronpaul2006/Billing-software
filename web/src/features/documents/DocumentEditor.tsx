@@ -81,6 +81,7 @@ import { formatDate, formatTime } from "@/lib/dates";
 import { can } from "@/lib/permissions";
 
 import { TotalsPanel } from "./TotalsPanel";
+import { FirstBillGuide } from "./FirstBillGuide";
 
 type DocumentWrite = components["schemas"]["DocumentWrite"];
 type LineIn = components["schemas"]["LineIn"];
@@ -1024,6 +1025,15 @@ function Editor({ doc, defaultTerms }: { doc?: Document; defaultTerms?: string }
           </Button>
         }
       />
+      {!current && (
+        <FirstBillGuide
+          progress={{
+            client: Boolean(values.party_id),
+            line: values.lines.some((l) => Number(l.quantity || 0) > 0 && l.rate.trim() !== ""),
+            saved: false,
+          }}
+        />
+      )}
       {showKeys && (
         <section
           aria-label="Keyboard shortcuts"

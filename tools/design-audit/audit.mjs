@@ -231,6 +231,7 @@ function staffPages(ids) {
     p("documents", "Invoices & quotes list", "/documents"),
     p("document-new", "New bill (editor)", "/documents/new"),
     p("document-edit", "Draft bill in the editor", `/documents/${ids.anilDraft}/edit`),
+    p("first-bill-guide", "New bill with the first-bill guide", "/documents/new?guide=1"),
     p("document-issued", "Issued bill (INV/0002)", `/documents/${ids.inv2}`),
     p("document-review", "Draft bill with the final review open", `/documents/${ids.lakshmiDraft}?review=1`),
     p("document-quotation", "Accepted quotation", `/documents/${ids.quotation}`),

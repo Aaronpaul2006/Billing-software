@@ -50,7 +50,7 @@ const STEPS: { key: Step; label: string; to: string }[] = [
   { key: "number_series", label: "Set up your bill number series", to: "/settings/series" },
   { key: "client", label: "Add your first client", to: "/parties/new" },
   { key: "project", label: "Add a project", to: "/projects/new" },
-  { key: "first_bill", label: "Issue your first bill", to: "/documents/new" },
+  { key: "first_bill", label: "Issue your first bill", to: "/documents/new?guide=1" },
   { key: "team", label: "Invite your team", to: "/settings/members" },
 ];
 
