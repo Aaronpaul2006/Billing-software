@@ -2503,6 +2503,23 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/tally-imports": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** @description Clients, vendors and items from Tally's masters XML (Part B, tally_import.py). */
+        post: operations["tally_imports_create"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/tds-certificates": {
         parameters: {
             query?: never;
@@ -5919,6 +5936,72 @@ export interface components {
             /** Format: uuid */
             tenant_id: string;
         };
+        TallyAdded: {
+            CLIENT: number;
+            VENDOR: number;
+            ITEM: number;
+        };
+        TallyCount: {
+            new: number;
+            exists: number;
+            problems: number;
+        };
+        TallyImportRequest: {
+            /**
+             * Format: uri
+             * @description Tally's masters exported as XML (Data Interchange), at most 20 MB.
+             */
+            file: string;
+            /**
+             * @description Preview; save nothing.
+             * @default false
+             */
+            dry_run?: boolean;
+            /** @description What to add (repeat the field); default: all three */
+            kinds?: components["schemas"]["TallyMasterKindEnum"][];
+        };
+        TallyImportResult: {
+            dry_run: boolean;
+            clients: components["schemas"]["TallyCount"];
+            vendors: components["schemas"]["TallyCount"];
+            items: components["schemas"]["TallyCount"];
+            /** @description Ledgers outside Sundry Debtors / Creditors (bank, sales, taxes): left alone */
+            other_ledgers: number;
+            /** @description Problems first, then new, then already here; at most 500 */
+            rows: components["schemas"]["TallyRow"][];
+            /** @description After an import: how many of each */
+            added: components["schemas"]["TallyAdded"] | null;
+        };
+        /**
+         * @description * `CLIENT` - CLIENT
+         *     * `VENDOR` - VENDOR
+         *     * `ITEM` - ITEM
+         * @enum {string}
+         */
+        TallyMasterKindEnum: "CLIENT" | "VENDOR" | "ITEM";
+        TallyRow: {
+            kind: components["schemas"]["TallyMasterKindEnum"];
+            name: string;
+            /**
+             * @description NEW: will be added; EXISTS: already here, skipped; PROBLEM: left out
+             *
+             *     * `NEW` - NEW
+             *     * `EXISTS` - EXISTS
+             *     * `PROBLEM` - PROBLEM
+             */
+            status: components["schemas"]["TallyRowStatusEnum"];
+            /** @description Why left out, or what was left out of it */
+            message: string;
+            /** @description GSTIN and state, or HSN and GST % */
+            detail: string;
+        };
+        /**
+         * @description * `NEW` - NEW
+         *     * `EXISTS` - EXISTS
+         *     * `PROBLEM` - PROBLEM
+         * @enum {string}
+         */
+        TallyRowStatusEnum: "NEW" | "EXISTS" | "PROBLEM";
         TallySettings: {
             readonly sales_ledger: string;
             readonly cgst_ledger: string;
@@ -10810,6 +10893,37 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["SearchResult"];
+                };
+            };
+        };
+    };
+    tally_imports_create: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "multipart/form-data": components["schemas"]["TallyImportRequest"];
+            };
+        };
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["TallyImportResult"];
+                };
+            };
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["TallyImportResult"];
                 };
             };
         };

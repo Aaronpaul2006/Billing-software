@@ -6872,6 +6872,52 @@
                 }
             }
         },
+        "/api/v1/tally-imports": {
+            "post": {
+                "operationId": "tally_imports_create",
+                "description": "Clients, vendors and items from Tally's masters XML (Part B, tally_import.py).",
+                "tags": [
+                    "parties"
+                ],
+                "requestBody": {
+                    "content": {
+                        "multipart/form-data": {
+                            "schema": {
+                                "$ref": "#/components/schemas/TallyImportRequest"
+                            }
+                        }
+                    },
+                    "required": true
+                },
+                "security": [
+                    {
+                        "bearerAuth": []
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/TallyImportResult"
+                                }
+                            }
+                        },
+                        "description": ""
+                    },
+                    "201": {
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/TallyImportResult"
+                                }
+                            }
+                        },
+                        "description": ""
+                    }
+                }
+            }
+        },
         "/api/v1/tds-certificates": {
             "get": {
                 "operationId": "tds_certificates_list",
@@ -17307,6 +17353,169 @@
                 "required": [
                     "tenant_id"
                 ]
+            },
+            "TallyAdded": {
+                "type": "object",
+                "properties": {
+                    "CLIENT": {
+                        "type": "integer"
+                    },
+                    "VENDOR": {
+                        "type": "integer"
+                    },
+                    "ITEM": {
+                        "type": "integer"
+                    }
+                },
+                "required": [
+                    "CLIENT",
+                    "ITEM",
+                    "VENDOR"
+                ]
+            },
+            "TallyCount": {
+                "type": "object",
+                "properties": {
+                    "new": {
+                        "type": "integer"
+                    },
+                    "exists": {
+                        "type": "integer"
+                    },
+                    "problems": {
+                        "type": "integer"
+                    }
+                },
+                "required": [
+                    "exists",
+                    "new",
+                    "problems"
+                ]
+            },
+            "TallyImportRequest": {
+                "type": "object",
+                "properties": {
+                    "file": {
+                        "type": "string",
+                        "format": "uri",
+                        "description": "Tally's masters exported as XML (Data Interchange), at most 20 MB."
+                    },
+                    "dry_run": {
+                        "type": "boolean",
+                        "default": false,
+                        "description": "Preview; save nothing."
+                    },
+                    "kinds": {
+                        "type": "array",
+                        "items": {
+                            "$ref": "#/components/schemas/TallyMasterKindEnum"
+                        },
+                        "description": "What to add (repeat the field); default: all three"
+                    }
+                },
+                "required": [
+                    "file"
+                ]
+            },
+            "TallyImportResult": {
+                "type": "object",
+                "properties": {
+                    "dry_run": {
+                        "type": "boolean"
+                    },
+                    "clients": {
+                        "$ref": "#/components/schemas/TallyCount"
+                    },
+                    "vendors": {
+                        "$ref": "#/components/schemas/TallyCount"
+                    },
+                    "items": {
+                        "$ref": "#/components/schemas/TallyCount"
+                    },
+                    "other_ledgers": {
+                        "type": "integer",
+                        "description": "Ledgers outside Sundry Debtors / Creditors (bank, sales, taxes): left alone"
+                    },
+                    "rows": {
+                        "type": "array",
+                        "items": {
+                            "$ref": "#/components/schemas/TallyRow"
+                        },
+                        "description": "Problems first, then new, then already here; at most 500"
+                    },
+                    "added": {
+                        "oneOf": [
+                            {
+                                "$ref": "#/components/schemas/TallyAdded"
+                            },
+                            {
+                                "type": "null"
+                            }
+                        ],
+                        "description": "After an import: how many of each"
+                    }
+                },
+                "required": [
+                    "added",
+                    "clients",
+                    "dry_run",
+                    "items",
+                    "other_ledgers",
+                    "rows",
+                    "vendors"
+                ]
+            },
+            "TallyMasterKindEnum": {
+                "enum": [
+                    "CLIENT",
+                    "VENDOR",
+                    "ITEM"
+                ],
+                "type": "string",
+                "description": "* `CLIENT` - CLIENT\n* `VENDOR` - VENDOR\n* `ITEM` - ITEM"
+            },
+            "TallyRow": {
+                "type": "object",
+                "properties": {
+                    "kind": {
+                        "$ref": "#/components/schemas/TallyMasterKindEnum"
+                    },
+                    "name": {
+                        "type": "string"
+                    },
+                    "status": {
+                        "allOf": [
+                            {
+                                "$ref": "#/components/schemas/TallyRowStatusEnum"
+                            }
+                        ],
+                        "description": "NEW: will be added; EXISTS: already here, skipped; PROBLEM: left out\n\n* `NEW` - NEW\n* `EXISTS` - EXISTS\n* `PROBLEM` - PROBLEM"
+                    },
+                    "message": {
+                        "type": "string",
+                        "description": "Why left out, or what was left out of it"
+                    },
+                    "detail": {
+                        "type": "string",
+                        "description": "GSTIN and state, or HSN and GST %"
+                    }
+                },
+                "required": [
+                    "detail",
+                    "kind",
+                    "message",
+                    "name",
+                    "status"
+                ]
+            },
+            "TallyRowStatusEnum": {
+                "enum": [
+                    "NEW",
+                    "EXISTS",
+                    "PROBLEM"
+                ],
+                "type": "string",
+                "description": "* `NEW` - NEW\n* `EXISTS` - EXISTS\n* `PROBLEM` - PROBLEM"
             },
             "TallySettings": {
                 "type": "object",

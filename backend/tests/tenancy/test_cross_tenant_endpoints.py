@@ -1207,3 +1207,6 @@ for _name in ("bank-statement-preview", "bank-statement-import", "bank-lines", "
 
 # --- Cash-flow forecast: tests/reports/test_cashflow.py::test_another_business_sees_none_of_it
 COLLECTION_ROUTES["report-cash-flow"] = lambda w: None
+
+# --- Tally masters import: tests/parties/test_tally_import.py::test_another_business_is_not_affected
+COLLECTION_ROUTES["tally-import"] = lambda w: None

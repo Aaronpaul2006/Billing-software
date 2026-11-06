@@ -281,6 +281,24 @@ among the parties is `party_exists` / `gstin_exists`; twice in the file
 `duplicate_name` / `duplicate_gstin`. Imported parties are customers.
 `GET /parties:import-sample?type=xlsx|csv`.
 
+### Masters from Tally (Part B, 2026-11-06)
+
+`POST /tally-imports`, `multipart/form-data`: `file` (Tally's masters
+exported as XML, at most 20 MB), `dry_run`, `kinds` (`CLIENT`, `VENDOR`,
+`ITEM`, repeated; default all); permission `masters.edit`. Unlike the
+spreadsheet imports it is not all or nothing: ledgers under Sundry Debtors
+(any sub-group) become clients and under Sundry Creditors vendors, stock
+items catalog items; other ledgers are counted (`other_ledgers`) and left
+alone. Each master is `NEW` (passes the checks of `POST /parties` or the
+catalog), `EXISTS` (a party with the name, any case, or GSTIN; an item with
+the name: skipped) or `PROBLEM` (left out, with the first reason). An address
+needs a city: the last of two or more address lines; an address that still
+fails is left out (`message` says so) and the party added without it. Reads
+Tally.ERP 9 and TallyPrime (GST and mailing details by date, the newest
+taken), UTF-8 or UTF-16. Response: per kind `{new, exists, problems}`,
+`rows` (problems first, at most 500), `added` after an import (`201`).
+Nothing new: `nothing_new`; not Tally XML: `not_tally_xml`.
+
 ### BOQ import
 
 `POST /projects/{id}/boq-items:import`, `multipart/form-data`: `file` (CSV in

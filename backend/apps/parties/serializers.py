@@ -7,6 +7,8 @@ from apps.core.serializers import STATE_CHOICES
 
 from .models import Party
 
+KINDS = ("CLIENT", "VENDOR", "ITEM")  # the Tally import (tally_import.py)
+
 NEEDS_GSTIN = frozenset({"REGISTERED", "COMPOSITION", "SEZ"})
 NO_GSTIN = frozenset({"UNREGISTERED", "CONSUMER", "OVERSEAS"})
 
@@ -153,3 +155,52 @@ class PartyImportResultSerializer(serializers.Serializer[Any]):
     parties = PartySerializer(
         many=True, help_text="In a dry run, a preview: id, created_at and updated_at are null."
     )
+
+
+class TallyImportRequestSerializer(serializers.Serializer[Any]):
+    file = serializers.FileField(
+        help_text="Tally's masters exported as XML (Data Interchange), at most 20 MB."
+    )
+    dry_run = serializers.BooleanField(default=False, help_text="Preview; save nothing.")
+    kinds = serializers.ListField(
+        child=serializers.ChoiceField(choices=KINDS),
+        required=False,
+        help_text="What to add (repeat the field); default: all three",
+    )
+
+
+class TallyRowSerializer(serializers.Serializer[Any]):
+    kind = serializers.ChoiceField(choices=KINDS)
+    name = serializers.CharField()
+    status = serializers.ChoiceField(
+        choices=["NEW", "EXISTS", "PROBLEM"],
+        help_text="NEW: will be added; EXISTS: already here, skipped; PROBLEM: left out",
+    )
+    message = serializers.CharField(help_text="Why left out, or what was left out of it")
+    detail = serializers.CharField(help_text="GSTIN and state, or HSN and GST %")
+
+
+class TallyCountSerializer(serializers.Serializer[Any]):
+    new = serializers.IntegerField()
+    exists = serializers.IntegerField()
+    problems = serializers.IntegerField()
+
+
+class TallyAddedSerializer(serializers.Serializer[Any]):
+    CLIENT = serializers.IntegerField()
+    VENDOR = serializers.IntegerField()
+    ITEM = serializers.IntegerField()
+
+
+class TallyImportResultSerializer(serializers.Serializer[Any]):
+    dry_run = serializers.BooleanField()
+    clients = TallyCountSerializer()
+    vendors = TallyCountSerializer()
+    items = TallyCountSerializer()
+    other_ledgers = serializers.IntegerField(
+        help_text="Ledgers outside Sundry Debtors / Creditors (bank, sales, taxes): left alone"
+    )
+    rows = TallyRowSerializer(
+        many=True, help_text="Problems first, then new, then already here; at most 500"
+    )
+    added = TallyAddedSerializer(allow_null=True, help_text="After an import: how many of each")

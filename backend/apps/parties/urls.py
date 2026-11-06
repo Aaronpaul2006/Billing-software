@@ -9,4 +9,5 @@ urlpatterns = [
         "parties:import-sample", views.PartyImportSampleView.as_view(), name="party-import-sample"
     ),
     path("parties/<uuid:party_id>", views.PartyDetailView.as_view(), name="party-detail"),
+    path("tally-imports", views.TallyImportView.as_view(), name="tally-import"),
 ]

@@ -12,6 +12,7 @@ from rest_framework.request import Request
 from rest_framework.response import Response
 
 from apps.core.api import ActionAPIView, detail_response, list_response, versioned_patch
+from apps.core.errors import Invalid
 from apps.core.idempotency import idempotent, idempotent_if_keyed
 from apps.core.imports import (
     ImportRequestSerializer,
@@ -20,9 +21,16 @@ from apps.core.imports import (
     upload_bytes,
 )
 
-from . import importer, services
+from . import importer, services, tally, tally_import
 from .models import Party
-from .serializers import PartyImportResultSerializer, PartySerializer, PartyWriteSerializer
+from .serializers import (
+    KINDS,
+    PartyImportResultSerializer,
+    PartySerializer,
+    PartyWriteSerializer,
+    TallyImportRequestSerializer,
+    TallyImportResultSerializer,
+)
 
 EDIT = "masters.edit"
 
@@ -116,3 +124,43 @@ class PartyDetailView(ActionAPIView):
             update=lambda v, changes: services.update_party(self.principal, party_id, v, changes),
             output_serializer=PartySerializer,
         )
+
+
+class TallyImportView(ActionAPIView):
+    """Clients, vendors and items from Tally's masters XML (Part B, tally_import.py)."""
+
+    write_action = EDIT
+    parser_classes = (MultiPartParser,)
+
+    @extend_schema(
+        request={"multipart/form-data": TallyImportRequestSerializer},
+        responses={200: TallyImportResultSerializer, 201: TallyImportResultSerializer},
+        tags=["parties"],
+    )
+    @idempotent
+    def post(self, request: Request) -> Response:
+        params = TallyImportRequestSerializer(data=request.data)
+        params.is_valid(raise_exception=True)
+        upload = params.validated_data["file"]
+        if upload.size > tally.MAX_BYTES:
+            raise Invalid("file", "At most 20 MB per import.", code="file_too_large")
+        data = bytes(upload.read())
+        dry_run = params.validated_data["dry_run"]
+        kinds = params.validated_data.get("kinds") or list(KINDS)
+        result = (
+            tally_import.plan(self.principal, data)
+            if dry_run
+            else tally_import.run(self.principal, data, kinds)
+        )
+        order = {"PROBLEM": 0, "NEW": 1, "EXISTS": 2}
+        rows = sorted(result.rows, key=lambda r: (order[r.status], r.kind, r.name.lower()))
+        body = {
+            "dry_run": dry_run,
+            "clients": result.count("CLIENT"),
+            "vendors": result.count("VENDOR"),
+            "items": result.count("ITEM"),
+            "other_ledgers": result.other_ledgers,
+            "rows": rows[: tally_import.MAX_ROWS],
+            "added": result.added or None,
+        }
+        return Response(TallyImportResultSerializer(body).data, status=200 if dry_run else 201)
