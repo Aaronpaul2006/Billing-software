@@ -10,6 +10,7 @@ import {
   FolderKanban,
   FolderPlus,
   History,
+  Import,
   Hash,
   IndianRupee,
   Landmark,
@@ -248,6 +249,13 @@ export const CREATE: NavEntry[] = [
     icon: Receipt,
     action: "expenses.record",
     keywords: "purchase cost new",
+  },
+  {
+    to: "/tally-import",
+    label: "Import from Tally",
+    icon: Import,
+    action: "masters.edit",
+    keywords: "tally masters ledgers clients vendors items stock xml import",
   },
   {
     to: "/parties/new",

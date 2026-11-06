@@ -297,8 +297,10 @@ def test_preview_then_import_and_again(b: Books) -> None:
     assert p["added"] is None
     first = p["rows"][0]
     assert (first["status"], first["name"]) == ("PROBLEM", "Wrong GSTIN Builders")
-    assert first["message"].startswith("gstin: ")
+    assert first["message"].startswith("GSTIN: ")
     assert [r["status"] for r in p["rows"]] == ["PROBLEM", "PROBLEM", "NEW", "NEW", "EXISTS"]
+    odd = next(r for r in p["rows"] if r["name"] == "Odd HSN item")
+    assert odd["message"] == "HSN: 4 to 8 digits are needed."
     with tenant_context(b.t.tenant_id, b.t.user_id):
         assert Party.objects.count() == 1  # a preview saves nothing
 
@@ -351,7 +353,7 @@ def test_only_the_kinds_chosen_and_an_address_left_out(b: Books) -> None:
     p = b.send(PRIME3, dry_run="true").json()
     coastal = next(r for r in p["rows"] if r["name"] == "Coastal Homes")
     assert coastal["status"] == "NEW"  # added without the address: its PIN code is wrong
-    assert coastal["message"].startswith("Address left out: pincode")
+    assert coastal["message"].startswith("Address left out: PIN code: ")
     r = b.send(PRIME3, kinds=["CLIENT", "ITEM"])
     assert r.json()["added"] == {"CLIENT": 1, "VENDOR": 0, "ITEM": 1}
     with tenant_context(b.t.tenant_id, b.t.user_id):

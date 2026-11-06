@@ -59,21 +59,55 @@ class Plan:
         return Count(statuses.count("NEW"), statuses.count("EXISTS"), statuses.count("PROBLEM"))
 
 
-def _first_error(errors: Any) -> str:
-    """The first message of a serializer's errors, with its field in words."""
+FIELDS = {
+    "display_name": "Name",
+    "name": "Name",
+    "legal_name": "Mailing name",
+    "gstin": "GSTIN",
+    "gst_treatment": "GST type",
+    "state_code": "State",
+    "pan": "PAN",
+    "email": "Email",
+    "phone": "Phone",
+    "payment_terms_days": "Credit days",
+    "billing_address": "Address",
+    "line1": "Address",
+    "city": "City",
+    "pincode": "PIN code",
+    "unit": "Unit",
+    "description": "Description",
+    "sac_hsn": "HSN",
+    "gst_rate": "GST rate",
+    "default_rate": "Rate",
+}
+PLAIN = {("sac_hsn", "invalid"): "4 to 8 digits are needed."}
+
+
+def _first(errors: Any, name: str = "") -> tuple[str, str]:
+    """(innermost field, message) of the first error."""
     if isinstance(errors, dict):
-        for name, value in errors.items():
-            message = _first_error(value)
-            if message:
-                label = str(name).replace("_", " ")
-                return message if name == "non_field_errors" else f"{label}: {message}"
+        for key, value in errors.items():
+            found = _first(value, str(key))
+            if found[1]:
+                return found
     if isinstance(errors, list):
         for value in errors:
-            if message := _first_error(value):
-                return message
-    if isinstance(errors, ErrorDetail | str):
-        return str(errors)
-    return ""
+            found = _first(value, name)
+            if found[1]:
+                return found
+    if isinstance(errors, ErrorDetail):
+        return name, PLAIN.get((name, str(errors.code)), str(errors))
+    if isinstance(errors, str):
+        return name, errors
+    return name, ""
+
+
+def _first_error(errors: Any) -> str:
+    """The first message of a serializer's errors, with its field in words."""
+    name, message = _first(errors)
+    if not name or name == "non_field_errors":
+        return message
+    return f"{FIELDS.get(name, name.replace('_', ' '))}: {message}"
 
 
 def _party_data(x: tally.Ledger) -> dict[str, Any]:

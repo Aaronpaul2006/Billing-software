@@ -1,7 +1,7 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { AlertCircle, FileUp, Plus, Trash2 } from "lucide-react";
 import { useState } from "react";
-import { useSearchParams } from "react-router";
+import { Link, useSearchParams } from "react-router";
 
 import { api, newIdempotencyKey, unwrap } from "@/api/client";
 import { ApiError } from "@/api/problem";
@@ -479,6 +479,13 @@ export function CatalogPage() {
                   }}
                 >
                   <FileUp aria-hidden /> Import from Excel
+                </Button>
+              )}
+              {panel === null && (
+                <Button variant="outline" asChild>
+                  <Link to="/tally-import">
+                    <FileUp aria-hidden /> Import from Tally
+                  </Link>
                 </Button>
               )}
               {panel !== "new" && (

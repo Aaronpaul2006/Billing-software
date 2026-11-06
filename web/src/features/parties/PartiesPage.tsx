@@ -136,6 +136,13 @@ export function PartiesPage() {
                 <FileUp aria-hidden /> Import from Excel
               </Button>
             )}
+            {mayEdit && !importing && (
+              <Button variant="outline" asChild>
+                <Link to="/tally-import">
+                  <FileUp aria-hidden /> Import from Tally
+                </Link>
+              </Button>
+            )}
             {add}
           </>
         }

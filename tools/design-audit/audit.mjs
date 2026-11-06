@@ -18,6 +18,7 @@
 import crypto from "node:crypto";
 import fs from "node:fs";
 import path from "node:path";
+import { fileURLToPath } from "node:url";
 
 import { AxeBuilder } from "@axe-core/playwright";
 import { chromium } from "playwright-core";
@@ -255,6 +256,15 @@ function staffPages(ids) {
     p("vendor-payment-new", "Pay a vendor", "/vendor-payments/new"),
     p("bank", "Bank statements", "/bank"),
     p("cash-flow", "Cash flow", "/cash-flow"),
+    p("tally-import", "Import from Tally", "/tally-import"),
+    {
+      ...p("tally-import-preview", "Import from Tally: the preview", "/tally-import"),
+      action: async (page) => {
+        const sample = path.join(path.dirname(fileURLToPath(import.meta.url)), "samples", "tally-masters.xml");
+        await page.getByLabel("Tally masters file (XML)").setInputFiles(sample);
+        await page.getByRole("heading", { name: "3. Check and import" }).waitFor();
+      },
+    },
     p("expense-new", "New expense", "/expenses/new"),
     p("expense", "An expense", `/expenses/${ids.expense}`),
     p("reports", "Reports", "/reports"),

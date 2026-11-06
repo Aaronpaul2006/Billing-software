@@ -148,6 +148,13 @@ export const routes: RouteObject[] = [
           },
           { path: "documents/:documentId", lazy: lazyPage(documents, (m) => m.DocumentPage) },
           {
+            path: "tally-import",
+            lazy: lazyPage(
+              () => import("@/features/imports/TallyImportPage"),
+              (m) => m.TallyImportPage,
+            ),
+          },
+          {
             path: "catalog",
             lazy: lazyPage(
               () => import("@/features/catalog/CatalogPage"),
