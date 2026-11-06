@@ -29,6 +29,7 @@ urlpatterns: list[URLPattern | URLResolver] = [
     path("api/v1/", include("apps.banking.urls")),
     path("api/v1/", include("apps.gstr2b.urls")),
     path("api/v1/", include("apps.notifications.urls")),
+    path("api/v1/", include("apps.diary.urls")),
 ]
 
 if settings.DEBUG:

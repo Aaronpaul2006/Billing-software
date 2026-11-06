@@ -252,6 +252,13 @@ export const routes: RouteObject[] = [
                 ),
               },
               {
+                path: "diary",
+                lazy: lazyPage(
+                  () => import("@/features/projects/DiaryTab"),
+                  (m) => m.DiaryTab,
+                ),
+              },
+              {
                 path: "retention",
                 lazy: lazyPage(
                   () => import("@/features/projects/RetentionTab"),

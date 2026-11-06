@@ -778,6 +778,70 @@ export interface paths {
         patch: operations["catalog_variants_partial_update"];
         trace?: never;
     };
+    "/api/v1/diary-entries/{entry_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * @description Permission by action name (docs/01-architecture.md §3): `read_action`
+         *     for GET/HEAD/OPTIONS, `write_action` for everything else. Generic, so list
+         *     endpoints get pagination and filtering from the DRF defaults.
+         */
+        get: operations["diary_entries_retrieve"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        /**
+         * @description Permission by action name (docs/01-architecture.md §3): `read_action`
+         *     for GET/HEAD/OPTIONS, `write_action` for everything else. Generic, so list
+         *     endpoints get pagination and filtering from the DRF defaults.
+         */
+        patch: operations["diary_entries_partial_update"];
+        trace?: never;
+    };
+    "/api/v1/diary-entries/{entry_id}/photos": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** @description Add photos to a day (uploaded first through /attachments). */
+        post: operations["diary_entries_photos_create"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/diary-photos/{photo_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        /**
+         * @description Permission by action name (docs/01-architecture.md §3): `read_action`
+         *     for GET/HEAD/OPTIONS, `write_action` for everything else. Generic, so list
+         *     endpoints get pagination and filtering from the DRF defaults.
+         */
+        delete: operations["diary_photos_destroy"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/document-series": {
         parameters: {
             query?: never;
@@ -2304,6 +2368,24 @@ export interface paths {
         get: operations["projects_boq_progress_retrieve"];
         put?: never;
         post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/projects/{project_id}/diary": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** @description A project's days, newest first; write a day. */
+        get: operations["projects_diary_list"];
+        put?: never;
+        /** @description A project's days, newest first; write a day. */
+        post: operations["projects_diary_create"];
         delete?: never;
         options?: never;
         head?: never;
@@ -3956,6 +4038,34 @@ export interface components {
             email: string;
             role: components["schemas"]["RoleEnum"];
         };
+        Entry: {
+            /** Format: uuid */
+            readonly id: string;
+            readonly version: number;
+            /** Format: uuid */
+            project_id: string;
+            /** Format: date */
+            readonly entry_date: string;
+            readonly weather: components["schemas"]["WeatherEnum"] | components["schemas"]["NullEnum"];
+            readonly workers: number | null;
+            readonly work_done: string;
+            readonly hold_ups: string | null;
+            readonly photos: components["schemas"]["Photo"][];
+            readonly written_by: string;
+            /** Format: date-time */
+            readonly created_at: string;
+            /** Format: date-time */
+            readonly updated_at: string;
+        };
+        EntryWrite: {
+            /** Format: date */
+            entry_date: string;
+            weather?: components["schemas"]["WeatherEnum"] | components["schemas"]["NullEnum"];
+            workers?: number | null;
+            work_done: string;
+            hold_ups?: string | null;
+            photos?: components["schemas"]["PhotoIn"][];
+        };
         Expense: {
             /** Format: uuid */
             readonly id: string;
@@ -4693,6 +4803,11 @@ export interface components {
             /** @description Pass as ?cursor= */
             next_cursor: string | null;
         };
+        PaginatedEntryList: {
+            results: components["schemas"]["Entry"][];
+            /** @description Pass as ?cursor= */
+            next_cursor: string | null;
+        };
         PaginatedExpenseList: {
             results: components["schemas"]["Expense"][];
             /** @description Pass as ?cursor= */
@@ -5004,6 +5119,12 @@ export interface components {
             notes?: string | null;
             terms?: string | null;
             lines?: components["schemas"]["LineIn"][];
+        };
+        PatchedEntryUpdate: {
+            weather?: components["schemas"]["WeatherEnum"] | components["schemas"]["NullEnum"];
+            workers?: number | null;
+            work_done?: string;
+            hold_ups?: string | null;
         };
         /** @description The total is computed by the server: taxable value + GST. */
         PatchedExpenseWrite: {
@@ -5375,6 +5496,28 @@ export interface components {
             url: string;
             /** @description Seconds the link stays valid. */
             expires_in: number;
+        };
+        Photo: {
+            /** Format: uuid */
+            readonly id: string;
+            /** Format: uuid */
+            attachment_id: string;
+            readonly caption: string | null;
+            /** @description To show it; valid for a few minutes */
+            readonly url: string;
+            /** Format: date-time */
+            readonly created_at: string;
+        };
+        PhotoIn: {
+            /**
+             * Format: uuid
+             * @description An uploaded image that passed the check
+             */
+            attachment_id: string;
+            caption?: string;
+        };
+        PhotosIn: {
+            photos: components["schemas"]["PhotoIn"][];
         };
         PortalAllocation: {
             /** Format: uuid */
@@ -5982,6 +6125,8 @@ export interface components {
          *     * `print_settings` - print_settings
          *     * `projects` - projects
          *     * `retention_releases` - retention_releases
+         *     * `site_diary_entries` - site_diary_entries
+         *     * `site_diary_photos` - site_diary_photos
          *     * `tally_settings` - tally_settings
          *     * `tds_certificates` - tds_certificates
          *     * `tenants` - tenants
@@ -5991,7 +6136,7 @@ export interface components {
          *     * `work_orders` - work_orders
          * @enum {string}
          */
-        RecordTypeEnum: "boq_items" | "catalog_item_variants" | "catalog_items" | "document_emails" | "document_series" | "document_templates" | "documents" | "email_invitations" | "expenses" | "exports" | "gst_registrations" | "gstr2b_returns" | "memberships" | "parties" | "payment_reminders" | "payments" | "print_settings" | "projects" | "retention_releases" | "tally_settings" | "tds_certificates" | "tenants" | "vendor_bills" | "vendor_payments" | "work_order_items" | "work_orders";
+        RecordTypeEnum: "boq_items" | "catalog_item_variants" | "catalog_items" | "document_emails" | "document_series" | "document_templates" | "documents" | "email_invitations" | "expenses" | "exports" | "gst_registrations" | "gstr2b_returns" | "memberships" | "parties" | "payment_reminders" | "payments" | "print_settings" | "projects" | "retention_releases" | "site_diary_entries" | "site_diary_photos" | "tally_settings" | "tds_certificates" | "tenants" | "vendor_bills" | "vendor_payments" | "work_order_items" | "work_orders";
         RecoveryCodes: {
             /** @description Shown once. Each works one time. */
             recovery_codes: string[];
@@ -7700,6 +7845,14 @@ export interface components {
         Void: {
             reason: string;
         };
+        /**
+         * @description * `SUNNY` - Sunny
+         *     * `CLOUDY` - Cloudy
+         *     * `RAIN` - Rain
+         *     * `HEAVY_RAIN` - Heavy Rain
+         * @enum {string}
+         */
+        WeatherEnum: "SUNNY" | "CLOUDY" | "RAIN" | "HEAVY_RAIN";
         WorkOrder: {
             /** Format: uuid */
             readonly id: string;
@@ -8025,6 +8178,8 @@ export interface operations {
                  *     * `print_settings` - print_settings
                  *     * `projects` - projects
                  *     * `retention_releases` - retention_releases
+                 *     * `site_diary_entries` - site_diary_entries
+                 *     * `site_diary_photos` - site_diary_photos
                  *     * `tally_settings` - tally_settings
                  *     * `tds_certificates` - tds_certificates
                  *     * `tenants` - tenants
@@ -8033,7 +8188,7 @@ export interface operations {
                  *     * `work_order_items` - work_order_items
                  *     * `work_orders` - work_orders
                  */
-                record_type?: "boq_items" | "catalog_item_variants" | "catalog_items" | "document_emails" | "document_series" | "document_templates" | "documents" | "email_invitations" | "expenses" | "exports" | "gst_registrations" | "gstr2b_returns" | "memberships" | "parties" | "payment_reminders" | "payments" | "print_settings" | "projects" | "retention_releases" | "tally_settings" | "tds_certificates" | "tenants" | "vendor_bills" | "vendor_payments" | "work_order_items" | "work_orders";
+                record_type?: "boq_items" | "catalog_item_variants" | "catalog_items" | "document_emails" | "document_series" | "document_templates" | "documents" | "email_invitations" | "expenses" | "exports" | "gst_registrations" | "gstr2b_returns" | "memberships" | "parties" | "payment_reminders" | "payments" | "print_settings" | "projects" | "retention_releases" | "site_diary_entries" | "site_diary_photos" | "tally_settings" | "tds_certificates" | "tenants" | "vendor_bills" | "vendor_payments" | "work_order_items" | "work_orders";
             };
             header?: never;
             path?: never;
@@ -9039,6 +9194,97 @@ export interface operations {
                 content: {
                     "application/json": components["schemas"]["CatalogVariant"];
                 };
+            };
+        };
+    };
+    diary_entries_retrieve: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                entry_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Entry"];
+                };
+            };
+        };
+    };
+    diary_entries_partial_update: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                entry_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: {
+            content: {
+                "application/json": components["schemas"]["PatchedEntryUpdate"];
+            };
+        };
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Entry"];
+                };
+            };
+        };
+    };
+    diary_entries_photos_create: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                entry_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["PhotosIn"];
+            };
+        };
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Entry"];
+                };
+            };
+        };
+    };
+    diary_photos_destroy: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                photo_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description No response body */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
             };
         };
     };
@@ -11538,6 +11784,61 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["BoqProgress"];
+                };
+            };
+        };
+    };
+    projects_diary_list: {
+        parameters: {
+            query?: {
+                /** @description The pagination cursor value. */
+                cursor?: string;
+                date_from?: string;
+                date_to?: string;
+                /** @description Number of results to return per page. */
+                limit?: number;
+                /** @description Which field to use when ordering the results. */
+                ordering?: string;
+            };
+            header?: never;
+            path: {
+                project_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PaginatedEntryList"];
+                };
+            };
+        };
+    };
+    projects_diary_create: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                project_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["EntryWrite"];
+            };
+        };
+        responses: {
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Entry"];
                 };
             };
         };

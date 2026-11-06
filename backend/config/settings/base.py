@@ -53,6 +53,7 @@ INSTALLED_APPS = [
     "apps.banking",
     "apps.gstr2b",
     "apps.notifications",
+    "apps.diary",
 ]
 
 MIDDLEWARE = [

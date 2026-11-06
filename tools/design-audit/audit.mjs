@@ -275,6 +275,7 @@ function staffPages(ids) {
     },
     p("expense-new", "New expense", "/expenses/new"),
     p("expense", "An expense", `/expenses/${ids.expense}`),
+    p("project-diary", "A project's site diary", `/projects/${ids.tower}/diary`),
     p("work-orders", "Work orders", "/work-orders"),
     p("work-order-new", "New work order", "/work-orders/new"),
     p("work-order", "A work order", `/work-orders/${ids.workOrder}`),

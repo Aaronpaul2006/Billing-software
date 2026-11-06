@@ -511,6 +511,35 @@ def seed(api: Api) -> None:
             ],
         },
     )
+    # Two days of the site diary on the tower (photos are added from a phone).
+    for day, weather, workers, work, hold_ups in (
+        (
+            "2026-11-04",
+            "SUNNY",
+            22,
+            "Fourth floor columns cast (C1 to C12). Slab shuttering started on grids A to C.",
+            None,
+        ),
+        (
+            "2026-11-05",
+            "RAIN",
+            14,
+            "Slab shuttering grids A to C finished; reinforcement for the "
+            "fourth floor slab tied on grid A.",
+            "Rain from 2 pm: concreting moved to Monday.",
+        ),
+    ):
+        api.call(
+            "POST",
+            f"/projects/{tower['id']}/diary",
+            {
+                "entry_date": day,
+                "weather": weather,
+                "workers": workers,
+                "work_done": work,
+                "hold_ups": hold_ups,
+            },
+        )
     print("Added: GSTIN, number series, 4 clients, 3 projects, 7 items, bill printing with a logo,")
     print("INV/0001 (paid), INV/0002 (part paid), INV/0003 with CN/0001, QT/0001 (accepted,")
     print("draft invoice made from it), a draft for Lakshmi Traders with review warnings, and")

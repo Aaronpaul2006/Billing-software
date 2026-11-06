@@ -1088,6 +1088,45 @@ CREATE TABLE notifications (
 );
 CREATE INDEX notifications_user_idx ON notifications (tenant_id, user_id, created_at DESC);
 
+-- Site diary (Part B): what happened on a project each day, with photos
+-- (uploaded attachments, images only). One entry per project and day, kept
+-- by whoever is on site; photos can later be shown with an RA bill as proof
+-- of work.
+CREATE TABLE site_diary_entries (
+  id           uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+  tenant_id    uuid NOT NULL REFERENCES tenants (id),
+  project_id   uuid NOT NULL,
+  entry_date   date NOT NULL,
+  weather      text CHECK (weather IN ('SUNNY', 'CLOUDY', 'RAIN', 'HEAVY_RAIN')),
+  workers      integer CHECK (workers >= 0 AND workers <= 10000),   -- on site that day
+  work_done    text NOT NULL CHECK (char_length(work_done) BETWEEN 1 AND 4000),
+  hold_ups     text CHECK (char_length(hold_ups) <= 2000),           -- what stopped or slowed work
+  version      integer NOT NULL DEFAULT 1,
+  created_by   uuid NOT NULL REFERENCES users (id),
+  created_at   timestamptz NOT NULL DEFAULT now(),
+  updated_at   timestamptz NOT NULL DEFAULT now(),
+  UNIQUE (tenant_id, id),
+  UNIQUE (tenant_id, project_id, entry_date),
+  FOREIGN KEY (tenant_id, project_id) REFERENCES projects (tenant_id, id)
+);
+CREATE INDEX site_diary_entries_project_idx ON site_diary_entries (tenant_id, project_id, entry_date DESC);
+
+CREATE TABLE site_diary_photos (
+  id             uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+  tenant_id      uuid NOT NULL REFERENCES tenants (id),
+  entry_id       uuid NOT NULL,
+  attachment_id  uuid NOT NULL,
+  caption        text CHECK (char_length(caption) <= 200),
+  sort_order     integer NOT NULL DEFAULT 0,
+  created_by     uuid NOT NULL REFERENCES users (id),
+  created_at     timestamptz NOT NULL DEFAULT now(),
+  UNIQUE (tenant_id, id),
+  UNIQUE (entry_id, attachment_id),
+  FOREIGN KEY (tenant_id, entry_id)      REFERENCES site_diary_entries (tenant_id, id) ON DELETE CASCADE,
+  FOREIGN KEY (tenant_id, attachment_id) REFERENCES attachments (tenant_id, id)
+);
+CREATE INDEX site_diary_photos_entry_idx ON site_diary_photos (tenant_id, entry_id, sort_order);
+
 -- Income-tax TDS certificates (Form 16A) received from clients, to reconcile
 -- with the TDS deducted on our bills. A record of the client's paper, not a
 -- posting of ours: it may be corrected or deleted (audited).
@@ -1636,6 +1675,24 @@ CREATE TRIGGER vendor_retention_releases_check
   BEFORE INSERT OR UPDATE ON vendor_retention_releases
   FOR EACH ROW EXECUTE FUNCTION vendor_retention_releases_check();
 
+-- Site diary photos are photos: an image attachment that passed the virus check.
+CREATE FUNCTION site_diary_photos_check() RETURNS trigger
+LANGUAGE plpgsql SECURITY DEFINER SET search_path = public, pg_temp AS $$
+DECLARE
+  file record;
+BEGIN
+  SELECT content_type, status INTO file FROM attachments WHERE id = NEW.attachment_id;
+  IF file.status IS DISTINCT FROM 'AVAILABLE' OR file.content_type NOT LIKE 'image/%' THEN
+    RAISE EXCEPTION 'a diary photo is an image that passed the virus check'
+      USING ERRCODE = 'check_violation';
+  END IF;
+  RETURN NEW;
+END $$;
+
+CREATE TRIGGER site_diary_photos_check
+  BEFORE INSERT OR UPDATE OF attachment_id ON site_diary_photos
+  FOR EACH ROW EXECUTE FUNCTION site_diary_photos_check();
+
 -- 7d. Audit trail. SECURITY DEFINER so the app role needs no INSERT right on
 --     audit_log (it cannot forge or bulk-write audit rows directly).
 CREATE FUNCTION audit_row_change() RETURNS trigger
@@ -1680,7 +1737,8 @@ BEGIN
     'email_invitations', 'payment_reminders', 'document_templates', 'catalog_item_variants',
     'document_line_measurements', 'print_settings', 'document_emails', 'tally_settings',
     'vendor_bills', 'vendor_payments', 'vendor_allocations', 'bank_lines', 'work_orders',
-    'work_order_items', 'vendor_bill_lines', 'vendor_retention_releases', 'gstr2b_returns']
+    'work_order_items', 'vendor_bill_lines', 'vendor_retention_releases', 'gstr2b_returns',
+    'site_diary_entries', 'site_diary_photos']
   LOOP
     EXECUTE format(
       'CREATE TRIGGER audit AFTER INSERT OR UPDATE OR DELETE ON %I FOR EACH ROW EXECUTE FUNCTION audit_row_change()', t);
@@ -1703,7 +1761,8 @@ BEGIN
     'payment_reminders', 'document_templates', 'catalog_item_variants', 'document_line_measurements',
     'print_settings', 'document_emails', 'tally_settings', 'vendor_bills', 'vendor_payments',
     'vendor_allocations', 'bank_lines', 'work_orders', 'work_order_items', 'vendor_bill_lines',
-    'vendor_retention_releases', 'gstr2b_returns', 'gstr2b_lines', 'notifications']
+    'vendor_retention_releases', 'gstr2b_returns', 'gstr2b_lines', 'notifications',
+    'site_diary_entries', 'site_diary_photos']
   LOOP
     EXECUTE format('ALTER TABLE %I ENABLE ROW LEVEL SECURITY', t);
     EXECUTE format('ALTER TABLE %I FORCE ROW LEVEL SECURITY', t);
@@ -1818,7 +1877,8 @@ BEGIN
     'tds_certificates', 'email_invitations', 'payment_reminders', 'document_templates', 'audit_log',
     'print_settings', 'document_emails', 'tally_settings', 'vendor_bills', 'vendor_payments',
     'vendor_allocations', 'bank_lines', 'work_orders', 'work_order_items', 'vendor_bill_lines',
-    'vendor_retention_releases', 'gstr2b_returns', 'gstr2b_lines', 'notifications']
+    'vendor_retention_releases', 'gstr2b_returns', 'gstr2b_lines', 'notifications',
+    'site_diary_entries', 'site_diary_photos']
   LOOP
     EXECUTE format(
       'CREATE POLICY client_scope ON %I AS RESTRICTIVE USING (NOT app_portal_session())', t);
@@ -2069,7 +2129,7 @@ GRANT SELECT, INSERT, UPDATE ON ALL TABLES IN SCHEMA public TO billing_app;
 GRANT DELETE ON documents, document_lines, allocations, boq_items, catalog_items, tds_certificates,
                 idempotency_keys, auth_sessions, document_templates, catalog_item_variants,
                 document_line_measurements, vendor_allocations, work_order_items,
-                vendor_bill_lines, gstr2b_returns, gstr2b_lines TO billing_app;
+                vendor_bill_lines, gstr2b_returns, gstr2b_lines, site_diary_photos TO billing_app;
 -- Audit rows are written only by the trigger.
 REVOKE INSERT, UPDATE, DELETE ON audit_log FROM billing_app;
 REVOKE INSERT, UPDATE ON v_billing_summary, v_receivables, v_project_billing FROM billing_app;

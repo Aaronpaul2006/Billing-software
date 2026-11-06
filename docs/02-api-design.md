@@ -938,6 +938,19 @@ and marks only their own: the database shows nobody else's (policy
 | `GET /notifications/unread-count` | `{count}`, for the bell |
 | `POST /notifications/{id}/read` · `POST /notifications/read-all` | Mark read; read-all answers how many it marked. Someone else's: `404` |
 
+### Site diary (Part B)
+
+One entry per project and day: what was done, who was on site, the weather,
+what held work up, with photos. Writing: the roles that record site entries
+(`expenses.record`, site engineers and up); reading: any member. Not in the
+client portal.
+
+| Method & path | Notes |
+|---|---|
+| `GET/POST /projects/{id}/diary?date_from=&date_to=` | Newest day first. POST `{entry_date, work_done, weather? (SUNNY, CLOUDY, RAIN, HEAVY_RAIN), workers?, hold_ups?, photos?: [{attachment_id, caption?}]}` → `201`; a second entry for the same day: `409 entry_exists` with `entry_id` (add to it instead). Each entry lists its `photos` with a short-lived `url` |
+| `GET/PATCH /diary-entries/{id}` | PATCH (If-Match) the text, weather and workers; the day stays its day |
+| `POST /diary-entries/{id}/photos` · `DELETE /diary-photos/{id}` | `{photos: [{attachment_id, caption?}]}`, at most 30 a day. A photo is an image upload that passed the virus check (`not_a_photo`, `not_available`); the database insists too (7e) |
+
 ### Bank statements (Part B)
 
 Import the bank's statement file, then match each line by hand: nothing is

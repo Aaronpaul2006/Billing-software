@@ -1229,3 +1229,7 @@ COLLECTION_ROUTES["gstr2b-returns"] = lambda w: None
 OBJECT_ROUTES["notification-read"] = lambda w: None
 for _name in ("notifications", "notifications-unread-count", "notifications-read-all"):
     COLLECTION_ROUTES[_name] = lambda w: None
+
+# --- Site diary: tests/diary/test_diary.py::test_another_business_reaches_none_of_it
+for _name in ("project-diary", "diary-entry", "diary-entry-photos", "diary-photo"):
+    OBJECT_ROUTES[_name] = lambda w: None

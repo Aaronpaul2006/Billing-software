@@ -228,6 +228,8 @@
                                 "print_settings",
                                 "projects",
                                 "retention_releases",
+                                "site_diary_entries",
+                                "site_diary_photos",
                                 "tally_settings",
                                 "tds_certificates",
                                 "tenants",
@@ -239,7 +241,7 @@
                             "type": "string",
                             "minLength": 1
                         },
-                        "description": "* `boq_items` - boq_items\n* `catalog_item_variants` - catalog_item_variants\n* `catalog_items` - catalog_items\n* `document_emails` - document_emails\n* `document_series` - document_series\n* `document_templates` - document_templates\n* `documents` - documents\n* `email_invitations` - email_invitations\n* `expenses` - expenses\n* `exports` - exports\n* `gst_registrations` - gst_registrations\n* `gstr2b_returns` - gstr2b_returns\n* `memberships` - memberships\n* `parties` - parties\n* `payment_reminders` - payment_reminders\n* `payments` - payments\n* `print_settings` - print_settings\n* `projects` - projects\n* `retention_releases` - retention_releases\n* `tally_settings` - tally_settings\n* `tds_certificates` - tds_certificates\n* `tenants` - tenants\n* `vendor_bills` - vendor_bills\n* `vendor_payments` - vendor_payments\n* `work_order_items` - work_order_items\n* `work_orders` - work_orders"
+                        "description": "* `boq_items` - boq_items\n* `catalog_item_variants` - catalog_item_variants\n* `catalog_items` - catalog_items\n* `document_emails` - document_emails\n* `document_series` - document_series\n* `document_templates` - document_templates\n* `documents` - documents\n* `email_invitations` - email_invitations\n* `expenses` - expenses\n* `exports` - exports\n* `gst_registrations` - gst_registrations\n* `gstr2b_returns` - gstr2b_returns\n* `memberships` - memberships\n* `parties` - parties\n* `payment_reminders` - payment_reminders\n* `payments` - payments\n* `print_settings` - print_settings\n* `projects` - projects\n* `retention_releases` - retention_releases\n* `site_diary_entries` - site_diary_entries\n* `site_diary_photos` - site_diary_photos\n* `tally_settings` - tally_settings\n* `tds_certificates` - tds_certificates\n* `tenants` - tenants\n* `vendor_bills` - vendor_bills\n* `vendor_payments` - vendor_payments\n* `work_order_items` - work_order_items\n* `work_orders` - work_orders"
                     }
                 ],
                 "tags": [
@@ -1841,6 +1843,164 @@
                 ],
                 "tags": [
                     "catalog"
+                ],
+                "security": [
+                    {
+                        "bearerAuth": []
+                    }
+                ],
+                "responses": {
+                    "204": {
+                        "description": "No response body"
+                    }
+                }
+            }
+        },
+        "/api/v1/diary-entries/{entry_id}": {
+            "get": {
+                "operationId": "diary_entries_retrieve",
+                "description": "Permission by action name (docs/01-architecture.md §3): `read_action`\nfor GET/HEAD/OPTIONS, `write_action` for everything else. Generic, so list\nendpoints get pagination and filtering from the DRF defaults.",
+                "parameters": [
+                    {
+                        "in": "path",
+                        "name": "entry_id",
+                        "schema": {
+                            "type": "string",
+                            "format": "uuid"
+                        },
+                        "required": true
+                    }
+                ],
+                "tags": [
+                    "diary"
+                ],
+                "security": [
+                    {
+                        "bearerAuth": []
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/Entry"
+                                }
+                            }
+                        },
+                        "description": ""
+                    }
+                }
+            },
+            "patch": {
+                "operationId": "diary_entries_partial_update",
+                "description": "Permission by action name (docs/01-architecture.md §3): `read_action`\nfor GET/HEAD/OPTIONS, `write_action` for everything else. Generic, so list\nendpoints get pagination and filtering from the DRF defaults.",
+                "parameters": [
+                    {
+                        "in": "path",
+                        "name": "entry_id",
+                        "schema": {
+                            "type": "string",
+                            "format": "uuid"
+                        },
+                        "required": true
+                    }
+                ],
+                "tags": [
+                    "diary"
+                ],
+                "requestBody": {
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/PatchedEntryUpdate"
+                            }
+                        }
+                    }
+                },
+                "security": [
+                    {
+                        "bearerAuth": []
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/Entry"
+                                }
+                            }
+                        },
+                        "description": ""
+                    }
+                }
+            }
+        },
+        "/api/v1/diary-entries/{entry_id}/photos": {
+            "post": {
+                "operationId": "diary_entries_photos_create",
+                "description": "Add photos to a day (uploaded first through /attachments).",
+                "parameters": [
+                    {
+                        "in": "path",
+                        "name": "entry_id",
+                        "schema": {
+                            "type": "string",
+                            "format": "uuid"
+                        },
+                        "required": true
+                    }
+                ],
+                "tags": [
+                    "diary"
+                ],
+                "requestBody": {
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/PhotosIn"
+                            }
+                        }
+                    },
+                    "required": true
+                },
+                "security": [
+                    {
+                        "bearerAuth": []
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/Entry"
+                                }
+                            }
+                        },
+                        "description": ""
+                    }
+                }
+            }
+        },
+        "/api/v1/diary-photos/{photo_id}": {
+            "delete": {
+                "operationId": "diary_photos_destroy",
+                "description": "Permission by action name (docs/01-architecture.md §3): `read_action`\nfor GET/HEAD/OPTIONS, `write_action` for everything else. Generic, so list\nendpoints get pagination and filtering from the DRF defaults.",
+                "parameters": [
+                    {
+                        "in": "path",
+                        "name": "photo_id",
+                        "schema": {
+                            "type": "string",
+                            "format": "uuid"
+                        },
+                        "required": true
+                    }
+                ],
+                "tags": [
+                    "diary"
                 ],
                 "security": [
                     {
@@ -6439,6 +6599,131 @@
                             "application/json": {
                                 "schema": {
                                     "$ref": "#/components/schemas/BoqProgress"
+                                }
+                            }
+                        },
+                        "description": ""
+                    }
+                }
+            }
+        },
+        "/api/v1/projects/{project_id}/diary": {
+            "get": {
+                "operationId": "projects_diary_list",
+                "description": "A project's days, newest first; write a day.",
+                "parameters": [
+                    {
+                        "name": "cursor",
+                        "required": false,
+                        "in": "query",
+                        "description": "The pagination cursor value.",
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    {
+                        "in": "query",
+                        "name": "date_from",
+                        "schema": {
+                            "type": "string",
+                            "format": "date"
+                        }
+                    },
+                    {
+                        "in": "query",
+                        "name": "date_to",
+                        "schema": {
+                            "type": "string",
+                            "format": "date"
+                        }
+                    },
+                    {
+                        "name": "limit",
+                        "required": false,
+                        "in": "query",
+                        "description": "Number of results to return per page.",
+                        "schema": {
+                            "type": "integer"
+                        }
+                    },
+                    {
+                        "name": "ordering",
+                        "required": false,
+                        "in": "query",
+                        "description": "Which field to use when ordering the results.",
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    {
+                        "in": "path",
+                        "name": "project_id",
+                        "schema": {
+                            "type": "string",
+                            "format": "uuid"
+                        },
+                        "required": true
+                    }
+                ],
+                "tags": [
+                    "diary"
+                ],
+                "security": [
+                    {
+                        "bearerAuth": []
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/PaginatedEntryList"
+                                }
+                            }
+                        },
+                        "description": ""
+                    }
+                }
+            },
+            "post": {
+                "operationId": "projects_diary_create",
+                "description": "A project's days, newest first; write a day.",
+                "parameters": [
+                    {
+                        "in": "path",
+                        "name": "project_id",
+                        "schema": {
+                            "type": "string",
+                            "format": "uuid"
+                        },
+                        "required": true
+                    }
+                ],
+                "tags": [
+                    "diary"
+                ],
+                "requestBody": {
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/EntryWrite"
+                            }
+                        }
+                    },
+                    "required": true
+                },
+                "security": [
+                    {
+                        "bearerAuth": []
+                    }
+                ],
+                "responses": {
+                    "201": {
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/Entry"
                                 }
                             }
                         },
@@ -11309,6 +11594,141 @@
                     "role"
                 ]
             },
+            "Entry": {
+                "type": "object",
+                "properties": {
+                    "id": {
+                        "type": "string",
+                        "format": "uuid",
+                        "readOnly": true
+                    },
+                    "version": {
+                        "type": "integer",
+                        "readOnly": true
+                    },
+                    "project_id": {
+                        "type": "string",
+                        "format": "uuid"
+                    },
+                    "entry_date": {
+                        "type": "string",
+                        "format": "date",
+                        "readOnly": true
+                    },
+                    "weather": {
+                        "readOnly": true,
+                        "oneOf": [
+                            {
+                                "$ref": "#/components/schemas/WeatherEnum"
+                            },
+                            {
+                                "$ref": "#/components/schemas/NullEnum"
+                            }
+                        ]
+                    },
+                    "workers": {
+                        "type": [
+                            "integer",
+                            "null"
+                        ],
+                        "readOnly": true
+                    },
+                    "work_done": {
+                        "type": "string",
+                        "readOnly": true
+                    },
+                    "hold_ups": {
+                        "type": [
+                            "string",
+                            "null"
+                        ],
+                        "readOnly": true
+                    },
+                    "photos": {
+                        "type": "array",
+                        "items": {
+                            "$ref": "#/components/schemas/Photo"
+                        },
+                        "readOnly": true
+                    },
+                    "written_by": {
+                        "type": "string",
+                        "readOnly": true
+                    },
+                    "created_at": {
+                        "type": "string",
+                        "format": "date-time",
+                        "readOnly": true
+                    },
+                    "updated_at": {
+                        "type": "string",
+                        "format": "date-time",
+                        "readOnly": true
+                    }
+                },
+                "required": [
+                    "created_at",
+                    "entry_date",
+                    "hold_ups",
+                    "id",
+                    "photos",
+                    "project_id",
+                    "updated_at",
+                    "version",
+                    "weather",
+                    "work_done",
+                    "workers",
+                    "written_by"
+                ]
+            },
+            "EntryWrite": {
+                "type": "object",
+                "properties": {
+                    "entry_date": {
+                        "type": "string",
+                        "format": "date"
+                    },
+                    "weather": {
+                        "oneOf": [
+                            {
+                                "$ref": "#/components/schemas/WeatherEnum"
+                            },
+                            {
+                                "$ref": "#/components/schemas/NullEnum"
+                            }
+                        ]
+                    },
+                    "workers": {
+                        "type": [
+                            "integer",
+                            "null"
+                        ],
+                        "maximum": 10000,
+                        "minimum": 0
+                    },
+                    "work_done": {
+                        "type": "string",
+                        "maxLength": 4000
+                    },
+                    "hold_ups": {
+                        "type": [
+                            "string",
+                            "null"
+                        ],
+                        "maxLength": 2000
+                    },
+                    "photos": {
+                        "type": "array",
+                        "items": {
+                            "$ref": "#/components/schemas/PhotoIn"
+                        }
+                    }
+                },
+                "required": [
+                    "entry_date",
+                    "work_done"
+                ]
+            },
             "Expense": {
                 "type": "object",
                 "properties": {
@@ -13477,6 +13897,28 @@
                     }
                 }
             },
+            "PaginatedEntryList": {
+                "type": "object",
+                "required": [
+                    "results",
+                    "next_cursor"
+                ],
+                "properties": {
+                    "results": {
+                        "type": "array",
+                        "items": {
+                            "$ref": "#/components/schemas/Entry"
+                        }
+                    },
+                    "next_cursor": {
+                        "type": [
+                            "string",
+                            "null"
+                        ],
+                        "description": "Pass as ?cursor="
+                    }
+                }
+            },
             "PaginatedExpenseList": {
                 "type": "object",
                 "required": [
@@ -14603,6 +15045,40 @@
                     }
                 }
             },
+            "PatchedEntryUpdate": {
+                "type": "object",
+                "properties": {
+                    "weather": {
+                        "oneOf": [
+                            {
+                                "$ref": "#/components/schemas/WeatherEnum"
+                            },
+                            {
+                                "$ref": "#/components/schemas/NullEnum"
+                            }
+                        ]
+                    },
+                    "workers": {
+                        "type": [
+                            "integer",
+                            "null"
+                        ],
+                        "maximum": 10000,
+                        "minimum": 0
+                    },
+                    "work_done": {
+                        "type": "string",
+                        "maxLength": 4000
+                    },
+                    "hold_ups": {
+                        "type": [
+                            "string",
+                            "null"
+                        ],
+                        "maxLength": 2000
+                    }
+                }
+            },
             "PatchedExpenseWrite": {
                 "type": "object",
                 "description": "The total is computed by the server: taxable value + GST.",
@@ -15711,6 +16187,75 @@
                 "required": [
                     "expires_in",
                     "url"
+                ]
+            },
+            "Photo": {
+                "type": "object",
+                "properties": {
+                    "id": {
+                        "type": "string",
+                        "format": "uuid",
+                        "readOnly": true
+                    },
+                    "attachment_id": {
+                        "type": "string",
+                        "format": "uuid"
+                    },
+                    "caption": {
+                        "type": [
+                            "string",
+                            "null"
+                        ],
+                        "readOnly": true
+                    },
+                    "url": {
+                        "type": "string",
+                        "readOnly": true,
+                        "description": "To show it; valid for a few minutes"
+                    },
+                    "created_at": {
+                        "type": "string",
+                        "format": "date-time",
+                        "readOnly": true
+                    }
+                },
+                "required": [
+                    "attachment_id",
+                    "caption",
+                    "created_at",
+                    "id",
+                    "url"
+                ]
+            },
+            "PhotoIn": {
+                "type": "object",
+                "properties": {
+                    "attachment_id": {
+                        "type": "string",
+                        "format": "uuid",
+                        "description": "An uploaded image that passed the check"
+                    },
+                    "caption": {
+                        "type": "string",
+                        "maxLength": 200
+                    }
+                },
+                "required": [
+                    "attachment_id"
+                ]
+            },
+            "PhotosIn": {
+                "type": "object",
+                "properties": {
+                    "photos": {
+                        "type": "array",
+                        "items": {
+                            "$ref": "#/components/schemas/PhotoIn"
+                        }
+                    }
+                },
+                "required": [
+                    "photos"
                 ]
             },
             "PortalAllocation": {
@@ -17490,6 +18035,8 @@
                     "print_settings",
                     "projects",
                     "retention_releases",
+                    "site_diary_entries",
+                    "site_diary_photos",
                     "tally_settings",
                     "tds_certificates",
                     "tenants",
@@ -17499,7 +18046,7 @@
                     "work_orders"
                 ],
                 "type": "string",
-                "description": "* `boq_items` - boq_items\n* `catalog_item_variants` - catalog_item_variants\n* `catalog_items` - catalog_items\n* `document_emails` - document_emails\n* `document_series` - document_series\n* `document_templates` - document_templates\n* `documents` - documents\n* `email_invitations` - email_invitations\n* `expenses` - expenses\n* `exports` - exports\n* `gst_registrations` - gst_registrations\n* `gstr2b_returns` - gstr2b_returns\n* `memberships` - memberships\n* `parties` - parties\n* `payment_reminders` - payment_reminders\n* `payments` - payments\n* `print_settings` - print_settings\n* `projects` - projects\n* `retention_releases` - retention_releases\n* `tally_settings` - tally_settings\n* `tds_certificates` - tds_certificates\n* `tenants` - tenants\n* `vendor_bills` - vendor_bills\n* `vendor_payments` - vendor_payments\n* `work_order_items` - work_order_items\n* `work_orders` - work_orders"
+                "description": "* `boq_items` - boq_items\n* `catalog_item_variants` - catalog_item_variants\n* `catalog_items` - catalog_items\n* `document_emails` - document_emails\n* `document_series` - document_series\n* `document_templates` - document_templates\n* `documents` - documents\n* `email_invitations` - email_invitations\n* `expenses` - expenses\n* `exports` - exports\n* `gst_registrations` - gst_registrations\n* `gstr2b_returns` - gstr2b_returns\n* `memberships` - memberships\n* `parties` - parties\n* `payment_reminders` - payment_reminders\n* `payments` - payments\n* `print_settings` - print_settings\n* `projects` - projects\n* `retention_releases` - retention_releases\n* `site_diary_entries` - site_diary_entries\n* `site_diary_photos` - site_diary_photos\n* `tally_settings` - tally_settings\n* `tds_certificates` - tds_certificates\n* `tenants` - tenants\n* `vendor_bills` - vendor_bills\n* `vendor_payments` - vendor_payments\n* `work_order_items` - work_order_items\n* `work_orders` - work_orders"
             },
             "RecoveryCodes": {
                 "type": "object",
@@ -21613,6 +22160,16 @@
                 "required": [
                     "reason"
                 ]
+            },
+            "WeatherEnum": {
+                "enum": [
+                    "SUNNY",
+                    "CLOUDY",
+                    "RAIN",
+                    "HEAVY_RAIN"
+                ],
+                "type": "string",
+                "description": "* `SUNNY` - Sunny\n* `CLOUDY` - Cloudy\n* `RAIN` - Rain\n* `HEAVY_RAIN` - Heavy Rain"
             },
             "WorkOrder": {
                 "type": "object",
