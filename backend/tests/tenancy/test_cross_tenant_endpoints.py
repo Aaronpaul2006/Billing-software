@@ -1198,3 +1198,9 @@ for _name in (
     OBJECT_ROUTES[_name] = lambda w: None
 for _name in ("vendor-bills", "vendor-bill-tds-suggestion", "vendor-payments", "report-payables"):
     COLLECTION_ROUTES[_name] = lambda w: None
+
+# --- Bank statements: tests/banking/test_api.py::test_another_business_reaches_none_of_it
+for _name in ("bank-line-match", "bank-line-record", "bank-line-ignore", "bank-line-reopen"):
+    OBJECT_ROUTES[_name] = lambda w: None
+for _name in ("bank-statement-preview", "bank-statement-import", "bank-lines", "bank-accounts"):
+    COLLECTION_ROUTES[_name] = lambda w: None

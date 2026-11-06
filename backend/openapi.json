@@ -858,6 +858,382 @@
                 }
             }
         },
+        "/api/v1/bank-lines": {
+            "get": {
+                "operationId": "bank_lines_list",
+                "description": "Bank lines, newest first; open lines carry what they may be (suggestions).",
+                "parameters": [
+                    {
+                        "in": "query",
+                        "name": "account_label",
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    {
+                        "name": "cursor",
+                        "required": false,
+                        "in": "query",
+                        "description": "The pagination cursor value.",
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    {
+                        "in": "query",
+                        "name": "direction",
+                        "schema": {
+                            "type": "string",
+                            "enum": [
+                                "IN",
+                                "OUT"
+                            ]
+                        },
+                        "description": "* `IN` - IN\n* `OUT` - OUT"
+                    },
+                    {
+                        "name": "limit",
+                        "required": false,
+                        "in": "query",
+                        "description": "Number of results to return per page.",
+                        "schema": {
+                            "type": "integer"
+                        }
+                    },
+                    {
+                        "in": "query",
+                        "name": "line_date_from",
+                        "schema": {
+                            "type": "string",
+                            "format": "date"
+                        }
+                    },
+                    {
+                        "in": "query",
+                        "name": "line_date_to",
+                        "schema": {
+                            "type": "string",
+                            "format": "date"
+                        }
+                    },
+                    {
+                        "name": "ordering",
+                        "required": false,
+                        "in": "query",
+                        "description": "Which field to use when ordering the results.",
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    {
+                        "in": "query",
+                        "name": "status",
+                        "schema": {
+                            "type": "string",
+                            "enum": [
+                                "IGNORED",
+                                "MATCHED",
+                                "OPEN"
+                            ]
+                        },
+                        "description": "* `OPEN` - Open\n* `MATCHED` - Matched\n* `IGNORED` - Ignored"
+                    }
+                ],
+                "tags": [
+                    "banking"
+                ],
+                "security": [
+                    {
+                        "bearerAuth": []
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/PaginatedBankLineList"
+                                }
+                            }
+                        },
+                        "description": ""
+                    }
+                }
+            }
+        },
+        "/api/v1/bank-lines/{line_id}/ignore": {
+            "post": {
+                "operationId": "bank_lines_ignore_create",
+                "description": "Permission by action name (docs/01-architecture.md §3): `read_action`\nfor GET/HEAD/OPTIONS, `write_action` for everything else. Generic, so list\nendpoints get pagination and filtering from the DRF defaults.",
+                "parameters": [
+                    {
+                        "in": "path",
+                        "name": "line_id",
+                        "schema": {
+                            "type": "string",
+                            "format": "uuid"
+                        },
+                        "required": true
+                    }
+                ],
+                "tags": [
+                    "banking"
+                ],
+                "requestBody": {
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/Ignore"
+                            }
+                        }
+                    }
+                },
+                "security": [
+                    {
+                        "bearerAuth": []
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/BankLine"
+                                }
+                            }
+                        },
+                        "description": ""
+                    }
+                }
+            }
+        },
+        "/api/v1/bank-lines/{line_id}/match": {
+            "post": {
+                "operationId": "bank_lines_match_create",
+                "description": "Permission by action name (docs/01-architecture.md §3): `read_action`\nfor GET/HEAD/OPTIONS, `write_action` for everything else. Generic, so list\nendpoints get pagination and filtering from the DRF defaults.",
+                "parameters": [
+                    {
+                        "in": "path",
+                        "name": "line_id",
+                        "schema": {
+                            "type": "string",
+                            "format": "uuid"
+                        },
+                        "required": true
+                    }
+                ],
+                "tags": [
+                    "banking"
+                ],
+                "requestBody": {
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/Match"
+                            }
+                        }
+                    }
+                },
+                "security": [
+                    {
+                        "bearerAuth": []
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/BankLine"
+                                }
+                            }
+                        },
+                        "description": ""
+                    }
+                }
+            }
+        },
+        "/api/v1/bank-lines/{line_id}/record": {
+            "post": {
+                "operationId": "bank_lines_record_create",
+                "description": "Permission by action name (docs/01-architecture.md §3): `read_action`\nfor GET/HEAD/OPTIONS, `write_action` for everything else. Generic, so list\nendpoints get pagination and filtering from the DRF defaults.",
+                "parameters": [
+                    {
+                        "in": "path",
+                        "name": "line_id",
+                        "schema": {
+                            "type": "string",
+                            "format": "uuid"
+                        },
+                        "required": true
+                    }
+                ],
+                "tags": [
+                    "banking"
+                ],
+                "requestBody": {
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/RecordFromLine"
+                            }
+                        }
+                    }
+                },
+                "security": [
+                    {
+                        "bearerAuth": []
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/BankLine"
+                                }
+                            }
+                        },
+                        "description": ""
+                    }
+                }
+            }
+        },
+        "/api/v1/bank-lines/{line_id}/reopen": {
+            "post": {
+                "operationId": "bank_lines_reopen_create",
+                "description": "Permission by action name (docs/01-architecture.md §3): `read_action`\nfor GET/HEAD/OPTIONS, `write_action` for everything else. Generic, so list\nendpoints get pagination and filtering from the DRF defaults.",
+                "parameters": [
+                    {
+                        "in": "path",
+                        "name": "line_id",
+                        "schema": {
+                            "type": "string",
+                            "format": "uuid"
+                        },
+                        "required": true
+                    }
+                ],
+                "tags": [
+                    "banking"
+                ],
+                "security": [
+                    {
+                        "bearerAuth": []
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/BankLine"
+                                }
+                            }
+                        },
+                        "description": ""
+                    }
+                }
+            }
+        },
+        "/api/v1/bank-lines/accounts": {
+            "get": {
+                "operationId": "bank_lines_accounts_retrieve",
+                "description": "The bank accounts lines were imported for (to filter by).",
+                "tags": [
+                    "banking"
+                ],
+                "security": [
+                    {
+                        "bearerAuth": []
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/BankAccounts"
+                                }
+                            }
+                        },
+                        "description": ""
+                    }
+                }
+            }
+        },
+        "/api/v1/bank-statements/import": {
+            "post": {
+                "operationId": "bank_statements_import_create",
+                "description": "Permission by action name (docs/01-architecture.md §3): `read_action`\nfor GET/HEAD/OPTIONS, `write_action` for everything else. Generic, so list\nendpoints get pagination and filtering from the DRF defaults.",
+                "tags": [
+                    "banking"
+                ],
+                "requestBody": {
+                    "content": {
+                        "multipart/form-data": {
+                            "schema": {
+                                "$ref": "#/components/schemas/StatementUpload"
+                            }
+                        }
+                    },
+                    "required": true
+                },
+                "security": [
+                    {
+                        "bearerAuth": []
+                    }
+                ],
+                "responses": {
+                    "201": {
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/StatementImported"
+                                }
+                            }
+                        },
+                        "description": ""
+                    }
+                }
+            }
+        },
+        "/api/v1/bank-statements/preview": {
+            "post": {
+                "operationId": "bank_statements_preview_create",
+                "description": "Read a statement file and show what would be imported; nothing is saved.",
+                "tags": [
+                    "banking"
+                ],
+                "requestBody": {
+                    "content": {
+                        "multipart/form-data": {
+                            "schema": {
+                                "$ref": "#/components/schemas/StatementUpload"
+                            }
+                        }
+                    },
+                    "required": true
+                },
+                "security": [
+                    {
+                        "bearerAuth": []
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/StatementPreview"
+                                }
+                            }
+                        },
+                        "description": ""
+                    }
+                }
+            }
+        },
         "/api/v1/boq-items/{item_id}": {
             "get": {
                 "operationId": "boq_items_retrieve",
@@ -7792,6 +8168,139 @@
                     "record_type_label"
                 ]
             },
+            "BankAccounts": {
+                "type": "object",
+                "properties": {
+                    "results": {
+                        "type": "array",
+                        "items": {
+                            "type": "string"
+                        }
+                    }
+                },
+                "required": [
+                    "results"
+                ]
+            },
+            "BankLine": {
+                "type": "object",
+                "properties": {
+                    "id": {
+                        "type": "string",
+                        "format": "uuid",
+                        "readOnly": true
+                    },
+                    "version": {
+                        "type": "integer",
+                        "readOnly": true
+                    },
+                    "account_label": {
+                        "type": "string",
+                        "readOnly": true
+                    },
+                    "line_date": {
+                        "type": "string",
+                        "format": "date",
+                        "readOnly": true
+                    },
+                    "narration": {
+                        "type": "string",
+                        "readOnly": true
+                    },
+                    "reference": {
+                        "type": [
+                            "string",
+                            "null"
+                        ],
+                        "readOnly": true
+                    },
+                    "money_in": {
+                        "type": "string",
+                        "format": "decimal",
+                        "pattern": "^-?\\d{0,12}(?:\\.\\d{0,2})?$"
+                    },
+                    "money_out": {
+                        "type": "string",
+                        "format": "decimal",
+                        "pattern": "^-?\\d{0,12}(?:\\.\\d{0,2})?$"
+                    },
+                    "balance": {
+                        "type": [
+                            "string",
+                            "null"
+                        ],
+                        "format": "decimal",
+                        "pattern": "^-?\\d{0,12}(?:\\.\\d{0,2})?$"
+                    },
+                    "status": {
+                        "allOf": [
+                            {
+                                "$ref": "#/components/schemas/BankLineStatusEnum"
+                            }
+                        ],
+                        "readOnly": true
+                    },
+                    "payment_id": {
+                        "type": [
+                            "string",
+                            "null"
+                        ],
+                        "format": "uuid"
+                    },
+                    "vendor_payment_id": {
+                        "type": [
+                            "string",
+                            "null"
+                        ],
+                        "format": "uuid"
+                    },
+                    "note": {
+                        "type": [
+                            "string",
+                            "null"
+                        ],
+                        "readOnly": true
+                    },
+                    "suggestions": {
+                        "type": "array",
+                        "items": {
+                            "$ref": "#/components/schemas/Suggestion"
+                        },
+                        "readOnly": true
+                    },
+                    "created_at": {
+                        "type": "string",
+                        "format": "date-time",
+                        "readOnly": true
+                    }
+                },
+                "required": [
+                    "account_label",
+                    "balance",
+                    "created_at",
+                    "id",
+                    "line_date",
+                    "money_in",
+                    "money_out",
+                    "narration",
+                    "note",
+                    "payment_id",
+                    "reference",
+                    "status",
+                    "suggestions",
+                    "vendor_payment_id",
+                    "version"
+                ]
+            },
+            "BankLineStatusEnum": {
+                "enum": [
+                    "OPEN",
+                    "MATCHED",
+                    "IGNORED"
+                ],
+                "type": "string",
+                "description": "* `OPEN` - Open\n* `MATCHED` - Matched\n* `IGNORED` - Ignored"
+            },
             "BoqImportRequest": {
                 "type": "object",
                 "properties": {
@@ -10526,6 +11035,19 @@
                 "type": "string",
                 "description": "* `created` - created\n* `edited` - edited\n* `issued` - issued\n* `cancelled` - cancelled\n* `accepted` - accepted\n* `declined` - declined\n* `payment` - payment\n* `note` - note\n* `converted` - converted\n* `reminder` - reminder\n* `emailed` - emailed"
             },
+            "Ignore": {
+                "type": "object",
+                "properties": {
+                    "note": {
+                        "type": [
+                            "string",
+                            "null"
+                        ],
+                        "description": "e.g. bank charges",
+                        "maxLength": 200
+                    }
+                }
+            },
             "ImportRequest": {
                 "type": "object",
                 "properties": {
@@ -11040,6 +11562,21 @@
                         "$ref": "#/components/schemas/MfaChallenge"
                     }
                 ]
+            },
+            "Match": {
+                "type": "object",
+                "properties": {
+                    "payment_id": {
+                        "type": "string",
+                        "format": "uuid",
+                        "description": "Money in: the payment it is"
+                    },
+                    "vendor_payment_id": {
+                        "type": "string",
+                        "format": "uuid",
+                        "description": "Money out: the payment to a vendor it is"
+                    }
+                }
             },
             "Me": {
                 "type": "object",
@@ -11577,6 +12114,28 @@
                         "type": "array",
                         "items": {
                             "$ref": "#/components/schemas/AuditEntry"
+                        }
+                    },
+                    "next_cursor": {
+                        "type": [
+                            "string",
+                            "null"
+                        ],
+                        "description": "Pass as ?cursor="
+                    }
+                }
+            },
+            "PaginatedBankLineList": {
+                "type": "object",
+                "required": [
+                    "results",
+                    "next_cursor"
+                ],
+                "properties": {
+                    "results": {
+                        "type": "array",
+                        "items": {
+                            "$ref": "#/components/schemas/BankLine"
                         }
                     },
                     "next_cursor": {
@@ -15124,6 +15683,40 @@
                     "totals"
                 ]
             },
+            "RecordFromLine": {
+                "type": "object",
+                "properties": {
+                    "party_id": {
+                        "type": "string",
+                        "format": "uuid",
+                        "description": "Money in: who paid"
+                    },
+                    "vendor_party_id": {
+                        "type": "string",
+                        "format": "uuid",
+                        "description": "Money out: who was paid"
+                    },
+                    "project_id": {
+                        "type": [
+                            "string",
+                            "null"
+                        ],
+                        "format": "uuid"
+                    },
+                    "allocations": {
+                        "type": "array",
+                        "items": {
+                            "$ref": "#/components/schemas/AllocationIn"
+                        }
+                    },
+                    "vendor_allocations": {
+                        "type": "array",
+                        "items": {
+                            "$ref": "#/components/schemas/VendorAllocationIn"
+                        }
+                    }
+                }
+            },
             "RecordStatusEnum": {
                 "enum": [
                     "RECORDED",
@@ -16208,6 +16801,81 @@
                 "type": "string",
                 "description": "* `TAX_INVOICE` - TAX_INVOICE\n* `BILL_OF_SUPPLY` - BILL_OF_SUPPLY\n* `DEBIT_NOTE` - DEBIT_NOTE\n* `CREDIT_NOTE` - CREDIT_NOTE\n* `RETENTION_RELEASE` - RETENTION_RELEASE\n* `PAYMENT` - PAYMENT"
             },
+            "StatementImported": {
+                "type": "object",
+                "properties": {
+                    "added": {
+                        "type": "integer"
+                    },
+                    "duplicates": {
+                        "type": "integer",
+                        "description": "Lines imported before: skipped"
+                    },
+                    "skipped_rows": {
+                        "type": "array",
+                        "items": {
+                            "type": "integer"
+                        }
+                    },
+                    "line_count": {
+                        "type": "integer"
+                    }
+                },
+                "required": [
+                    "added",
+                    "duplicates",
+                    "line_count",
+                    "skipped_rows"
+                ]
+            },
+            "StatementLine": {
+                "type": "object",
+                "properties": {
+                    "row": {
+                        "type": "integer"
+                    },
+                    "line_date": {
+                        "type": "string",
+                        "format": "date"
+                    },
+                    "narration": {
+                        "type": "string"
+                    },
+                    "reference": {
+                        "type": [
+                            "string",
+                            "null"
+                        ]
+                    },
+                    "money_in": {
+                        "type": "string",
+                        "format": "decimal",
+                        "pattern": "^-?\\d{0,12}(?:\\.\\d{0,2})?$"
+                    },
+                    "money_out": {
+                        "type": "string",
+                        "format": "decimal",
+                        "pattern": "^-?\\d{0,12}(?:\\.\\d{0,2})?$"
+                    },
+                    "balance": {
+                        "type": [
+                            "string",
+                            "null"
+                        ],
+                        "format": "decimal",
+                        "pattern": "^-?\\d{0,12}(?:\\.\\d{0,2})?$"
+                    }
+                },
+                "required": [
+                    "balance",
+                    "line_date",
+                    "money_in",
+                    "money_out",
+                    "narration",
+                    "reference",
+                    "row"
+                ]
+            },
             "StatementParty": {
                 "type": "object",
                 "properties": {
@@ -16230,6 +16898,118 @@
                     "gstin",
                     "id"
                 ]
+            },
+            "StatementPreview": {
+                "type": "object",
+                "properties": {
+                    "ready": {
+                        "type": "boolean",
+                        "description": "False: choose the columns (headers lists them)"
+                    },
+                    "headers": {
+                        "type": "array",
+                        "items": {
+                            "type": "string"
+                        }
+                    },
+                    "columns": {
+                        "type": "object",
+                        "additionalProperties": {
+                            "type": "string"
+                        },
+                        "description": "field -> header"
+                    },
+                    "line_count": {
+                        "type": "integer"
+                    },
+                    "skipped_rows": {
+                        "type": "array",
+                        "items": {
+                            "type": "integer"
+                        }
+                    },
+                    "lines": {
+                        "type": "array",
+                        "items": {
+                            "$ref": "#/components/schemas/StatementLine"
+                        },
+                        "description": "The first 20"
+                    }
+                },
+                "required": [
+                    "columns",
+                    "headers",
+                    "line_count",
+                    "lines",
+                    "ready",
+                    "skipped_rows"
+                ]
+            },
+            "StatementUpload": {
+                "type": "object",
+                "properties": {
+                    "file": {
+                        "type": "string",
+                        "format": "uri",
+                        "description": "The bank's statement: CSV or .xlsx, at most 5 MB."
+                    },
+                    "account_label": {
+                        "type": "string",
+                        "description": "Import: which account, e.g. HDFC current 1234",
+                        "maxLength": 60
+                    },
+                    "mapping": {
+                        "type": "string",
+                        "description": "JSON {field: header as in the file} for date, narration, reference, money_in, money_out, amount, dr_cr, balance; when the columns are not found"
+                    }
+                },
+                "required": [
+                    "file"
+                ]
+            },
+            "Suggestion": {
+                "type": "object",
+                "properties": {
+                    "kind": {
+                        "$ref": "#/components/schemas/SuggestionKindEnum"
+                    },
+                    "id": {
+                        "type": "string",
+                        "format": "uuid"
+                    },
+                    "party_id": {
+                        "type": "string",
+                        "format": "uuid"
+                    },
+                    "party_name": {
+                        "type": "string"
+                    },
+                    "title": {
+                        "type": "string",
+                        "description": "In words: \"Bill INV/0002\""
+                    },
+                    "score": {
+                        "type": "integer"
+                    }
+                },
+                "required": [
+                    "id",
+                    "kind",
+                    "party_id",
+                    "party_name",
+                    "score",
+                    "title"
+                ]
+            },
+            "SuggestionKindEnum": {
+                "enum": [
+                    "payment",
+                    "vendor_payment",
+                    "bill",
+                    "vendor_bill"
+                ],
+                "type": "string",
+                "description": "* `payment` - payment\n* `vendor_payment` - vendor_payment\n* `bill` - bill\n* `vendor_bill` - vendor_bill"
             },
             "Summary": {
                 "type": "object",

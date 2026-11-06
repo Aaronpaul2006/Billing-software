@@ -451,6 +451,162 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/bank-lines": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** @description Bank lines, newest first; open lines carry what they may be (suggestions). */
+        get: operations["bank_lines_list"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/bank-lines/{line_id}/ignore": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * @description Permission by action name (docs/01-architecture.md §3): `read_action`
+         *     for GET/HEAD/OPTIONS, `write_action` for everything else. Generic, so list
+         *     endpoints get pagination and filtering from the DRF defaults.
+         */
+        post: operations["bank_lines_ignore_create"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/bank-lines/{line_id}/match": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * @description Permission by action name (docs/01-architecture.md §3): `read_action`
+         *     for GET/HEAD/OPTIONS, `write_action` for everything else. Generic, so list
+         *     endpoints get pagination and filtering from the DRF defaults.
+         */
+        post: operations["bank_lines_match_create"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/bank-lines/{line_id}/record": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * @description Permission by action name (docs/01-architecture.md §3): `read_action`
+         *     for GET/HEAD/OPTIONS, `write_action` for everything else. Generic, so list
+         *     endpoints get pagination and filtering from the DRF defaults.
+         */
+        post: operations["bank_lines_record_create"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/bank-lines/{line_id}/reopen": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * @description Permission by action name (docs/01-architecture.md §3): `read_action`
+         *     for GET/HEAD/OPTIONS, `write_action` for everything else. Generic, so list
+         *     endpoints get pagination and filtering from the DRF defaults.
+         */
+        post: operations["bank_lines_reopen_create"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/bank-lines/accounts": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** @description The bank accounts lines were imported for (to filter by). */
+        get: operations["bank_lines_accounts_retrieve"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/bank-statements/import": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * @description Permission by action name (docs/01-architecture.md §3): `read_action`
+         *     for GET/HEAD/OPTIONS, `write_action` for everything else. Generic, so list
+         *     endpoints get pagination and filtering from the DRF defaults.
+         */
+        post: operations["bank_statements_import_create"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/bank-statements/preview": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** @description Read a statement file and show what would be imported; nothing is saved. */
+        post: operations["bank_statements_preview_create"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/boq-items/{item_id}": {
         parameters: {
             query?: never;
@@ -2729,6 +2885,41 @@ export interface components {
             /** @description Names of the fields changed (never values) */
             changed_fields: string[];
         };
+        BankAccounts: {
+            results: string[];
+        };
+        BankLine: {
+            /** Format: uuid */
+            readonly id: string;
+            readonly version: number;
+            readonly account_label: string;
+            /** Format: date */
+            readonly line_date: string;
+            readonly narration: string;
+            readonly reference: string | null;
+            /** Format: decimal */
+            money_in: string;
+            /** Format: decimal */
+            money_out: string;
+            /** Format: decimal */
+            balance: string | null;
+            readonly status: components["schemas"]["BankLineStatusEnum"];
+            /** Format: uuid */
+            payment_id: string | null;
+            /** Format: uuid */
+            vendor_payment_id: string | null;
+            readonly note: string | null;
+            readonly suggestions: components["schemas"]["Suggestion"][];
+            /** Format: date-time */
+            readonly created_at: string;
+        };
+        /**
+         * @description * `OPEN` - Open
+         *     * `MATCHED` - Matched
+         *     * `IGNORED` - Ignored
+         * @enum {string}
+         */
+        BankLineStatusEnum: "OPEN" | "MATCHED" | "IGNORED";
         BoqImportRequest: {
             /**
              * Format: uri
@@ -3669,6 +3860,10 @@ export interface components {
          * @enum {string}
          */
         HistoryEntryKindEnum: "created" | "edited" | "issued" | "cancelled" | "accepted" | "declined" | "payment" | "note" | "converted" | "reminder" | "emailed";
+        Ignore: {
+            /** @description e.g. bank charges */
+            note?: string | null;
+        };
         ImportRequest: {
             /**
              * Format: uri
@@ -3836,6 +4031,18 @@ export interface components {
             tenant_id?: string;
         };
         LoginResult: components["schemas"]["Tokens"] | components["schemas"]["MfaChallenge"];
+        Match: {
+            /**
+             * Format: uuid
+             * @description Money in: the payment it is
+             */
+            payment_id?: string;
+            /**
+             * Format: uuid
+             * @description Money out: the payment to a vendor it is
+             */
+            vendor_payment_id?: string;
+        };
         Me: {
             /** Format: uuid */
             id: string;
@@ -4003,6 +4210,11 @@ export interface components {
         NullEnum: null;
         PaginatedAuditEntryList: {
             results: components["schemas"]["AuditEntry"][];
+            /** @description Pass as ?cursor= */
+            next_cursor: string | null;
+        };
+        PaginatedBankLineList: {
+            results: components["schemas"]["BankLine"][];
             /** @description Pass as ?cursor= */
             next_cursor: string | null;
         };
@@ -5103,6 +5315,22 @@ export interface components {
             /** @description All parties together. */
             totals: components["schemas"]["Receivable"];
         };
+        RecordFromLine: {
+            /**
+             * Format: uuid
+             * @description Money in: who paid
+             */
+            party_id?: string;
+            /**
+             * Format: uuid
+             * @description Money out: who was paid
+             */
+            vendor_party_id?: string;
+            /** Format: uuid */
+            project_id?: string | null;
+            allocations?: components["schemas"]["AllocationIn"][];
+            vendor_allocations?: components["schemas"]["VendorAllocationIn"][];
+        };
         /**
          * @description * `RECORDED` - Recorded
          *     * `VOIDED` - Voided
@@ -5480,12 +5708,75 @@ export interface components {
          * @enum {string}
          */
         StatementEntryKindEnum: "TAX_INVOICE" | "BILL_OF_SUPPLY" | "DEBIT_NOTE" | "CREDIT_NOTE" | "RETENTION_RELEASE" | "PAYMENT";
+        StatementImported: {
+            added: number;
+            /** @description Lines imported before: skipped */
+            duplicates: number;
+            skipped_rows: number[];
+            line_count: number;
+        };
+        StatementLine: {
+            row: number;
+            /** Format: date */
+            line_date: string;
+            narration: string;
+            reference: string | null;
+            /** Format: decimal */
+            money_in: string;
+            /** Format: decimal */
+            money_out: string;
+            /** Format: decimal */
+            balance: string | null;
+        };
         StatementParty: {
             /** Format: uuid */
             id: string;
             display_name: string;
             gstin: string | null;
         };
+        StatementPreview: {
+            /** @description False: choose the columns (headers lists them) */
+            ready: boolean;
+            headers: string[];
+            /** @description field -> header */
+            columns: {
+                [key: string]: string;
+            };
+            line_count: number;
+            skipped_rows: number[];
+            /** @description The first 20 */
+            lines: components["schemas"]["StatementLine"][];
+        };
+        StatementUpload: {
+            /**
+             * Format: uri
+             * @description The bank's statement: CSV or .xlsx, at most 5 MB.
+             */
+            file: string;
+            /** @description Import: which account, e.g. HDFC current 1234 */
+            account_label?: string;
+            /** @description JSON {field: header as in the file} for date, narration, reference, money_in, money_out, amount, dr_cr, balance; when the columns are not found */
+            mapping?: string;
+        };
+        Suggestion: {
+            kind: components["schemas"]["SuggestionKindEnum"];
+            /** Format: uuid */
+            id: string;
+            /** Format: uuid */
+            party_id: string;
+            party_name: string;
+            /** @description In words: "Bill INV/0002" */
+            title: string;
+            score: number;
+        };
+        /**
+         * @description * `payment` - payment
+         *     * `vendor_payment` - vendor_payment
+         *     * `bill` - bill
+         *     * `vendor_bill` - vendor_bill
+         * @enum {string}
+         */
+        SuggestionKindEnum: "payment" | "vendor_payment" | "bill" | "vendor_bill";
         Summary: {
             book: string;
             period: {
@@ -7154,6 +7445,207 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content?: never;
+            };
+        };
+    };
+    bank_lines_list: {
+        parameters: {
+            query?: {
+                account_label?: string;
+                /** @description The pagination cursor value. */
+                cursor?: string;
+                /**
+                 * @description * `IN` - IN
+                 *     * `OUT` - OUT
+                 */
+                direction?: "IN" | "OUT";
+                /** @description Number of results to return per page. */
+                limit?: number;
+                line_date_from?: string;
+                line_date_to?: string;
+                /** @description Which field to use when ordering the results. */
+                ordering?: string;
+                /**
+                 * @description * `OPEN` - Open
+                 *     * `MATCHED` - Matched
+                 *     * `IGNORED` - Ignored
+                 */
+                status?: "IGNORED" | "MATCHED" | "OPEN";
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PaginatedBankLineList"];
+                };
+            };
+        };
+    };
+    bank_lines_ignore_create: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                line_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: {
+            content: {
+                "application/json": components["schemas"]["Ignore"];
+            };
+        };
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["BankLine"];
+                };
+            };
+        };
+    };
+    bank_lines_match_create: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                line_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: {
+            content: {
+                "application/json": components["schemas"]["Match"];
+            };
+        };
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["BankLine"];
+                };
+            };
+        };
+    };
+    bank_lines_record_create: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                line_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: {
+            content: {
+                "application/json": components["schemas"]["RecordFromLine"];
+            };
+        };
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["BankLine"];
+                };
+            };
+        };
+    };
+    bank_lines_reopen_create: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                line_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["BankLine"];
+                };
+            };
+        };
+    };
+    bank_lines_accounts_retrieve: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["BankAccounts"];
+                };
+            };
+        };
+    };
+    bank_statements_import_create: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "multipart/form-data": components["schemas"]["StatementUpload"];
+            };
+        };
+        responses: {
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["StatementImported"];
+                };
+            };
+        };
+    };
+    bank_statements_preview_create: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "multipart/form-data": components["schemas"]["StatementUpload"];
+            };
+        };
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["StatementPreview"];
+                };
             };
         };
     };

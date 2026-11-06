@@ -864,6 +864,20 @@ member; recorded, edited, paid and voided with `payments.record`.
 | `GET /reports/payables` | What we owe each vendor today, by days past the due date (or the bill date): `{as_of, results: [{party_id, display_name, bill_count, not_due, days_1_30, days_31_60, days_61_90, days_90_plus, total}], totals}`, biggest first; `reports.view` |
 | `POST /exports` `{kind: "TDS_DEDUCTED", format: "CSV" \| "XLSX", params: {from, to}}` | The register of TDS we deducted, for paying it and the 26Q return: one row per recorded vendor bill with TDS, by bill date (month, date, vendor, PAN, section, bill number, value before GST, rate, TDS), then a total; voided bills and bills without TDS left out |
 
+### Bank statements (Part B)
+
+Import the bank's statement file, then match each line by hand: nothing is
+matched or recorded without a person choosing it. All with `payments.record`.
+
+| Method & path | Notes |
+|---|---|
+| `POST /bank-statements/preview` (multipart `file`, `mapping?`) | Reads the file, saves nothing: `{ready, headers, columns (field -> header), line_count, skipped_rows, lines (first 20)}`. The columns of the common Indian banks are found by name (date before value date, narration, cheque / ref no., withdrawal / deposit or one amount with Dr/Cr, balance; title rows above, totals below); day-first dates, Indian amounts. `ready: false`: choose the columns and send `mapping` (JSON `{field: header}`) |
+| `POST /bank-statements/import` (multipart `file`, `account_label`, `mapping?`; Idempotency-Key) | Saves the lines: `{added, duplicates, skipped_rows, line_count}`. A line imported before (same account, date, narration, reference, amounts and order) is skipped. `422 columns_not_found` until the columns are known |
+| `GET /bank-lines` · `GET /bank-lines/accounts` | Lines newest first; filters `status` (OPEN / MATCHED / IGNORED), `account_label`, `direction` (IN / OUT), `line_date_from/to`. Each open line carries up to 5 `suggestions` `{kind (payment, vendor_payment, bill, vendor_bill), id, party_id, party_name, title, score}`: same amount within 10 days, ranked by the UTR / cheque number in the narration, the party's name and the date |
+| `POST /bank-lines/{id}/match` `{payment_id \| vendor_payment_id}` | The line is that payment (money in) or payment to a vendor (money out); the amounts must be equal (`amount_mismatch`); a payment is one line's money at most (`already_matched`) |
+| `POST /bank-lines/{id}/record` `{party_id, allocations?}` or `{vendor_party_id, vendor_allocations?}` | Records the payment the line is (date, amount and reference from the bank, mode bank transfer), sets it against bills as chosen and matches the line: one transaction |
+| `POST /bank-lines/{id}/ignore` `{note?}` · `POST /bank-lines/{id}/reopen` | Ignore what is not a payment (bank charges, interest, own transfers); reopen undoes a match or ignore (a payment recorded from the line stays) |
+
 ## 7. Files
 
 | Method & path | Purpose |
