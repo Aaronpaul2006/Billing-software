@@ -50,6 +50,7 @@ INSTALLED_APPS = [
     "apps.portal",
     "apps.search",
     "apps.payables",
+    "apps.banking",
 ]
 
 MIDDLEWARE = [

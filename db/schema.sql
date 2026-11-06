@@ -858,6 +858,44 @@ CREATE TABLE vendor_allocations (
 );
 CREATE INDEX vendor_allocations_payment_idx ON vendor_allocations (tenant_id, vendor_payment_id);
 
+-- Bank statements (Part B): lines imported from the bank's file, each matched
+-- by a person to the payment (in) or payment to a vendor (out) it is, or
+-- ignored (bank charges, transfers between own accounts). Nothing is
+-- matched without someone confirming it.
+CREATE TABLE bank_lines (
+  id                 uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+  tenant_id          uuid NOT NULL REFERENCES tenants (id),
+  account_label      text NOT NULL CHECK (char_length(account_label) BETWEEN 1 AND 60),   -- "HDFC current 1234"
+  line_date          date NOT NULL,
+  narration          text NOT NULL CHECK (char_length(narration) <= 500),
+  reference          text CHECK (char_length(reference) <= 100),   -- UTR / cheque number, as the bank prints it
+  money_in           numeric(14,2) NOT NULL DEFAULT 0 CHECK (money_in >= 0),
+  money_out          numeric(14,2) NOT NULL DEFAULT 0 CHECK (money_out >= 0),
+  balance            numeric(16,2),
+  fingerprint        text NOT NULL CHECK (fingerprint ~ '^[0-9a-f]{64}$'),   -- the same line imported twice is skipped
+  status             text NOT NULL DEFAULT 'OPEN' CHECK (status IN ('OPEN', 'MATCHED', 'IGNORED')),
+  payment_id         uuid,
+  vendor_payment_id  uuid,
+  note               text CHECK (char_length(note) <= 200),
+  version            integer NOT NULL DEFAULT 1,
+  created_by         uuid NOT NULL REFERENCES users (id),
+  created_at         timestamptz NOT NULL DEFAULT now(),
+  updated_at         timestamptz NOT NULL DEFAULT now(),
+  UNIQUE (tenant_id, id),
+  UNIQUE (tenant_id, fingerprint),
+  FOREIGN KEY (tenant_id, payment_id)        REFERENCES payments (tenant_id, id),
+  FOREIGN KEY (tenant_id, vendor_payment_id) REFERENCES vendor_payments (tenant_id, id),
+  CHECK ((money_in > 0) <> (money_out > 0)),                       -- money in or money out
+  CHECK (payment_id IS NULL OR money_in > 0),
+  CHECK (vendor_payment_id IS NULL OR money_out > 0),
+  CHECK (num_nonnulls(payment_id, vendor_payment_id) <= 1),
+  CHECK ((status = 'MATCHED') = (num_nonnulls(payment_id, vendor_payment_id) = 1))
+);
+-- A payment is the money of one bank line at most.
+CREATE UNIQUE INDEX bank_lines_payment_uq        ON bank_lines (payment_id)        WHERE payment_id IS NOT NULL;
+CREATE UNIQUE INDEX bank_lines_vendor_payment_uq ON bank_lines (vendor_payment_id) WHERE vendor_payment_id IS NOT NULL;
+CREATE INDEX bank_lines_status_idx ON bank_lines (tenant_id, status, line_date DESC);
+
 -- Income-tax TDS certificates (Form 16A) received from clients, to reconcile
 -- with the TDS deducted on our bills. A record of the client's paper, not a
 -- posting of ours: it may be corrected or deleted (audited).
@@ -1279,7 +1317,7 @@ BEGIN
     'payments', 'allocations', 'expenses', 'retention_releases', 'tds_certificates', 'exports',
     'email_invitations', 'payment_reminders', 'document_templates', 'catalog_item_variants',
     'document_line_measurements', 'print_settings', 'document_emails', 'tally_settings',
-    'vendor_bills', 'vendor_payments', 'vendor_allocations']
+    'vendor_bills', 'vendor_payments', 'vendor_allocations', 'bank_lines']
   LOOP
     EXECUTE format(
       'CREATE TRIGGER audit AFTER INSERT OR UPDATE OR DELETE ON %I FOR EACH ROW EXECUTE FUNCTION audit_row_change()', t);
@@ -1301,7 +1339,7 @@ BEGIN
     'retention_releases', 'tds_certificates', 'idempotency_keys', 'exports', 'email_invitations',
     'payment_reminders', 'document_templates', 'catalog_item_variants', 'document_line_measurements',
     'print_settings', 'document_emails', 'tally_settings', 'vendor_bills', 'vendor_payments',
-    'vendor_allocations']
+    'vendor_allocations', 'bank_lines']
   LOOP
     EXECUTE format('ALTER TABLE %I ENABLE ROW LEVEL SECURITY', t);
     EXECUTE format('ALTER TABLE %I FORCE ROW LEVEL SECURITY', t);
@@ -1415,7 +1453,7 @@ BEGIN
     'gst_registrations', 'catalog_items', 'catalog_item_variants', 'document_series', 'expenses',
     'tds_certificates', 'email_invitations', 'payment_reminders', 'document_templates', 'audit_log',
     'print_settings', 'document_emails', 'tally_settings', 'vendor_bills', 'vendor_payments',
-    'vendor_allocations']
+    'vendor_allocations', 'bank_lines']
   LOOP
     EXECUTE format(
       'CREATE POLICY client_scope ON %I AS RESTRICTIVE USING (NOT app_portal_session())', t);
