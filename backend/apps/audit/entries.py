@@ -24,6 +24,8 @@ RECORD_TYPES: dict[str, tuple[str, tuple[str, ...]]] = {
     "expenses": ("Expense", ("description",)),
     "vendor_bills": ("Vendor bill", ("bill_number",)),
     "vendor_payments": ("Payment to a vendor", ("reference",)),
+    "work_orders": ("Work order", ("wo_number", "title")),
+    "work_order_items": ("Work order item", ("item_code", "description")),
     "parties": ("Client or vendor", ("display_name",)),
     "projects": ("Project", ("name", "code")),
     "boq_items": ("BOQ item", ("item_code", "description")),

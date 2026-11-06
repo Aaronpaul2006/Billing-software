@@ -768,6 +768,60 @@ CREATE INDEX expenses_date_idx    ON expenses (tenant_id, expense_date DESC);
 -- we pay (net_payable); payments out are set against bills by vendor
 -- allocations, which keep vendor_bills.amount_paid in step (7d). Small spends
 -- stay expenses.
+-- Subcontract work orders (Part B, payables part 2): the work let to a
+-- subcontractor on one project, item by item at agreed rates. Its items are
+-- a separate list from the client's BOQ (often a subset at other rates),
+-- linked to a BOQ item when there is one. RA bills received are vendor bills
+-- with work_order_id set and lines against these items (7e).
+CREATE TABLE work_orders (
+  id               uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+  tenant_id        uuid NOT NULL REFERENCES tenants (id),
+  project_id       uuid NOT NULL,
+  vendor_party_id  uuid NOT NULL,
+  wo_number        text NOT NULL CHECK (char_length(wo_number) BETWEEN 1 AND 30),   -- ours
+  wo_date          date NOT NULL,
+  title            text NOT NULL CHECK (char_length(title) BETWEEN 1 AND 200),
+  terms            text CHECK (char_length(terms) <= 4000),
+  retention_pct    numeric(5,2) NOT NULL DEFAULT 0 CHECK (retention_pct >= 0 AND retention_pct <= 20),
+  tds_section      text CHECK (tds_section ~ '^19[0-9]{1,2}[A-Z]{0,3}$'),
+  tds_rate         numeric(5,2) NOT NULL DEFAULT 0 CHECK (tds_rate >= 0 AND tds_rate <= 30),
+  status           text NOT NULL DEFAULT 'OPEN' CHECK (status IN ('OPEN', 'CLOSED')),
+  version          integer NOT NULL DEFAULT 1,
+  created_by       uuid NOT NULL REFERENCES users (id),
+  created_at       timestamptz NOT NULL DEFAULT now(),
+  updated_at       timestamptz NOT NULL DEFAULT now(),
+  UNIQUE (tenant_id, id),
+  FOREIGN KEY (tenant_id, project_id)      REFERENCES projects (tenant_id, id),
+  FOREIGN KEY (tenant_id, vendor_party_id) REFERENCES parties (tenant_id, id),
+  CHECK (tds_section IS NOT NULL OR tds_rate = 0)
+);
+CREATE UNIQUE INDEX work_orders_number_uq ON work_orders (tenant_id, lower(wo_number));
+CREATE INDEX work_orders_project_idx ON work_orders (tenant_id, project_id);
+CREATE INDEX work_orders_vendor_idx  ON work_orders (tenant_id, vendor_party_id);
+
+CREATE TABLE work_order_items (
+  id             uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+  tenant_id      uuid NOT NULL REFERENCES tenants (id),
+  work_order_id  uuid NOT NULL,
+  boq_item_id    uuid,                                   -- the client's BOQ item, when there is one
+  item_code      text NOT NULL CHECK (char_length(item_code) BETWEEN 1 AND 30),
+  description    text NOT NULL CHECK (char_length(description) BETWEEN 1 AND 2000),
+  unit           text NOT NULL CHECK (char_length(unit) BETWEEN 1 AND 20),
+  sac_hsn        text CHECK (sac_hsn ~ '^[0-9]{4,8}$'),
+  qty            numeric(14,3) NOT NULL CHECK (qty > 0),  -- agreed; RA bills never go past it (7e)
+  rate           numeric(14,2) NOT NULL CHECK (rate >= 0),
+  gst_rate       numeric(5,2) NOT NULL DEFAULT 18 CHECK (gst_rate BETWEEN 0 AND 50),
+  sort_order     integer NOT NULL DEFAULT 0,
+  version        integer NOT NULL DEFAULT 1,
+  created_at     timestamptz NOT NULL DEFAULT now(),
+  updated_at     timestamptz NOT NULL DEFAULT now(),
+  UNIQUE (tenant_id, id),
+  UNIQUE (tenant_id, work_order_id, item_code),
+  FOREIGN KEY (tenant_id, work_order_id) REFERENCES work_orders (tenant_id, id),
+  FOREIGN KEY (tenant_id, boq_item_id)   REFERENCES boq_items (tenant_id, id)
+);
+
+
 CREATE TABLE vendor_bills (
   id               uuid PRIMARY KEY DEFAULT gen_random_uuid(),
   tenant_id        uuid NOT NULL REFERENCES tenants (id),
@@ -786,6 +840,10 @@ CREATE TABLE vendor_bills (
   tds_rate         numeric(5,2) NOT NULL DEFAULT 0 CHECK (tds_rate >= 0 AND tds_rate <= 30),
   tds_amount       numeric(14,2) NOT NULL DEFAULT 0 CHECK (tds_amount >= 0),
   net_payable      numeric(14,2) NOT NULL,
+  -- RA bills against a subcontract work order (Part B, payables part 2; 7e).
+  work_order_id    uuid,
+  ra_number        integer CHECK (ra_number > 0),
+  retention_amount numeric(14,2) NOT NULL DEFAULT 0 CHECK (retention_amount >= 0),  -- held back
   -- Maintained only by the vendor allocations trigger, like documents.amount_settled.
   amount_paid      numeric(14,2) NOT NULL DEFAULT 0,
   attachment_id    uuid,
@@ -802,11 +860,14 @@ CREATE TABLE vendor_bills (
   FOREIGN KEY (tenant_id, vendor_party_id) REFERENCES parties (tenant_id, id),
   FOREIGN KEY (tenant_id, project_id)      REFERENCES projects (tenant_id, id),
   FOREIGN KEY (tenant_id, attachment_id)   REFERENCES attachments (tenant_id, id),
+  FOREIGN KEY (tenant_id, work_order_id)   REFERENCES work_orders (tenant_id, id),
   CHECK (due_date IS NULL OR due_date >= bill_date),
   CHECK (total_amount = taxable_value + gst_amount),
   CHECK (tds_section IS NOT NULL OR (tds_rate = 0 AND tds_amount = 0)),
   CHECK (tds_amount <= taxable_value),                      -- TDS is on the value before GST
-  CHECK (net_payable = total_amount - tds_amount),
+  CHECK (net_payable = total_amount - tds_amount - retention_amount),
+  CHECK (retention_amount <= taxable_value),
+  CHECK ((work_order_id IS NULL) = (ra_number IS NULL)),
   CHECK (amount_paid >= 0 AND amount_paid <= net_payable),
   CHECK (status <> 'VOIDED' OR (voided_at IS NOT NULL AND void_reason IS NOT NULL AND amount_paid = 0))
 );
@@ -816,6 +877,11 @@ CREATE UNIQUE INDEX vendor_bills_number_uq ON vendor_bills (tenant_id, vendor_pa
 CREATE INDEX vendor_bills_vendor_idx  ON vendor_bills (tenant_id, vendor_party_id, bill_date DESC);
 CREATE INDEX vendor_bills_date_idx    ON vendor_bills (tenant_id, bill_date DESC);
 CREATE INDEX vendor_bills_project_idx ON vendor_bills (tenant_id, project_id, bill_date DESC);
+CREATE INDEX vendor_bills_work_order_idx ON vendor_bills (tenant_id, work_order_id, ra_number)
+  WHERE work_order_id IS NOT NULL;
+-- One RA bill of each number per work order (a voided one may be entered again).
+CREATE UNIQUE INDEX vendor_bills_ra_uq ON vendor_bills (tenant_id, work_order_id, ra_number)
+  WHERE status = 'RECORDED' AND work_order_id IS NOT NULL;
 
 CREATE TABLE vendor_payments (
   id               uuid PRIMARY KEY DEFAULT gen_random_uuid(),
@@ -857,6 +923,27 @@ CREATE TABLE vendor_allocations (
   FOREIGN KEY (tenant_id, vendor_bill_id)    REFERENCES vendor_bills (tenant_id, id)
 );
 CREATE INDEX vendor_allocations_payment_idx ON vendor_allocations (tenant_id, vendor_payment_id);
+
+-- An RA bill's lines: this bill's quantity of each work order item, at the
+-- rate of the work order when billed. Written once; an RA bill is edited by
+-- replacing its lines while nothing is paid on it (7e).
+CREATE TABLE vendor_bill_lines (
+  id                  uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+  tenant_id           uuid NOT NULL REFERENCES tenants (id),
+  vendor_bill_id      uuid NOT NULL,
+  work_order_item_id  uuid NOT NULL,
+  qty                 numeric(14,3) NOT NULL CHECK (qty > 0),
+  rate                numeric(14,2) NOT NULL CHECK (rate >= 0),
+  amount              numeric(14,2) NOT NULL,
+  gst_rate            numeric(5,2) NOT NULL CHECK (gst_rate BETWEEN 0 AND 50),
+  created_at          timestamptz NOT NULL DEFAULT now(),
+  UNIQUE (tenant_id, id),
+  UNIQUE (vendor_bill_id, work_order_item_id),
+  FOREIGN KEY (tenant_id, vendor_bill_id)     REFERENCES vendor_bills (tenant_id, id),
+  FOREIGN KEY (tenant_id, work_order_item_id) REFERENCES work_order_items (tenant_id, id),
+  CHECK (amount = round(qty * rate, 2))
+);
+CREATE INDEX vendor_bill_lines_item_idx ON vendor_bill_lines (tenant_id, work_order_item_id);
 
 -- Bank statements (Part B): lines imported from the bank's file, each matched
 -- by a person to the payment (in) or payment to a vendor (out) it is, or
@@ -1274,6 +1361,107 @@ CREATE TRIGGER vendor_allocations_apply
   BEFORE INSERT OR UPDATE OR DELETE ON vendor_allocations
   FOR EACH ROW EXECUTE FUNCTION vendor_allocations_apply();
 
+-- 7e. Subcontract RA bills (Part B). A vendor bill with a work order is from
+-- that work order's subcontractor, for its project, and is entered only while
+-- the work order is open. Its lines are items of that work order, and the
+-- quantity billed on recorded bills never passes the agreed quantity (the
+-- work order item is locked, so two bills at once cannot both slip through);
+-- an item's quantity cannot be cut below what is billed. Lines change only
+-- while their bill is recorded and unpaid. That an RA bill's value is the sum
+-- of its lines is the service's job (apps/payables/work_orders.py).
+CREATE FUNCTION vendor_bills_work_order() RETURNS trigger
+LANGUAGE plpgsql SECURITY DEFINER SET search_path = public, pg_temp AS $$
+DECLARE
+  wo record;
+BEGIN
+  IF NEW.work_order_id IS NULL THEN
+    IF NEW.retention_amount <> 0 OR NEW.ra_number IS NOT NULL THEN
+      RAISE EXCEPTION 'retention and an RA number belong to RA bills against a work order'
+        USING ERRCODE = 'check_violation';
+    END IF;
+    RETURN NEW;
+  END IF;
+  IF TG_OP = 'UPDATE' AND (NEW.work_order_id IS DISTINCT FROM OLD.work_order_id
+                           OR NEW.ra_number IS DISTINCT FROM OLD.ra_number) THEN
+    RAISE EXCEPTION 'an RA bill keeps its work order and number' USING ERRCODE = 'check_violation';
+  END IF;
+  SELECT vendor_party_id, project_id, status INTO wo FROM work_orders WHERE id = NEW.work_order_id;
+  IF wo.vendor_party_id IS DISTINCT FROM NEW.vendor_party_id
+     OR wo.project_id IS DISTINCT FROM NEW.project_id THEN
+    RAISE EXCEPTION 'an RA bill is from the work order''s subcontractor, for its project'
+      USING ERRCODE = 'check_violation';
+  END IF;
+  IF TG_OP = 'INSERT' AND wo.status <> 'OPEN' THEN
+    RAISE EXCEPTION 'the work order is closed' USING ERRCODE = 'check_violation';
+  END IF;
+  RETURN NEW;
+END $$;
+
+CREATE TRIGGER vendor_bills_work_order
+  BEFORE INSERT OR UPDATE ON vendor_bills
+  FOR EACH ROW EXECUTE FUNCTION vendor_bills_work_order();
+
+CREATE FUNCTION vendor_bill_lines_check() RETURNS trigger
+LANGUAGE plpgsql SECURITY DEFINER SET search_path = public, pg_temp AS $$
+DECLARE
+  bill    record;
+  item    record;
+  billed  numeric;
+BEGIN
+  IF TG_OP = 'UPDATE' THEN
+    RAISE EXCEPTION 'RA bill lines are not changed; delete and re-create' USING ERRCODE = 'check_violation';
+  END IF;
+
+  SELECT status, work_order_id, amount_paid INTO bill FROM vendor_bills
+   WHERE id = CASE WHEN TG_OP = 'DELETE' THEN OLD.vendor_bill_id ELSE NEW.vendor_bill_id END;
+  IF bill.status IS DISTINCT FROM 'RECORDED' OR bill.amount_paid > 0 THEN
+    RAISE EXCEPTION 'the lines of a paid or voided RA bill do not change' USING ERRCODE = 'check_violation';
+  END IF;
+  IF TG_OP = 'DELETE' THEN
+    RETURN OLD;
+  END IF;
+
+  SELECT work_order_id, qty INTO item FROM work_order_items WHERE id = NEW.work_order_item_id FOR UPDATE;
+  IF item.work_order_id IS DISTINCT FROM bill.work_order_id THEN
+    RAISE EXCEPTION 'an RA bill line is an item of the bill''s work order' USING ERRCODE = 'check_violation';
+  END IF;
+  SELECT coalesce(sum(l.qty), 0) INTO billed
+    FROM vendor_bill_lines l JOIN vendor_bills b ON b.id = l.vendor_bill_id
+   WHERE l.work_order_item_id = NEW.work_order_item_id AND b.status = 'RECORDED';
+  IF billed + NEW.qty > item.qty THEN
+    RAISE EXCEPTION 'billed quantity would exceed the work order quantity' USING ERRCODE = 'check_violation';
+  END IF;
+  RETURN NEW;
+END $$;
+
+CREATE TRIGGER vendor_bill_lines_check
+  BEFORE INSERT OR UPDATE OR DELETE ON vendor_bill_lines
+  FOR EACH ROW EXECUTE FUNCTION vendor_bill_lines_check();
+
+CREATE FUNCTION work_order_items_guard() RETURNS trigger
+LANGUAGE plpgsql SECURITY DEFINER SET search_path = public, pg_temp AS $$
+DECLARE
+  billed numeric;
+BEGIN
+  IF NEW.work_order_id IS DISTINCT FROM OLD.work_order_id THEN
+    RAISE EXCEPTION 'an item stays on its work order' USING ERRCODE = 'check_violation';
+  END IF;
+  IF NEW.qty < OLD.qty THEN
+    SELECT coalesce(sum(l.qty), 0) INTO billed
+      FROM vendor_bill_lines l JOIN vendor_bills b ON b.id = l.vendor_bill_id
+     WHERE l.work_order_item_id = NEW.id AND b.status = 'RECORDED';
+    IF NEW.qty < billed THEN
+      RAISE EXCEPTION 'the quantity cannot be less than what is already billed'
+        USING ERRCODE = 'check_violation';
+    END IF;
+  END IF;
+  RETURN NEW;
+END $$;
+
+CREATE TRIGGER work_order_items_guard
+  BEFORE UPDATE ON work_order_items
+  FOR EACH ROW EXECUTE FUNCTION work_order_items_guard();
+
 -- 7d. Audit trail. SECURITY DEFINER so the app role needs no INSERT right on
 --     audit_log (it cannot forge or bulk-write audit rows directly).
 CREATE FUNCTION audit_row_change() RETURNS trigger
@@ -1317,7 +1505,8 @@ BEGIN
     'payments', 'allocations', 'expenses', 'retention_releases', 'tds_certificates', 'exports',
     'email_invitations', 'payment_reminders', 'document_templates', 'catalog_item_variants',
     'document_line_measurements', 'print_settings', 'document_emails', 'tally_settings',
-    'vendor_bills', 'vendor_payments', 'vendor_allocations', 'bank_lines']
+    'vendor_bills', 'vendor_payments', 'vendor_allocations', 'bank_lines', 'work_orders',
+    'work_order_items', 'vendor_bill_lines']
   LOOP
     EXECUTE format(
       'CREATE TRIGGER audit AFTER INSERT OR UPDATE OR DELETE ON %I FOR EACH ROW EXECUTE FUNCTION audit_row_change()', t);
@@ -1339,7 +1528,7 @@ BEGIN
     'retention_releases', 'tds_certificates', 'idempotency_keys', 'exports', 'email_invitations',
     'payment_reminders', 'document_templates', 'catalog_item_variants', 'document_line_measurements',
     'print_settings', 'document_emails', 'tally_settings', 'vendor_bills', 'vendor_payments',
-    'vendor_allocations', 'bank_lines']
+    'vendor_allocations', 'bank_lines', 'work_orders', 'work_order_items', 'vendor_bill_lines']
   LOOP
     EXECUTE format('ALTER TABLE %I ENABLE ROW LEVEL SECURITY', t);
     EXECUTE format('ALTER TABLE %I FORCE ROW LEVEL SECURITY', t);
@@ -1453,7 +1642,7 @@ BEGIN
     'gst_registrations', 'catalog_items', 'catalog_item_variants', 'document_series', 'expenses',
     'tds_certificates', 'email_invitations', 'payment_reminders', 'document_templates', 'audit_log',
     'print_settings', 'document_emails', 'tally_settings', 'vendor_bills', 'vendor_payments',
-    'vendor_allocations', 'bank_lines']
+    'vendor_allocations', 'bank_lines', 'work_orders', 'work_order_items', 'vendor_bill_lines']
   LOOP
     EXECUTE format(
       'CREATE POLICY client_scope ON %I AS RESTRICTIVE USING (NOT app_portal_session())', t);
@@ -1696,7 +1885,8 @@ GRANT SELECT, INSERT, UPDATE ON ALL TABLES IN SCHEMA public TO billing_app;
 -- cancelled / voided / archived instead.
 GRANT DELETE ON documents, document_lines, allocations, boq_items, catalog_items, tds_certificates,
                 idempotency_keys, auth_sessions, document_templates, catalog_item_variants,
-                document_line_measurements, vendor_allocations TO billing_app;
+                document_line_measurements, vendor_allocations, work_order_items,
+                vendor_bill_lines TO billing_app;
 -- Audit rows are written only by the trigger.
 REVOKE INSERT, UPDATE, DELETE ON audit_log FROM billing_app;
 REVOKE INSERT, UPDATE ON v_billing_summary, v_receivables, v_project_billing FROM billing_app;
@@ -1720,9 +1910,11 @@ GRANT UPDATE (status, cancelled_at, cancelled_by, cancel_reason, version, update
 REVOKE UPDATE ON vendor_bills FROM billing_app;
 GRANT UPDATE (vendor_party_id, project_id, bill_number, bill_date, due_date, category, description,
               taxable_value, gst_amount, total_amount, itc_eligible, tds_section, tds_rate, tds_amount,
-              net_payable, attachment_id, notes, status, voided_at, voided_by, void_reason,
-              version, updated_at)
+              net_payable, retention_amount, attachment_id, notes, status, voided_at, voided_by,
+              void_reason, version, updated_at)
   ON vendor_bills TO billing_app;
+-- RA bill lines are written once (deleted and re-written while the bill is unpaid).
+REVOKE UPDATE ON vendor_bill_lines FROM billing_app;
 -- Payment reminders are a log: written once, never changed.
 REVOKE UPDATE ON payment_reminders FROM billing_app;
 -- Emailed bills: a log, written once (B.15).

@@ -5480,9 +5480,11 @@ export interface components {
          *     * `tenants` - tenants
          *     * `vendor_bills` - vendor_bills
          *     * `vendor_payments` - vendor_payments
+         *     * `work_order_items` - work_order_items
+         *     * `work_orders` - work_orders
          * @enum {string}
          */
-        RecordTypeEnum: "boq_items" | "catalog_item_variants" | "catalog_items" | "document_emails" | "document_series" | "document_templates" | "documents" | "email_invitations" | "expenses" | "exports" | "gst_registrations" | "memberships" | "parties" | "payment_reminders" | "payments" | "print_settings" | "projects" | "retention_releases" | "tally_settings" | "tds_certificates" | "tenants" | "vendor_bills" | "vendor_payments";
+        RecordTypeEnum: "boq_items" | "catalog_item_variants" | "catalog_items" | "document_emails" | "document_series" | "document_templates" | "documents" | "email_invitations" | "expenses" | "exports" | "gst_registrations" | "memberships" | "parties" | "payment_reminders" | "payments" | "print_settings" | "projects" | "retention_releases" | "tally_settings" | "tds_certificates" | "tenants" | "vendor_bills" | "vendor_payments" | "work_order_items" | "work_orders";
         RecoveryCodes: {
             /** @description Shown once. Each works one time. */
             recovery_codes: string[];
@@ -7179,8 +7181,10 @@ export interface operations {
                  *     * `tenants` - tenants
                  *     * `vendor_bills` - vendor_bills
                  *     * `vendor_payments` - vendor_payments
+                 *     * `work_order_items` - work_order_items
+                 *     * `work_orders` - work_orders
                  */
-                record_type?: "boq_items" | "catalog_item_variants" | "catalog_items" | "document_emails" | "document_series" | "document_templates" | "documents" | "email_invitations" | "expenses" | "exports" | "gst_registrations" | "memberships" | "parties" | "payment_reminders" | "payments" | "print_settings" | "projects" | "retention_releases" | "tally_settings" | "tds_certificates" | "tenants" | "vendor_bills" | "vendor_payments";
+                record_type?: "boq_items" | "catalog_item_variants" | "catalog_items" | "document_emails" | "document_series" | "document_templates" | "documents" | "email_invitations" | "expenses" | "exports" | "gst_registrations" | "memberships" | "parties" | "payment_reminders" | "payments" | "print_settings" | "projects" | "retention_releases" | "tally_settings" | "tds_certificates" | "tenants" | "vendor_bills" | "vendor_payments" | "work_order_items" | "work_orders";
             };
             header?: never;
             path?: never;
