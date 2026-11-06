@@ -89,7 +89,17 @@ export function line(over: Partial<S["LineOut"]> = {}): S["LineOut"] {
 }
 
 export function document(over: Partial<S["Document"]> = {}): S["Document"] {
-  return { ...listed(), notes: null, terms: null, lines: [line()], ...over };
+  return {
+    ...listed(),
+    notes: null,
+    terms: null,
+    lines: [line()],
+    approval_requested_at: null,
+    approved_at: null,
+    approved_by_name: null,
+    approval_holds: false,
+    ...over,
+  };
 }
 
 export function payment(over: Partial<S["Payment"]> = {}): S["Payment"] {
