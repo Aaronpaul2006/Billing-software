@@ -310,6 +310,12 @@ Still open for the owner: e-invoicing / e-way bills (needs GSP credentials).
 
 Full roadmap: `docs/01-architecture.md` §9.
 
+## Waiting on the owner (before more can be built)
+
+- **e-Invoice (IRN + QR):** sandbox credentials from a GST Suvidha Provider (GSP) or the e-invoice portal (IRP).
+- **Online payment link:** a payment gateway account, such as Razorpay.
+- **GSTR-2B Excel:** one real download from the GST portal, to check the reader (`apps/gstr2b/reader_xlsx.py`) against it. It was built to the published layout and finds columns by name, to allow for small differences.
+
 ## Open questions (for the owner)
 
 
