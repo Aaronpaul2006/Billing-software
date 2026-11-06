@@ -2237,6 +2237,23 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/reports/cash-flow": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** @description The next weeks' money in and out, as ranges (Part B, cashflow.py). */
+        get: operations["reports_cash_flow_retrieve"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/reports/dashboard": {
         parameters: {
             query?: never;
@@ -3039,6 +3056,91 @@ export interface components {
         };
         CancelRelease: {
             reason: string;
+        };
+        CashFlow: {
+            /** Format: date */
+            as_of: string;
+            /**
+             * Format: decimal
+             * @description Last balance of each imported bank statement; null: none
+             */
+            cash_today: string | null;
+            cash_sources: string[];
+            /**
+             * Format: decimal
+             * @description Client bills past due: when they come in is not known
+             */
+            overdue_in: string;
+            /**
+             * Format: decimal
+             * @description Vendor bills past due: taken as paid now
+             */
+            overdue_out: string;
+            weeks: components["schemas"]["CashFlowWeek"][];
+            /** Format: date */
+            lowest_week_start: string;
+            /** Format: decimal */
+            lowest_balance: string;
+        };
+        CashFlowItem: {
+            /** Format: uuid */
+            id: string;
+            /**
+             * @description What the id is: a document, a retention release or a vendor bill
+             *
+             *     * `BILL` - BILL
+             *     * `RETENTION_RELEASE` - RETENTION_RELEASE
+             *     * `VENDOR_BILL` - VENDOR_BILL
+             */
+            kind: components["schemas"]["CashFlowItemKindEnum"];
+            /** @description The bill's number (ours, or the vendor's) */
+            number: string;
+            party_name: string;
+            /** Format: date */
+            due_date: string;
+            /** Format: decimal */
+            outstanding: string;
+        };
+        /**
+         * @description * `BILL` - BILL
+         *     * `RETENTION_RELEASE` - RETENTION_RELEASE
+         *     * `VENDOR_BILL` - VENDOR_BILL
+         * @enum {string}
+         */
+        CashFlowItemKindEnum: "BILL" | "RETENTION_RELEASE" | "VENDOR_BILL";
+        CashFlowWeek: {
+            /**
+             * Format: date
+             * @description Monday
+             */
+            start: string;
+            /**
+             * Format: date
+             * @description Sunday
+             */
+            end: string;
+            /**
+             * Format: decimal
+             * @description Client bills falling due this week, still owed
+             */
+            money_in: string;
+            /**
+             * Format: decimal
+             * @description Vendor bills falling due this week, still to pay
+             */
+            money_out: string;
+            bills_in: components["schemas"]["CashFlowItem"][];
+            bills_out: components["schemas"]["CashFlowItem"][];
+            /**
+             * Format: decimal
+             * @description If overdue client bills do not come in
+             */
+            balance_low: string;
+            /**
+             * Format: decimal
+             * @description If overdue client bills come in now
+             */
+            balance_high: string;
         };
         CatalogImportResult: {
             dry_run: boolean;
@@ -10381,6 +10483,27 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["Months"];
+                };
+            };
+        };
+    };
+    reports_cash_flow_retrieve: {
+        parameters: {
+            query?: {
+                weeks?: number;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CashFlow"];
                 };
             };
         };
