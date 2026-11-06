@@ -267,6 +267,10 @@ function staffPages(ids) {
     },
     p("expense-new", "New expense", "/expenses/new"),
     p("expense", "An expense", `/expenses/${ids.expense}`),
+    p("work-orders", "Work orders", "/work-orders"),
+    p("work-order-new", "New work order", "/work-orders/new"),
+    p("work-order", "A work order", `/work-orders/${ids.workOrder}`),
+    p("ra-bill-new", "Record an RA bill", `/work-orders/${ids.workOrder}/ra-bills/new`),
     p("reports", "Reports", "/reports"),
     p("exports", "Exports", "/exports"),
     p("tds", "TDS certificates", "/tds-certificates"),
@@ -369,6 +373,7 @@ await withContext(async (page, errors) => {
     projects: "/projects?limit=100",
     payments: "/payments?limit=10",
     expenses: "/expenses?limit=10",
+    workOrders: "/work-orders?limit=10",
   });
   const docs = found.documents.results;
   ids = {
@@ -380,6 +385,7 @@ await withContext(async (page, errors) => {
     tower: found.projects.results.find((x) => x.code === "SKY-TOWER")?.id,
     payment: found.payments.results[0]?.id,
     expense: found.expenses.results[0]?.id,
+    workOrder: found.workOrders.results[0]?.id,
   };
   const missing = Object.entries(ids).filter(([, v]) => !v).map(([k]) => k);
   if (missing.length) throw new Error(`Demo data missing: ${missing.join(", ")} (run seed_demo.py)`);

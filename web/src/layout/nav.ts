@@ -9,6 +9,7 @@ import {
   FileText,
   FolderKanban,
   FolderPlus,
+  HardHat,
   History,
   Import,
   Hash,
@@ -81,6 +82,12 @@ export const GROUPS: { title: string; items: NavEntry[] }[] = [
         label: "Payments to vendors",
         icon: Banknote,
         keywords: "payables paid out supplier subcontractor",
+      },
+      {
+        to: "/work-orders",
+        label: "Work orders",
+        icon: HardHat,
+        keywords: "subcontract subcontractor ra bill running account wo",
       },
       { to: "/expenses", label: "Expenses", icon: Receipt, keywords: "purchases costs" },
       {
@@ -242,6 +249,13 @@ export const CREATE: NavEntry[] = [
     icon: Banknote,
     action: "payments.record",
     keywords: "payables supplier subcontractor paid out new",
+  },
+  {
+    to: "/work-orders/new",
+    label: "New work order",
+    icon: HardHat,
+    action: "payments.record",
+    keywords: "subcontract subcontractor wo create",
   },
   {
     to: "/expenses/new",

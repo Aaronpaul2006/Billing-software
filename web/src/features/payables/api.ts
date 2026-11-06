@@ -6,6 +6,10 @@ import type { components } from "@/api/schema";
 export type VendorBill = components["schemas"]["VendorBill"];
 export type VendorPayment = components["schemas"]["VendorPayment"];
 export type TdsSuggestion = components["schemas"]["TdsSuggestion"];
+export type VendorBillDetail = components["schemas"]["VendorBillDetail"];
+export type WorkOrder = components["schemas"]["WorkOrder"];
+export type WorkOrderDetail = components["schemas"]["WorkOrderDetail"];
+export type WorkOrderItem = components["schemas"]["WorkOrderItem"];
 
 export function vendorBillKey(id: string) {
   return ["vendor-bill", id];
@@ -43,5 +47,22 @@ export function useOpenVendorBills(vendorId: string) {
           },
         }),
       ).results,
+  });
+}
+
+export function workOrderKey(id: string) {
+  return ["work-order", id];
+}
+
+export function useWorkOrder(id: string | undefined) {
+  return useQuery({
+    queryKey: workOrderKey(id ?? ""),
+    enabled: id !== undefined,
+    queryFn: async () =>
+      unwrap(
+        await api.GET("/api/v1/work-orders/{wo_id}", {
+          params: { path: { wo_id: id ?? "" } },
+        }),
+      ),
   });
 }

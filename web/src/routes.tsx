@@ -310,6 +310,41 @@ export const routes: RouteObject[] = [
             ),
           },
           {
+            path: "work-orders",
+            lazy: lazyPage(
+              () => import("@/features/payables/WorkOrdersPage"),
+              (m) => m.WorkOrdersPage,
+            ),
+          },
+          {
+            path: "work-orders/new",
+            lazy: lazyPage(
+              () => import("@/features/payables/WorkOrderFormPage"),
+              (m) => m.WorkOrderFormPage,
+            ),
+          },
+          {
+            path: "work-orders/:workOrderId",
+            lazy: lazyPage(
+              () => import("@/features/payables/WorkOrderPage"),
+              (m) => m.WorkOrderPage,
+            ),
+          },
+          {
+            path: "work-orders/:workOrderId/edit",
+            lazy: lazyPage(
+              () => import("@/features/payables/WorkOrderFormPage"),
+              (m) => m.WorkOrderFormPage,
+            ),
+          },
+          {
+            path: "work-orders/:workOrderId/ra-bills/new",
+            lazy: lazyPage(
+              () => import("@/features/payables/RaBillFormPage"),
+              (m) => m.RaBillFormPage,
+            ),
+          },
+          {
             path: "bank",
             lazy: lazyPage(
               () => import("@/features/banking/BankPage"),

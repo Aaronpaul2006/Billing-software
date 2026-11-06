@@ -459,9 +459,62 @@ def seed(api: Api) -> None:
             line("Plastering 12 mm, CM 1:4", "150.000"),
         ],
     )
+    # A subcontract work order with its first RA bill (payables part 2).
+    ravi = party(
+        display_name="Ravi Kumar (brickwork)",
+        is_customer=False,
+        is_vendor=True,
+        gst_treatment="UNREGISTERED",
+        pan="ABCPK1234L",
+        state_code="32",
+    )
+    wo = api.call(
+        "POST",
+        "/work-orders",
+        {
+            "project_id": house["id"],
+            "vendor_party_id": ravi["id"],
+            "wo_date": "2026-10-21",
+            "title": "Brickwork and plastering",
+            "terms": "Cement and steel by us; payment within 15 days of a certified bill.",
+            "retention_pct": "5",
+            "tds_section": "194C",
+            "tds_rate": "1",
+            "items": [
+                {
+                    "item_code": "1",
+                    "description": "Brickwork in CM 1:6, ground and first floor",
+                    "unit": "cum",
+                    "qty": "100",
+                    "rate": "4000",
+                },
+                {
+                    "item_code": "2",
+                    "description": "Internal plastering 12 mm in CM 1:4",
+                    "unit": "sqm",
+                    "qty": "500",
+                    "rate": "300",
+                },
+            ],
+        },
+    )
+    api.call(
+        "POST",
+        f"/work-orders/{wo['id']}/ra-bills",
+        {
+            "bill_number": "RK/RA-1",
+            "bill_date": "2026-11-04",
+            "due_date": "2026-11-19",
+            "lines": [
+                {"work_order_item_id": wo["items"][0]["id"], "qty": "40"},
+                {"work_order_item_id": wo["items"][1]["id"], "qty": "200"},
+            ],
+        },
+    )
     print("Added: GSTIN, number series, 4 clients, 3 projects, 7 items, bill printing with a logo,")
     print("INV/0001 (paid), INV/0002 (part paid), INV/0003 with CN/0001, QT/0001 (accepted,")
-    print("draft invoice made from it) and a draft for Lakshmi Traders with review warnings.")
+    print("draft invoice made from it), a draft for Lakshmi Traders with review warnings, and")
+    print("work order WO/ANIL-HOUSE/01 for a brickwork subcontractor with its first RA bill.")
 
 
 def main() -> None:

@@ -7,6 +7,8 @@ import {
   fromPaise,
   groupIndian,
   MONEY_INPUT,
+  percentOf,
+  qtyTimesRate,
   subtractMoney,
   sumMoney,
   toPaise,
@@ -109,5 +111,22 @@ describe("exact paise arithmetic", () => {
       "",
     ]);
     expect(fillInOrder("0", ["5.00"])).toEqual([""]);
+  });
+});
+
+describe("qtyTimesRate and percentOf (RA bills)", () => {
+  it("multiplies exactly and rounds half up to the paisa", () => {
+    expect(qtyTimesRate("40", "4000")).toBe("160000.00");
+    expect(qtyTimesRate("12.345", "333.33")).toBe("4114.96"); // 4114.95885
+    expect(qtyTimesRate("0.005", "1.00")).toBe("0.01"); // 0.005 rounds up
+    expect(qtyTimesRate("1.2345", "10")).toBeNull(); // 4 decimals
+    expect(qtyTimesRate("", "10")).toBeNull();
+  });
+  it("takes a percentage, to the paisa or the rupee", () => {
+    expect(percentOf("220000.00", "18")).toBe("39600.00");
+    expect(percentOf("220000.00", "5")).toBe("11000.00");
+    expect(percentOf("12345.67", "1", true)).toBe("123.00"); // 123.4567 -> 123
+    expect(percentOf("12350.00", "1", true)).toBe("124.00"); // 123.50 -> 124
+    expect(percentOf("100.00", "2.5")).toBe("2.50");
   });
 });

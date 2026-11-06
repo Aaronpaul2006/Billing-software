@@ -18,11 +18,11 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { CATEGORY_LABELS } from "@/features/expenses/labels";
 import { formatDate } from "@/lib/dates";
 import { ifMatch } from "@/lib/forms";
-import { compareMoney } from "@/lib/money";
+import { compareMoney, formatQty } from "@/lib/money";
 import { can } from "@/lib/permissions";
 
 import { useVendorBill, vendorBillKey } from "./api";
-import type { VendorBill } from "./api";
+import type { VendorBillDetail } from "./api";
 import { billStatus } from "./status";
 
 function Row({ label, children }: { label: string; children: React.ReactNode }) {
@@ -34,7 +34,7 @@ function Row({ label, children }: { label: string; children: React.ReactNode }) 
   );
 }
 
-function VoidForm({ bill, onDone }: { bill: VendorBill; onDone: () => void }) {
+function VoidForm({ bill, onDone }: { bill: VendorBillDetail; onDone: () => void }) {
   const queryClient = useQueryClient();
   const [reason, setReason] = useState("");
   const voidIt = useMutation({
@@ -126,7 +126,7 @@ export function VendorBillPage() {
               </Link>
             </Button>
           )}
-          {!paidSome && (
+          {!paidSome && !b.work_order_id && (
             <Button variant="outline" asChild>
               <Link to={`/vendor-bills/${b.id}/edit`}>
                 <Pencil aria-hidden /> Edit
@@ -160,6 +160,50 @@ export function VendorBillPage() {
       {b.status === "VOIDED" && (
         <p className="text-muted-foreground mb-4 text-sm">Voided: {b.void_reason}</p>
       )}
+      {b.work_order_id && (
+        <p className="mb-4 text-sm">
+          RA bill {b.ra_number} against{" "}
+          <Link
+            to={`/work-orders/${b.work_order_id}`}
+            className="text-primary font-medium underline"
+          >
+            {b.wo_number}
+          </Link>
+          {b.status === "RECORDED" && !paidSome && " · to change it, void it and enter it again"}
+        </p>
+      )}
+      {b.lines.length > 0 && (
+        <div className="mb-4 max-w-3xl overflow-x-auto">
+          <table className="w-full min-w-[32rem] text-sm" aria-label="Quantities on this bill">
+            <thead>
+              <tr className="text-muted-foreground border-border border-b text-left text-xs">
+                <th className="py-2 pr-3 font-medium">Item</th>
+                <th className="py-2 pr-3 text-right font-medium">Quantity</th>
+                <th className="py-2 pr-3 text-right font-medium">Rate</th>
+                <th className="py-2 text-right font-medium">Amount</th>
+              </tr>
+            </thead>
+            <tbody>
+              {b.lines.map((l) => (
+                <tr key={l.id} className="border-border border-b">
+                  <td className="py-2 pr-3">
+                    {l.item_code} · {l.description}
+                  </td>
+                  <td className="py-2 pr-3 text-right whitespace-nowrap">
+                    {formatQty(l.qty)} {l.unit}
+                  </td>
+                  <td className="py-2 pr-3 text-right">
+                    <Money value={l.rate} />
+                  </td>
+                  <td className="py-2 text-right">
+                    <Money value={l.amount} />
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      )}
       <Card className="max-w-xl">
         <CardContent>
           <dl className="text-sm">
@@ -183,6 +227,11 @@ export function VendorBillPage() {
                 "none"
               )}
             </Row>
+            {b.work_order_id && (
+              <Row label="Less retention held">
+                − <Money value={b.retention_amount} />
+              </Row>
+            )}
             <Row label="We pay the vendor">
               <Money value={b.net_payable} strong />
             </Row>

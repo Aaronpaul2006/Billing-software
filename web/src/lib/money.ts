@@ -115,3 +115,35 @@ export function fillInOrder(available: string, owed: readonly string[]): string[
     return take > 0n ? fromPaise(take) : "";
   });
 }
+
+const QTY_STRICT = /^(\d+)(?:\.(\d{1,3}))?$/;
+
+/** "12.5" -> 12500n thousandths; null for anything that is not a quantity. */
+export function toMilli(qty: string): bigint | null {
+  const m = QTY_STRICT.exec(qty.trim());
+  if (!m) return null;
+  const [, whole = "0", part = ""] = m;
+  return BigInt(whole) * 1000n + BigInt(part.padEnd(3, "0"));
+}
+
+/** n / d rounded half up (n, d > 0), as the server's ROUND_HALF_UP. */
+function divideHalfUp(n: bigint, d: bigint): bigint {
+  return (n * 2n + d) / (d * 2n);
+}
+
+/** qty x rate, rounded to the paisa; null if either is unreadable. */
+export function qtyTimesRate(qty: string, rate: string): string | null {
+  const q = toMilli(qty);
+  const r = toPaise(rate);
+  if (q === null || r === null || r < 0n) return null;
+  return fromPaise(divideHalfUp(q * r, 1000n));
+}
+
+/** pct % of amount (pct with up to 2 decimals), rounded to the paisa, or to the rupee. */
+export function percentOf(amount: string, pct: string, toRupee = false): string | null {
+  const a = toPaise(amount);
+  const p = toPaise(pct); // hundredths of a percent, read as paise
+  if (a === null || p === null || a < 0n || p < 0n) return null;
+  const paise = divideHalfUp(a * p, 10000n);
+  return fromPaise(toRupee ? divideHalfUp(paise, 100n) * 100n : paise);
+}
