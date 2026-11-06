@@ -87,3 +87,20 @@ class EntrySerializer(serializers.ModelSerializer[DiaryEntry]):
 class DiaryQuerySerializer(serializers.Serializer[Any]):
     date_from = serializers.DateField(required=False)
     date_to = serializers.DateField(required=False)
+
+
+class ProofPhotoSerializer(serializers.Serializer[Any]):
+    id = serializers.UUIDField(help_text="The diary photo")
+    caption = serializers.CharField(allow_null=True)
+    entry_date = serializers.DateField(help_text="The diary day it is from")
+    url = serializers.CharField(help_text="To show it; valid for a few minutes")
+
+
+class ProofPhotosSerializer(serializers.Serializer[Any]):
+    results = ProofPhotoSerializer(many=True)
+
+
+class ChoosePhotosSerializer(serializers.Serializer[Any]):
+    diary_photo_ids = serializers.ListField(
+        child=serializers.UUIDField(), help_text="In the order to show them; [] for none"
+    )

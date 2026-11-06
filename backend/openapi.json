@@ -3381,6 +3381,88 @@
                 }
             }
         },
+        "/api/v1/documents/{document_id}/photos": {
+            "get": {
+                "operationId": "documents_photos_retrieve",
+                "description": "A bill's proof-of-work photos; choose them (from its project's diary).",
+                "parameters": [
+                    {
+                        "in": "path",
+                        "name": "document_id",
+                        "schema": {
+                            "type": "string",
+                            "format": "uuid"
+                        },
+                        "required": true
+                    }
+                ],
+                "tags": [
+                    "diary"
+                ],
+                "security": [
+                    {
+                        "bearerAuth": []
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ProofPhotos"
+                                }
+                            }
+                        },
+                        "description": ""
+                    }
+                }
+            },
+            "put": {
+                "operationId": "documents_photos_update",
+                "description": "A bill's proof-of-work photos; choose them (from its project's diary).",
+                "parameters": [
+                    {
+                        "in": "path",
+                        "name": "document_id",
+                        "schema": {
+                            "type": "string",
+                            "format": "uuid"
+                        },
+                        "required": true
+                    }
+                ],
+                "tags": [
+                    "diary"
+                ],
+                "requestBody": {
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/ChoosePhotos"
+                            }
+                        }
+                    },
+                    "required": true
+                },
+                "security": [
+                    {
+                        "bearerAuth": []
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ProofPhotos"
+                                }
+                            }
+                        },
+                        "description": ""
+                    }
+                }
+            }
+        },
         "/api/v1/documents/{document_id}/reminders": {
             "get": {
                 "operationId": "documents_reminders_retrieve",
@@ -6011,6 +6093,43 @@
                                             "type": "string"
                                         }
                                     }
+                                }
+                            }
+                        },
+                        "description": ""
+                    }
+                }
+            }
+        },
+        "/api/v1/portal/documents/{document_id}/photos": {
+            "get": {
+                "operationId": "portal_documents_photos_retrieve",
+                "description": "Site photos the business chose to show with this bill (proof of work).",
+                "parameters": [
+                    {
+                        "in": "path",
+                        "name": "document_id",
+                        "schema": {
+                            "type": "string",
+                            "format": "uuid"
+                        },
+                        "required": true
+                    }
+                ],
+                "tags": [
+                    "portal"
+                ],
+                "security": [
+                    {
+                        "bearerAuth": []
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ProofPhotos"
                                 }
                             }
                         },
@@ -10338,6 +10457,22 @@
                 "required": [
                     "attribute",
                     "value"
+                ]
+            },
+            "ChoosePhotos": {
+                "type": "object",
+                "properties": {
+                    "diary_photo_ids": {
+                        "type": "array",
+                        "items": {
+                            "type": "string",
+                            "format": "uuid"
+                        },
+                        "description": "In the order to show them; [] for none"
+                    }
+                },
+                "required": [
+                    "diary_photo_ids"
                 ]
             },
             "ClientEnum": {
@@ -17603,6 +17738,51 @@
                 ],
                 "type": "string",
                 "description": "* `PLANNED` - PLANNED\n* `ACTIVE` - ACTIVE\n* `ON_HOLD` - ON_HOLD\n* `COMPLETED` - COMPLETED\n* `CANCELLED` - CANCELLED"
+            },
+            "ProofPhoto": {
+                "type": "object",
+                "properties": {
+                    "id": {
+                        "type": "string",
+                        "format": "uuid",
+                        "description": "The diary photo"
+                    },
+                    "caption": {
+                        "type": [
+                            "string",
+                            "null"
+                        ]
+                    },
+                    "entry_date": {
+                        "type": "string",
+                        "format": "date",
+                        "description": "The diary day it is from"
+                    },
+                    "url": {
+                        "type": "string",
+                        "description": "To show it; valid for a few minutes"
+                    }
+                },
+                "required": [
+                    "caption",
+                    "entry_date",
+                    "id",
+                    "url"
+                ]
+            },
+            "ProofPhotos": {
+                "type": "object",
+                "properties": {
+                    "results": {
+                        "type": "array",
+                        "items": {
+                            "$ref": "#/components/schemas/ProofPhoto"
+                        }
+                    }
+                },
+                "required": [
+                    "results"
+                ]
             },
             "RaBillLineIn": {
                 "type": "object",

@@ -1127,6 +1127,24 @@ CREATE TABLE site_diary_photos (
 );
 CREATE INDEX site_diary_photos_entry_idx ON site_diary_photos (tenant_id, entry_id, sort_order);
 
+-- Proof of work (Part B): site diary photos chosen to go with a bill (an RA
+-- bill, usually), shown with it in the client portal. Only photos of the
+-- bill's project (7e).
+CREATE TABLE document_photos (
+  id              uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+  tenant_id       uuid NOT NULL REFERENCES tenants (id),
+  document_id     uuid NOT NULL,
+  diary_photo_id  uuid NOT NULL,
+  sort_order      integer NOT NULL DEFAULT 0,
+  created_by      uuid NOT NULL REFERENCES users (id),
+  created_at      timestamptz NOT NULL DEFAULT now(),
+  UNIQUE (tenant_id, id),
+  UNIQUE (document_id, diary_photo_id),
+  FOREIGN KEY (tenant_id, document_id)    REFERENCES documents (tenant_id, id) ON DELETE CASCADE,
+  FOREIGN KEY (tenant_id, diary_photo_id) REFERENCES site_diary_photos (tenant_id, id) ON DELETE CASCADE
+);
+CREATE INDEX document_photos_document_idx ON document_photos (tenant_id, document_id, sort_order);
+
 -- Income-tax TDS certificates (Form 16A) received from clients, to reconcile
 -- with the TDS deducted on our bills. A record of the client's paper, not a
 -- posting of ours: it may be corrected or deleted (audited).
@@ -1693,6 +1711,26 @@ CREATE TRIGGER site_diary_photos_check
   BEFORE INSERT OR UPDATE OF attachment_id ON site_diary_photos
   FOR EACH ROW EXECUTE FUNCTION site_diary_photos_check();
 
+-- A bill's photos are from its own project's diary.
+CREATE FUNCTION document_photos_check() RETURNS trigger
+LANGUAGE plpgsql SECURITY DEFINER SET search_path = public, pg_temp AS $$
+BEGIN
+  IF NOT EXISTS (
+    SELECT 1 FROM documents d
+      JOIN site_diary_photos p ON p.id = NEW.diary_photo_id
+      JOIN site_diary_entries e ON e.id = p.entry_id
+     WHERE d.id = NEW.document_id AND d.project_id = e.project_id
+  ) THEN
+    RAISE EXCEPTION 'a bill''s photos are from its project''s site diary'
+      USING ERRCODE = 'check_violation';
+  END IF;
+  RETURN NEW;
+END $$;
+
+CREATE TRIGGER document_photos_check
+  BEFORE INSERT OR UPDATE ON document_photos
+  FOR EACH ROW EXECUTE FUNCTION document_photos_check();
+
 -- 7d. Audit trail. SECURITY DEFINER so the app role needs no INSERT right on
 --     audit_log (it cannot forge or bulk-write audit rows directly).
 CREATE FUNCTION audit_row_change() RETURNS trigger
@@ -1738,7 +1776,7 @@ BEGIN
     'document_line_measurements', 'print_settings', 'document_emails', 'tally_settings',
     'vendor_bills', 'vendor_payments', 'vendor_allocations', 'bank_lines', 'work_orders',
     'work_order_items', 'vendor_bill_lines', 'vendor_retention_releases', 'gstr2b_returns',
-    'site_diary_entries', 'site_diary_photos']
+    'site_diary_entries', 'site_diary_photos', 'document_photos']
   LOOP
     EXECUTE format(
       'CREATE TRIGGER audit AFTER INSERT OR UPDATE OR DELETE ON %I FOR EACH ROW EXECUTE FUNCTION audit_row_change()', t);
@@ -1762,7 +1800,7 @@ BEGIN
     'print_settings', 'document_emails', 'tally_settings', 'vendor_bills', 'vendor_payments',
     'vendor_allocations', 'bank_lines', 'work_orders', 'work_order_items', 'vendor_bill_lines',
     'vendor_retention_releases', 'gstr2b_returns', 'gstr2b_lines', 'notifications',
-    'site_diary_entries', 'site_diary_photos']
+    'site_diary_entries', 'site_diary_photos', 'document_photos']
   LOOP
     EXECUTE format('ALTER TABLE %I ENABLE ROW LEVEL SECURITY', t);
     EXECUTE format('ALTER TABLE %I FORCE ROW LEVEL SECURITY', t);
@@ -1877,8 +1915,7 @@ BEGIN
     'tds_certificates', 'email_invitations', 'payment_reminders', 'document_templates', 'audit_log',
     'print_settings', 'document_emails', 'tally_settings', 'vendor_bills', 'vendor_payments',
     'vendor_allocations', 'bank_lines', 'work_orders', 'work_order_items', 'vendor_bill_lines',
-    'vendor_retention_releases', 'gstr2b_returns', 'gstr2b_lines', 'notifications',
-    'site_diary_entries', 'site_diary_photos']
+    'vendor_retention_releases', 'gstr2b_returns', 'gstr2b_lines', 'notifications']
   LOOP
     EXECUTE format(
       'CREATE POLICY client_scope ON %I AS RESTRICTIVE USING (NOT app_portal_session())', t);
@@ -1923,7 +1960,24 @@ CREATE POLICY client_scope ON allocations AS RESTRICTIVE
 CREATE POLICY client_scope ON attachments AS RESTRICTIVE
   USING (NOT app_portal_session()
          OR EXISTS (SELECT 1 FROM documents d
-                     WHERE d.tenant_id = attachments.tenant_id AND d.pdf_attachment_id = attachments.id));
+                     WHERE d.tenant_id = attachments.tenant_id AND d.pdf_attachment_id = attachments.id)
+         OR EXISTS (SELECT 1 FROM site_diary_photos p
+                     WHERE p.tenant_id = attachments.tenant_id AND p.attachment_id = attachments.id));
+-- Proof of work: a client sees the photos chosen for their own bills, the
+-- diary day they are from and the image files, nothing else of the diary.
+CREATE POLICY client_scope ON document_photos AS RESTRICTIVE
+  USING (NOT app_portal_session()
+         OR EXISTS (SELECT 1 FROM documents d
+                     WHERE d.tenant_id = document_photos.tenant_id AND d.id = document_photos.document_id));
+CREATE POLICY client_scope ON site_diary_photos AS RESTRICTIVE
+  USING (NOT app_portal_session()
+         OR EXISTS (SELECT 1 FROM document_photos dp
+                     WHERE dp.tenant_id = site_diary_photos.tenant_id
+                       AND dp.diary_photo_id = site_diary_photos.id));
+CREATE POLICY client_scope ON site_diary_entries AS RESTRICTIVE
+  USING (NOT app_portal_session()
+         OR EXISTS (SELECT 1 FROM site_diary_photos p
+                     WHERE p.tenant_id = site_diary_entries.tenant_id AND p.entry_id = site_diary_entries.id));
 CREATE POLICY client_scope ON idempotency_keys AS RESTRICTIVE
   USING (NOT app_portal_session() OR user_id = app_current_user_id());
 CREATE POLICY client_scope ON exports AS RESTRICTIVE
@@ -2129,7 +2183,8 @@ GRANT SELECT, INSERT, UPDATE ON ALL TABLES IN SCHEMA public TO billing_app;
 GRANT DELETE ON documents, document_lines, allocations, boq_items, catalog_items, tds_certificates,
                 idempotency_keys, auth_sessions, document_templates, catalog_item_variants,
                 document_line_measurements, vendor_allocations, work_order_items,
-                vendor_bill_lines, gstr2b_returns, gstr2b_lines, site_diary_photos TO billing_app;
+                vendor_bill_lines, gstr2b_returns, gstr2b_lines, site_diary_photos,
+                document_photos TO billing_app;
 -- Audit rows are written only by the trigger.
 REVOKE INSERT, UPDATE, DELETE ON audit_log FROM billing_app;
 REVOKE INSERT, UPDATE ON v_billing_summary, v_receivables, v_project_billing FROM billing_app;
@@ -2165,6 +2220,8 @@ REVOKE UPDATE ON gstr2b_returns, gstr2b_lines FROM billing_app;
 -- Notifications: only marked read.
 REVOKE UPDATE ON notifications FROM billing_app;
 GRANT UPDATE (read_at) ON notifications TO billing_app;
+-- A bill's photos are chosen or taken off, never changed.
+REVOKE UPDATE ON document_photos FROM billing_app;
 GRANT UPDATE (status, cancelled_at, cancelled_by, cancel_reason, version, updated_at)
   ON vendor_retention_releases TO billing_app;
 -- Payment reminders are a log: written once, never changed.

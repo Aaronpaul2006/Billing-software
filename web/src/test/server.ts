@@ -63,6 +63,8 @@ export const server = setupServer(
   http.get(`${API}/notifications`, () => HttpResponse.json({ results: [], next_cursor: null })),
   http.get(`${API}/email-invitations`, () => HttpResponse.json({ results: [] })),
   http.get(`${API}/documents/:id/reminders`, () => HttpResponse.json({ results: [] })),
+  http.get(`${API}/documents/:id/photos`, () => HttpResponse.json({ results: [] })),
+  http.get(`${API}/portal/documents/:id/photos`, () => HttpResponse.json({ results: [] })),
   // The bill screen's lookups for a chosen client (B.4): no earlier bill, nothing owed.
   http.get(`${API}/documents`, () => HttpResponse.json({ results: [], next_cursor: null })),
   http.get(`${API}/parties/:id/statement`, () => problem(403, "permission_denied")),

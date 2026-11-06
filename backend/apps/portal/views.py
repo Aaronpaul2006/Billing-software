@@ -18,6 +18,8 @@ from rest_framework.response import Response
 from apps.core.api import detail_response, list_response, principal_of, versioned_action
 from apps.core.permissions import IsClient, MfaSatisfied
 from apps.core.tenancy import Principal
+from apps.diary import proof
+from apps.diary.serializers import ProofPhotosSerializer
 from apps.documents.models import Document
 from apps.documents.serializers import PdfLinkSerializer
 from apps.documents.services import pdfs
@@ -201,3 +203,12 @@ class BoqProgressView(PortalView):
         return Response(
             BoqProgressSerializer(services.boq_progress(self.principal, project_id)).data
         )
+
+
+class DocumentPhotosView(PortalView):
+    """Site photos the business chose to show with this bill (proof of work)."""
+
+    @extend_schema(responses={200: ProofPhotosSerializer}, tags=["portal"])
+    def get(self, request: Request, document_id: uuid.UUID) -> Response:
+        doc = services.document(self.principal, document_id)
+        return Response(ProofPhotosSerializer({"results": proof.photos(doc)}).data)

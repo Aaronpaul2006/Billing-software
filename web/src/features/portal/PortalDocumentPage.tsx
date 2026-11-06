@@ -17,6 +17,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
 import { DOC_TYPE_LABELS } from "@/features/documents/api";
 import { TotalsPanel } from "@/features/documents/TotalsPanel";
+import { PhotoGrid } from "@/features/files/PhotoGrid";
 import { errorMessage } from "@/lib/errors";
 import { ifMatch } from "@/lib/forms";
 import { formatInr, formatQty } from "@/lib/money";
@@ -236,6 +237,29 @@ function DocumentView({ doc }: { doc: PortalDocumentDetail }) {
           )}
         </CardContent>
       </Card>
+      <PortalSitePhotos documentId={doc.id} />
     </>
+  );
+}
+
+/** Site photos the business chose to show with this bill (proof of work). */
+function PortalSitePhotos({ documentId }: { documentId: string }) {
+  const photos = useQuery({
+    queryKey: ["portal", "document-photos", documentId],
+    queryFn: async () =>
+      unwrap(
+        await api.GET("/api/v1/portal/documents/{document_id}/photos", {
+          params: { path: { document_id: documentId } },
+        }),
+      ).results,
+  });
+  if (!photos.data?.length) return null;
+  return (
+    <Card className="mt-4">
+      <CardContent className="grid gap-3 pt-6">
+        <h2 className="text-section">Site photos</h2>
+        <PhotoGrid photos={photos.data} label="Site photos with this bill" />
+      </CardContent>
+    </Card>
   );
 }

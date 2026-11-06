@@ -187,6 +187,31 @@ describe("client portal", () => {
     expect(screen.queryByRole("button", { name: "Accept" })).not.toBeInTheDocument();
   });
 
+  it("shows the site photos chosen for a bill", async () => {
+    portalApi();
+    server.use(
+      http.get(`${API}/portal/documents/q1`, () => HttpResponse.json(quote())),
+      http.get(`${API}/portal/documents/q1/photos`, () =>
+        HttpResponse.json({
+          results: [
+            {
+              id: "p1",
+              caption: "Slab concreting",
+              entry_date: "2026-10-15",
+              url: "https://img.test/1.jpg",
+            },
+          ],
+        }),
+      ),
+    );
+    renderSignedIn("/portal/bills/q1", CLIENT);
+    const grid = await screen.findByRole("list", { name: "Site photos with this bill" });
+    expect(within(grid).getByRole("img", { name: "Slab concreting" })).toHaveAttribute(
+      "src",
+      "https://img.test/1.jpg",
+    );
+  });
+
   it("explains an expired quotation", async () => {
     const user = userEvent.setup();
     portalApi();

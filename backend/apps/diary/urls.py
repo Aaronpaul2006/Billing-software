@@ -15,4 +15,9 @@ urlpatterns = [
         name="diary-entry-photos",
     ),
     path("diary-photos/<uuid:photo_id>", views.DiaryPhotoView.as_view(), name="diary-photo"),
+    path(
+        "documents/<uuid:document_id>/photos",
+        views.DocumentPhotosView.as_view(),
+        name="document-photos",
+    ),
 ]

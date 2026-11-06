@@ -1276,6 +1276,24 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/documents/{document_id}/photos": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** @description A bill's proof-of-work photos; choose them (from its project's diary). */
+        get: operations["documents_photos_retrieve"];
+        /** @description A bill's proof-of-work photos; choose them (from its project's diary). */
+        put: operations["documents_photos_update"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/documents/{document_id}/reminders": {
         parameters: {
             query?: never;
@@ -2171,6 +2189,23 @@ export interface paths {
         };
         /** @description 302 to a short-lived link to the issued PDF (202 while it is being made). */
         get: operations["portal_documents_pdf_retrieve"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/portal/documents/{document_id}/photos": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** @description Site photos the business chose to show with this bill (proof of work). */
+        get: operations["portal_documents_photos_retrieve"];
         put?: never;
         post?: never;
         delete?: never;
@@ -3621,6 +3656,10 @@ export interface components {
             rate_delta?: string;
             /** @default true */
             is_active?: boolean;
+        };
+        ChoosePhotos: {
+            /** @description In the order to show them; [] for none */
+            diary_photo_ids: string[];
         };
         /**
          * @description * `web` - web
@@ -5950,6 +5989,24 @@ export interface components {
          * @enum {string}
          */
         ProjectWriteStatusEnum: "PLANNED" | "ACTIVE" | "ON_HOLD" | "COMPLETED" | "CANCELLED";
+        ProofPhoto: {
+            /**
+             * Format: uuid
+             * @description The diary photo
+             */
+            id: string;
+            caption: string | null;
+            /**
+             * Format: date
+             * @description The diary day it is from
+             */
+            entry_date: string;
+            /** @description To show it; valid for a few minutes */
+            url: string;
+        };
+        ProofPhotos: {
+            results: components["schemas"]["ProofPhoto"][];
+        };
         RaBillLineIn: {
             /** Format: uuid */
             work_order_item_id: string;
@@ -9996,6 +10053,52 @@ export interface operations {
             };
         };
     };
+    documents_photos_retrieve: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                document_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ProofPhotos"];
+                };
+            };
+        };
+    };
+    documents_photos_update: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                document_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ChoosePhotos"];
+            };
+        };
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ProofPhotos"];
+                };
+            };
+        };
+    };
     documents_reminders_retrieve: {
         parameters: {
             query?: never;
@@ -11464,6 +11567,27 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content?: never;
+            };
+        };
+    };
+    portal_documents_photos_retrieve: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                document_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ProofPhotos"];
+                };
             };
         };
     };

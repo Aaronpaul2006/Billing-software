@@ -950,6 +950,8 @@ client portal.
 | `GET/POST /projects/{id}/diary?date_from=&date_to=` | Newest day first. POST `{entry_date, work_done, weather? (SUNNY, CLOUDY, RAIN, HEAVY_RAIN), workers?, hold_ups?, photos?: [{attachment_id, caption?}]}` → `201`; a second entry for the same day: `409 entry_exists` with `entry_id` (add to it instead). Each entry lists its `photos` with a short-lived `url` |
 | `GET/PATCH /diary-entries/{id}` | PATCH (If-Match) the text, weather and workers; the day stays its day |
 | `POST /diary-entries/{id}/photos` · `DELETE /diary-photos/{id}` | `{photos: [{attachment_id, caption?}]}`, at most 30 a day. A photo is an image upload that passed the virus check (`not_a_photo`, `not_available`); the database insists too (7e) |
+| `GET/PUT /documents/{id}/photos` | Proof of work: the diary photos shown with a bill, in order (`{results: [{id, caption, entry_date, url}]}`). PUT `{diary_photo_ids}` replaces them (`documents.draft`; at most 40; only photos from the bill's project, the database insists too; not on a cancelled bill). Removing a photo from the diary, or deleting a draft, takes them off |
+| `GET /portal/documents/{id}/photos` | The client sees the photos chosen for their own bills, and nothing else of the diary (row-level policies on the diary, the chosen photos and their files) |
 
 ### Bank statements (Part B)
 

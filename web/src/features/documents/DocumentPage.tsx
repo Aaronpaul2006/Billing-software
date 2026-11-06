@@ -56,6 +56,7 @@ import { BillTimeline } from "./BillTimeline";
 import { DocumentHistory } from "./DocumentHistory";
 import { IssueReview } from "./IssueReview";
 import type { PaidNow } from "./IssueReview";
+import { SitePhotos } from "./SitePhotos";
 import { SendBill } from "./SendBill";
 import type { PrintCopy } from "./sending";
 import { TotalsPanel } from "./TotalsPanel";
@@ -942,6 +943,11 @@ export function DocumentPage() {
             outstanding={doc.totals.outstanding}
           />
         )}
+        <SitePhotos
+          documentId={doc.id}
+          projectId={doc.project_id ?? null}
+          cancelled={doc.status === "CANCELLED"}
+        />
         <DocumentHistory documentId={doc.id} />
       </div>
     </>

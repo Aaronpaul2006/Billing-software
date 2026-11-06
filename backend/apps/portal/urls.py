@@ -25,6 +25,11 @@ urlpatterns = [
         views.QuotationDeclineView.as_view(),
         name="portal-document-decline",
     ),
+    path(
+        "portal/documents/<uuid:document_id>/photos",
+        views.DocumentPhotosView.as_view(),
+        name="portal-document-photos",
+    ),
     path("portal/payments", views.PaymentListView.as_view(), name="portal-payments"),
     path("portal/statement", views.StatementView.as_view(), name="portal-statement"),
     path("portal/projects", views.ProjectListView.as_view(), name="portal-projects"),

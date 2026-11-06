@@ -10,16 +10,19 @@ from rest_framework.response import Response
 from apps.core.api import ActionAPIView, detail_response, list_response, versioned_patch
 from apps.core.idempotency import idempotent
 from apps.core.queries import get_or_404
+from apps.documents.models import Document
 from apps.projects.models import Project
 
-from . import services
+from . import proof, services
 from .models import DiaryEntry
 from .serializers import (
+    ChoosePhotosSerializer,
     DiaryQuerySerializer,
     EntrySerializer,
     EntryUpdateSerializer,
     EntryWriteSerializer,
     PhotosInSerializer,
+    ProofPhotosSerializer,
 )
 
 
@@ -105,3 +108,25 @@ class DiaryPhotoView(ActionAPIView):
     def delete(self, request: Request, photo_id: uuid.UUID) -> Response:
         services.remove_photo(self.principal, photo_id)
         return Response(status=204)
+
+
+class DocumentPhotosView(ActionAPIView):
+    """A bill's proof-of-work photos; choose them (from its project's diary)."""
+
+    write_action = proof.CHOOSE
+    pagination_class = None
+    filter_backends = ()
+
+    @extend_schema(responses={200: ProofPhotosSerializer}, tags=["diary"])
+    def get(self, request: Request, document_id: uuid.UUID) -> Response:
+        doc = get_or_404(Document, document_id)
+        return Response(ProofPhotosSerializer({"results": proof.photos(doc)}).data)
+
+    @extend_schema(
+        request=ChoosePhotosSerializer, responses={200: ProofPhotosSerializer}, tags=["diary"]
+    )
+    def put(self, request: Request, document_id: uuid.UUID) -> Response:
+        data = ChoosePhotosSerializer(data=request.data)
+        data.is_valid(raise_exception=True)
+        doc = proof.choose(self.principal, document_id, data.validated_data["diary_photo_ids"])
+        return Response(ProofPhotosSerializer({"results": proof.photos(doc)}).data)

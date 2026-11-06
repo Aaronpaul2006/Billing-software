@@ -39,7 +39,7 @@ class DiaryPhoto(TenantScoped):
 
     id = uuid7_pk()
     tenant = tenant_ref()
-    entry = ref("diary.DiaryEntry", related_name="photos")
+    entry = ref("diary.DiaryEntry", related_name="photos", on_delete=models.DO_NOTHING)
     attachment = ref("files.Attachment")
     caption = models.TextField(null=True)  # noqa: DJ001
     sort_order = models.IntegerField(default=0, db_default=0)
@@ -48,3 +48,19 @@ class DiaryPhoto(TenantScoped):
 
     class Meta:
         db_table = "site_diary_photos"
+
+
+class DocumentPhoto(TenantScoped):
+    """A diary photo chosen to go with a bill as proof of work."""
+
+    id = uuid7_pk()
+    tenant = tenant_ref()
+    # The database removes these with their bill or photo (ON DELETE CASCADE).
+    document = ref("documents.Document", on_delete=models.DO_NOTHING)
+    diary_photo = ref("diary.DiaryPhoto", on_delete=models.DO_NOTHING)
+    sort_order = models.IntegerField(default=0, db_default=0)
+    created_by = ref("accounts.User", db_column="created_by")
+    created_at = created_at()
+
+    class Meta:
+        db_table = "document_photos"
