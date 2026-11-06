@@ -323,3 +323,43 @@ class DashboardSerializer(serializers.Serializer[Any]):
         many=True, help_text="Costs so far exceed billing (at most 5, worst first)."
     )
     drafts = DashboardDraftsSerializer()
+
+
+class CashFlowItemSerializer(serializers.Serializer[Any]):
+    id = serializers.UUIDField()
+    kind = serializers.ChoiceField(
+        choices=["BILL", "RETENTION_RELEASE", "VENDOR_BILL"],
+        help_text="What the id is: a document, a retention release or a vendor bill",
+    )
+    number = serializers.CharField(help_text="The bill's number (ours, or the vendor's)")
+    party_name = serializers.CharField()
+    due_date = serializers.DateField()
+    outstanding = MoneyField()
+
+
+class CashFlowWeekSerializer(serializers.Serializer[Any]):
+    start = serializers.DateField(help_text="Monday")
+    end = serializers.DateField(help_text="Sunday")
+    money_in = MoneyField(help_text="Client bills falling due this week, still owed")
+    money_out = MoneyField(help_text="Vendor bills falling due this week, still to pay")
+    bills_in = CashFlowItemSerializer(many=True)
+    bills_out = CashFlowItemSerializer(many=True)
+    balance_low = MoneyField(help_text="If overdue client bills do not come in")
+    balance_high = MoneyField(help_text="If overdue client bills come in now")
+
+
+class CashFlowSerializer(serializers.Serializer[Any]):
+    as_of = serializers.DateField()
+    cash_today = MoneyField(
+        allow_null=True, help_text="Last balance of each imported bank statement; null: none"
+    )
+    cash_sources = serializers.ListField(child=serializers.CharField())
+    overdue_in = MoneyField(help_text="Client bills past due: when they come in is not known")
+    overdue_out = MoneyField(help_text="Vendor bills past due: taken as paid now")
+    weeks = CashFlowWeekSerializer(many=True)
+    lowest_week_start = serializers.DateField()
+    lowest_balance = MoneyField()
+
+
+class CashFlowParamsSerializer(serializers.Serializer[Any]):
+    weeks = serializers.IntegerField(min_value=1, max_value=13, default=8)

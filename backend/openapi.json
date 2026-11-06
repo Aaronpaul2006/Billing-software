@@ -6244,6 +6244,44 @@
                 }
             }
         },
+        "/api/v1/reports/cash-flow": {
+            "get": {
+                "operationId": "reports_cash_flow_retrieve",
+                "description": "The next weeks' money in and out, as ranges (Part B, cashflow.py).",
+                "parameters": [
+                    {
+                        "in": "query",
+                        "name": "weeks",
+                        "schema": {
+                            "type": "integer",
+                            "maximum": 13,
+                            "minimum": 1,
+                            "default": 8
+                        }
+                    }
+                ],
+                "tags": [
+                    "reports"
+                ],
+                "security": [
+                    {
+                        "bearerAuth": []
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/CashFlow"
+                                }
+                            }
+                        },
+                        "description": ""
+                    }
+                }
+            }
+        },
         "/api/v1/reports/dashboard": {
             "get": {
                 "operationId": "reports_dashboard_retrieve",
@@ -8651,6 +8689,178 @@
                 },
                 "required": [
                     "reason"
+                ]
+            },
+            "CashFlow": {
+                "type": "object",
+                "properties": {
+                    "as_of": {
+                        "type": "string",
+                        "format": "date"
+                    },
+                    "cash_today": {
+                        "type": [
+                            "string",
+                            "null"
+                        ],
+                        "format": "decimal",
+                        "pattern": "^-?\\d{0,12}(?:\\.\\d{0,2})?$",
+                        "description": "Last balance of each imported bank statement; null: none"
+                    },
+                    "cash_sources": {
+                        "type": "array",
+                        "items": {
+                            "type": "string"
+                        }
+                    },
+                    "overdue_in": {
+                        "type": "string",
+                        "format": "decimal",
+                        "pattern": "^-?\\d{0,12}(?:\\.\\d{0,2})?$",
+                        "description": "Client bills past due: when they come in is not known"
+                    },
+                    "overdue_out": {
+                        "type": "string",
+                        "format": "decimal",
+                        "pattern": "^-?\\d{0,12}(?:\\.\\d{0,2})?$",
+                        "description": "Vendor bills past due: taken as paid now"
+                    },
+                    "weeks": {
+                        "type": "array",
+                        "items": {
+                            "$ref": "#/components/schemas/CashFlowWeek"
+                        }
+                    },
+                    "lowest_week_start": {
+                        "type": "string",
+                        "format": "date"
+                    },
+                    "lowest_balance": {
+                        "type": "string",
+                        "format": "decimal",
+                        "pattern": "^-?\\d{0,12}(?:\\.\\d{0,2})?$"
+                    }
+                },
+                "required": [
+                    "as_of",
+                    "cash_sources",
+                    "cash_today",
+                    "lowest_balance",
+                    "lowest_week_start",
+                    "overdue_in",
+                    "overdue_out",
+                    "weeks"
+                ]
+            },
+            "CashFlowItem": {
+                "type": "object",
+                "properties": {
+                    "id": {
+                        "type": "string",
+                        "format": "uuid"
+                    },
+                    "kind": {
+                        "allOf": [
+                            {
+                                "$ref": "#/components/schemas/CashFlowItemKindEnum"
+                            }
+                        ],
+                        "description": "What the id is: a document, a retention release or a vendor bill\n\n* `BILL` - BILL\n* `RETENTION_RELEASE` - RETENTION_RELEASE\n* `VENDOR_BILL` - VENDOR_BILL"
+                    },
+                    "number": {
+                        "type": "string",
+                        "description": "The bill's number (ours, or the vendor's)"
+                    },
+                    "party_name": {
+                        "type": "string"
+                    },
+                    "due_date": {
+                        "type": "string",
+                        "format": "date"
+                    },
+                    "outstanding": {
+                        "type": "string",
+                        "format": "decimal",
+                        "pattern": "^-?\\d{0,12}(?:\\.\\d{0,2})?$"
+                    }
+                },
+                "required": [
+                    "due_date",
+                    "id",
+                    "kind",
+                    "number",
+                    "outstanding",
+                    "party_name"
+                ]
+            },
+            "CashFlowItemKindEnum": {
+                "enum": [
+                    "BILL",
+                    "RETENTION_RELEASE",
+                    "VENDOR_BILL"
+                ],
+                "type": "string",
+                "description": "* `BILL` - BILL\n* `RETENTION_RELEASE` - RETENTION_RELEASE\n* `VENDOR_BILL` - VENDOR_BILL"
+            },
+            "CashFlowWeek": {
+                "type": "object",
+                "properties": {
+                    "start": {
+                        "type": "string",
+                        "format": "date",
+                        "description": "Monday"
+                    },
+                    "end": {
+                        "type": "string",
+                        "format": "date",
+                        "description": "Sunday"
+                    },
+                    "money_in": {
+                        "type": "string",
+                        "format": "decimal",
+                        "pattern": "^-?\\d{0,12}(?:\\.\\d{0,2})?$",
+                        "description": "Client bills falling due this week, still owed"
+                    },
+                    "money_out": {
+                        "type": "string",
+                        "format": "decimal",
+                        "pattern": "^-?\\d{0,12}(?:\\.\\d{0,2})?$",
+                        "description": "Vendor bills falling due this week, still to pay"
+                    },
+                    "bills_in": {
+                        "type": "array",
+                        "items": {
+                            "$ref": "#/components/schemas/CashFlowItem"
+                        }
+                    },
+                    "bills_out": {
+                        "type": "array",
+                        "items": {
+                            "$ref": "#/components/schemas/CashFlowItem"
+                        }
+                    },
+                    "balance_low": {
+                        "type": "string",
+                        "format": "decimal",
+                        "pattern": "^-?\\d{0,12}(?:\\.\\d{0,2})?$",
+                        "description": "If overdue client bills do not come in"
+                    },
+                    "balance_high": {
+                        "type": "string",
+                        "format": "decimal",
+                        "pattern": "^-?\\d{0,12}(?:\\.\\d{0,2})?$",
+                        "description": "If overdue client bills come in now"
+                    }
+                },
+                "required": [
+                    "balance_high",
+                    "balance_low",
+                    "bills_in",
+                    "bills_out",
+                    "end",
+                    "money_in",
+                    "money_out",
+                    "start"
                 ]
             },
             "CatalogImportResult": {

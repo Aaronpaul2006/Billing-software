@@ -19,8 +19,10 @@ from apps.core.queries import get_or_404
 from apps.parties.models import Party
 from apps.projects.models import Project
 
-from . import dashboard, queries
+from . import cashflow, dashboard, queries
 from .serializers import (
+    CashFlowParamsSerializer,
+    CashFlowSerializer,
     DashboardSerializer,
     GstPeriodSerializer,
     GstRowSerializer,
@@ -243,3 +245,20 @@ class StatementView(ReportView):
             "gstin": party.gstin,
         }
         return Response(StatementSerializer(statement).data)
+
+
+class CashFlowView(ReportView):
+    """The next weeks' money in and out, as ranges (Part B, cashflow.py)."""
+
+    @extend_schema(
+        parameters=[CashFlowParamsSerializer],
+        responses={200: CashFlowSerializer},
+        tags=["reports"],
+    )
+    def get(self, request: Request) -> Response:
+        params = CashFlowParamsSerializer(data=request.query_params)
+        params.is_valid(raise_exception=True)
+        data = cashflow.forecast(
+            self.principal.tenant_id, timezone.localdate(), params.validated_data["weeks"]
+        )
+        return Response(CashFlowSerializer(data).data)

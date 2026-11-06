@@ -1204,3 +1204,6 @@ for _name in ("bank-line-match", "bank-line-record", "bank-line-ignore", "bank-l
     OBJECT_ROUTES[_name] = lambda w: None
 for _name in ("bank-statement-preview", "bank-statement-import", "bank-lines", "bank-accounts"):
     COLLECTION_ROUTES[_name] = lambda w: None
+
+# --- Cash-flow forecast: tests/reports/test_cashflow.py::test_another_business_sees_none_of_it
+COLLECTION_ROUTES["report-cash-flow"] = lambda w: None

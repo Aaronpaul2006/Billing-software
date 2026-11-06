@@ -862,6 +862,7 @@ member; recorded, edited, paid and voided with `payments.record`.
 | `GET /vendor-bills/tds-suggestion?vendor_party_id&category&taxable_value&bill_date[&vendor_bill_id]` | `{section, rate, amount, reason, year_total}`. Rates and limits are data (`apps/payables/tds_rates.json`): s.194C for subcontract, labour and transport once a bill passes ₹30,000 or the vendor's year passes ₹1,00,000; 1 % for an individual / HUF PAN, 2 % otherwise, 20 % without a PAN. A suggestion: the person decides |
 | `GET/POST /vendor-payments` · `GET /vendor-payments/{id}` · `POST /vendor-payments/{id}/void` | `{vendor_party_id, project_id?, payment_date, amount, mode, reference?, notes?, allocations: [{vendor_bill_id, amount}]}`; responses carry `unallocated` and the allocations with each bill's number. An allocation over what is still owed (`exceeds_outstanding`), over the payment (`exceeds_payment`) or to another vendor's bill (`party_mismatch`) is refused; the database refuses them too (section 7d). Void undoes the allocations first |
 | `GET /reports/payables` | What we owe each vendor today, by days past the due date (or the bill date): `{as_of, results: [{party_id, display_name, bill_count, not_due, days_1_30, days_31_60, days_61_90, days_90_plus, total}], totals}`, biggest first; `reports.view` |
+| `GET /reports/cash-flow?weeks=` | The coming weeks' money in and out and the expected balance, as a range (Part B, below); `reports.view` |
 | `POST /exports` `{kind: "TDS_DEDUCTED", format: "CSV" \| "XLSX", params: {from, to}}` | The register of TDS we deducted, for paying it and the 26Q return: one row per recorded vendor bill with TDS, by bill date (month, date, vendor, PAN, section, bill number, value before GST, rate, TDS), then a total; voided bills and bills without TDS left out |
 
 ### Bank statements (Part B)
@@ -978,6 +979,24 @@ for `/reports/summary`) answers the dashboard in one request:
   `last_reminder_at`); remind with `POST /documents/{id}/reminders` (W.2).
 * `losing_projects`: at most 5 projects whose cost exceeds billed taxable value.
 * `drafts`: `count` and the 5 waiting longest.
+
+### Cash-flow forecast (Part B, 2026-11-06)
+
+`GET /reports/cash-flow?weeks=8` (reports.view; `weeks` 1 to 13, default 8)
+forecasts the coming weeks from what is already billed. No table of its own.
+
+* `cash_today`: the newest balance on each imported bank statement, added up
+  (`cash_sources` names each account and date); `null` with no statement, and
+  then the balances show the change only.
+* Each week (Monday to Sunday, from this week): `money_in` is client bills and
+  retention releases still owed that fall due that week (the due date, or the
+  bill date when there is none); `money_out` is vendor bills still to pay, the
+  same way; `bills_in` / `bills_out` list them (`kind` `BILL`,
+  `RETENTION_RELEASE` or `VENDOR_BILL`, with the id to open).
+* Bills already past due have no honest week: `overdue_in` / `overdue_out`.
+  `balance_low` assumes overdue client bills do not come in during the forecast
+  and overdue vendor bills are paid now; `balance_high` assumes both are settled
+  this week. `lowest_balance` / `lowest_week_start` is the week cash runs lowest.
 
 ### Exports (E.1, 2026-10-22)
 
