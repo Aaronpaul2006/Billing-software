@@ -23,6 +23,7 @@ import {
   UserCog,
   UserPlus,
   Users,
+  Wallet,
 } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
 
@@ -80,6 +81,13 @@ export const GROUPS: { title: string; items: NavEntry[] }[] = [
         keywords: "payables paid out supplier subcontractor",
       },
       { to: "/expenses", label: "Expenses", icon: Receipt, keywords: "purchases costs" },
+      {
+        to: "/bank",
+        label: "Bank statements",
+        icon: Wallet,
+        action: "payments.record",
+        keywords: "bank reconcile reconciliation import statement utr",
+      },
       {
         to: "/tds-certificates",
         label: "TDS certificates",

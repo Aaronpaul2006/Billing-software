@@ -253,6 +253,7 @@ function staffPages(ids) {
     p("vendor-bill-new", "Record a vendor bill", "/vendor-bills/new"),
     p("vendor-payments", "Payments to vendors", "/vendor-payments"),
     p("vendor-payment-new", "Pay a vendor", "/vendor-payments/new"),
+    p("bank", "Bank statements", "/bank"),
     p("expense-new", "New expense", "/expenses/new"),
     p("expense", "An expense", `/expenses/${ids.expense}`),
     p("reports", "Reports", "/reports"),

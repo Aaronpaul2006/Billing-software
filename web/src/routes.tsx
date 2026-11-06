@@ -303,6 +303,13 @@ export const routes: RouteObject[] = [
             ),
           },
           {
+            path: "bank",
+            lazy: lazyPage(
+              () => import("@/features/banking/BankPage"),
+              (m) => m.BankPage,
+            ),
+          },
+          {
             path: "expenses",
             lazy: lazyPage(
               () => import("@/features/expenses/ExpensesPage"),
