@@ -1,4 +1,4 @@
-import { lazy, Suspense } from "react";
+import { Fragment, lazy, Suspense } from "react";
 import { Navigate, Outlet, useLocation } from "react-router";
 
 import { FullPageSpinner } from "@/components/FullPageSpinner";
@@ -40,5 +40,12 @@ export function RequireAuth({
   const mustEnrol = state.session.mfa_enrollment_required;
   if (mustEnrol && !enrolment) return <Navigate to="/mfa/setup" replace />;
   if (!mustEnrol && enrolment) return <Navigate to="/" replace />;
-  return <Outlet />;
+  // Keyed by the business: after switching company every page below is built
+  // again and loads that company's data. Clearing the cache alone left pages
+  // that stayed on screen showing the previous company's figures.
+  return (
+    <Fragment key={state.session.tenant_id}>
+      <Outlet />
+    </Fragment>
+  );
 }

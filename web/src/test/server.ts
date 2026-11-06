@@ -70,6 +70,7 @@ export const server = setupServer(
       plan: "FREE",
       timezone: "Asia/Kolkata",
       approval_limit: null,
+      is_sample: false,
       version: 1,
       created_at: "",
       updated_at: "",

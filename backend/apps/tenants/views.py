@@ -4,14 +4,16 @@ import uuid
 from typing import Any
 
 import django_filters
+from django.db import transaction
 from drf_spectacular.utils import extend_schema
 from rest_framework.request import Request
 from rest_framework.response import Response
 
 from apps.core.api import ActionAPIView, detail_response, list_response, versioned_patch
+from apps.core.errors import Forbidden
 from apps.core.idempotency import idempotent_if_keyed
 
-from . import printing, services, tally
+from . import printing, sample, services, tally, tasks
 from .models import DocumentSeries, GstRegistration
 from .serializers import (
     DocumentSeriesCreateSerializer,
@@ -22,6 +24,7 @@ from .serializers import (
     GstRegistrationUpdateSerializer,
     PrintSettingsSerializer,
     PrintSettingsUpdateSerializer,
+    SampleBusinessSerializer,
     SetupStatusSerializer,
     TallySettingsSerializer,
     TallySettingsUpdateSerializer,
@@ -223,3 +226,53 @@ class DocumentSeriesDetailView(ActionAPIView):
             update=lambda v, changes: services.update_series(self.principal, series_id, v, changes),
             output_serializer=DocumentSeriesSerializer,
         )
+
+
+def _sample_body(tenant: Any, making: bool = False) -> dict[str, Any]:
+    if tenant is not None:
+        return {"status": "READY", "tenant_id": tenant.pk, "legal_name": tenant.legal_name}
+    return {"status": "MAKING" if making else "NONE", "tenant_id": None, "legal_name": None}
+
+
+class SampleBusinessView(ActionAPIView):
+    """A sample business to explore with, apart from the real one (Part B,
+    apps/tenants/sample.py). Switch to it with /auth/switch-tenant."""
+
+    read_action = "tenant.read"
+    write_action = "tenant.read"
+
+    def _staff_only(self) -> None:
+        if self.principal.role == "CLIENT":
+            raise Forbidden("Not in the client portal.", code="permission_denied")
+
+    @extend_schema(responses={200: SampleBusinessSerializer}, tags=["tenant"])
+    def get(self, request: Request) -> Response:
+        self._staff_only()
+        found = sample.existing(self.principal.user_id)
+        return Response(SampleBusinessSerializer(_sample_body(found)).data)
+
+    @extend_schema(
+        request=None,
+        responses={200: SampleBusinessSerializer, 202: SampleBusinessSerializer},
+        tags=["tenant"],
+    )
+    def post(self, request: Request) -> Response:
+        self._staff_only()
+        found = sample.existing(self.principal.user_id)
+        if found is not None:
+            return Response(SampleBusinessSerializer(_sample_body(found)).data)
+        user_id = str(self.principal.user_id)
+        transaction.on_commit(lambda: tasks.build_sample.delay(user_id))
+        return Response(SampleBusinessSerializer(_sample_body(None, True)).data, status=202)
+
+
+class SampleBusinessRemoveView(ActionAPIView):
+    """Remove (close) the sample business one is in."""
+
+    read_action = "tenant.read"
+    write_action = "tenant.read"
+
+    @extend_schema(request=None, responses={204: None}, tags=["tenant"])
+    def post(self, request: Request) -> Response:
+        sample.close(self.principal)
+        return Response(status=204)

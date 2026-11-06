@@ -9,6 +9,7 @@ import type { components } from "@/api/schema";
 import { useSession } from "@/auth/context";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { ExploreSample } from "@/features/sample/Sample";
 
 type Setup = components["schemas"]["SetupStatus"];
 type Step = Exclude<keyof Setup, "complete">;
@@ -98,6 +99,9 @@ function SetupChecklist() {
             </li>
           ))}
         </ol>
+        <div className="mt-4">
+          <ExploreSample />
+        </div>
       </CardContent>
     </Card>
   );

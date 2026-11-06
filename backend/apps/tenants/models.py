@@ -52,6 +52,8 @@ class Tenant(models.Model):
     timezone = models.TextField(default="Asia/Kolkata", db_default="Asia/Kolkata")
     # Bills at or above it need an owner's approval before others issue them (Part B).
     approval_limit = models.DecimalField(max_digits=14, decimal_places=2, null=True)
+    # A sample business to explore with (Part B), apart from the real one.
+    is_sample = models.BooleanField(default=False, db_default=False)
     version = models.IntegerField(default=1, db_default=1)
     created_at = created_at()
     updated_at = updated_at()

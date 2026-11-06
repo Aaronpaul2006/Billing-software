@@ -7609,6 +7609,85 @@
                 }
             }
         },
+        "/api/v1/sample-business": {
+            "get": {
+                "operationId": "sample_business_retrieve",
+                "description": "A sample business to explore with, apart from the real one (Part B,\napps/tenants/sample.py). Switch to it with /auth/switch-tenant.",
+                "tags": [
+                    "tenant"
+                ],
+                "security": [
+                    {
+                        "bearerAuth": []
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/SampleBusiness"
+                                }
+                            }
+                        },
+                        "description": ""
+                    }
+                }
+            },
+            "post": {
+                "operationId": "sample_business_create",
+                "description": "A sample business to explore with, apart from the real one (Part B,\napps/tenants/sample.py). Switch to it with /auth/switch-tenant.",
+                "tags": [
+                    "tenant"
+                ],
+                "security": [
+                    {
+                        "bearerAuth": []
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/SampleBusiness"
+                                }
+                            }
+                        },
+                        "description": ""
+                    },
+                    "202": {
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/SampleBusiness"
+                                }
+                            }
+                        },
+                        "description": ""
+                    }
+                }
+            }
+        },
+        "/api/v1/sample-business/remove": {
+            "post": {
+                "operationId": "sample_business_remove_create",
+                "description": "Remove (close) the sample business one is in.",
+                "tags": [
+                    "tenant"
+                ],
+                "security": [
+                    {
+                        "bearerAuth": []
+                    }
+                ],
+                "responses": {
+                    "204": {
+                        "description": "No response body"
+                    }
+                }
+            }
+        },
         "/api/v1/search": {
             "get": {
                 "operationId": "search_retrieve",
@@ -18852,6 +18931,46 @@
                 "type": "string",
                 "description": "* `OWNER` - OWNER\n* `ADMIN` - ADMIN\n* `ACCOUNTANT` - ACCOUNTANT\n* `SITE_ENGINEER` - SITE_ENGINEER\n* `VIEWER` - VIEWER"
             },
+            "SampleBusiness": {
+                "type": "object",
+                "properties": {
+                    "status": {
+                        "allOf": [
+                            {
+                                "$ref": "#/components/schemas/SampleBusinessStatusEnum"
+                            }
+                        ],
+                        "description": "MAKING: asked for, being made (a few seconds); ask again until READY\n\n* `NONE` - NONE\n* `MAKING` - MAKING\n* `READY` - READY"
+                    },
+                    "tenant_id": {
+                        "type": [
+                            "string",
+                            "null"
+                        ],
+                        "format": "uuid"
+                    },
+                    "legal_name": {
+                        "type": [
+                            "string",
+                            "null"
+                        ]
+                    }
+                },
+                "required": [
+                    "legal_name",
+                    "status",
+                    "tenant_id"
+                ]
+            },
+            "SampleBusinessStatusEnum": {
+                "enum": [
+                    "NONE",
+                    "MAKING",
+                    "READY"
+                ],
+                "type": "string",
+                "description": "* `NONE` - NONE\n* `MAKING` - MAKING\n* `READY` - READY"
+            },
             "SaveAsTemplate": {
                 "type": "object",
                 "properties": {
@@ -20538,6 +20657,10 @@
                         "pattern": "^-?\\d{0,12}(?:\\.\\d{0,2})?$",
                         "readOnly": true
                     },
+                    "is_sample": {
+                        "type": "boolean",
+                        "readOnly": true
+                    },
                     "version": {
                         "type": "integer",
                         "readOnly": true
@@ -20557,6 +20680,7 @@
                     "approval_limit",
                     "created_at",
                     "id",
+                    "is_sample",
                     "legal_name",
                     "pan",
                     "plan",

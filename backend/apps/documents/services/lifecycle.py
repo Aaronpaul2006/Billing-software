@@ -96,9 +96,14 @@ def _check_note_limits(doc: Document, grand_total: Decimal) -> None:
             )
 
 
-def issue(principal: Principal, doc_id: uuid.UUID, expected: int) -> Document:
+def issue(
+    principal: Principal, doc_id: uuid.UUID, expected: int, *, check_email: bool = True
+) -> Document:
+    """Issue a draft. `check_email=False` only for the sample business
+    (apps/tenants/sample.py), which is made before the owner confirms an email."""
     require(principal, "documents.issue")
-    require_verified_email(principal.user_id)
+    if check_email:
+        require_verified_email(principal.user_id)
     with transaction.atomic():
         doc = _locked(doc_id, expected)
         if doc.status != "DRAFT":

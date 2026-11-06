@@ -2748,6 +2748,47 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/sample-business": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * @description A sample business to explore with, apart from the real one (Part B,
+         *     apps/tenants/sample.py). Switch to it with /auth/switch-tenant.
+         */
+        get: operations["sample_business_retrieve"];
+        put?: never;
+        /**
+         * @description A sample business to explore with, apart from the real one (Part B,
+         *     apps/tenants/sample.py). Switch to it with /auth/switch-tenant.
+         */
+        post: operations["sample_business_create"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/sample-business/remove": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** @description Remove (close) the sample business one is in. */
+        post: operations["sample_business_remove_create"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/search": {
         parameters: {
             query?: never;
@@ -6405,6 +6446,26 @@ export interface components {
          * @enum {string}
          */
         RoleEnum: "OWNER" | "ADMIN" | "ACCOUNTANT" | "SITE_ENGINEER" | "VIEWER";
+        SampleBusiness: {
+            /**
+             * @description MAKING: asked for, being made (a few seconds); ask again until READY
+             *
+             *     * `NONE` - NONE
+             *     * `MAKING` - MAKING
+             *     * `READY` - READY
+             */
+            status: components["schemas"]["SampleBusinessStatusEnum"];
+            /** Format: uuid */
+            tenant_id: string | null;
+            legal_name: string | null;
+        };
+        /**
+         * @description * `NONE` - NONE
+         *     * `MAKING` - MAKING
+         *     * `READY` - READY
+         * @enum {string}
+         */
+        SampleBusinessStatusEnum: "NONE" | "MAKING" | "READY";
         SaveAsTemplate: {
             name: string;
             valid_days?: number | null;
@@ -6966,6 +7027,7 @@ export interface components {
             readonly timezone: string;
             /** Format: decimal */
             readonly approval_limit: string | null;
+            readonly is_sample: boolean;
             readonly version: number;
             /** Format: date-time */
             readonly created_at: string;
@@ -12407,6 +12469,70 @@ export interface operations {
                 content: {
                     "application/json": components["schemas"]["RetentionReleaseDetail"];
                 };
+            };
+        };
+    };
+    sample_business_retrieve: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SampleBusiness"];
+                };
+            };
+        };
+    };
+    sample_business_create: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SampleBusiness"];
+                };
+            };
+            202: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SampleBusiness"];
+                };
+            };
+        };
+    };
+    sample_business_remove_create: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description No response body */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
             };
         };
     };

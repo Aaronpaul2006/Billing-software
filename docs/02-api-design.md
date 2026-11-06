@@ -967,6 +967,22 @@ longer holds; owners need none; quotations are not covered.
 | `POST /documents/{id}/approval-request` | If-Match; a draft. Sets `approval_requested_at` and tells the owners (notification `APPROVAL_REQUESTED`) |
 | `POST /documents/{id}/approve` | If-Match; owners only (`403 approver_only`); a draft. Approves the version as it is (no new version) and tells whoever asked (`BILL_APPROVED`). The document shows `approved_at`, `approved_by_name` and `approval_holds` |
 
+### Sample business (Part B)
+
+A separate business to explore with, owned by the person who asked and marked
+`is_sample`: its bills, numbering and returns can never touch the real
+business (every row belongs to one business). It is filled through the same
+services as the screens: a GST registration and number series, two clients
+and a vendor, a project with BOQ, two issued RA bills, a payment against the
+first, a quotation, a vendor bill and two site-diary days.
+
+| Method & path | Notes |
+|---|---|
+| `GET/POST /sample-business` | The person's own sample: `{status: NONE \| MAKING \| READY, tenant_id, legal_name}`. POST makes one if there is none (`202 MAKING`: a background task, a few seconds; GET until `READY`), else answers the open one. Staff only. Switch to it with `POST /auth/switch-tenant` |
+| `POST /sample-business/remove` | In the sample business, its owner: closes it (`204`); it leaves the business switcher. In a real business: `409 not_a_sample` |
+
+`GET /tenant` shows `is_sample`.
+
 ### Bank statements (Part B)
 
 Import the bank's statement file, then match each line by hand: nothing is

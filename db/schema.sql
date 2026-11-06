@@ -115,6 +115,8 @@ CREATE TABLE tenants (
   timezone    text NOT NULL DEFAULT 'Asia/Kolkata',
   -- Bills at or above it need an owner's approval before others issue them (Part B).
   approval_limit numeric(14,2) CHECK (approval_limit IS NULL OR approval_limit > 0),
+  -- A sample business to explore with (Part B): made and closed by its owner.
+  is_sample   boolean NOT NULL DEFAULT false,
   version     integer NOT NULL DEFAULT 1,
   created_at  timestamptz NOT NULL DEFAULT now(),
   updated_at  timestamptz NOT NULL DEFAULT now()

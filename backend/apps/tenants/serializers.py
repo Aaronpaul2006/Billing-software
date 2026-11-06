@@ -47,6 +47,7 @@ class TenantSerializer(serializers.ModelSerializer[Tenant]):
             "plan",
             "timezone",
             "approval_limit",
+            "is_sample",
             "version",
             "created_at",
             "updated_at",
@@ -389,3 +390,12 @@ class TallySettingsUpdateSerializer(serializers.Serializer[Any]):
     advance_ledger = _ledger_name()
     bank_ledger = _ledger_name()
     cash_ledger = _ledger_name()
+
+
+class SampleBusinessSerializer(serializers.Serializer[Any]):
+    status = serializers.ChoiceField(
+        choices=["NONE", "MAKING", "READY"],
+        help_text="MAKING: asked for, being made (a few seconds); ask again until READY",
+    )
+    tenant_id = serializers.UUIDField(allow_null=True)
+    legal_name = serializers.CharField(allow_null=True)

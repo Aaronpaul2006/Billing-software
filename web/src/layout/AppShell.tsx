@@ -25,6 +25,7 @@ import { setTextSize, setThemeChoice, textSize, themeChoice } from "@/lib/appear
 import type { TextSize, ThemeChoice } from "@/lib/appearance";
 import { can } from "@/lib/permissions";
 import { cn } from "@/lib/utils";
+import { SampleBanner } from "@/features/sample/Sample";
 
 import { CommandPalette } from "./CommandPalette";
 import { InvitationsBanner } from "./InvitationsBanner";
@@ -76,7 +77,7 @@ function NavItem({ entry, onNavigate }: { entry: NavEntry; onNavigate?: () => vo
   );
 }
 
-function TenantSwitcher() {
+function TenantSwitcher({ onSwitch }: { onSwitch?: (() => void) | undefined }) {
   const session = useSession();
   const { switchTenant } = useAuth();
   const me = useMe();
@@ -103,7 +104,10 @@ function TenantSwitcher() {
               key={m.tenant_id}
               checked={m.tenant_id === session.tenant_id}
               onSelect={() => {
-                if (m.tenant_id !== session.tenant_id) void switchTenant(m.tenant_id);
+                if (m.tenant_id !== session.tenant_id) {
+                  void switchTenant(m.tenant_id);
+                  onSwitch?.(); // on a phone: close the menu panel
+                }
               }}
             >
               <span className="truncate">{m.legal_name}</span>
@@ -216,7 +220,7 @@ function SidebarBody({
   const session = useSession();
   return (
     <>
-      <TenantSwitcher />
+      <TenantSwitcher onSwitch={onNavigate} />
       <div className="mt-3 flex items-center gap-1">
         <Button
           variant="outline"
@@ -318,6 +322,7 @@ export function AppShell() {
       </aside>
       <div className="flex min-w-0 flex-1 flex-col">
         <MobileMenu onHelp={showHelp} onSearch={showSearch} />
+        <SampleBanner />
         <VerifyEmailBanner />
         <InvitationsBanner />
         <main className="flex-1 p-4 md:p-6">

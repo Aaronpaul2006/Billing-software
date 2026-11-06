@@ -1241,3 +1241,7 @@ for _name in ("document-photos", "portal-document-photos"):
 # --- Bill approval: tests/documents/test_approval.py::test_another_business_reaches_none_of_it
 for _name in ("document-approval-request", "document-approve"):
     OBJECT_ROUTES[_name] = lambda w: None
+
+# --- Sample business: per person, in a business of its own (tests/tenants/test_sample.py)
+NOT_TENANT_DATA["sample-business"] = "the person's own sample business, found by user"
+COLLECTION_ROUTES["sample-business-remove"] = lambda w: None

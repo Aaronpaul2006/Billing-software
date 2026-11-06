@@ -305,6 +305,22 @@ function staffPages(ids) {
       },
     },
     {
+      // switches into the sample business (the demo needs one); run it on its own
+      ...p("sample-business", "In the sample business", "/"),
+      sizes: ["desktop", "phone"],
+      action: async (page) => {
+        const banner = page.getByRole("region", { name: "Sample business" });
+        await page.waitForTimeout(1500);
+        if (await banner.isVisible()) return; // still in it from the size before
+        const menu = page.getByRole("button", { name: "Open the menu" });
+        if (await menu.isVisible()) await menu.click();
+        await page.getByRole("button", { name: /, company$/ }).first().click();
+        await page.getByRole("menuitemcheckbox", { name: /^Sample:/ }).click();
+        await banner.waitFor();
+        await page.waitForTimeout(800);
+      },
+    },
+    {
       ...p("palette", "Command palette (Ctrl+K)", "/"),
       action: async (page) => {
         await page.keyboard.press("Control+k");
