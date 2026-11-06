@@ -50,7 +50,10 @@ describe("command palette (D.6)", () => {
     await user.keyboard("{Control>}k{/Control}");
     const dialog = await palette();
     const input = within(dialog).getByRole("combobox", { name: "Search, or jump to a page" });
-    expect(input).toHaveFocus();
+    // focused just after it appears (the palette's contents load on first use)
+    await waitFor(() => {
+      expect(input).toHaveFocus();
+    });
     const create = within(dialog).getByRole("group", { name: "Create" });
     expect(options(create)).toEqual(["New bill", "New quotation", "Record an expense"]);
     const pages = options(within(dialog).getByRole("group", { name: "Go to" }));
