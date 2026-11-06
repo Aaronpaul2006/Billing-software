@@ -1583,12 +1583,13 @@ function Editor({ doc, defaultTerms }: { doc?: Document; defaultTerms?: string }
         </Card>
 
         <div className="flex flex-wrap justify-between gap-6">
-          <div className="grid max-w-xl flex-1 gap-4">
+          {/* basis-72: on a phone the notes take their own row instead of a sliver */}
+          <div className="grid max-w-xl min-w-0 flex-1 basis-72 gap-4">
             <Field id="notes" label="Notes">
               <textarea
                 id="notes"
                 rows={3}
-                className="border-input rounded-md border bg-transparent px-3 py-2 text-sm"
+                className="border-input w-full rounded-md border bg-transparent px-3 py-2 text-sm"
                 {...register("notes")}
               />
             </Field>
@@ -1596,7 +1597,7 @@ function Editor({ doc, defaultTerms }: { doc?: Document; defaultTerms?: string }
               <textarea
                 id="terms"
                 rows={3}
-                className="border-input rounded-md border bg-transparent px-3 py-2 text-sm"
+                className="border-input w-full rounded-md border bg-transparent px-3 py-2 text-sm"
                 {...register("terms")}
               />
             </Field>
