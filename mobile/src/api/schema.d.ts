@@ -4888,9 +4888,11 @@ export interface components {
          *     * `tally_settings` - tally_settings
          *     * `tds_certificates` - tds_certificates
          *     * `tenants` - tenants
+         *     * `vendor_bills` - vendor_bills
+         *     * `vendor_payments` - vendor_payments
          * @enum {string}
          */
-        RecordTypeEnum: "boq_items" | "catalog_item_variants" | "catalog_items" | "document_emails" | "document_series" | "document_templates" | "documents" | "email_invitations" | "expenses" | "exports" | "gst_registrations" | "memberships" | "parties" | "payment_reminders" | "payments" | "print_settings" | "projects" | "retention_releases" | "tally_settings" | "tds_certificates" | "tenants";
+        RecordTypeEnum: "boq_items" | "catalog_item_variants" | "catalog_items" | "document_emails" | "document_series" | "document_templates" | "documents" | "email_invitations" | "expenses" | "exports" | "gst_registrations" | "memberships" | "parties" | "payment_reminders" | "payments" | "print_settings" | "projects" | "retention_releases" | "tally_settings" | "tds_certificates" | "tenants" | "vendor_bills" | "vendor_payments";
         RecoveryCodes: {
             /** @description Shown once. Each works one time. */
             recovery_codes: string[];
@@ -6300,8 +6302,10 @@ export interface operations {
                  *     * `tally_settings` - tally_settings
                  *     * `tds_certificates` - tds_certificates
                  *     * `tenants` - tenants
+                 *     * `vendor_bills` - vendor_bills
+                 *     * `vendor_payments` - vendor_payments
                  */
-                record_type?: "boq_items" | "catalog_item_variants" | "catalog_items" | "document_emails" | "document_series" | "document_templates" | "documents" | "email_invitations" | "expenses" | "exports" | "gst_registrations" | "memberships" | "parties" | "payment_reminders" | "payments" | "print_settings" | "projects" | "retention_releases" | "tally_settings" | "tds_certificates" | "tenants";
+                record_type?: "boq_items" | "catalog_item_variants" | "catalog_items" | "document_emails" | "document_series" | "document_templates" | "documents" | "email_invitations" | "expenses" | "exports" | "gst_registrations" | "memberships" | "parties" | "payment_reminders" | "payments" | "print_settings" | "projects" | "retention_releases" | "tally_settings" | "tds_certificates" | "tenants" | "vendor_bills" | "vendor_payments";
             };
             header?: never;
             path?: never;

@@ -763,6 +763,101 @@ CREATE TABLE expenses (
 CREATE INDEX expenses_project_idx ON expenses (tenant_id, project_id, expense_date DESC);
 CREATE INDEX expenses_date_idx    ON expenses (tenant_id, expense_date DESC);
 
+-- Payables (Part B): what we owe vendors and subcontractors. A vendor bill is
+-- their bill as we received it; the TDS we deduct (s.194C...) comes off what
+-- we pay (net_payable); payments out are set against bills by vendor
+-- allocations, which keep vendor_bills.amount_paid in step (7d). Small spends
+-- stay expenses.
+CREATE TABLE vendor_bills (
+  id               uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+  tenant_id        uuid NOT NULL REFERENCES tenants (id),
+  vendor_party_id  uuid NOT NULL,
+  project_id       uuid,
+  bill_number      text NOT NULL CHECK (char_length(bill_number) BETWEEN 1 AND 50),   -- the vendor's own number
+  bill_date        date NOT NULL,
+  due_date         date,
+  category         text NOT NULL CHECK (category IN ('MATERIAL', 'LABOUR', 'SUBCONTRACT', 'EQUIPMENT', 'TRANSPORT', 'SITE_OVERHEAD', 'OFFICE', 'OTHER')),
+  description      text NOT NULL CHECK (char_length(description) BETWEEN 1 AND 1000),
+  taxable_value    numeric(14,2) NOT NULL CHECK (taxable_value >= 0),
+  gst_amount       numeric(14,2) NOT NULL DEFAULT 0 CHECK (gst_amount >= 0),
+  total_amount     numeric(14,2) NOT NULL,
+  itc_eligible     boolean NOT NULL DEFAULT false,
+  tds_section      text CHECK (tds_section ~ '^19[0-9]{1,2}[A-Z]{0,3}$'),
+  tds_rate         numeric(5,2) NOT NULL DEFAULT 0 CHECK (tds_rate >= 0 AND tds_rate <= 30),
+  tds_amount       numeric(14,2) NOT NULL DEFAULT 0 CHECK (tds_amount >= 0),
+  net_payable      numeric(14,2) NOT NULL,
+  -- Maintained only by the vendor allocations trigger, like documents.amount_settled.
+  amount_paid      numeric(14,2) NOT NULL DEFAULT 0,
+  attachment_id    uuid,
+  notes            text CHECK (char_length(notes) <= 2000),
+  status           text NOT NULL DEFAULT 'RECORDED' CHECK (status IN ('RECORDED', 'VOIDED')),
+  voided_at        timestamptz,
+  voided_by        uuid REFERENCES users (id),
+  void_reason      text,
+  version          integer NOT NULL DEFAULT 1,
+  created_by       uuid NOT NULL REFERENCES users (id),
+  created_at       timestamptz NOT NULL DEFAULT now(),
+  updated_at       timestamptz NOT NULL DEFAULT now(),
+  UNIQUE (tenant_id, id),
+  FOREIGN KEY (tenant_id, vendor_party_id) REFERENCES parties (tenant_id, id),
+  FOREIGN KEY (tenant_id, project_id)      REFERENCES projects (tenant_id, id),
+  FOREIGN KEY (tenant_id, attachment_id)   REFERENCES attachments (tenant_id, id),
+  CHECK (due_date IS NULL OR due_date >= bill_date),
+  CHECK (total_amount = taxable_value + gst_amount),
+  CHECK (tds_section IS NOT NULL OR (tds_rate = 0 AND tds_amount = 0)),
+  CHECK (tds_amount <= taxable_value),                      -- TDS is on the value before GST
+  CHECK (net_payable = total_amount - tds_amount),
+  CHECK (amount_paid >= 0 AND amount_paid <= net_payable),
+  CHECK (status <> 'VOIDED' OR (voided_at IS NOT NULL AND void_reason IS NOT NULL AND amount_paid = 0))
+);
+-- A vendor's bill number is entered once (a voided bill may be entered again).
+CREATE UNIQUE INDEX vendor_bills_number_uq ON vendor_bills (tenant_id, vendor_party_id, lower(bill_number))
+  WHERE status = 'RECORDED';
+CREATE INDEX vendor_bills_vendor_idx  ON vendor_bills (tenant_id, vendor_party_id, bill_date DESC);
+CREATE INDEX vendor_bills_date_idx    ON vendor_bills (tenant_id, bill_date DESC);
+CREATE INDEX vendor_bills_project_idx ON vendor_bills (tenant_id, project_id, bill_date DESC);
+
+CREATE TABLE vendor_payments (
+  id               uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+  tenant_id        uuid NOT NULL REFERENCES tenants (id),
+  vendor_party_id  uuid NOT NULL,
+  project_id       uuid,
+  payment_date     date NOT NULL,
+  amount           numeric(14,2) NOT NULL CHECK (amount > 0),
+  mode             text NOT NULL CHECK (mode IN ('BANK_TRANSFER', 'UPI', 'CHEQUE', 'CASH', 'CARD', 'OTHER')),
+  reference        text CHECK (char_length(reference) <= 100),   -- UTR / cheque number
+  notes            text CHECK (char_length(notes) <= 2000),
+  status           text NOT NULL DEFAULT 'RECORDED' CHECK (status IN ('RECORDED', 'VOIDED')),
+  voided_at        timestamptz,
+  voided_by        uuid REFERENCES users (id),
+  void_reason      text,
+  version          integer NOT NULL DEFAULT 1,
+  created_by       uuid NOT NULL REFERENCES users (id),
+  created_at       timestamptz NOT NULL DEFAULT now(),
+  updated_at       timestamptz NOT NULL DEFAULT now(),
+  UNIQUE (tenant_id, id),
+  FOREIGN KEY (tenant_id, vendor_party_id) REFERENCES parties (tenant_id, id),
+  FOREIGN KEY (tenant_id, project_id)      REFERENCES projects (tenant_id, id),
+  CHECK (status <> 'VOIDED' OR (voided_at IS NOT NULL AND void_reason IS NOT NULL))
+);
+CREATE INDEX vendor_payments_vendor_idx ON vendor_payments (tenant_id, vendor_party_id, payment_date DESC);
+CREATE INDEX vendor_payments_date_idx   ON vendor_payments (tenant_id, payment_date DESC);
+
+CREATE TABLE vendor_allocations (
+  id                 uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+  tenant_id          uuid NOT NULL REFERENCES tenants (id),
+  vendor_payment_id  uuid NOT NULL,
+  vendor_bill_id     uuid NOT NULL,
+  amount             numeric(14,2) NOT NULL CHECK (amount > 0),
+  created_by         uuid NOT NULL REFERENCES users (id),
+  created_at         timestamptz NOT NULL DEFAULT now(),
+  UNIQUE (tenant_id, id),
+  UNIQUE (vendor_bill_id, vendor_payment_id),
+  FOREIGN KEY (tenant_id, vendor_payment_id) REFERENCES vendor_payments (tenant_id, id),
+  FOREIGN KEY (tenant_id, vendor_bill_id)    REFERENCES vendor_bills (tenant_id, id)
+);
+CREATE INDEX vendor_allocations_payment_idx ON vendor_allocations (tenant_id, vendor_payment_id);
+
 -- Income-tax TDS certificates (Form 16A) received from clients, to reconcile
 -- with the TDS deducted on our bills. A record of the client's paper, not a
 -- posting of ours: it may be corrected or deleted (audited).
@@ -1095,6 +1190,52 @@ CREATE TRIGGER allocations_apply
   BEFORE INSERT OR UPDATE OR DELETE ON allocations
   FOR EACH ROW EXECUTE FUNCTION allocations_apply();
 
+-- 7d. Vendor allocations keep vendor_bills.amount_paid in step, as 7c does for
+--     bills out: the bill's row lock serializes concurrent payments and its
+--     CHECK amount_paid <= net_payable rejects paying a bill twice over.
+CREATE FUNCTION vendor_allocations_apply() RETURNS trigger
+LANGUAGE plpgsql SECURITY DEFINER SET search_path = public, pg_temp AS $$
+DECLARE
+  bill       record;
+  src_total  numeric;
+  src_used   numeric;
+BEGIN
+  IF TG_OP = 'DELETE' THEN
+    UPDATE vendor_bills SET amount_paid = amount_paid - OLD.amount WHERE id = OLD.vendor_bill_id;
+    RETURN OLD;
+  END IF;
+
+  IF TG_OP = 'UPDATE' THEN
+    RAISE EXCEPTION 'allocations are immutable; delete and re-create' USING ERRCODE = 'check_violation';
+  END IF;
+
+  SELECT status, vendor_party_id INTO bill FROM vendor_bills WHERE id = NEW.vendor_bill_id;
+  IF bill.status IS DISTINCT FROM 'RECORDED' THEN
+    RAISE EXCEPTION 'only recorded vendor bills can be paid' USING ERRCODE = 'check_violation';
+  END IF;
+
+  SELECT amount INTO src_total FROM vendor_payments
+   WHERE id = NEW.vendor_payment_id AND status = 'RECORDED' AND vendor_party_id = bill.vendor_party_id
+     FOR UPDATE;
+  IF src_total IS NULL THEN
+    RAISE EXCEPTION 'a vendor bill is paid only by a recorded payment to the same vendor'
+      USING ERRCODE = 'check_violation';
+  END IF;
+
+  SELECT coalesce(sum(amount), 0) INTO src_used FROM vendor_allocations
+   WHERE vendor_payment_id = NEW.vendor_payment_id;
+  IF src_used + NEW.amount > src_total THEN
+    RAISE EXCEPTION 'allocation exceeds the unallocated amount of its payment' USING ERRCODE = 'check_violation';
+  END IF;
+
+  UPDATE vendor_bills SET amount_paid = amount_paid + NEW.amount WHERE id = NEW.vendor_bill_id;
+  RETURN NEW;
+END $$;
+
+CREATE TRIGGER vendor_allocations_apply
+  BEFORE INSERT OR UPDATE OR DELETE ON vendor_allocations
+  FOR EACH ROW EXECUTE FUNCTION vendor_allocations_apply();
+
 -- 7d. Audit trail. SECURITY DEFINER so the app role needs no INSERT right on
 --     audit_log (it cannot forge or bulk-write audit rows directly).
 CREATE FUNCTION audit_row_change() RETURNS trigger
@@ -1137,7 +1278,8 @@ BEGIN
     'catalog_items', 'attachments', 'document_series', 'documents', 'document_lines',
     'payments', 'allocations', 'expenses', 'retention_releases', 'tds_certificates', 'exports',
     'email_invitations', 'payment_reminders', 'document_templates', 'catalog_item_variants',
-    'document_line_measurements', 'print_settings', 'document_emails', 'tally_settings']
+    'document_line_measurements', 'print_settings', 'document_emails', 'tally_settings',
+    'vendor_bills', 'vendor_payments', 'vendor_allocations']
   LOOP
     EXECUTE format(
       'CREATE TRIGGER audit AFTER INSERT OR UPDATE OR DELETE ON %I FOR EACH ROW EXECUTE FUNCTION audit_row_change()', t);
@@ -1158,7 +1300,8 @@ BEGIN
     'document_series', 'documents', 'document_lines', 'payments', 'allocations', 'expenses',
     'retention_releases', 'tds_certificates', 'idempotency_keys', 'exports', 'email_invitations',
     'payment_reminders', 'document_templates', 'catalog_item_variants', 'document_line_measurements',
-    'print_settings', 'document_emails', 'tally_settings']
+    'print_settings', 'document_emails', 'tally_settings', 'vendor_bills', 'vendor_payments',
+    'vendor_allocations']
   LOOP
     EXECUTE format('ALTER TABLE %I ENABLE ROW LEVEL SECURITY', t);
     EXECUTE format('ALTER TABLE %I FORCE ROW LEVEL SECURITY', t);
@@ -1271,7 +1414,8 @@ BEGIN
   FOREACH t IN ARRAY ARRAY[
     'gst_registrations', 'catalog_items', 'catalog_item_variants', 'document_series', 'expenses',
     'tds_certificates', 'email_invitations', 'payment_reminders', 'document_templates', 'audit_log',
-    'print_settings', 'document_emails', 'tally_settings']
+    'print_settings', 'document_emails', 'tally_settings', 'vendor_bills', 'vendor_payments',
+    'vendor_allocations']
   LOOP
     EXECUTE format(
       'CREATE POLICY client_scope ON %I AS RESTRICTIVE USING (NOT app_portal_session())', t);
@@ -1514,7 +1658,7 @@ GRANT SELECT, INSERT, UPDATE ON ALL TABLES IN SCHEMA public TO billing_app;
 -- cancelled / voided / archived instead.
 GRANT DELETE ON documents, document_lines, allocations, boq_items, catalog_items, tds_certificates,
                 idempotency_keys, auth_sessions, document_templates, catalog_item_variants,
-                document_line_measurements TO billing_app;
+                document_line_measurements, vendor_allocations TO billing_app;
 -- Audit rows are written only by the trigger.
 REVOKE INSERT, UPDATE, DELETE ON audit_log FROM billing_app;
 REVOKE INSERT, UPDATE ON v_billing_summary, v_receivables, v_project_billing FROM billing_app;
@@ -1534,6 +1678,13 @@ GRANT UPDATE (status, doc_type, gst_registration_id, series_id, doc_number, doc_
 REVOKE UPDATE ON retention_releases FROM billing_app;
 GRANT UPDATE (status, cancelled_at, cancelled_by, cancel_reason, version, updated_at)
   ON retention_releases TO billing_app;
+-- Vendor bills: what was paid is owned by the vendor allocations trigger (Part B).
+REVOKE UPDATE ON vendor_bills FROM billing_app;
+GRANT UPDATE (vendor_party_id, project_id, bill_number, bill_date, due_date, category, description,
+              taxable_value, gst_amount, total_amount, itc_eligible, tds_section, tds_rate, tds_amount,
+              net_payable, attachment_id, notes, status, voided_at, voided_by, void_reason,
+              version, updated_at)
+  ON vendor_bills TO billing_app;
 -- Payment reminders are a log: written once, never changed.
 REVOKE UPDATE ON payment_reminders FROM billing_app;
 -- Emailed bills: a log, written once (B.15).

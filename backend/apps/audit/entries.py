@@ -22,6 +22,8 @@ RECORD_TYPES: dict[str, tuple[str, tuple[str, ...]]] = {
     "documents": ("Bill or quotation", ("doc_number",)),
     "payments": ("Payment", ("reference",)),
     "expenses": ("Expense", ("description",)),
+    "vendor_bills": ("Vendor bill", ("bill_number",)),
+    "vendor_payments": ("Payment to a vendor", ("reference",)),
     "parties": ("Client or vendor", ("display_name",)),
     "projects": ("Project", ("name", "code")),
     "boq_items": ("BOQ item", ("item_code", "description")),
@@ -90,7 +92,7 @@ def _record(table: str, data: dict[str, Any]) -> str:
         return f"{title} {data.get('doc_number') or '(draft)'}"
     if table == "memberships":
         return ROLES.get(str(data.get("role")), "Member")
-    if table == "payments" and data.get("amount") is not None:
+    if table in ("payments", "vendor_payments") and data.get("amount") is not None:
         paid = date.fromisoformat(str(data["payment_date"]))
         return f"₹{inr(Decimal(str(data['amount'])))} on {paid.day} {paid:%b %Y}"
     _, fields = RECORD_TYPES[table]

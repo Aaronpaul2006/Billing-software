@@ -229,12 +229,14 @@
                                 "retention_releases",
                                 "tally_settings",
                                 "tds_certificates",
-                                "tenants"
+                                "tenants",
+                                "vendor_bills",
+                                "vendor_payments"
                             ],
                             "type": "string",
                             "minLength": 1
                         },
-                        "description": "* `boq_items` - boq_items\n* `catalog_item_variants` - catalog_item_variants\n* `catalog_items` - catalog_items\n* `document_emails` - document_emails\n* `document_series` - document_series\n* `document_templates` - document_templates\n* `documents` - documents\n* `email_invitations` - email_invitations\n* `expenses` - expenses\n* `exports` - exports\n* `gst_registrations` - gst_registrations\n* `memberships` - memberships\n* `parties` - parties\n* `payment_reminders` - payment_reminders\n* `payments` - payments\n* `print_settings` - print_settings\n* `projects` - projects\n* `retention_releases` - retention_releases\n* `tally_settings` - tally_settings\n* `tds_certificates` - tds_certificates\n* `tenants` - tenants"
+                        "description": "* `boq_items` - boq_items\n* `catalog_item_variants` - catalog_item_variants\n* `catalog_items` - catalog_items\n* `document_emails` - document_emails\n* `document_series` - document_series\n* `document_templates` - document_templates\n* `documents` - documents\n* `email_invitations` - email_invitations\n* `expenses` - expenses\n* `exports` - exports\n* `gst_registrations` - gst_registrations\n* `memberships` - memberships\n* `parties` - parties\n* `payment_reminders` - payment_reminders\n* `payments` - payments\n* `print_settings` - print_settings\n* `projects` - projects\n* `retention_releases` - retention_releases\n* `tally_settings` - tally_settings\n* `tds_certificates` - tds_certificates\n* `tenants` - tenants\n* `vendor_bills` - vendor_bills\n* `vendor_payments` - vendor_payments"
                     }
                 ],
                 "tags": [
@@ -14299,10 +14301,12 @@
                     "retention_releases",
                     "tally_settings",
                     "tds_certificates",
-                    "tenants"
+                    "tenants",
+                    "vendor_bills",
+                    "vendor_payments"
                 ],
                 "type": "string",
-                "description": "* `boq_items` - boq_items\n* `catalog_item_variants` - catalog_item_variants\n* `catalog_items` - catalog_items\n* `document_emails` - document_emails\n* `document_series` - document_series\n* `document_templates` - document_templates\n* `documents` - documents\n* `email_invitations` - email_invitations\n* `expenses` - expenses\n* `exports` - exports\n* `gst_registrations` - gst_registrations\n* `memberships` - memberships\n* `parties` - parties\n* `payment_reminders` - payment_reminders\n* `payments` - payments\n* `print_settings` - print_settings\n* `projects` - projects\n* `retention_releases` - retention_releases\n* `tally_settings` - tally_settings\n* `tds_certificates` - tds_certificates\n* `tenants` - tenants"
+                "description": "* `boq_items` - boq_items\n* `catalog_item_variants` - catalog_item_variants\n* `catalog_items` - catalog_items\n* `document_emails` - document_emails\n* `document_series` - document_series\n* `document_templates` - document_templates\n* `documents` - documents\n* `email_invitations` - email_invitations\n* `expenses` - expenses\n* `exports` - exports\n* `gst_registrations` - gst_registrations\n* `memberships` - memberships\n* `parties` - parties\n* `payment_reminders` - payment_reminders\n* `payments` - payments\n* `print_settings` - print_settings\n* `projects` - projects\n* `retention_releases` - retention_releases\n* `tally_settings` - tally_settings\n* `tds_certificates` - tds_certificates\n* `tenants` - tenants\n* `vendor_bills` - vendor_bills\n* `vendor_payments` - vendor_payments"
             },
             "RecoveryCodes": {
                 "type": "object",

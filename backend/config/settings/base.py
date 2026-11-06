@@ -49,6 +49,7 @@ INSTALLED_APPS = [
     "apps.doc_templates",
     "apps.portal",
     "apps.search",
+    "apps.payables",
 ]
 
 MIDDLEWARE = [
